@@ -3,7 +3,7 @@
 Date: 2026-07-04
 Owner: `Quant-Dispatcher`
 Mode: `RECORDED_EXECUTION_MODE_V1`
-Status: `IN_PROGRESS`
+Status: `READY_FOR_CODEX_AUDIT`
 
 ## Human-Gate
 
@@ -99,3 +99,54 @@ This authorizes recorded L1-L4 workflows only. It does not authorize broker/orde
 - Codex acceptance report;
 - commit/tree if files change;
 - explicit non-authorization boundary.
+
+### TASK-009 A11 HITL Gated Ticket Attempt
+
+- status: `ACCEPTED_WITH_WARNINGS`
+- source branch: `codex/harden-a-share-research-pipeline`
+- commit: `a2c8b825942a59d7c03429f41336ca1b9145a875`
+- tree: `77766d5b96e0e4de03ac3ab4ee03708edf0b3311`
+- accepted level: `L4_PENDING_HUMAN_REVIEW_TICKET_ATTEMPT_ONLY`
+- Human-Gate: `HG-NIGHT-BATCH-20260704-L1-L4`
+- permission level used: `L4_PENDING_HUMAN_REVIEW_TICKET`
+- gate status: `NO_RECOMMENDATION_AVAILABLE` / `BLOCKED`
+- candidate count: `83`
+- eligible ticket candidate count: `0`
+- ticket emitted: `false`
+- ticket path: `N/A`
+- blockers: `A11_RESEARCH_ONLY_NOT_TICKET_ENABLED`, `A11_SNAPSHOT_NOT_TASK007_EXPANSION`, `PHASE3_EVIDENCE_NOT_READY`, `MICRO_RECOMMENDATION_DATA_NOT_READY`, `SUSPENSION_CAPABILITY_INCOMPLETE`, `LIMIT_PRICE_COVERAGE_LOW`, `MARKET_DATA_PRODUCT_READ_NOT_ALLOWED`, `PRODUCTION_RECOMMENDATION_DATA_NOT_READY`
+- transcript: `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/runops/task_009_a11_hitl_ticket_attempt_20260704/command_transcript_task_009_a11_hitl_ticket_attempt_20260704.txt`
+- delivery report: `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/task_009_a11_hitl_ticket_attempt_20260704.md`
+- validation: safety scan PASS; targeted A11/gate/ticket tests PASS, 16 passed; gate report schema validation PASS; `git diff --check` PASS
+
+Boundary result: no recommendation, no buy/sell advice, no trade plan, no entry price, no target weight, no position sizing, no allocation, no broker/order/manual-fill/paper/live/auto, no `.env` read, no key output.
+
+### TASK-010 US Strategy Ticket Refresh Attempt
+
+- status: `ACCEPTED_WITH_WARNINGS`
+- source branch: `codex/duckdb-provider`
+- commit: `8b537ae214fa805d177fa067af879e3fbb83b035`
+- tree: `3d1338180c3ac8d2c0c495a26e4cff9b77461247`
+- Human-Gate: `HG-NIGHT-BATCH-20260704-L1-L4`
+- permission level used: `L4_PENDING_HUMAN_REVIEW_TICKET`
+- gate status: `NO_RECOMMENDATION_AVAILABLE`
+- eligibility candidate: `false`, `NO_TICKET_ELIGIBLE_CANDIDATE`
+- remaining blockers: `BLOCKED_BY_EVIDENCE_GAP_PERSISTING`, `BLOCKED_BY_INSUFFICIENT_FEEDBACK`, `BLOCKED_BY_NO_TICKET_ELIGIBILITY_CANDIDATE`
+- ticket emitted: `false`
+- ticket path: `N/A`
+- transcript: `/Users/rongyuxu/Desktop/US_Stock_Monitor/reports/codex_dev/task_010_us_strategy_ticket_refresh_command_transcript_20260704.txt`
+- gate report: `/Users/rongyuxu/Desktop/US_Stock_Monitor/reports/codex_dev/task_010_us_strategy_ticket_refresh_gate_status_20260704.json`
+- delivery report: `/Users/rongyuxu/Desktop/US_Stock_Monitor/reports/codex_dev/task_010_us_strategy_ticket_refresh_attempt_20260704.md`
+- validation: safety scan PASS; gate report consistency PASS; focused strategy/US-12 tests PASS, 46 tests; `python -m usq smoke` PASS; full `pytest -q` PASS; `git diff --check` PASS
+
+Boundary result: no recommendation runtime, no direct buy/sell advice, no trade plan, no entry price, no target weight, no position sizing, no allocation, no broker/order/manual-fill/paper/live/auto, no `.env` read, no key output.
+
+## Batch Closeout State
+
+- `TASK-006` through `TASK-010` are complete.
+- `TASK-006`, `TASK-007`, `TASK-008`, `TASK-009`, and `TASK-010` all ended `ACCEPTED_WITH_WARNINGS`.
+- No HITL ticket was emitted.
+- No recommendation was emitted.
+- No broker/order/paper/live/auto path was enabled.
+- No raw DuckDB/parquet/SQLite data file was copied into `quant-proj`.
+- The controller package is ready for Codex-Audit process review.

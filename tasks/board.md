@@ -12,8 +12,7 @@
 
 ## In Progress
 
-- `TASK-009 A11 research-to-HITL gated ticket attempt`: sent to fixed `A_Share_Monitor` Codex-Dev thread `019f2911-ef0c-7053-aa77-a3b0bf0b05de`; L4 `PENDING_HUMAN_REVIEW` only if all gates pass.
-- `TASK-010 US strategy experiment to ticket refresh attempt`: sent to fixed `US_Stock_Monitor` Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`; L4 `PENDING_HUMAN_REVIEW` only if all gates pass.
+- None.
 
 ## Blocked / Hold
 
@@ -31,3 +30,5 @@
 - `TASK-006 US-DB-OPS-2 controlled US 300-symbol expansion`: accepted with warnings by Codex-Dev; US source commit `f3b3b10b6cb70babe47e1e44fad490e9f9366b17`; no network fetch or DuckDB write occurred because preflight blocked on duplicate rows and missing metadata.
 - `TASK-007 A-DB-OPS controlled A-share expansion`: accepted with warnings by Codex-Dev; A-share source commit `7c168999b6a583ca20a325098cc2111de311a1a1`; local L1 snapshot `a_expand_20260704_l1_local1000_0317` produced 1000 symbols and 2,059,000 canonical rows with readiness `WARNING` / `Level 1`.
 - `TASK-008 market_data registry/readiness controlled update`: accepted with warnings by Codex-Dev; market_data branch `codex/task-008-market-data-registry-readiness`, commit `413829f0179c5142e26f57594d52e1b6de9c338f`; A-share 1000-symbol evidence recorded as `WARNING` / `Level 1` candidate only, US remained blocked.
+- `TASK-009 A11 research-to-HITL gated ticket attempt`: accepted with warnings by Codex-Dev; A-share source commit `a2c8b825942a59d7c03429f41336ca1b9145a875`; gate result `NO_RECOMMENDATION_AVAILABLE`, `ticket_emitted=false`, no recommendation or trade fields produced.
+- `TASK-010 US strategy experiment to ticket refresh attempt`: accepted with warnings by Codex-Dev; US source commit `8b537ae214fa805d177fa067af879e3fbb83b035`; gate result `NO_RECOMMENDATION_AVAILABLE`, `ticket_emitted=false`, blockers remain evidence, feedback, and eligibility.

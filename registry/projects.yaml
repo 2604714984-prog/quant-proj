@@ -1,4 +1,4 @@
-generated_at: "2026-07-04T03:52:29+08:00"
+generated_at: "2026-07-04T04:06:35+08:00"
 workspace_root: "/Users/rongyuxu/Desktop/quant proj"
 decision: "controller_workspace_first_no_physical_merge_yet"
 registry_kind: "point_in_time_controller_snapshot"
@@ -34,9 +34,9 @@ projects:
     cli: "python -m qta"
     size: "1.7G"
     git_branch: "codex/harden-a-share-research-pipeline"
-    latest_commit: "7c16899 Run controlled A-share DB expansion"
-    latest_commit_full: "7c168999b6a583ca20a325098cc2111de311a1a1"
-    latest_tree: "93af3e1f2df82c80a00598a35ae3e602130a45bd"
+    latest_commit: "a2c8b82 Record A11 HITL gated ticket attempt"
+    latest_commit_full: "a2c8b825942a59d7c03429f41336ca1b9145a875"
+    latest_tree: "77766d5b96e0e4de03ac3ab4ee03708edf0b3311"
     working_tree: "clean"
     last_describe: "stage-a10-external-audit-packet-20260703-9-g012006c"
     tracked_files: 630
@@ -54,6 +54,20 @@ projects:
       st_list_coverage_status_current: "PASS"
       suspension_status_current: "WARNING_EVENT_TABLE_EMPTY"
       limit_price_status_current: "WARNING_LOW_COVERAGE"
+    current_real_state:
+      task_009_gate_status: "NO_RECOMMENDATION_AVAILABLE"
+      task_009_ticket_emitted: false
+      task_009_candidate_count: 83
+      task_009_eligible_ticket_candidate_count: 0
+      task_009_blockers:
+        - "A11_RESEARCH_ONLY_NOT_TICKET_ENABLED"
+        - "A11_SNAPSHOT_NOT_TASK007_EXPANSION"
+        - "PHASE3_EVIDENCE_NOT_READY"
+        - "MICRO_RECOMMENDATION_DATA_NOT_READY"
+        - "SUSPENSION_CAPABILITY_INCOMPLETE"
+        - "LIMIT_PRICE_COVERAGE_LOW"
+        - "MARKET_DATA_PRODUCT_READ_NOT_ALLOWED"
+        - "PRODUCTION_RECOMMENDATION_DATA_NOT_READY"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
@@ -65,9 +79,9 @@ projects:
     cli: "python -m usq"
     size: "261M"
     git_branch: "codex/duckdb-provider"
-    latest_commit: "f3b3b10 Record controlled US expansion preflight"
-    latest_commit_full: "f3b3b10b6cb70babe47e1e44fad490e9f9366b17"
-    latest_tree: "68670cd858cffbec553f76af390db8f823112565"
+    latest_commit: "8b537ae Record TASK-010 US ticket refresh gate attempt"
+    latest_commit_full: "8b537ae214fa805d177fa067af879e3fbb83b035"
+    latest_tree: "3d1338180c3ac8d2c0c495a26e4cff9b77461247"
     working_tree: "clean"
     last_describe: "phase-us13-audit-r1-6-gc046c0c"
     tracked_files: 962
@@ -90,6 +104,13 @@ projects:
       real_fill_count: 0
       task_003_db_ops_warning: "EXISTING_AAPL_DUPLICATE_DAILY_ROWS_DETECTED_READ_ONLY"
       task_006_db_ops_warning: "BLOCKED_BY_EXISTING_DB_DUPLICATES_AND_SYMBOLS_MISSING_FROM_METADATA"
+      task_010_gate_status: "NO_RECOMMENDATION_AVAILABLE"
+      task_010_ticket_emitted: false
+      task_010_eligibility_candidate: false
+      task_010_blockers:
+        - "BLOCKED_BY_EVIDENCE_GAP_PERSISTING"
+        - "BLOCKED_BY_INSUFFICIENT_FEEDBACK"
+        - "BLOCKED_BY_NO_TICKET_ELIGIBILITY_CANDIDATE"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
