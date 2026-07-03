@@ -13,11 +13,23 @@ This is not a request to approve recommendations, HITL ticket emission, DB write
 
 ## Base Audit Point
 
-To be filled after Quant-Dispatcher commits and tags this package:
+- repository: `2604714984-prog/quant-proj`
+- tag: `quant-workspace-night-batch-recorded-execution-20260704`
+- tag object: `60d11bc670bdc542da7f901f3bb19220d81c031e`
+- commit: `bab7180bc7ace17d013e85853bb8897692338b72`
+- tree: `613a6cba4f985a72cfe974ca15bb4d440b961b31`
+- tag URL: `https://github.com/2604714984-prog/quant-proj/tree/quant-workspace-night-batch-recorded-execution-20260704`
 
-- tag: `N/A`
-- commit: `N/A`
-- tree: `N/A`
+## Post-Audit Fix Publication Point
+
+After Codex-Audit returned `PASS_WITH_FINDINGS`, Quant-Dispatcher added traceability and packaging fixes. The final ChatGPT publication packet must use the later final publication tag that includes:
+
+- this handoff with the immutable base audit point above;
+- `reports/workspace_audits/night_batch_recorded_execution_process_review_20260704.md`;
+- `reports/workspace_audits/night_batch_recorded_execution_findings_20260704.json`;
+- `reports/human_gate/night_batch_task_traceability_addendum_20260704.md`;
+- `reports/human_gate/night_batch_task_traceability_20260704.jsonl`;
+- the final ChatGPT external audit packet and manifest.
 
 ## Primary Files To Review
 

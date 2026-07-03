@@ -85,4 +85,15 @@ This closeout does not authorize recommendations, buy/sell advice, HITL ticket e
 
 ## Next Step
 
-Send this controller package to `Codex-Audit / quant-proj` for read-only process review. If Codex-Audit passes without required fixes, publish a final immutable ChatGPT external-audit packet.
+Codex-Audit returned `PASS_WITH_FINDINGS` and required two packaging/governance fixes before final ChatGPT publication:
+
+- normalize task-level Human-Gate traceability for `TASK-007`, `TASK-008`, and `TASK-009`;
+- make the publication handoff self-contained with immutable tag/commit/tree and audit artifact paths.
+
+Traceability fix artifacts:
+
+- `reports/human_gate/night_batch_task_traceability_addendum_20260704.md`
+- `reports/human_gate/night_batch_task_traceability_20260704.jsonl`
+- appended trace records in `reports/human_gate/decisions.jsonl`
+
+After these fixes are committed and re-reviewed or accepted by Codex-Audit, publish a final immutable ChatGPT external-audit packet.

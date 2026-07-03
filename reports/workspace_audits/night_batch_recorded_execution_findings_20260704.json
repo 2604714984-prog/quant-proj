@@ -1,0 +1,205 @@
+{
+  "review_id": "night_batch_recorded_execution_process_review_20260704",
+  "created_date": "2026-07-04",
+  "source_thread_id": "019f2766-7c5f-7562-b2e3-b4d76de7bfa9",
+  "reviewer_role": "Codex-Audit / Process Reviewer",
+  "project": "quant-proj",
+  "overall_status": "PASS_WITH_FINDINGS",
+  "ready_for_chatgpt_external_audit": false,
+  "ready_after_required_fixes": true,
+  "ready_for_chatgpt_external_audit_scope": "controller-workspace RECORDED_EXECUTION_MODE_V1 night batch TASK-006 through TASK-010 only; not product, recommendation, broker, order, paper-trading, auto-execution, live-trading, raw-data-migration, DB-write, schema-migration, registry-activation, readiness-change, HITL-ticket-approval, or secret-handling approval",
+  "base_audit_point": {
+    "repository": "2604714984-prog/quant-proj",
+    "tag": "quant-workspace-night-batch-recorded-execution-20260704",
+    "tag_object": "60d11bc670bdc542da7f901f3bb19220d81c031e",
+    "commit": "bab7180bc7ace17d013e85853bb8897692338b72",
+    "tree": "613a6cba4f985a72cfe974ca15bb4d440b961b31",
+    "tag_url": "https://github.com/2604714984-prog/quant-proj/tree/quant-workspace-night-batch-recorded-execution-20260704"
+  },
+  "scope_reviewed": [
+    "reports/agent_handoff/night_batch_recorded_execution_codex_audit_handoff_20260704.md",
+    "reports/workspace_dispatch/night_batch_recorded_execution_dispatch_20260704.md",
+    "reports/workspace_dispatch/night_batch_recorded_execution_closeout_20260704.md",
+    "reports/workspace_dispatch/night_batch_recorded_execution_manifest_20260704.sha256",
+    "tasks/board.md",
+    "registry/projects.yaml",
+    "registry/agents.yaml",
+    "runbooks/recorded_execution_mode.md",
+    "runbooks/human_gate.md",
+    "reports/human_gate/decisions.jsonl",
+    "tasks/backlog/task-006-us-db-ops-2-controlled-us-300-expansion/spec.md",
+    "tasks/backlog/task-006-us-db-ops-2-controlled-us-300-expansion/handoff.md",
+    "tasks/backlog/task-006-us-db-ops-2-controlled-us-300-expansion/human_gate.md",
+    "tasks/backlog/task-007-a-db-ops-controlled-a-share-expansion/spec.md",
+    "tasks/backlog/task-007-a-db-ops-controlled-a-share-expansion/handoff.md",
+    "tasks/backlog/task-007-a-db-ops-controlled-a-share-expansion/human_gate.md",
+    "tasks/backlog/task-008-market-data-registry-readiness-update/spec.md",
+    "tasks/backlog/task-008-market-data-registry-readiness-update/handoff.md",
+    "tasks/backlog/task-008-market-data-registry-readiness-update/human_gate.md",
+    "tasks/backlog/task-009-a11-hitl-ticket-attempt/spec.md",
+    "tasks/backlog/task-009-a11-hitl-ticket-attempt/handoff.md",
+    "tasks/backlog/task-009-a11-hitl-ticket-attempt/human_gate.md",
+    "tasks/backlog/task-010-us-strategy-ticket-refresh-attempt/spec.md",
+    "tasks/backlog/task-010-us-strategy-ticket-refresh-attempt/handoff.md",
+    "tasks/backlog/task-010-us-strategy-ticket-refresh-attempt/human_gate.md",
+    "/Users/rongyuxu/Desktop/US_Stock_Monitor/reports/codex_dev/task_006_us_db_ops_2_controlled_us_300_expansion_20260704.md",
+    "/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/task_007_a_db_ops_controlled_a_share_expansion_20260704.md",
+    "/Users/rongyuxu/Desktop/market_data/reports/codex_dev/task_008_market_data_registry_readiness_update_20260704.md",
+    "/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/task_009_a11_hitl_ticket_attempt_20260704.md",
+    "/Users/rongyuxu/Desktop/US_Stock_Monitor/reports/codex_dev/task_010_us_strategy_ticket_refresh_attempt_20260704.md"
+  ],
+  "expected_task_results_verified": {
+    "TASK-006": {
+      "status": "ACCEPTED_WITH_WARNINGS",
+      "outcome": "INGEST_PREFLIGHT_BLOCKED",
+      "rows_written": 0,
+      "network_call_made": false,
+      "db_write_performed": false,
+      "verdict": "PASS"
+    },
+    "TASK-007": {
+      "status": "ACCEPTED_WITH_WARNINGS",
+      "readiness": "WARNING_LEVEL_1",
+      "local_research_ready": true,
+      "phase3_evidence_ready": false,
+      "micro_recommendation_data_ready_with_warnings": false,
+      "verdict": "PASS_WITH_FINDINGS",
+      "finding": "MEDIUM-001 task-level Human-Gate record coverage"
+    },
+    "TASK-008": {
+      "status": "ACCEPTED_WITH_WARNINGS",
+      "a_share_candidate_product_read_allowed": false,
+      "us_route_status": "INGEST_PREFLIGHT_BLOCKED",
+      "verdict": "PASS_WITH_FINDINGS",
+      "finding": "MEDIUM-001 task-level Human-Gate record id normalization"
+    },
+    "TASK-009": {
+      "status": "ACCEPTED_WITH_WARNINGS",
+      "gate_status": "NO_RECOMMENDATION_AVAILABLE",
+      "candidate_count": 83,
+      "eligible_ticket_candidate_count": 0,
+      "ticket_emitted": false,
+      "verdict": "PASS_WITH_FINDINGS",
+      "finding": "MEDIUM-001 task-level Human-Gate record coverage"
+    },
+    "TASK-010": {
+      "status": "ACCEPTED_WITH_WARNINGS",
+      "gate_status": "NO_RECOMMENDATION_AVAILABLE",
+      "eligibility_candidate": false,
+      "ticket_emitted": false,
+      "verdict": "PASS"
+    }
+  },
+  "audit_question_verdicts": {
+    "dispatcher_controller_layer_only": "PASS",
+    "human_gate_records_and_command_transcripts_sufficient": "PASS_WITH_FINDINGS",
+    "warnings_and_blocked_states_preserved": "PASS",
+    "task_009_and_task_010_no_ticket_boundary": "PASS",
+    "source_refs_reports_validation_boundaries_sufficient": "PASS_WITH_FINDINGS",
+    "fixes_required_before_final_external_packet_publication": true
+  },
+  "boundary_verdicts": {
+    "quant_dispatcher_no_source_project_implementation_edits": "PASS",
+    "recorded_execution_batch_authorization_present": "PASS",
+    "task_level_human_gate_record_coverage": "PASS_WITH_FINDINGS",
+    "command_transcripts_present": "PASS",
+    "manifest_or_gate_reports_present": "PASS",
+    "warnings_preserved_not_readiness_unlocks": "PASS",
+    "task_009_ticket_emitted_false": "PASS",
+    "task_010_ticket_emitted_false": "PASS",
+    "no_env_or_secret_handling": "PASS",
+    "no_raw_data_migration_into_quant_proj": "PASS",
+    "no_broker_order_auto_paper_live_trading": "PASS",
+    "no_buy_sell_or_recommendation_readiness_overclaim": "PASS",
+    "codex_audit_not_chatgpt_final_external_verdict": "PASS"
+  },
+  "findings": {
+    "blocking": [],
+    "high": [],
+    "medium": [
+      {
+        "id": "MEDIUM-001",
+        "title": "Task-level Human-Gate execution record coverage is incomplete/inconsistent",
+        "severity": "MEDIUM",
+        "evidence": [
+          "quant-proj reports/human_gate/decisions.jsonl contains batch authorization HG-NIGHT-BATCH-20260704-L1-L4.",
+          "US_Stock_Monitor reports/human_gate/decisions.jsonl contains distinct HG-EXEC records for TASK-006 and TASK-010.",
+          "market_data reports/human_gate/decisions.jsonl contains a task-scoped TASK-008 record but reuses the batch decision id instead of a unique HG-EXEC-TASK-008 id.",
+          "A_Share_Monitor has TASK-007 and TASK-009 transcripts, manifests/gate reports, hashes, and Codex acceptance reports citing HG-NIGHT-BATCH-20260704-L1-L4, but no reports/human_gate/decisions.jsonl or HG-EXEC-TASK-007 / HG-EXEC-TASK-009 durable execution record was found."
+        ],
+        "impact": "Recorded execution behavior appears bounded and safe, but task-level Human-Gate traceability is not uniformly reconstructable from durable decision logs.",
+        "required_fix": "Before final ChatGPT external-audit packet publication, add post-execution traceability records or exception records for TASK-007 and TASK-009 linked to HG-NIGHT-BATCH-20260704-L1-L4, normalize TASK-008 with a unique task-level HG-EXEC-TASK-008 record or alias, include exact commands, permission levels, allowed/forbidden scope, stop conditions, transcript paths/hashes, manifest or gate-report paths, validation, and non-authorization boundaries, and label after-the-fact records as traceability evidence rather than retroactive pre-execution approval.",
+        "future_control": "Require a unique HG-EXEC-TASK-* record before each L1-L4 execution."
+      }
+    ],
+    "low": [
+      {
+        "id": "LOW-001",
+        "title": "Repo handoff file still has N/A for the base audit point",
+        "severity": "LOW",
+        "evidence": [
+          "reports/agent_handoff/night_batch_recorded_execution_codex_audit_handoff_20260704.md has tag, commit, and tree set to N/A.",
+          "The delegated audit prompt supplied the final immutable tuple and local Git verification passed, but the repo handoff file is not self-contained."
+        ],
+        "impact": "A future external reviewer using only the repo handoff file would not see the final immutable audit tuple in that primary handoff.",
+        "required_fix": "Before final ChatGPT external-audit packet publication, create or update the final publication handoff with repository, tag, tag object, commit, tree, paths to this audit report and findings JSON, and the not-self-declared-final-verdict boundary."
+      }
+    ]
+  },
+  "required_fixes_before_external_audit_publication": [
+    "MEDIUM-001",
+    "LOW-001"
+  ],
+  "validation_results": [
+    {
+      "check": "git rev-parse quant-workspace-night-batch-recorded-execution-20260704",
+      "status": "PASS",
+      "summary": "tag object 60d11bc670bdc542da7f901f3bb19220d81c031e"
+    },
+    {
+      "check": "git rev-parse quant-workspace-night-batch-recorded-execution-20260704^{commit}",
+      "status": "PASS",
+      "summary": "commit bab7180bc7ace17d013e85853bb8897692338b72"
+    },
+    {
+      "check": "git rev-parse quant-workspace-night-batch-recorded-execution-20260704^{tree}",
+      "status": "PASS",
+      "summary": "tree 613a6cba4f985a72cfe974ca15bb4d440b961b31"
+    },
+    {
+      "check": "required primary file inclusion in tagged tree",
+      "status": "PASS",
+      "summary": "requested primary controller files are present"
+    },
+    {
+      "check": "shasum -a 256 -c reports/workspace_dispatch/night_batch_recorded_execution_manifest_20260704.sha256",
+      "status": "PASS",
+      "summary": "all manifest entries verified OK"
+    },
+    {
+      "check": "downstream commit/tree verification",
+      "status": "PASS",
+      "summary": "TASK-006 through TASK-010 downstream commits resolve to the expected trees"
+    },
+    {
+      "check": "sampled downstream JSON parse",
+      "status": "PASS",
+      "summary": "sampled TASK-006 manifest, TASK-007 manifest/coverage/readiness, TASK-008 diff/status, TASK-009 gate/summary, and TASK-010 gate JSON artifacts parse successfully"
+    },
+    {
+      "check": "forbidden artifact scan in quant-proj",
+      "status": "PASS",
+      "summary": "no .env, .env.*, .duckdb, .sqlite, .parquet, .zip, or .tar.gz files found"
+    },
+    {
+      "check": "git diff --check before audit artifacts",
+      "status": "PASS",
+      "summary": "no whitespace issues reported"
+    }
+  ],
+  "residual_notes": [
+    "The reviewed execution did not emit recommendations or HITL tickets and did not enable broker/order/paper/live/auto paths.",
+    "A-share TASK-007 transcript documents an initial failed import attempt before the successful bounded execution and a later self-hash correction; final hashes match the delivery report and sampled artifacts parse successfully.",
+    "This PASS_WITH_FINDINGS is limited to controller execution process and boundary preservation and must not be represented as product readiness, recommendation readiness, HITL ticket approval, broker/order readiness, paper/live trading readiness, DB-write authorization, schema-migration authorization, raw-data migration approval, secret-handling approval, or ChatGPT final external verdict."
+  ]
+}
