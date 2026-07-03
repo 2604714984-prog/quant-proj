@@ -19,6 +19,7 @@ All Reasonix dispatch uses:
 
 - model: `deepseek-v4-pro`
 - effort: `high`
+- session policy: `runbooks/reasonix_sessions.md`
 
 | Role | Session name | Prompt |
 |---|---|---|
@@ -27,3 +28,11 @@ All Reasonix dispatch uses:
 | `Reasonix-Advisory` | `quant-reasonix-advisory` | `prompts/reasonix_advisory_review.md` |
 
 Use old mixed Reasonix sessions only as reference, never as automatic dispatch endpoints.
+
+Dispatch format:
+
+- use fixed persistent sessions by default;
+- send short `DISPATCH_TASK` envelopes that reference the task packet and source refs;
+- use Reasonix compact as the default long-session control;
+- request manual `SESSION_SUMMARY` only for audit, handoff, or fresh-session restart;
+- start a fresh fixed session only when role drift or context bloat makes the old one unsafe.

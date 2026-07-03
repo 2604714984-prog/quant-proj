@@ -49,6 +49,8 @@ Reasonix is split into three dispatchable roles:
 
 Reasonix output is not a final verdict. It does not replace Codex-Dev implementation, Codex-Audit process review, or ChatGPT external audit.
 
+Reasonix dispatch should use the fixed persistent sessions in `runbooks/reasonix_sessions.md`. Send concise task envelopes that point to task packets and current refs instead of replaying full project context each time. Use Reasonix compact as the default long-session control; create manual `SESSION_SUMMARY` artifacts only for audit, handoff, or fresh-session restart. Old mixed Reasonix sessions are reference-only unless the user explicitly asks to continue them.
+
 ## Migration Rule
 
 Prefer the controller-workspace pattern first:

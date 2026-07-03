@@ -58,6 +58,9 @@ agents:
     primary_tool: "Reasonix CLI"
     fixed_model: "deepseek-v4-pro"
     fixed_effort: "high"
+    fixed_session: "quant-reasonix-advisory"
+    session_runbook: "runbooks/reasonix_sessions.md"
+    context_policy: "persistent_session_with_reasonix_compact_and_short_dispatch_envelope"
     write_policy: "no source edits; transcript/report only"
     must_not:
       - "edit files unless explicitly converted to Codex-Dev task"
@@ -71,6 +74,9 @@ agents:
     primary_tool: "Reasonix CLI connected to DS"
     fixed_model: "deepseek-v4-pro"
     fixed_effort: "high"
+    fixed_session: "quant-reasonix-db"
+    session_runbook: "runbooks/reasonix_sessions.md"
+    context_policy: "persistent_session_with_reasonix_compact_and_short_dispatch_envelope"
     default_mode: "read_only_or_draft"
     allowed_projects:
       - "market_data"
@@ -105,6 +111,9 @@ agents:
     primary_tool: "Reasonix CLI connected to DS"
     fixed_model: "deepseek-v4-pro"
     fixed_effort: "high"
+    fixed_session: "quant-reasonix-strategy"
+    session_runbook: "runbooks/reasonix_sessions.md"
+    context_policy: "persistent_session_with_reasonix_compact_and_short_dispatch_envelope"
     default_mode: "research_draft"
     allowed_projects:
       - "strategy_work"

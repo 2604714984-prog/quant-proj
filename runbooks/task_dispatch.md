@@ -40,6 +40,19 @@ ChatGPT task list
 | Final outside review of a prepared packet | `chatgpt_external_audit` |
 | Scope, migration, trading-adjacent, or priority decision | `human_gate` |
 
+## Reasonix Dispatch
+
+Use `runbooks/reasonix_sessions.md` for Reasonix work.
+
+Default:
+
+- keep `quant-reasonix-db`, `quant-reasonix-strategy`, and `quant-reasonix-advisory` as fixed persistent sessions;
+- send concise `DISPATCH_TASK` envelopes that reference task packets and source refs;
+- avoid replaying full project history on every task;
+- use Reasonix compact as the default context-control mechanism;
+- create manual `SESSION_SUMMARY` artifacts only for audit, handoff, or fresh-session restart;
+- keep old mixed Reasonix sessions as reference-only unless the user explicitly asks to continue them.
+
 ## Required Task Packet Files
 
 Each dispatched task should have:
