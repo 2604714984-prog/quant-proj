@@ -1,4 +1,4 @@
-generated_at: "2026-07-04T02:09:06+08:00"
+generated_at: "2026-07-04T03:42:20+08:00"
 workspace_root: "/Users/rongyuxu/Desktop/quant proj"
 decision: "controller_workspace_first_no_physical_merge_yet"
 registry_kind: "point_in_time_controller_snapshot"
@@ -34,9 +34,9 @@ projects:
     cli: "python -m qta"
     size: "1.7G"
     git_branch: "codex/harden-a-share-research-pipeline"
-    latest_commit: "012006c Accept A11 research runner as research-only"
-    latest_commit_full: "012006c40897f999f2a2ba5c69e2630b9d50a552"
-    latest_tree: "2447205526791e6bcf3f9b18b512d9fc7093c75c"
+    latest_commit: "7c16899 Run controlled A-share DB expansion"
+    latest_commit_full: "7c168999b6a583ca20a325098cc2111de311a1a1"
+    latest_tree: "93af3e1f2df82c80a00598a35ae3e602130a45bd"
     working_tree: "clean"
     last_describe: "stage-a10-external-audit-packet-20260703-9-g012006c"
     tracked_files: 630
@@ -46,9 +46,14 @@ projects:
     data:
       duckdb_path: "/Users/rongyuxu/Desktop/A_Share_Monitor/data/local_market/a_share_market.duckdb"
       duckdb_size: "1.25GB"
-      canonical_daily_bars_rows_current: 659478
-      canonical_daily_bars_symbols_current: 310
+      canonical_daily_bars_rows_current: 2059000
+      canonical_daily_bars_symbols_current: 1000
       canonical_date_range_current: "20180102..20260701"
+      latest_snapshot_id: "a_expand_20260704_l1_local1000_0317"
+      readiness_status_current: "WARNING_LEVEL_1"
+      st_list_coverage_status_current: "PASS"
+      suspension_status_current: "WARNING_EVENT_TABLE_EMPTY"
+      limit_price_status_current: "WARNING_LOW_COVERAGE"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
@@ -60,9 +65,9 @@ projects:
     cli: "python -m usq"
     size: "261M"
     git_branch: "codex/duckdb-provider"
-    latest_commit: "c046c0c Control US universe expansion helper"
-    latest_commit_full: "c046c0ce56e5ea501aa2600df410b80b58d412fb"
-    latest_tree: "4c042e79c23584af3fca173a6817ea26d9e3ee81"
+    latest_commit: "f3b3b10 Record controlled US expansion preflight"
+    latest_commit_full: "f3b3b10b6cb70babe47e1e44fad490e9f9366b17"
+    latest_tree: "68670cd858cffbec553f76af390db8f823112565"
     working_tree: "clean"
     last_describe: "phase-us13-audit-r1-6-gc046c0c"
     tracked_files: 962
@@ -76,11 +81,15 @@ projects:
       canonical_daily_bars_symbols_current: 326
       canonical_date_range_current: "2020-01-02..2026-07-02"
       readiness_status_current: "PASS_LEVEL_2"
+      latest_controlled_expansion_attempt: "us_expand_20260704_nasdaq_300"
+      latest_controlled_expansion_status: "INGEST_PREFLIGHT_BLOCKED"
+      latest_controlled_expansion_rows_written: 0
     current_real_state:
       us13_status: "NO_RECOMMENDATION_AVAILABLE"
       active_ticket_status: "NO_ACTIVE_TICKET_AFTER_USER_APPROVED_METADATA_ONLY"
       real_fill_count: 0
       task_003_db_ops_warning: "EXISTING_AAPL_DUPLICATE_DAILY_ROWS_DETECTED_READ_ONLY"
+      task_006_db_ops_warning: "BLOCKED_BY_EXISTING_DB_DUPLICATES_AND_SYMBOLS_MISSING_FROM_METADATA"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
