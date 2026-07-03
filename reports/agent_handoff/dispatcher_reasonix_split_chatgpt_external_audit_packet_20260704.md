@@ -20,6 +20,10 @@ Use the following immutable GitHub refs as the review entry points.
 Primary external-review packet publication tag:
 
 - tag: `quant-workspace-dispatcher-reasonix-chatgpt-packet-20260704`
+- tag object: `602794b31dcfac5696a303b4f0f08d38fe9444e2`
+- commit: `3dd758eecb425794cf61fbe54c559d98f068ab1d`
+- tree: `9db16fdf89ab111c32304233093b1d9d9cee61e7`
+- main/tag identical at external review: yes
 - tag URL: `https://github.com/2604714984-prog/quant-proj/tree/quant-workspace-dispatcher-reasonix-chatgpt-packet-20260704`
 - packet path: `reports/agent_handoff/dispatcher_reasonix_split_chatgpt_external_audit_packet_20260704.md`
 
@@ -167,4 +171,3 @@ Do not evaluate or approve:
 - raw database migration;
 - secret handling changes;
 - full source-code audit of `A_Share_Monitor`, `US_Stock_Monitor`, `market_data`, or `strategy_work`.
-

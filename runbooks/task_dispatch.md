@@ -7,9 +7,11 @@ Use this when the user brings a task list from ChatGPT and wants the work assign
 ```text
 ChatGPT task list
   -> Quant-Dispatcher
+  -> registry refresh when current project state matters
   -> tasks/inbox/<timestamp>-chatgpt-task-list.md
   -> tasks/backlog/<task-id>/spec.md
   -> tasks/backlog/<task-id>/handoff.md
+  -> human_gate decision record when approval is required
   -> downstream agent
   -> task report
   -> audit / external audit when needed
@@ -23,6 +25,8 @@ ChatGPT task list
 - Assign each task to one primary downstream agent.
 - Mark unsafe or ambiguous tasks as `HOLD`.
 - Require human approval for migration, trading-adjacent, or scope-expanding work.
+- Refresh the registry before assigning work that depends on current source-project state.
+- Record Human-Gate decisions durably when approval is required.
 
 ## Downstream Agent Choices
 
@@ -62,6 +66,8 @@ Each dispatched task should have:
 - Do not dispatch broker/order/live-trading tasks as implementation work.
 - Do not dispatch buy/sell advice tasks.
 - Do not dispatch raw data migration or DB-write tasks without `human_gate`.
+- Do not treat a missing Human-Gate record as approval.
+- Do not treat a stale registry snapshot as current source-project truth.
 - Do not let Reasonix-DB write physical databases or change readiness/registry activation without `human_gate` and Codex-Dev validation.
 - Do not let Reasonix-Strategy promote research drafts into A-share/US source repos without Codex-Dev.
 - Do not let Reasonix-Advisory edit files unless the task is explicitly converted into a Codex-Dev implementation task.

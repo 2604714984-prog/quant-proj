@@ -17,6 +17,8 @@ Start with:
 - `registry/agents.yaml` for the current agent roles.
 - `prompts/task_dispatcher.md` for dispatching ChatGPT task lists.
 - `prompts/reasonix_db_maintainer.md` and `prompts/reasonix_strategy_researcher.md` for DS-backed Reasonix task roles.
+- `runbooks/registry_refresh.md` before batch dispatch, migration planning, or external packet publication.
+- `runbooks/human_gate.md` for durable human approval records.
 - `tasks/board.md` for the local task queue.
 
 ## Current Decision
@@ -38,7 +40,9 @@ Use this folder as an orchestration layer first. Do not physically move or merge
 ```text
 ChatGPT task list
   -> Quant-Dispatcher
+  -> registry refresh when current project state matters
   -> tasks/backlog/<task-id>/spec.md
+  -> Human-Gate record when approval is required
   -> Codex-Dev / Reasonix-DB / Reasonix-Strategy / Reasonix-Advisory / Codex-Audit / ChatGPT external audit / Human-Gate
 ```
 

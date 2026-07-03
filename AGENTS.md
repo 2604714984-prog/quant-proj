@@ -35,6 +35,10 @@ Quant-Dispatcher must not edit source-project implementation files. It assigns w
 
 ChatGPT task lists are proposals, not automatically approved work. The dispatcher must mark ambiguous, migration, or trading-adjacent tasks as `HOLD` until the user approves them.
 
+Before routine batch dispatch, migration planning, DB-write planning, registry activation, readiness-status changes, or external packet publication, refresh `registry/projects.yaml` using `runbooks/registry_refresh.md`. A stale registry snapshot is historical evidence, not current dispatch truth.
+
+Human-Gate approval must be durable. If a task requires approval, record it through `runbooks/human_gate.md` and `reports/human_gate/decisions.jsonl`; missing approval means not approved.
+
 ## Reasonix Role
 
 Reasonix is split into three dispatchable roles:

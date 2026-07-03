@@ -2,11 +2,11 @@
 
 ## Inbox
 
-- None yet.
+- `20260704-chatgpt-external-audit-fixes`: imported ChatGPT external audit fix list; classified by Quant-Dispatcher.
 
 ## Backlog
 
-- None yet.
+- `a-strat-1-gap-reacceptance-followup-20260704`: assigned dry-run packet for `Reasonix-Strategy`; source-project execution not started.
 
 ## In Progress
 
@@ -18,4 +18,4 @@
 
 ## Done
 
-- None yet.
+- `dispatcher-dry-run-a-strat-1-gap-reacceptance-20260704`: task packet created, handoff prepared, no source-project execution.
