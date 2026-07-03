@@ -54,9 +54,14 @@ Workspace-local files created for review:
 - `QUANT_WORKSPACE_CODEX_REASONIX_PLAN.md`
 - `registry/projects.yaml`
 - `prompts/reasonix_advisory_review.md`
+- `prompts/reasonix_db_maintainer.md`
+- `prompts/reasonix_strategy_researcher.md`
 - `runbooks/migration.md`
+- `runbooks/task_dispatch.md`
 - `reports/workspace_audits/quant_workspace_codex_reasonix_external_audit_packet_20260703.md`
 - `reports/workspace_audits/multi_agent_architecture_prior_plan_review_20260703.md`
+- `reports/workspace_audits/dispatcher_agent_addendum_20260703.md`
+- `reports/workspace_audits/reasonix_role_split_addendum_20260704.md`
 - `reports/workspace_audits/quant_workspace_file_audit_20260703.md`
 - `reports/workspace_audits/quant_workspace_file_audit_findings_20260703.json`
 - `.gitignore`
@@ -120,7 +125,9 @@ Proposed role split:
 | Tool / Role | Allowed use | Not allowed |
 |---|---|---|
 | Codex-Dev | Implementation, integration, tests, delivery reports, fix responses, controlled Git work | Secret leakage, trading enablement, deleting tests to pass |
-| Reasonix-Advisory | Read-only review, semantic indexing, test-gap review, report-overclaim review, research planning | Editing files, final verdict, buy/sell advice, replacing Codex-Audit |
+| Reasonix-DB | DS-backed database diagnostics, schema/readiness review, manifest planning, SQL/migration drafts | Writing physical DBs by default, changing readiness/registry activation, secret access, trading authorization |
+| Reasonix-Strategy | DS-backed strategy hypotheses, config drafts, evidence-gap planning, backtest diagnosis | Buy/sell advice, recommendation tickets, promotion into source repos without Codex-Dev |
+| Reasonix-Advisory | Read-only second review, test-gap review, report-overclaim review, boundary-leak review | Editing files, final verdict, replacing Codex-Audit |
 | Codex-Audit | Separate read-only process review with findings JSON | Code edits, commits, final third-party verdict |
 | ChatGPT external audit | Final external audit of prepared packet | Runtime execution or implicit trading approval |
 
@@ -332,7 +339,7 @@ Commands/checks performed:
 Not performed:
 
 - No full `pytest` across source repos.
-- No Reasonix advisory run yet.
+- No Reasonix-DB / Reasonix-Strategy / Reasonix-Advisory run yet.
 - No Codex-Audit read-only process review yet.
 - Local Git checkpoint/tag prepared for this workspace.
 - No external ChatGPT verdict.
@@ -343,7 +350,7 @@ Not performed:
 2. Dirty project worktrees make a physical migration unsafe today.
 3. Current data facts have drifted from older docs, especially US and A-share DB counts.
 4. Physical DB migration is currently blocked by policy and should remain blocked until a separate audited stage.
-5. Reasonix should remain advisory; allowing it to edit or declare final verdict would weaken current audit separation.
+5. Reasonix-DB and Reasonix-Strategy are draft/diagnostic roles; allowing them to write DBs, promote strategy configs, or declare final verdict would weaken current audit separation.
 6. The controller workspace now has a raw-artifact `.gitignore`; keep it in place before any broad copy operation.
 7. The older desktop multi-agent plan may be confused with the current implementation plan unless clearly marked as reference-only.
 

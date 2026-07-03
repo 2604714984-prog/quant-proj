@@ -1,0 +1,159 @@
+generated_at: "2026-07-04T00:00:00+08:00"
+workspace_root: "/Users/rongyuxu/Desktop/quant proj"
+
+agents:
+  dispatcher:
+    name: "Quant-Dispatcher"
+    role: "task intake, triage, dependency ordering, and assignment"
+    primary_tool: "Codex CLI or Codex desktop thread rooted at quant proj"
+    allowed_write_scope:
+      - "tasks/"
+      - "reports/workspace_dispatch/"
+      - "registry/"
+      - "prompts/"
+      - "runbooks/"
+    forbidden_write_scope:
+      - "/Users/rongyuxu/Desktop/A_Share_Monitor"
+      - "/Users/rongyuxu/Desktop/US_Stock_Monitor"
+      - "/Users/rongyuxu/Desktop/market_data"
+      - "/Users/rongyuxu/Desktop/strategy_work"
+    can_assign_to:
+      - "codex_dev"
+      - "reasonix_db_maintainer"
+      - "reasonix_strategy_researcher"
+      - "reasonix_advisory"
+      - "codex_audit"
+      - "chatgpt_external_audit"
+      - "human_gate"
+    must_not:
+      - "implement code changes in source repos"
+      - "read .env or secrets"
+      - "copy raw data artifacts"
+      - "turn a planning task into trading authorization"
+
+  codex_dev:
+    name: "Codex-Dev"
+    role: "implementation, integration, validation, delivery reports, fix responses"
+    primary_tool: "Codex CLI"
+    allowed_projects:
+      - "a_share_monitor"
+      - "us_stock_monitor"
+      - "market_data"
+      - "strategy_work"
+      - "quant_workspace"
+    requires:
+      - "task spec"
+      - "target project"
+      - "scope boundaries"
+      - "validation expectations"
+    must_return:
+      - "changed files"
+      - "validation results"
+      - "known limitations"
+      - "handoff path"
+
+  reasonix_advisory:
+    name: "Reasonix-Advisory"
+    role: "read-only second review, test-gap review, report-overclaim review, codebase Q&A"
+    primary_tool: "Reasonix CLI"
+    write_policy: "no source edits; transcript/report only"
+    must_not:
+      - "edit files unless explicitly converted to Codex-Dev task"
+      - "declare final verdict"
+      - "output buy/sell advice"
+      - "replace Codex-Audit"
+
+  reasonix_db_maintainer:
+    name: "Reasonix-DB"
+    role: "database maintenance diagnostics, schema/readiness review, manifest planning, SQL draft support"
+    primary_tool: "Reasonix CLI connected to DS"
+    default_mode: "read_only_or_draft"
+    allowed_projects:
+      - "market_data"
+      - "a_share_monitor"
+      - "us_stock_monitor"
+      - "quant_workspace"
+    allowed_outputs:
+      - "database maintenance diagnosis"
+      - "schema inspection notes"
+      - "SQL or migration draft"
+      - "manifest/readiness draft"
+      - "data coverage gap report"
+      - "Codex-Dev handoff"
+    requires_human_gate_for:
+      - "writing DuckDB or SQLite files"
+      - "schema migration"
+      - "bulk data ingest or expansion"
+      - "physical DB relocation"
+      - "changing product-read registry status"
+      - "changing readiness status"
+    must_not:
+      - "write physical databases by default"
+      - "copy raw database/parquet/API payloads into quant_workspace"
+      - "read .env or secrets"
+      - "mark data readiness as recommendation or trading readiness"
+      - "replace Codex-Dev validation"
+      - "replace Codex-Audit"
+
+  reasonix_strategy_researcher:
+    name: "Reasonix-Strategy"
+    role: "strategy research planning, factor hypotheses, config drafts, backtest-result diagnosis"
+    primary_tool: "Reasonix CLI connected to DS"
+    default_mode: "research_draft"
+    allowed_projects:
+      - "strategy_work"
+      - "a_share_monitor"
+      - "us_stock_monitor"
+      - "quant_workspace"
+    allowed_outputs:
+      - "research hypothesis"
+      - "strategy config draft"
+      - "evidence gap plan"
+      - "backtest diagnostics"
+      - "risk/overfit critique"
+      - "Codex-Dev handoff"
+    preferred_write_location:
+      - "strategy_work"
+      - "tasks/backlog/<task-id>/"
+      - "reports/workspace_dispatch/"
+    requires_codex_dev_for:
+      - "promoting config into A_Share_Monitor"
+      - "promoting config into US_Stock_Monitor"
+      - "adding production code"
+      - "adding or changing tests"
+    must_not:
+      - "output buy/sell advice"
+      - "emit a recommendation ticket"
+      - "claim observation/recommendation readiness without audited gates"
+      - "use test split for selection"
+      - "replace Codex-Dev validation"
+      - "replace Codex-Audit"
+
+  codex_audit:
+    name: "Codex-Audit"
+    role: "read-only process review and findings JSON"
+    primary_tool: "separate Codex thread initialized from repo audit protocol"
+    write_policy: "reports/codex_audit only in target repo, or workspace audit reports for workspace-only tasks"
+    must_not:
+      - "edit implementation files"
+      - "commit or push"
+      - "claim ChatGPT final external verdict"
+
+  chatgpt_external_audit:
+    name: "ChatGPT-External-Audit"
+    role: "final external review of prepared packet"
+    input_required:
+      - "external audit packet"
+      - "immutable refs or explicit local/offline limitation"
+      - "scope and non-authorization boundaries"
+    must_not:
+      - "be used as background automation without explicit user action"
+
+  human_gate:
+    name: "Human-Gate"
+    role: "approval, prioritization, and boundary decisions"
+    required_for:
+      - "physical migration"
+      - "stage opening"
+      - "external audit submission"
+      - "any task that could be misread as recommendation/trading enablement"

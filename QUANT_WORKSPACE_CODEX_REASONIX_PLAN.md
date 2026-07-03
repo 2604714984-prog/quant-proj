@@ -91,17 +91,30 @@ quant proj/
   registry/
     projects.yaml
     data_sources.yaml
+    agents.yaml
   prompts/
+    task_dispatcher.md
     codex_dev.md
     codex_audit_handoff.md
+    reasonix_db_maintainer.md
+    reasonix_strategy_researcher.md
     reasonix_advisory_review.md
     reasonix_test_gap.md
   runbooks/
+    task_dispatch.md
     daily_use.md
     stage_delivery.md
     migration.md
     external_audit_packet.md
+  tasks/
+    board.md
+    inbox/
+    backlog/
+    in_progress/
+    done/
+    blocked/
   reports/
+    workspace_dispatch/
     workspace_inventory/
     workspace_audits/
 ```
@@ -118,6 +131,21 @@ quant proj/projects/
 
 ## Agent Roles
 
+### Quant-Dispatcher
+
+Task intake and scheduling agent.
+
+Use for:
+
+- receiving task lists copied from ChatGPT;
+- preserving the raw task list under `tasks/inbox/`;
+- splitting broad tasks into scoped task packets under `tasks/backlog/`;
+- assigning each task to Codex-Dev, Reasonix-DB, Reasonix-Strategy, Reasonix-Advisory, Codex-Audit, ChatGPT external audit, or Human-Gate;
+- ordering dependencies and marking unsafe or ambiguous tasks as `HOLD`;
+- writing dispatch summaries under `reports/workspace_dispatch/`.
+
+Quant-Dispatcher does not implement source-project code changes. It writes task-control files only and must not read `.env`, copy raw data, or convert a planning task into trading authorization.
+
 ### Codex-Dev
 
 Primary implementation and integration agent.
@@ -130,6 +158,36 @@ Use for:
 - committing/tagging only after explicit stage closeout;
 - maintaining stage boundaries.
 
+### Reasonix-DB
+
+DeepSeek-backed database maintenance and data-readiness helper.
+
+Use for:
+
+- database maintenance diagnostics;
+- schema/readiness review;
+- manifest and coverage planning;
+- SQL or migration drafts;
+- stale registry detection;
+- Codex-Dev handoffs for DB implementation or validation.
+
+Default mode is read-only or draft-only. DB writes, schema migration, bulk ingest, physical DB moves, registry activation, and readiness decision changes require Human-Gate first and Codex-Dev validation afterward.
+
+### Reasonix-Strategy
+
+DeepSeek-backed strategy research helper.
+
+Use for:
+
+- strategy research hypotheses;
+- factor and config drafts;
+- rejected/zero-candidate diagnosis;
+- evidence gap planning;
+- overfit and data-risk critique;
+- Codex-Dev handoffs for implementation.
+
+Default mode is research draft. It must not output buy/sell advice, recommendation tickets, or readiness claims. Promotion into A-share or US source repos goes through Codex-Dev.
+
 ### Reasonix-Advisory
 
 DeepSeek-backed secondary reviewer and research helper.
@@ -141,9 +199,9 @@ Use for:
 - report overclaim review;
 - codebase Q&A after `reasonix index`;
 - drafting commit messages from staged diffs;
-- research planning that does not emit buy/sell advice.
+- advisory review after Codex-Dev, Reasonix-DB, or Reasonix-Strategy work.
 
-Reasonix output is advisory only. It does not replace Codex-Audit or ChatGPT external audit.
+Reasonix-Advisory output is review-only. It does not replace Codex-Audit or ChatGPT external audit.
 
 ### Codex-Audit
 
@@ -157,16 +215,21 @@ The human remains the approval gate. ChatGPT external audit consumes immutable t
 
 ## Standard Stage Workflow
 
-1. Codex-Dev opens a stage branch or verifies the active branch.
-2. Codex-Dev writes or refreshes the stage goal, forbidden actions, and evidence target.
-3. Codex-Dev implements narrowly.
-4. Codex-Dev runs safety, focused tests, full pytest when feasible, smoke commands, `git diff --check`, and gitignore checks.
-5. Reasonix runs a read-only advisory review with transcript saved under `reports/deepseek_audit/` or workspace `reports/workspace_audits/`.
-6. Codex-Dev fixes BLOCKER/HIGH/MEDIUM findings or writes explicit waivers where allowed.
-7. Codex-Dev prepares delivery report and handoff.
-8. Codex-Audit performs read-only process review and findings JSON.
-9. Codex-Dev fixes any audit findings, then requests narrow re-review.
-10. Final packet is prepared for ChatGPT external audit with branch/tag/commit/tree or an offline bundle when no Git audit point exists.
+0. User brings a task list from ChatGPT.
+1. Quant-Dispatcher preserves the raw list, classifies tasks, creates `tasks/backlog/<task-id>/spec.md`, and assigns a downstream agent.
+2. Human approves any `HOLD`, migration, or boundary-changing task before execution.
+3. Codex-Dev opens a stage branch or verifies the active branch for implementation tasks.
+4. Codex-Dev writes or refreshes the stage goal, forbidden actions, and evidence target.
+5. Codex-Dev implements narrowly.
+6. Codex-Dev runs safety, focused tests, full pytest when feasible, smoke commands, `git diff --check`, and gitignore checks.
+7. Reasonix-DB or Reasonix-Strategy may produce drafts/diagnostics when the task is DB or strategy research work.
+8. Codex-Dev performs any source-repo implementation, validation, and delivery packaging.
+9. Reasonix-Advisory runs a read-only second review with transcript saved under `reports/deepseek_audit/` or workspace `reports/workspace_audits/`.
+10. Codex-Dev fixes BLOCKER/HIGH/MEDIUM findings or writes explicit waivers where allowed.
+11. Codex-Dev prepares delivery report and handoff.
+12. Codex-Audit performs read-only process review and findings JSON.
+13. Codex-Dev fixes any audit findings, then requests narrow re-review.
+14. Final packet is prepared for ChatGPT external audit with branch/tag/commit/tree or an offline bundle when no Git audit point exists.
 
 ## CLI Patterns
 
@@ -184,7 +247,25 @@ Codex non-interactive review:
 codex review -C /Users/rongyuxu/Desktop/US_Stock_Monitor
 ```
 
-Reasonix interactive code review:
+Reasonix-DB draft:
+
+```bash
+reasonix run --effort high --budget 0.50 \
+  --transcript reports/workspace_audits/reasonix_db_task.jsonl \
+  --system "$(cat prompts/reasonix_db_maintainer.md)" \
+  "<database maintenance task>"
+```
+
+Reasonix-Strategy draft:
+
+```bash
+reasonix run --effort high --budget 0.50 \
+  --transcript reports/workspace_audits/reasonix_strategy_task.jsonl \
+  --system "$(cat prompts/reasonix_strategy_researcher.md)" \
+  "<strategy research task>"
+```
+
+Reasonix-Advisory interactive code review:
 
 ```bash
 reasonix code /Users/rongyuxu/Desktop/US_Stock_Monitor \
@@ -192,7 +273,7 @@ reasonix code /Users/rongyuxu/Desktop/US_Stock_Monitor \
   --transcript reports/deepseek_audit/reasonix_stage_review.jsonl
 ```
 
-Reasonix one-shot advisory:
+Reasonix-Advisory one-shot review:
 
 ```bash
 reasonix run --effort high --budget 0.50 \
@@ -207,6 +288,14 @@ reasonix index --dir /Users/rongyuxu/Desktop/US_Stock_Monitor
 reasonix index --dir /Users/rongyuxu/Desktop/A_Share_Monitor
 reasonix index --dir /Users/rongyuxu/Desktop/market_data
 ```
+
+Dispatcher intake:
+
+```bash
+codex -C "/Users/rongyuxu/Desktop/quant proj"
+```
+
+Then paste the ChatGPT task list and instruct the agent to use `prompts/task_dispatcher.md`.
 
 ## Daily Operating Modes
 

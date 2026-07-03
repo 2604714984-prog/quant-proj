@@ -8,6 +8,11 @@ Also review the prior-plan comparison:
 
 - `reports/workspace_audits/multi_agent_architecture_prior_plan_review_20260703.md`
 
+Also review the dispatcher and Reasonix role updates:
+
+- `reports/workspace_audits/dispatcher_agent_addendum_20260703.md`
+- `reports/workspace_audits/reasonix_role_split_addendum_20260704.md`
+
 Also review the local file audit:
 
 - `reports/workspace_audits/quant_workspace_file_audit_20260703.md`
@@ -37,10 +42,11 @@ Primary questions:
 
 1. Should `/Users/rongyuxu/Desktop/quant proj` remain a controller workspace first?
 2. Are the blockers to physical migration complete and correctly prioritized?
-3. Is the Reasonix role safely limited to advisory/read-only review?
+3. Are Reasonix-DB, Reasonix-Strategy, and Reasonix-Advisory safely separated?
 4. Are no-secret, no-raw-data, no-recommendation, and no-live-trading boundaries sufficient?
 5. What fixes are required before M0/M1 proceeds?
 6. Should the old desktop `multi_agent_architecture_plan.md` remain reference-only, or should any parts be promoted now?
+7. Should DB writes and strategy promotion require `human_gate` plus Codex-Dev validation as designed?
 
 Recommended reviewer outcome format:
 
