@@ -1,0 +1,101 @@
+generated_at: "2026-07-03T18:00:00+08:00"
+workspace_root: "/Users/rongyuxu/Desktop/quant proj"
+decision: "controller_workspace_first_no_physical_merge_yet"
+
+tools:
+  codex_cli:
+    path: "/Applications/Codex.app/Contents/Resources/codex"
+    version: "codex-cli 0.142.5"
+    role: "primary development, integration, validation, audit packet preparation"
+  reasonix_cli:
+    path: "/Users/rongyuxu/.local/bin/reasonix"
+    version: "reasonix 0.53.2"
+    role: "advisory review, semantic indexing, test-gap review, report review"
+
+projects:
+  a_share_monitor:
+    path: "/Users/rongyuxu/Desktop/A_Share_Monitor"
+    package: "qta"
+    cli: "python -m qta"
+    size: "1.7G"
+    git_branch: "codex/harden-a-share-research-pipeline"
+    latest_commit: "02346fd A-STRAT-1: zero-candidate diagnosis + 5 research hypotheses + A11 experiment plan"
+    working_tree: "dirty"
+    tracked_files: 630
+    migration_status: "defer"
+    migration_reason: "large local data, dirty worktree, absolute-path audit and data manifests"
+    data:
+      duckdb_path: "/Users/rongyuxu/Desktop/A_Share_Monitor/data/local_market/a_share_market.duckdb"
+      duckdb_size: "1.25GB"
+      canonical_daily_bars_rows_current: 659478
+      canonical_daily_bars_symbols_current: 310
+      canonical_date_range_current: "20180102..20260701"
+    boundaries:
+      recommendation_runtime_enabled: false
+      broker_api_allowed: false
+      live_trading_allowed: false
+
+  us_stock_monitor:
+    path: "/Users/rongyuxu/Desktop/US_Stock_Monitor"
+    package: "usq"
+    cli: "python -m usq"
+    size: "261M"
+    git_branch: "codex/duckdb-provider"
+    latest_commit: "88c0834 W1: add DuckDB provider for US real data + fix _metric_at for Series safety"
+    working_tree: "dirty"
+    tracked_files: 962
+    migration_status: "defer"
+    migration_reason: "dirty worktree, active US-13 and DuckDB-provider route, ignored local data"
+    data:
+      duckdb_path: "/Users/rongyuxu/Desktop/US_Stock_Monitor/data/local_market/us_stock_market.duckdb"
+      duckdb_size: "70MB"
+      canonical_daily_bars_rows_current: 689626
+      canonical_daily_bars_symbols_current: 326
+      canonical_date_range_current: "2020-01-02..2026-07-02"
+      readiness_status_current: "PASS_LEVEL_2"
+    current_real_state:
+      us13_status: "NO_RECOMMENDATION_AVAILABLE"
+      active_ticket_status: "PENDING_HUMAN_REVIEW"
+      real_fill_count: 0
+    boundaries:
+      recommendation_runtime_enabled: false
+      broker_api_allowed: false
+      live_trading_allowed: false
+
+  market_data:
+    path: "/Users/rongyuxu/Desktop/market_data"
+    package: "market_data"
+    cli: "python -m market_data or direct scripts"
+    size: "2.4M"
+    git_branch: "main"
+    latest_commit: "4483fda Finalize DB-2 current-state audit packet"
+    working_tree: "dirty"
+    tracked_files: 80
+    migration_status: "defer_until_registry_refresh"
+    migration_reason: "registry/access-gate package with uncommitted reports and stale current facts"
+    physical_db_migration_allowed_current_registry: false
+    role: "registry, read-only access gate, external audit packet hub"
+
+  strategy_work:
+    path: "/Users/rongyuxu/Desktop/strategy_work"
+    package: "reports_and_configs"
+    cli: "none"
+    size: "436K"
+    git_branch: "main"
+    working_tree: "dirty"
+    tracked_files: 19
+    migration_status: "defer_until_untracked_config_classified"
+    migration_reason: "small repo, but configs/a_share_300_fast.yaml is currently untracked and must be reviewed or committed before migration"
+    dirty_files_observed:
+      - "?? configs/a_share_300_fast.yaml"
+
+do_not_migrate_without_explicit_audit_stage:
+  - ".env"
+  - "API keys or key-containing archives"
+  - "*.duckdb"
+  - "*.parquet"
+  - "*.sqlite"
+  - "data/"
+  - "outputs/"
+  - "logs/"
+  - "raw API payloads"

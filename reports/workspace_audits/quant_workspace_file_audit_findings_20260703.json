@@ -1,0 +1,96 @@
+{
+  "overall_status": "PASS_LOCAL_CHECKPOINT",
+  "scope": "/Users/rongyuxu/Desktop/quant proj",
+  "ready_for_local_delivery": true,
+  "ready_for_formal_external_audit": true,
+  "remote_published": false,
+  "severity_counts": {
+    "BLOCKER": 0,
+    "HIGH": 0,
+    "MEDIUM": 0,
+    "LOW": 0
+  },
+  "findings": [],
+  "closed_findings": [
+    {
+      "id": "MEDIUM-001",
+      "severity": "MEDIUM",
+      "status": "CLOSED",
+      "file": "registry/projects.yaml",
+      "line_or_section": "lines 79-88; QUANT_WORKSPACE_CODEX_REASONIX_PLAN.md lines 28 and 57-59",
+      "issue": "strategy_work is recorded as clean and safe_first_candidate, but live Git status shows an untracked configs/a_share_300_fast.yaml file.",
+      "why_it_matters": "A stale clean/safe migration label could cause an unreviewed strategy config to be moved, packaged, or treated as checkpointed evidence.",
+      "closure": "registry/projects.yaml and QUANT_WORKSPACE_CODEX_REASONIX_PLAN.md now mark strategy_work dirty/deferred until configs/a_share_300_fast.yaml is classified.",
+      "validation": "git -C /Users/rongyuxu/Desktop/strategy_work status --short --branch"
+    },
+    {
+      "id": "LOW-001",
+      "severity": "LOW",
+      "status": "CLOSED_LOCAL",
+      "file": "/Users/rongyuxu/Desktop/quant proj",
+      "line_or_section": "workspace root",
+      "issue": "The controller workspace is not a Git repository, so it has no immutable branch/tag/commit/tree audit point.",
+      "why_it_matters": "Formal external-audit packets are more durable and reviewer-friendly when anchored to an immutable Git tag.",
+      "closure": "quant proj is checkpointed locally with branch main and tag quant-workspace-controller-audit-20260703. It is not remote-published unless a remote is later configured and pushed.",
+      "validation": "git -C \"/Users/rongyuxu/Desktop/quant proj\" status --short --branch"
+    }
+  ],
+  "validation_results": [
+    {
+      "check": "YAML parse and referenced path existence for registry/projects.yaml",
+      "result": "PASS"
+    },
+    {
+      "check": "workspace raw DB/parquet/sqlite/payload/archive/.env scan",
+      "result": "PASS",
+      "summary": "0 matches"
+    },
+    {
+      "check": "secret keyword scan",
+      "result": "PASS",
+      "summary": "documentation-only mentions; no secret values observed"
+    },
+    {
+      "check": "Codex CLI version",
+      "result": "PASS",
+      "summary": "codex-cli 0.142.5"
+    },
+    {
+      "check": "Reasonix CLI version",
+      "result": "PASS",
+      "summary": "0.53.2"
+    },
+    {
+      "check": "existing checksum manifest",
+      "result": "PASS",
+      "summary": "all 12 listed files verified"
+    },
+    {
+      "check": "project Git status cross-check",
+      "result": "PASS_WITH_BOUNDARY",
+      "summary": "strategy_work has untracked configs/a_share_300_fast.yaml and is now documented as dirty/deferred"
+    },
+    {
+      "check": "controller workspace Git repository check",
+      "result": "PASS_LOCAL",
+      "summary": "local Git checkpoint/tag prepared for quant proj"
+    }
+  ],
+  "verified_boundaries": {
+    "env_file_present": false,
+    "secret_value_observed": false,
+    "raw_db_or_parquet_present": false,
+    "payload_or_archive_present": false,
+    "broker_api_enabled": false,
+    "order_routing_enabled": false,
+    "manual_fill_runtime_enabled": false,
+    "paper_trading_enabled": false,
+    "auto_execution_enabled": false,
+    "live_trading_enabled": false,
+    "buy_sell_advice_found": false
+  },
+  "delivery_artifacts": [
+    "reports/workspace_audits/quant_workspace_file_audit_20260703.md",
+    "reports/workspace_audits/quant_workspace_file_audit_findings_20260703.json"
+  ]
+}

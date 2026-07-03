@@ -1,0 +1,18 @@
+# Local raw data and generated outputs must stay out of the controller workspace.
+.DS_Store
+.env
+*.duckdb
+*.parquet
+*.sqlite
+*.sqlite3
+*.db
+*.payload
+*.zip
+*.tar
+*.tar.gz
+data/
+outputs/
+logs/
+imports/
+__pycache__/
+.pytest_cache/
