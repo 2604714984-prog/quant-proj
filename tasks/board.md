@@ -4,10 +4,16 @@
 
 - `20260704-chatgpt-external-audit-fixes`: imported ChatGPT external audit fix list; classified by Quant-Dispatcher.
 - `20260704-controller-workspace-p0-dispatch-list`: imported controller workspace P0 dispatch list; converted into task packets.
+- `20260704-updated-night-batch-recorded-execution-mode`: imported recorded execution mode update and night batch task list.
 
 ## Backlog
 
 - `a-strat-1-gap-reacceptance-followup-20260704`: assigned dry-run packet for `Reasonix-Strategy`; source-project execution not started.
+- `TASK-006 US-DB-OPS-2 controlled US 300-symbol expansion`: packet ready; L1/L2 recorded execution; Human-Gate `HG-NIGHT-BATCH-20260704-L1-L4` available until `2026-07-05T08:00:00+08:00`; not executed.
+- `TASK-007 A-DB-OPS controlled A-share expansion`: packet ready; L1 and conditional L2 recorded execution; Human-Gate `HG-NIGHT-BATCH-20260704-L1-L4` available; not executed.
+- `TASK-008 market_data registry/readiness controlled update`: packet ready; L3 recorded execution; Human-Gate `HG-NIGHT-BATCH-20260704-L1-L4` available; not executed.
+- `TASK-009 A11 research-to-HITL gated ticket attempt`: packet ready; L4 `PENDING_HUMAN_REVIEW` only if all gates pass; not executed.
+- `TASK-010 US strategy experiment to ticket refresh attempt`: packet ready; L4 `PENDING_HUMAN_REVIEW` only if all gates pass; not executed.
 
 ## In Progress
 
@@ -19,6 +25,7 @@
 
 ## Done
 
+- `recorded-execution-mode-v1-policy-update-20260704`: controller policy updated; Human-Gate batch record added; follow-up task packets created; no L1-L4 execution performed.
 - `dispatcher-dry-run-a-strat-1-gap-reacceptance-20260704`: task packet created, handoff prepared, no source-project execution.
 - `TASK-001 CODEX_ACCEPTANCE_A11_RESEARCH_RUNNER`: accepted with warnings by Codex-Dev; A-share source commit `012006c40897f999f2a2ba5c69e2630b9d50a552`.
 - `TASK-002 CODEX_ACCEPTANCE_US_STRATEGY_EXPERIMENTS`: accepted with warnings by Codex-Dev; US source commit `2d779f5837f309de45d43f2d9c60d7f4e3eeae21`.

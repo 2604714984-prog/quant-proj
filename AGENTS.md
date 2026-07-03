@@ -39,6 +39,8 @@ Before routine batch dispatch, migration planning, DB-write planning, registry a
 
 Human-Gate approval must be durable. If a task requires approval, record it through `runbooks/human_gate.md` and `reports/human_gate/decisions.jsonl`; missing approval means not approved.
 
+Recorded execution mode is defined in `runbooks/recorded_execution_mode.md`. Controlled DB writes, network ingest, registry/readiness changes, and `PENDING_HUMAN_REVIEW` ticket emission may proceed only with Human-Gate record, command transcript, explicit command flags, manifest/status evidence, and Codex acceptance. Broker APIs, order routing/submission, auto execution, paper trading, live trading, system-generated orders/fills, broker-synced fills, trade plans, entry price instructions, target weights, position sizing, and allocation remain forbidden.
+
 ## Reasonix Role
 
 Reasonix is split into three dispatchable roles:

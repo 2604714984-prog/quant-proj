@@ -16,6 +16,8 @@ Human-Gate records are required before execution for:
 - external audit submission;
 - any broker, order, paper-trading, live-trading, or auto-execution adjacent request.
 
+Recorded execution uses `runbooks/recorded_execution_mode.md`. L1-L4 work is allowed only when the Human-Gate record, command transcript, bounded command flags, manifest/status evidence, and Codex acceptance requirements are satisfied.
+
 ## Decision Record
 
 Durable decisions live in:
@@ -32,14 +34,26 @@ Each approval record must include:
 - `task_id`;
 - `approved_by_user`;
 - `decision`;
+- `permission_level`;
 - `scope`;
+- `allowed_actions`;
 - `allowed_paths`;
 - `forbidden_paths`;
+- command flag requirements such as `requires_allow_network` or `requires_allow_write` when applicable;
 - `expires_at` or `one_time_use`;
+- `requires_codex_acceptance`;
 - `requires_codex_dev_validation`;
 - `requires_codex_audit`;
 - `requires_chatgpt_external_audit`;
 - explicit non-authorization boundaries.
+
+## Permission Levels
+
+- `L0_RESEARCH_DIAGNOSTIC`: allowed by default; no DB write, network ingest, registry activation, readiness change, or ticket emission.
+- `L1_CONTROLLED_DB_WRITE`: requires Human-Gate record, `--allow-write`, explicit snapshot id, command transcript, manifest/counts/hashes, and Codex acceptance.
+- `L2_CONTROLLED_NETWORK_INGEST`: requires Human-Gate record, `--allow-network`, explicit provider, bounded date/symbol scope, no `.env` read, no key output, command transcript, and Codex acceptance.
+- `L3_REGISTRY_READINESS_CHANGE`: requires Human-Gate record, old/new diff, rollback path, command transcript, and Codex acceptance. Broker/live/auto readiness remains forbidden.
+- `L4_PENDING_HUMAN_REVIEW_TICKET`: requires Human-Gate record and all gates passing; may emit only `PENDING_HUMAN_REVIEW`, never orders, trade plans, allocations, fills, or execution instructions.
 
 ## Decision Values
 
@@ -83,11 +97,44 @@ Standing authorization does not cover:
 - moving raw DB/parquet/SQLite files into `quant-proj`;
 - treating a HITL ticket as an approved trade.
 
+## Recorded Execution Record Template
+
+Use this shape for L1-L4 execution records:
+
+```json
+{
+  "decision_id": "HG-YYYYMMDD-XXX",
+  "task_id": "TASK-ID",
+  "approved_by_user": true,
+  "decision": "APPROVED_FOR_SCOPE",
+  "permission_level": "L1_CONTROLLED_DB_WRITE | L2_CONTROLLED_NETWORK_INGEST | L3_REGISTRY_READINESS_CHANGE | L4_PENDING_HUMAN_REVIEW_TICKET",
+  "scope": "exact bounded scope",
+  "allowed_actions": ["network_ingest", "duckdb_write"],
+  "allowed_paths": ["target database or output paths"],
+  "forbidden_paths": [".env", "broker/", "live/", "order/"],
+  "provider": "nasdaq_api | yahoo_chart | tushare | baostock | none",
+  "max_symbols": 300,
+  "max_rows": null,
+  "snapshot_id_prefix": "example_YYYYMMDD",
+  "requires_allow_network": true,
+  "requires_allow_write": true,
+  "requires_command_transcript": true,
+  "requires_manifest_counts_hashes": true,
+  "requires_codex_acceptance": true,
+  "requires_codex_audit": false,
+  "requires_chatgpt_external_audit": false,
+  "one_time_use": true,
+  "expires_at": "YYYY-MM-DDTHH:MM:SS+08:00",
+  "non_authorization": "No broker, no order routing, no auto execution, no paper/live trading, no trade plan."
+}
+```
+
 ## Hard Rules
 
 - Approval is not transferable across unrelated scopes unless a standing authorization record explicitly covers that category.
 - Approval is not a trading authorization.
-- Approval to draft SQL is not approval to write a database unless a standing or task-level DB-write authorization exists.
-- Approval to research a strategy is not approval to emit a HITL ticket unless a standing or task-level HITL-gate authorization exists.
+- Approval to draft SQL is not approval to write a database unless a standing or task-level DB-write authorization exists and recorded execution requirements are satisfied.
+- Approval to research a strategy is not approval to emit a HITL ticket unless a standing or task-level HITL-gate authorization exists and L4 gates pass.
 - Approval to prepare an external audit packet is not the external audit verdict.
 - A missing Human-Gate record means not approved.
+- Human-Gate approval never authorizes broker APIs, order routing, order submission, system-generated orders, system-generated fills, broker-synced fills, auto execution, paper trading, live trading, trade plans, entry price instructions, target weights, position sizing, or allocation.
