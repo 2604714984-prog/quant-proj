@@ -11,16 +11,15 @@
 
 - `a-strat-1-gap-reacceptance-followup-20260704`: assigned dry-run packet for `Reasonix-Strategy`; source-project execution not started.
 - `TASK-025 market_data Access-Gate Regression`: queued P1 after P0 evidence or independent regression need.
-- `TASK-026 Human-Gate Pre-Execution Template Enforcement`: queued P1 controller hardening.
 - `TASK-027 A11 Candidate Safety Advisory Review`: queued P1 after `TASK-021`.
 - `TASK-028 US Strategy Safety Advisory Review`: queued P1 after `TASK-024`.
 
 ## In Progress
 
-- `post_acceptance_followup_20260704`: P0 dispatch batch opened after ChatGPT verdict `ACCEPT_RECORDED_EXECUTION_PACKET`.
-- `TASK-021 A11 Research Candidate Root-Cause Drilldown`: dispatched to replacement fixed A-share Codex-Dev thread `019f2a5a-8b4b-76b3-b838-abc6b54e4992`; awaiting result.
-- `TASK-023 US DB Preflight Blocker Repair`: dispatched to replacement fixed US Codex-Dev thread `019f2a5a-8f92-7672-bbff-db71694e8676`; awaiting result.
-- `TASK-024 US Eligibility Candidate Blocker Drilldown`: dispatched to replacement fixed US Codex-Dev thread `019f2a5a-8f92-7672-bbff-db71694e8676` after `TASK-023`; awaiting result.
+- `post_acceptance_followup_20260704`: P0 complete; P1 dispatch/implementation in progress.
+- `TASK-025 market_data Access-Gate Regression`: ready to dispatch to fixed market_data Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`.
+- `TASK-027 A11 Candidate Safety Advisory Review`: ready for fixed `Reasonix-Advisory` session after `TASK-021`.
+- `TASK-028 US Strategy Safety Advisory Review`: ready for fixed `Reasonix-Advisory` session after `TASK-024`.
 
 ## Blocked / Hold
 
@@ -46,3 +45,7 @@
 - `TASK-010 US strategy experiment to ticket refresh attempt`: accepted with warnings by Codex-Dev; US source commit `8b537ae214fa805d177fa067af879e3fbb83b035`; gate result `NO_RECOMMENDATION_AVAILABLE`, `ticket_emitted=false`, blockers remain evidence, feedback, and eligibility.
 - `night_batch_recorded_execution_chatgpt_external_audit`: verdict `ACCEPT_RECORDED_EXECUTION_PACKET`; controller-workspace recorded-execution process accepted with future `HG-EXEC-TASK-*` pre-execution requirement.
 - `TASK-022 A-share L1 Snapshot Capability Repair Plan`: completed by Reasonix-DB as L0 read-only plan; outputs `reports/deepseek_db/task_022_a_share_l1_capability_repair_plan.md` and `.json`; next DB ops task should be read-only diagnosis first.
+- `TASK-021 A11 Research Candidate Root-Cause Drilldown`: accepted with warnings by Codex-Dev; A-share source commit `025f773d42fa16916e31da8d153382d67c02ebe1`; 83 candidates remain exposed to run-level blockers and data-readiness-only repair still yields 0 eligible.
+- `TASK-023 US DB Preflight Blocker Repair`: accepted with warnings by Codex-Dev; US source commit `356f56ab5b7452e342c05d44087d867853e3fea0`; historical overlaps are warning-only, target snapshot collision clear, remaining blocker is 44 missing metadata symbols.
+- `TASK-024 US Eligibility Candidate Blocker Drilldown`: accepted by Codex-Dev; US source commit `04e7e6742a7fa87d04ea9a65ebc5cf6f0f55a3a7`; feedback is not actionable, evidence re-entry incomplete, eligibility candidate absent by design.
+- `TASK-026 Human-Gate Pre-Execution Template Enforcement`: accepted in controller workspace; `HG-EXEC-TASK-*` template, HOLD example, dispatcher checklist, and task-packet validation rule added.

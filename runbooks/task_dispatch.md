@@ -12,6 +12,7 @@ ChatGPT task list
   -> tasks/backlog/<task-id>/spec.md
   -> tasks/backlog/<task-id>/handoff.md
   -> human_gate decision record when approval is required
+  -> task packet validation
   -> downstream agent
   -> task report
   -> audit / external audit when needed
@@ -27,6 +28,7 @@ ChatGPT task list
 - Require human approval for migration, trading-adjacent, or scope-expanding work.
 - Refresh the registry before assigning work that depends on current source-project state.
 - Record Human-Gate decisions durably when approval is required.
+- Validate task packets before dispatch using `runbooks/task_packet_validation.md`.
 
 ## Downstream Agent Choices
 
@@ -59,8 +61,11 @@ Each dispatched task should have:
 
 - `spec.md`
 - `handoff.md`
+- `human_gate.md`
 - optional `context.md`
 - optional `dependencies.md`
+
+Before dispatch, validate the permission level. L1-L4 execution requests require a unique pre-execution `HG-EXEC-TASK-*` record. Standing authorization alone is not enough. If the record is missing, mark the task `HOLD_FOR_MISSING_HG_EXEC_TASK_RECORD` and only allow read-only planning or diagnosis.
 
 ## Status Values
 
@@ -79,6 +84,7 @@ Each dispatched task should have:
 - Do not dispatch broker/order/live-trading tasks as implementation work.
 - Do not dispatch buy/sell advice tasks.
 - Do not dispatch raw data migration or DB-write tasks without `human_gate`.
+- Do not dispatch L1-L4 execution without a unique pre-execution `HG-EXEC-TASK-*` record.
 - Do not treat a missing Human-Gate record as approval.
 - Do not treat a stale registry snapshot as current source-project truth.
 - Do not let Reasonix-DB write physical databases or change readiness/registry activation without `human_gate` and Codex-Dev validation.

@@ -6,6 +6,13 @@ This directory stores durable Human-Gate decision records for the controller wor
 
 Do not store secrets, `.env` values, raw data, raw database files, or broker credentials here.
 
+Templates live in:
+
+- `reports/human_gate/templates/hg_exec_task_record_template.json`
+- `reports/human_gate/templates/hg_exec_task_hold_example.json`
+
+Future L1-L4 execution requires a unique pre-execution `HG-EXEC-TASK-*` record. Standing authorization alone is not enough for execution.
+
 Recorded execution mode:
 
 - L0 research/diagnostics can run by default when it stays read-only and non-networked.

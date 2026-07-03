@@ -1,0 +1,37 @@
+{
+  "record_type": "hold_example_not_an_approval",
+  "created_at": "YYYY-MM-DDTHH:MM:SS+08:00",
+  "decision_id": "HG-HOLD-TASK-XXX-YYYYMMDD",
+  "task_id": "TASK-XXX",
+  "approved_by_user": false,
+  "decision": "HOLD_FOR_MISSING_HG_EXEC_TASK_RECORD",
+  "permission_level_requested": "L1_CONTROLLED_DB_WRITE | L2_CONTROLLED_NETWORK_INGEST | L3_REGISTRY_READINESS_CHANGE | L4_PENDING_HUMAN_REVIEW_TICKET",
+  "scope": "Execution request cannot start because no unique pre-execution HG-EXEC-TASK-* record exists.",
+  "required_before_execution": [
+    "unique decision_id beginning with HG-EXEC-TASK-",
+    "exact command or bounded command family",
+    "allowed actions and paths",
+    "forbidden actions and paths",
+    "source commit/tree or data snapshot",
+    "stop conditions",
+    "expected transcript, manifest, validation, and Codex acceptance"
+  ],
+  "allowed_actions": [],
+  "forbidden_actions": [
+    "db_write",
+    "network_ingest",
+    "schema_migration",
+    "registry_activation",
+    "readiness_change",
+    "hitl_ticket_emission",
+    "broker_api",
+    "order_routing",
+    "order_submission",
+    "auto_execution",
+    "paper_trading",
+    "live_trading",
+    "secret_output",
+    ".env_read"
+  ],
+  "non_authorization": "This HOLD example is not approval. Do not execute L1-L4 work until a unique HG-EXEC-TASK-* record is written before the command."
+}

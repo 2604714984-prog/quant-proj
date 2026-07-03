@@ -18,6 +18,24 @@ Human-Gate records are required before execution for:
 
 Recorded execution uses `runbooks/recorded_execution_mode.md`. L1-L4 work is allowed only when the Human-Gate record, command transcript, bounded command flags, manifest/status evidence, and Codex acceptance requirements are satisfied.
 
+## Future L1-L4 Hard Rule
+
+After ChatGPT accepted the recorded-execution controller packet on 2026-07-04, all future L1-L4 execution must have a unique pre-execution `HG-EXEC-TASK-*` record before the command runs.
+
+The standing authorization `HG-STANDING-20260704` remains useful as user authorization for covered categories, but it is not enough by itself for execution. The dispatcher must create or locate a task-level execution record with:
+
+- decision id beginning with `HG-EXEC-TASK-`;
+- matching task id;
+- exact bounded command or command family;
+- source commit/tree or data snapshot;
+- allowed actions and paths;
+- forbidden actions and paths;
+- stop conditions;
+- transcript and manifest expectations;
+- Codex-Dev validation and Codex acceptance requirements.
+
+If this record is missing, mark the task `HOLD_FOR_MISSING_HG_EXEC_TASK_RECORD` and do not execute L1-L4 actions. Use `reports/human_gate/templates/hg_exec_task_record_template.json` for approvals and `reports/human_gate/templates/hg_exec_task_hold_example.json` for hold examples.
+
 ## Decision Record
 
 Durable decisions live in:

@@ -4,7 +4,7 @@ Date: 2026-07-04
 Owner: `Quant-Dispatcher`
 Batch: `post_acceptance_followup_20260704`
 Source: ChatGPT external audit verdict `ACCEPT_RECORDED_EXECUTION_PACKET`
-Status: `P0_READY_FOR_DISPATCH`
+Status: `P0_COMPLETE_READY_FOR_P1`
 
 ## Goal
 
@@ -21,10 +21,14 @@ The earlier A-share and US fixed Codex-Dev endpoints entered `systemError` befor
 
 ## P1 Queue
 
-- `TASK-025` -> `market_data` Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`, after P0 evidence is available or if access-gate regression is needed independently.
-- `TASK-026` -> current `quant-proj` controller workspace Codex-Dev lane, after P0 dispatch has been recorded.
-- `TASK-027` -> fixed `Reasonix-Advisory` session `quant-reasonix-advisory`, after `TASK-021` output exists.
-- `TASK-028` -> fixed `Reasonix-Advisory` session `quant-reasonix-advisory`, after `TASK-024` output exists.
+- `TASK-025` -> `market_data` Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`; P0 evidence is available.
+- `TASK-026` -> current `quant-proj` controller workspace Codex-Dev lane; P0 dispatch has been recorded.
+- `TASK-027` -> fixed `Reasonix-Advisory` session `quant-reasonix-advisory`; `TASK-021` output exists.
+- `TASK-028` -> fixed `Reasonix-Advisory` session `quant-reasonix-advisory`; `TASK-024` output exists.
+
+P0 result closeout:
+
+- `reports/workspace_dispatch/post_acceptance_followup_p0_results_20260704.md`
 
 ## Human-Gate
 
