@@ -18,9 +18,9 @@ This authorizes recorded L1-L4 workflows only. It does not authorize broker/orde
 
 1. `TASK-006 US-DB-OPS-2 controlled US 300-symbol expansion` -> completed by `US_Stock_Monitor` Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`.
 2. `TASK-007 A-DB-OPS controlled A-share expansion` -> completed by `A_Share_Monitor` Codex-Dev thread `019f2911-ef0c-7053-aa77-a3b0bf0b05de`.
-3. `TASK-008 market_data registry/readiness controlled update` -> sent to fixed `market_data` Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`.
-4. `TASK-009 A11 research-to-HITL gated ticket attempt` -> pending A-share data-layer result.
-5. `TASK-010 US strategy experiment to ticket refresh attempt` -> pending US data-layer result.
+3. `TASK-008 market_data registry/readiness controlled update` -> completed by fixed `market_data` Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`.
+4. `TASK-009 A11 research-to-HITL gated ticket attempt` -> sent to fixed `A_Share_Monitor` Codex-Dev thread `019f2911-ef0c-7053-aa77-a3b0bf0b05de`.
+5. `TASK-010 US strategy experiment to ticket refresh attempt` -> sent to fixed `US_Stock_Monitor` Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`.
 
 ## Collected Results
 
@@ -66,6 +66,30 @@ This authorizes recorded L1-L4 workflows only. It does not authorize broker/orde
 - A-share may be recorded only as a local research data expansion / product-read candidate with `WARNING` / `Level 1` if market_data evidence supports it.
 - US must not be upgraded because TASK-006 wrote zero rows and stayed preflight-blocked.
 - No route may become production recommendation, broker execution, auto execution, live trading, or recommendation-ready.
+
+### TASK-008 Market Data Registry / Readiness
+
+- status: `ACCEPTED_WITH_WARNINGS`
+- source branch: `codex/task-008-market-data-registry-readiness`
+- commit: `413829f0179c5142e26f57594d52e1b6de9c338f`
+- tree: `bc2cc31f3c6b6c571ee7d2352dc71eb1a68e78e4`
+- A-share old accepted route remained unchanged: `local_17b656b7acaebc19963a32d8`, 50 symbols, 86,817 rows, `20180102..20260629`
+- A-share new evidence: `a_expand_20260704_l1_local1000_0317`, 1000 symbols, 2,059,000 rows, `20180102..20260701`, recorded only as `WARNING` / `Level 1` local research route and product-read candidate
+- A-share candidate product read allowed: `false`
+- US old route remained blocked: `UNQUALIFIED_LOCAL_ROWS_PRESENT`, 63 symbols, 140,185 rows, `2020-01-02..2026-07-01`
+- US attempt `us_expand_20260704_nasdaq_300` remained `INGEST_PREFLIGHT_BLOCKED`, rows written `0`, `ready_for_hitl=false`, `product_route_activated=false`
+- validation: 56 tests passed; structured parse passed; forbidden readiness true scan found no matches
+- delivery report: `/Users/rongyuxu/Desktop/market_data/reports/codex_dev/task_008_market_data_registry_readiness_update_20260704.md`
+
+## TASK-009 And TASK-010 Dispatch Inputs
+
+`TASK-009` and `TASK-010` were dispatched after TASK-008 with the explicit instruction that:
+
+- a `PENDING_HUMAN_REVIEW` ticket may be emitted only if every gate passes;
+- any gate failure must result in `NO_RECOMMENDATION_AVAILABLE` and no ticket;
+- A-share must treat the 1000-symbol route as `WARNING` / `Level 1` candidate evidence only, with `phase3_evidence_ready=false` and `micro_recommendation_data_ready_with_warnings=false`;
+- US must preserve `evidence_gap`, `insufficient_feedback`, and `no_eligibility_candidate` unless evidence genuinely changes;
+- no broker/order/paper/live/auto, recommendation, trade plan, entry price, target weight, position sizing, or allocation output is allowed.
 
 ## Required Evidence For Each Executed Task
 

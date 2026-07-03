@@ -1,4 +1,4 @@
-generated_at: "2026-07-04T03:42:20+08:00"
+generated_at: "2026-07-04T03:52:29+08:00"
 workspace_root: "/Users/rongyuxu/Desktop/quant proj"
 decision: "controller_workspace_first_no_physical_merge_yet"
 registry_kind: "point_in_time_controller_snapshot"
@@ -100,10 +100,10 @@ projects:
     package: "market_data"
     cli: "python -m market_data or direct scripts"
     size: "2.4M"
-    git_branch: "main"
-    latest_commit: "ff24166 DeepSeek-DB P0-P4 deliverables: DB_OPS review, 265/500/1000 summaries, final handoff"
-    latest_commit_full: "ff24166479638b0f35e1cd7a8d0f1d01cdafb495"
-    latest_tree: "03ff42577d23784924511efcc7ccc7f9f3217fc4"
+    git_branch: "codex/task-008-market-data-registry-readiness"
+    latest_commit: "413829f Record TASK-008 registry readiness update"
+    latest_commit_full: "413829f0179c5142e26f57594d52e1b6de9c338f"
+    latest_tree: "bc2cc31f3c6b6c571ee7d2352dc71eb1a68e78e4"
     working_tree: "clean"
     last_describe: "db-2-high001-closed-external-audit-20260703-2-gff2416647963"
     tracked_files: 80
@@ -111,6 +111,11 @@ projects:
     migration_reason: "registry/access-gate package with uncommitted reports and stale current facts"
     physical_db_migration_allowed_current_registry: false
     role: "registry, read-only access gate, external audit packet hub"
+    task_008_status: "ACCEPTED_WITH_WARNINGS"
+    task_008_a_share_candidate_snapshot: "a_expand_20260704_l1_local1000_0317"
+    task_008_a_share_candidate_readiness: "WARNING_LEVEL_1"
+    task_008_a_share_candidate_product_read_allowed: false
+    task_008_us_route_status: "INGEST_PREFLIGHT_BLOCKED"
 
   strategy_work:
     path: "/Users/rongyuxu/Desktop/strategy_work"

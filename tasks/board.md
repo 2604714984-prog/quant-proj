@@ -9,12 +9,11 @@
 ## Backlog
 
 - `a-strat-1-gap-reacceptance-followup-20260704`: assigned dry-run packet for `Reasonix-Strategy`; source-project execution not started.
-- `TASK-009 A11 research-to-HITL gated ticket attempt`: packet ready; L4 `PENDING_HUMAN_REVIEW` only if all gates pass; not executed.
-- `TASK-010 US strategy experiment to ticket refresh attempt`: packet ready; L4 `PENDING_HUMAN_REVIEW` only if all gates pass; not executed.
 
 ## In Progress
 
-- `TASK-008 market_data registry/readiness controlled update`: sent to fixed `market_data` Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`; L3 recorded execution under `HG-NIGHT-BATCH-20260704-L1-L4`.
+- `TASK-009 A11 research-to-HITL gated ticket attempt`: sent to fixed `A_Share_Monitor` Codex-Dev thread `019f2911-ef0c-7053-aa77-a3b0bf0b05de`; L4 `PENDING_HUMAN_REVIEW` only if all gates pass.
+- `TASK-010 US strategy experiment to ticket refresh attempt`: sent to fixed `US_Stock_Monitor` Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`; L4 `PENDING_HUMAN_REVIEW` only if all gates pass.
 
 ## Blocked / Hold
 
@@ -31,3 +30,4 @@
 - `TASK-005 STRATEGY_WORK_NEXT_TASK_PROMPTS`: completed by Reasonix-Strategy; primary summary `reports/workspace_dispatch/reasonix_strategy_task_005_result_20260704.md`.
 - `TASK-006 US-DB-OPS-2 controlled US 300-symbol expansion`: accepted with warnings by Codex-Dev; US source commit `f3b3b10b6cb70babe47e1e44fad490e9f9366b17`; no network fetch or DuckDB write occurred because preflight blocked on duplicate rows and missing metadata.
 - `TASK-007 A-DB-OPS controlled A-share expansion`: accepted with warnings by Codex-Dev; A-share source commit `7c168999b6a583ca20a325098cc2111de311a1a1`; local L1 snapshot `a_expand_20260704_l1_local1000_0317` produced 1000 symbols and 2,059,000 canonical rows with readiness `WARNING` / `Level 1`.
+- `TASK-008 market_data registry/readiness controlled update`: accepted with warnings by Codex-Dev; market_data branch `codex/task-008-market-data-registry-readiness`, commit `413829f0179c5142e26f57594d52e1b6de9c338f`; A-share 1000-symbol evidence recorded as `WARNING` / `Level 1` candidate only, US remained blocked.
