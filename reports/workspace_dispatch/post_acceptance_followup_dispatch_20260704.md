@@ -12,10 +12,12 @@ Turn the accepted recorded-execution packet into the next controlled work batch.
 
 ## P0 Dispatch Order
 
-1. `TASK-021` -> `A_Share_Monitor` Codex-Dev thread `019f2911-ef0c-7053-aa77-a3b0bf0b05de`.
+1. `TASK-021` -> `A_Share_Monitor` Codex-Dev thread `019f2a5a-8b4b-76b3-b838-abc6b54e4992`.
 2. `TASK-022` -> fixed `Reasonix-DB` session `quant-reasonix-db`, `deepseek-v4-pro`, effort `high`.
-3. `TASK-023` -> `US_Stock_Monitor` Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`.
-4. `TASK-024` -> `US_Stock_Monitor` Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`, after or alongside `TASK-023` only if the US thread can sequence safely.
+3. `TASK-023` -> `US_Stock_Monitor` Codex-Dev thread `019f2a5a-8f92-7672-bbff-db71694e8676`.
+4. `TASK-024` -> `US_Stock_Monitor` Codex-Dev thread `019f2a5a-8f92-7672-bbff-db71694e8676`, after `TASK-023`.
+
+The earlier A-share and US fixed Codex-Dev endpoints entered `systemError` before executing this P0 batch. They are retained only as historical evidence, and the replacement endpoints above are the active fixed Codex-Dev lanes for this batch.
 
 ## P1 Queue
 

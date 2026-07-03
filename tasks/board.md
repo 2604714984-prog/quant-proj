@@ -18,9 +18,9 @@
 ## In Progress
 
 - `post_acceptance_followup_20260704`: P0 dispatch batch opened after ChatGPT verdict `ACCEPT_RECORDED_EXECUTION_PACKET`.
-- `TASK-021 A11 Research Candidate Root-Cause Drilldown`: dispatched to fixed A-share Codex-Dev thread `019f2911-ef0c-7053-aa77-a3b0bf0b05de`; awaiting result.
-- `TASK-023 US DB Preflight Blocker Repair`: dispatched to fixed US Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`; awaiting result.
-- `TASK-024 US Eligibility Candidate Blocker Drilldown`: dispatched to fixed US Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83` after `TASK-023`; awaiting result.
+- `TASK-021 A11 Research Candidate Root-Cause Drilldown`: dispatched to replacement fixed A-share Codex-Dev thread `019f2a5a-8b4b-76b3-b838-abc6b54e4992`; awaiting result.
+- `TASK-023 US DB Preflight Blocker Repair`: dispatched to replacement fixed US Codex-Dev thread `019f2a5a-8f92-7672-bbff-db71694e8676`; awaiting result.
+- `TASK-024 US Eligibility Candidate Blocker Drilldown`: dispatched to replacement fixed US Codex-Dev thread `019f2a5a-8f92-7672-bbff-db71694e8676` after `TASK-023`; awaiting result.
 
 ## Blocked / Hold
 
