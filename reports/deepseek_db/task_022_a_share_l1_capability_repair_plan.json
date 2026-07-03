@@ -1,0 +1,68 @@
+{
+  "task_id": "TASK-022",
+  "role": "Reasonix-DB",
+  "model": "deepseek-v4-pro",
+  "effort": "high",
+  "mode": "L0_RESEARCH_DIAGNOSTIC",
+  "status": "WARNING",
+  "snapshot_id": "a_expand_20260704_l1_local1000_0317",
+  "source_project": "A_Share_Monitor",
+  "evidence": {
+    "symbols": 1000,
+    "canonical_rows": 2059000,
+    "date_range": "20180102..20260701",
+    "readiness": "WARNING_LEVEL_1",
+    "suspension_status": "WARNING_EVENT_TABLE_EMPTY",
+    "limit_price_status": "WARNING_LOW_COVERAGE",
+    "limit_price_coverage": 0.4,
+    "phase3_evidence_ready": false,
+    "micro_recommendation_data_ready_with_warnings": false,
+    "product_read_allowed": false
+  },
+  "required_sources": [
+    "existing ST/list table or equivalent symbol-status classification",
+    "raw suspension or trade-status table",
+    "daily OHLC or previous-close table",
+    "limit-band reference or derived market-board/ST rule set"
+  ],
+  "likely_root_causes": [
+    "canonical suspension event table was never populated from raw status feed",
+    "limit-price coverage is low because previous close, raw limit fields, or board/ST-specific limit rules are missing or not canonicalized",
+    "raw suspension and limit-price data may exist in the same local DuckDB but was not transformed into the snapshot readiness tables"
+  ],
+  "local_db_checks": [
+    "List all tables in the DuckDB file backing the snapshot in read-only mode",
+    "Search for columns such as is_suspended, trade_status, halt_code, suspend_type, up_limit, down_limit, pre_close, board, and ST/list status",
+    "Compare candidate raw-table coverage against the snapshot symbol-date matrix",
+    "Quantify which missing fields cause WARNING_EVENT_TABLE_EMPTY and WARNING_LOW_COVERAGE",
+    "Draft canonicalization SQL only after confirming local raw coverage"
+  ],
+  "network_required": "unknown_until_local_read_only_diagnosis",
+  "network_default": false,
+  "next_db_ops_task": {
+    "id": "DB-REPAIR-022-A",
+    "title": "Diagnose missing suspension events and low limit-price coverage for A-share L1 snapshot",
+    "default_permission": "L0_RESEARCH_DIAGNOSTIC",
+    "steps": [
+      "read-only DuckDB table inventory",
+      "raw suspension/status coverage check",
+      "raw previous-close/limit-band coverage check",
+      "symbol-date matrix coverage comparison",
+      "canonicalization SQL draft if local data exists",
+      "network-ingest specification only if local data is absent"
+    ],
+    "requires_hg_exec_before_write_or_network": true
+  },
+  "forbidden_actions": [
+    "DB writes without unique HG-EXEC-TASK-*",
+    "network ingest without unique HG-EXEC-TASK-*",
+    "schema migration without unique HG-EXEC-TASK-*",
+    "registry activation",
+    "readiness upgrade",
+    "recommendation",
+    "HITL ticket emission",
+    "broker/order/paper/live/auto execution",
+    ".env or secret access"
+  ],
+  "non_authorization": "This plan does not grant product-read, live-trading-data, Phase 3 evidence, micro recommendation, recommendation, ticket, broker, order, paper, live, DB-write, network-ingest, raw-data-migration, or secret-handling readiness."
+}

@@ -18,10 +18,9 @@
 ## In Progress
 
 - `post_acceptance_followup_20260704`: P0 dispatch batch opened after ChatGPT verdict `ACCEPT_RECORDED_EXECUTION_PACKET`.
-- `TASK-021 A11 Research Candidate Root-Cause Drilldown`: ready for fixed A-share Codex-Dev dispatch.
-- `TASK-022 A-share L1 Snapshot Capability Repair Plan`: ready for fixed Reasonix-DB dispatch.
-- `TASK-023 US DB Preflight Blocker Repair`: ready for fixed US Codex-Dev dispatch.
-- `TASK-024 US Eligibility Candidate Blocker Drilldown`: ready for fixed US Codex-Dev dispatch after or alongside `TASK-023` if sequencing is safe.
+- `TASK-021 A11 Research Candidate Root-Cause Drilldown`: dispatched to fixed A-share Codex-Dev thread `019f2911-ef0c-7053-aa77-a3b0bf0b05de`; awaiting result.
+- `TASK-023 US DB Preflight Blocker Repair`: dispatched to fixed US Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`; awaiting result.
+- `TASK-024 US Eligibility Candidate Blocker Drilldown`: dispatched to fixed US Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83` after `TASK-023`; awaiting result.
 
 ## Blocked / Hold
 
@@ -46,3 +45,4 @@
 - `TASK-009 A11 research-to-HITL gated ticket attempt`: accepted with warnings by Codex-Dev; A-share source commit `a2c8b825942a59d7c03429f41336ca1b9145a875`; gate result `NO_RECOMMENDATION_AVAILABLE`, `ticket_emitted=false`, no recommendation or trade fields produced.
 - `TASK-010 US strategy experiment to ticket refresh attempt`: accepted with warnings by Codex-Dev; US source commit `8b537ae214fa805d177fa067af879e3fbb83b035`; gate result `NO_RECOMMENDATION_AVAILABLE`, `ticket_emitted=false`, blockers remain evidence, feedback, and eligibility.
 - `night_batch_recorded_execution_chatgpt_external_audit`: verdict `ACCEPT_RECORDED_EXECUTION_PACKET`; controller-workspace recorded-execution process accepted with future `HG-EXEC-TASK-*` pre-execution requirement.
+- `TASK-022 A-share L1 Snapshot Capability Repair Plan`: completed by Reasonix-DB as L0 read-only plan; outputs `reports/deepseek_db/task_022_a_share_l1_capability_repair_plan.md` and `.json`; next DB ops task should be read-only diagnosis first.
