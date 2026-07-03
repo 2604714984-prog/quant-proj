@@ -11,6 +11,7 @@ Codex threads are created fresh per fixed role/project lane and pinned in the Co
 |---|---|---|---|
 | `Codex-Dev` | `A_Share_Monitor` | `Codex-Dev | A_Share_Monitor | TASK-001 A11 Acceptance` | `019f2911-ef0c-7053-aa77-a3b0bf0b05de` |
 | `Codex-Dev` | `US_Stock_Monitor` | `Codex-Dev | US_Stock_Monitor | TASK-002 Strategy Acceptance` | `019f2913-0031-7513-af16-017b8f990f83` |
+| `Codex-Dev` | `market_data` | `Codex-Dev | market_data | Registry Readiness Tasks` | `019f2957-de0a-7721-ade9-1abfef298127` |
 | `Codex-Audit` | `quant-proj` | `Codex-Audit | quant-proj | Dispatcher Execution Test` | `019f2913-528a-7d22-bd0b-589f0750e09f` |
 
 ## Reasonix Fixed Sessions

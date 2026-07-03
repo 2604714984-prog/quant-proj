@@ -9,15 +9,14 @@
 ## Backlog
 
 - `a-strat-1-gap-reacceptance-followup-20260704`: assigned dry-run packet for `Reasonix-Strategy`; source-project execution not started.
-- `TASK-006 US-DB-OPS-2 controlled US 300-symbol expansion`: packet ready; L1/L2 recorded execution; Human-Gate `HG-NIGHT-BATCH-20260704-L1-L4` available until `2026-07-05T08:00:00+08:00`; not executed.
-- `TASK-007 A-DB-OPS controlled A-share expansion`: packet ready; L1 and conditional L2 recorded execution; Human-Gate `HG-NIGHT-BATCH-20260704-L1-L4` available; not executed.
 - `TASK-008 market_data registry/readiness controlled update`: packet ready; L3 recorded execution; Human-Gate `HG-NIGHT-BATCH-20260704-L1-L4` available; not executed.
 - `TASK-009 A11 research-to-HITL gated ticket attempt`: packet ready; L4 `PENDING_HUMAN_REVIEW` only if all gates pass; not executed.
 - `TASK-010 US strategy experiment to ticket refresh attempt`: packet ready; L4 `PENDING_HUMAN_REVIEW` only if all gates pass; not executed.
 
 ## In Progress
 
-- None.
+- `TASK-006 US-DB-OPS-2 controlled US 300-symbol expansion`: sent to fixed `US_Stock_Monitor` Codex-Dev thread `019f2913-0031-7513-af16-017b8f990f83`; L1/L2 recorded execution under `HG-NIGHT-BATCH-20260704-L1-L4`.
+- `TASK-007 A-DB-OPS controlled A-share expansion`: sent to fixed `A_Share_Monitor` Codex-Dev thread `019f2911-ef0c-7053-aa77-a3b0bf0b05de`; L1 and conditional L2 recorded execution under `HG-NIGHT-BATCH-20260704-L1-L4`.
 
 ## Blocked / Hold
 
