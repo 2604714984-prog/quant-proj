@@ -1,4 +1,4 @@
-generated_at: "2026-07-04T01:25:34+08:00"
+generated_at: "2026-07-04T02:09:06+08:00"
 workspace_root: "/Users/rongyuxu/Desktop/quant proj"
 decision: "controller_workspace_first_no_physical_merge_yet"
 registry_kind: "point_in_time_controller_snapshot"
@@ -34,11 +34,11 @@ projects:
     cli: "python -m qta"
     size: "1.7G"
     git_branch: "codex/harden-a-share-research-pipeline"
-    latest_commit: "1537e99 Add A11 regime adaptive research diagnostics"
-    latest_commit_full: "1537e9958fdd11a36f6392314228abd02a26507a"
-    latest_tree: "c30fa5401789005ff27ca7658fbe5ddf382f4df5"
+    latest_commit: "012006c Accept A11 research runner as research-only"
+    latest_commit_full: "012006c40897f999f2a2ba5c69e2630b9d50a552"
+    latest_tree: "2447205526791e6bcf3f9b18b512d9fc7093c75c"
     working_tree: "clean"
-    last_describe: "stage-a10-external-audit-packet-20260703-8-g1537e9958fdd"
+    last_describe: "stage-a10-external-audit-packet-20260703-9-g012006c"
     tracked_files: 630
     migration_status: "defer"
     migration_reason: "large local data, absolute-path audit/data manifests, and no approved physical migration stage"
@@ -60,11 +60,11 @@ projects:
     cli: "python -m usq"
     size: "261M"
     git_branch: "codex/duckdb-provider"
-    latest_commit: "36aff30 Add US strategy research experiments"
-    latest_commit_full: "36aff30da581d01d24ffba89c6bb1e0515337bec"
-    latest_tree: "0fcf4a464116e748e5514ab9c2dbcc899ecc2f74"
+    latest_commit: "c046c0c Control US universe expansion helper"
+    latest_commit_full: "c046c0ce56e5ea501aa2600df410b80b58d412fb"
+    latest_tree: "4c042e79c23584af3fca173a6817ea26d9e3ee81"
     working_tree: "clean"
-    last_describe: "phase-us13-audit-r1-4-g36aff30da581"
+    last_describe: "phase-us13-audit-r1-6-gc046c0c"
     tracked_files: 962
     migration_status: "defer"
     migration_reason: "active US-13 and DuckDB-provider route, ignored local data, and no approved physical migration stage"
@@ -78,8 +78,9 @@ projects:
       readiness_status_current: "PASS_LEVEL_2"
     current_real_state:
       us13_status: "NO_RECOMMENDATION_AVAILABLE"
-      active_ticket_status: "PENDING_HUMAN_REVIEW"
+      active_ticket_status: "NO_ACTIVE_TICKET_AFTER_USER_APPROVED_METADATA_ONLY"
       real_fill_count: 0
+      task_003_db_ops_warning: "EXISTING_AAPL_DUPLICATE_DAILY_ROWS_DETECTED_READ_ONLY"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false

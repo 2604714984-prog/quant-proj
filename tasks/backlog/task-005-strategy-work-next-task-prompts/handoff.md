@@ -11,12 +11,15 @@ Use Reasonix-Strategy with the workspace strategy-researcher system prompt:
 ```bash
 cd "/Users/rongyuxu/Desktop/quant proj"
 reasonix run --effort high --budget 0.50 \
+  -m deepseek-v4-pro \
   --transcript reports/workspace_dispatch/reasonix_strategy_task_005_20260704.jsonl \
   --system "$(cat prompts/reasonix_strategy_researcher.md)" \
   "$(cat tasks/backlog/task-005-strategy-work-next-task-prompts/handoff.md)"
 ```
 
 This command is the send method. Quant-Dispatcher has not executed it.
+
+Fixed Reasonix settings: `deepseek-v4-pro`, effort `high`.
 
 ## Request
 
@@ -48,4 +51,3 @@ Use the current boundary:
 - Do not emit recommendation tickets.
 - Do not output buy/sell advice.
 - Do not claim readiness or product gate approval.
-

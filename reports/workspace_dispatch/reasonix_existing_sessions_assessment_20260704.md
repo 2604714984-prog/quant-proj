@@ -38,6 +38,11 @@ Create or use these fixed session names going forward:
 | `Reasonix-Strategy` | `quant-reasonix-strategy` | Strategy research drafts, factor hypotheses, blocker diagnosis, experiment design |
 | `Reasonix-Advisory` | `quant-reasonix-advisory` | Read-only second review, test-gap review, overclaim review |
 
+All fixed Reasonix endpoints use:
+
+- model: `deepseek-v4-pro`
+- effort: `high`
+
 ## How To Start Fixed Sessions
 
 Reasonix-DB:
@@ -46,6 +51,7 @@ Reasonix-DB:
 cd "/Users/rongyuxu/Desktop/quant proj"
 reasonix chat \
   --session quant-reasonix-db \
+  -m deepseek-v4-pro \
   --effort high \
   --budget 1 \
   --system "$(cat prompts/reasonix_db_maintainer.md)" \
@@ -58,6 +64,7 @@ Reasonix-Strategy:
 cd "/Users/rongyuxu/Desktop/quant proj"
 reasonix chat \
   --session quant-reasonix-strategy \
+  -m deepseek-v4-pro \
   --effort high \
   --budget 1 \
   --system "$(cat prompts/reasonix_strategy_researcher.md)" \
@@ -70,6 +77,7 @@ Reasonix-Advisory:
 cd "/Users/rongyuxu/Desktop/quant proj"
 reasonix chat \
   --session quant-reasonix-advisory \
+  -m deepseek-v4-pro \
   --effort high \
   --budget 1 \
   --system "$(cat prompts/reasonix_advisory_review.md)" \
@@ -104,4 +112,3 @@ Default route:
 - fixed session names for all new dispatched Reasonix work;
 - old sessions are reference-only unless the user explicitly asks to continue them;
 - every dispatched task must still have a task packet and saved transcript path.
-

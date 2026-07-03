@@ -56,6 +56,8 @@ agents:
     name: "Reasonix-Advisory"
     role: "read-only second review, test-gap review, report-overclaim review, codebase Q&A"
     primary_tool: "Reasonix CLI"
+    fixed_model: "deepseek-v4-pro"
+    fixed_effort: "high"
     write_policy: "no source edits; transcript/report only"
     must_not:
       - "edit files unless explicitly converted to Codex-Dev task"
@@ -67,6 +69,8 @@ agents:
     name: "Reasonix-DB"
     role: "database maintenance diagnostics, schema/readiness review, manifest planning, SQL draft support"
     primary_tool: "Reasonix CLI connected to DS"
+    fixed_model: "deepseek-v4-pro"
+    fixed_effort: "high"
     default_mode: "read_only_or_draft"
     allowed_projects:
       - "market_data"
@@ -99,6 +103,8 @@ agents:
     name: "Reasonix-Strategy"
     role: "strategy research planning, factor hypotheses, config drafts, backtest-result diagnosis"
     primary_tool: "Reasonix CLI connected to DS"
+    fixed_model: "deepseek-v4-pro"
+    fixed_effort: "high"
     default_mode: "research_draft"
     allowed_projects:
       - "strategy_work"

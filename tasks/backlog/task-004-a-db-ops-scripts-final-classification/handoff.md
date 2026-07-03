@@ -11,12 +11,15 @@ Use Reasonix-DB with the workspace DB-maintainer system prompt:
 ```bash
 cd "/Users/rongyuxu/Desktop/quant proj"
 reasonix run --effort high --budget 0.50 \
+  -m deepseek-v4-pro \
   --transcript reports/workspace_dispatch/reasonix_db_task_004_20260704.jsonl \
   --system "$(cat prompts/reasonix_db_maintainer.md)" \
   "$(cat tasks/backlog/task-004-a-db-ops-scripts-final-classification/handoff.md)"
 ```
 
 This command is the send method. Quant-Dispatcher has not executed it.
+
+Fixed Reasonix settings: `deepseek-v4-pro`, effort `high`.
 
 ## Request
 
@@ -56,4 +59,3 @@ Also state whether it needs:
 - Do not run network ingest.
 - Do not read `.env` or secrets.
 - Do not claim product/readiness/recommendation status.
-

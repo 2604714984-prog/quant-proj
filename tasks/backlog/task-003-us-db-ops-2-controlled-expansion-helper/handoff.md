@@ -31,7 +31,11 @@ Add:
 - symbol validation against `canonical_symbol_metadata`;
 - tests or smoke coverage appropriate to the change.
 
-Do not run real network ingest or write DuckDB in this task unless a separate Human-Gate record exists.
+Standing Human-Gate authorization exists as `HG-STANDING-20260704` for controlled DB writes, schema migration, bulk ingest, registry activation, readiness status changes, and real HITL ticket gate entry.
+
+Do not run real network ingest or write DuckDB in this task unless a task-level `HG-EXEC-*` record is created first with the exact command, target DB path, allowed write scope, forbidden paths, stop conditions, and validation plan.
+
+For the default scope, implement rewrite and tests only; no real network ingest or DB write is required.
 
 ## Forbidden
 
@@ -45,4 +49,3 @@ Do not run real network ingest or write DuckDB in this task unless a separate Hu
 - No recommendation/HITL/ticket/broker/order/live imports.
 
 Return `CODEX_ACCEPTANCE_US_DB_OPS_2`.
-

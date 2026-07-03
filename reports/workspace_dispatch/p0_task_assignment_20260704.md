@@ -2,8 +2,8 @@
 
 Date: 2026-07-04T01:25:34+08:00
 Role: `Quant-Dispatcher`
-Mode: assignment only
-Status: `ASSIGNED_READY_TO_SEND`
+Mode: assignment and execution tracking
+Status: `COMPLETED_READY_FOR_CODEX_AUDIT`
 
 ## Registry Refresh
 
@@ -25,7 +25,7 @@ Important refresh result:
 |---|---:|---|---|---|---|
 | `TASK-001 CODEX_ACCEPTANCE_A11_RESEARCH_RUNNER` | P0 | `Codex-Dev` | `/Users/rongyuxu/Desktop/A_Share_Monitor` | Not required for research-only acceptance | Open `codex -C /Users/rongyuxu/Desktop/A_Share_Monitor`, paste `tasks/backlog/task-001-codex-acceptance-a11-research-runner/handoff.md` |
 | `TASK-002 CODEX_ACCEPTANCE_US_STRATEGY_EXPERIMENTS` | P0 | `Codex-Dev` | `/Users/rongyuxu/Desktop/US_Stock_Monitor` | Not required for research-only acceptance | Open `codex -C /Users/rongyuxu/Desktop/US_Stock_Monitor`, paste `tasks/backlog/task-002-codex-acceptance-us-strategy-experiments/handoff.md` |
-| `TASK-003 US_DB_OPS_2_CONTROLLED_EXPANSION_HELPER` | P0 | `Codex-Dev` | `/Users/rongyuxu/Desktop/US_Stock_Monitor` | Not required for rewrite only; required before network or DB writes | Open `codex -C /Users/rongyuxu/Desktop/US_Stock_Monitor`, paste `tasks/backlog/task-003-us-db-ops-2-controlled-expansion-helper/handoff.md` |
+| `TASK-003 US_DB_OPS_2_CONTROLLED_EXPANSION_HELPER` | P0 | `Codex-Dev` | `/Users/rongyuxu/Desktop/US_Stock_Monitor` | Standing authorization exists for network/DB writes, but an `HG-EXEC-*` record is required before actual execution | Open `codex -C /Users/rongyuxu/Desktop/US_Stock_Monitor`, paste `tasks/backlog/task-003-us-db-ops-2-controlled-expansion-helper/handoff.md` |
 | `TASK-004 A_DB_OPS_SCRIPTS_FINAL_CLASSIFICATION` | P1 | `Reasonix-DB` | `/Users/rongyuxu/Desktop/A_Share_Monitor` | Not required for read-only classification; required before writes or ingest | Run Reasonix with `prompts/reasonix_db_maintainer.md` and `tasks/backlog/task-004-a-db-ops-scripts-final-classification/handoff.md` |
 | `TASK-005 STRATEGY_WORK_NEXT_TASK_PROMPTS` | P1 | `Reasonix-Strategy` | `/Users/rongyuxu/Desktop/strategy_work` | Not required for research draft | Run Reasonix with `prompts/reasonix_strategy_researcher.md` and `tasks/backlog/task-005-strategy-work-next-task-prompts/handoff.md` |
 
@@ -36,6 +36,26 @@ Important refresh result:
 3. Send `TASK-003` to Codex-Dev only after `TASK-002` is at least accepted or not blocking the US repo state.
 4. Send `TASK-004` to Reasonix-DB in parallel with Codex-Dev work if desired.
 5. Send `TASK-005` to Reasonix-Strategy after or alongside `TASK-001` and `TASK-002`; it is research planning only.
+
+## Execution Closeout
+
+This P0 dispatch batch has completed downstream execution and result collection.
+
+| Task | Assigned role | Result | Evidence |
+|---|---|---|---|
+| `TASK-001 CODEX_ACCEPTANCE_A11_RESEARCH_RUNNER` | `Codex-Dev` | `ACCEPTED_WITH_WARNINGS` | A-share commit `012006c40897f999f2a2ba5c69e2630b9d50a552`; report `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/task_001_a11_research_runner_acceptance_20260704.md` |
+| `TASK-002 CODEX_ACCEPTANCE_US_STRATEGY_EXPERIMENTS` | `Codex-Dev` | `ACCEPTED_WITH_WARNINGS` | US commit `2d779f5837f309de45d43f2d9c60d7f4e3eeae21`; report `/Users/rongyuxu/Desktop/US_Stock_Monitor/reports/codex_dev/task_002_us_strategy_experiments_acceptance_20260704.md` |
+| `TASK-003 US_DB_OPS_2_CONTROLLED_EXPANSION_HELPER` | `Codex-Dev` | `ACCEPTED_WITH_WARNINGS` | US commit `c046c0ce56e5ea501aa2600df410b80b58d412fb`; report `/Users/rongyuxu/Desktop/US_Stock_Monitor/reports/codex_dev/task_003_us_db_ops_2_controlled_expansion_helper_20260704.md` |
+| `TASK-004 A_DB_OPS_SCRIPTS_FINAL_CLASSIFICATION` | `Reasonix-DB` | `COMPLETED_READ_ONLY_CLASSIFICATION` | `reports/workspace_dispatch/reasonix_db_task_004_result_20260704.md` |
+| `TASK-005 STRATEGY_WORK_NEXT_TASK_PROMPTS` | `Reasonix-Strategy` | `COMPLETED_RESEARCH_ROADMAP_ONLY` | `reports/workspace_dispatch/reasonix_strategy_task_005_result_20260704.md` |
+
+Primary controller closeout:
+
+- `reports/workspace_dispatch/p0_dispatch_execution_closeout_20260704.md`
+
+Codex-Audit handoff:
+
+- `reports/agent_handoff/dispatcher_execution_test_codex_audit_handoff_20260704.md`
 
 ## Exact Send Instructions
 
@@ -80,6 +100,7 @@ tasks/backlog/task-003-us-db-ops-2-controlled-expansion-helper/handoff.md
 ```bash
 cd "/Users/rongyuxu/Desktop/quant proj"
 reasonix run --effort high --budget 0.50 \
+  -m deepseek-v4-pro \
   --transcript reports/workspace_dispatch/reasonix_db_task_004_20260704.jsonl \
   --system "$(cat prompts/reasonix_db_maintainer.md)" \
   "$(cat tasks/backlog/task-004-a-db-ops-scripts-final-classification/handoff.md)"
@@ -90,6 +111,7 @@ reasonix run --effort high --budget 0.50 \
 ```bash
 cd "/Users/rongyuxu/Desktop/quant proj"
 reasonix run --effort high --budget 0.50 \
+  -m deepseek-v4-pro \
   --transcript reports/workspace_dispatch/reasonix_strategy_task_005_20260704.jsonl \
   --system "$(cat prompts/reasonix_strategy_researcher.md)" \
   "$(cat tasks/backlog/task-005-strategy-work-next-task-prompts/handoff.md)"
@@ -104,5 +126,4 @@ reasonix run --effort high --budget 0.50 \
 
 ## Boundary
 
-This dispatch only assigns tasks. It does not execute downstream work, edit source projects, write databases, run network ingest, change schemas, activate registry routes, change readiness, emit tickets, generate recommendations, touch broker/order paths, run paper/live trading, or handle secrets.
-
+This dispatch batch executed only through assigned downstream agents and collected their reports. Quant-Dispatcher did not edit source-project implementation files, write databases, run network ingest, change schemas, activate registry routes, change readiness, emit tickets, generate recommendations, touch broker/order paths, run paper/live trading, or handle secrets.
