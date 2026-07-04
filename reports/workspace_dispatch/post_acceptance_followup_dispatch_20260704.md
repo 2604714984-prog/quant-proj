@@ -4,7 +4,7 @@ Date: 2026-07-04
 Owner: `Quant-Dispatcher`
 Batch: `post_acceptance_followup_20260704`
 Source: ChatGPT external audit verdict `ACCEPT_RECORDED_EXECUTION_PACKET`
-Status: `P0_COMPLETE_READY_FOR_P1`
+Status: `P1_COMPLETE_AUDIT_READY`
 
 ## Goal
 
@@ -29,6 +29,11 @@ The earlier A-share and US fixed Codex-Dev endpoints entered `systemError` befor
 P0 result closeout:
 
 - `reports/workspace_dispatch/post_acceptance_followup_p0_results_20260704.md`
+
+P1 dispatch and result closeouts:
+
+- `reports/workspace_dispatch/post_acceptance_p1_dispatch_20260704.md`
+- `reports/workspace_dispatch/post_acceptance_p1_results_20260704.md`
 
 ## Human-Gate
 

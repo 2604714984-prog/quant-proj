@@ -10,16 +10,10 @@
 ## Backlog
 
 - `a-strat-1-gap-reacceptance-followup-20260704`: assigned dry-run packet for `Reasonix-Strategy`; source-project execution not started.
-- `TASK-025 market_data Access-Gate Regression`: queued P1 after P0 evidence or independent regression need.
-- `TASK-027 A11 Candidate Safety Advisory Review`: queued P1 after `TASK-021`.
-- `TASK-028 US Strategy Safety Advisory Review`: queued P1 after `TASK-024`.
 
 ## In Progress
 
-- `post_acceptance_followup_20260704`: P0 complete; P1 dispatch/implementation in progress.
-- `TASK-025 market_data Access-Gate Regression`: ready to dispatch to fixed market_data Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`.
-- `TASK-027 A11 Candidate Safety Advisory Review`: ready for fixed `Reasonix-Advisory` session after `TASK-021`.
-- `TASK-028 US Strategy Safety Advisory Review`: ready for fixed `Reasonix-Advisory` session after `TASK-024`.
+- `post_acceptance_followup_20260704`: P0 and P1 complete; Codex-Audit handoff pending.
 
 ## Blocked / Hold
 
@@ -49,3 +43,6 @@
 - `TASK-023 US DB Preflight Blocker Repair`: accepted with warnings by Codex-Dev; US source commit `356f56ab5b7452e342c05d44087d867853e3fea0`; historical overlaps are warning-only, target snapshot collision clear, remaining blocker is 44 missing metadata symbols.
 - `TASK-024 US Eligibility Candidate Blocker Drilldown`: accepted by Codex-Dev; US source commit `04e7e6742a7fa87d04ea9a65ebc5cf6f0f55a3a7`; feedback is not actionable, evidence re-entry incomplete, eligibility candidate absent by design.
 - `TASK-026 Human-Gate Pre-Execution Template Enforcement`: accepted in controller workspace; `HG-EXEC-TASK-*` template, HOLD example, dispatcher checklist, and task-packet validation rule added.
+- `TASK-025 market_data Access-Gate Regression`: accepted with warnings by Codex-Dev; market_data source commit `52570b51369e7eb295871c123d1528b0e0b8372a`; access-gate regression tests prove candidate/blocked routes cannot become product/recommendation/broker/live/auto ready.
+- `TASK-027 A11 Candidate Safety Advisory Review`: Reasonix-Advisory PASS; no blocker/high/medium/low/test-gap findings; residual monitoring notes only.
+- `TASK-028 US Strategy Safety Advisory Review`: Reasonix-Advisory PASS; no blocker/high/medium/low/test-gap findings; residual monitoring notes only.
