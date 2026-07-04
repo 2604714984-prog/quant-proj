@@ -2,6 +2,7 @@
 
 ## Inbox
 
+- `DATA_STRATEGY_BATCH_20260704_R2`: imported next Data + Strategy batch; ordinary source execution only; no controller/ChatGPT external audit packet.
 - `20260704-chatgpt-external-audit-fixes`: imported ChatGPT external audit fix list; classified by Quant-Dispatcher.
 - `20260704-controller-workspace-p0-dispatch-list`: imported controller workspace P0 dispatch list; converted into task packets.
 - `20260704-updated-night-batch-recorded-execution-mode`: imported recorded execution mode update and night batch task list.
@@ -14,6 +15,11 @@
 
 ## In Progress
 
+- `DATA_STRATEGY_BATCH_20260704_R2`: dispatched by Quant-Dispatcher on 2026-07-05; no external audit packet; no ticket/product-route task; source execution assigned to agents:
+  - A-share P0 data/strategy: `Arendt` / `019f2de6-2943-7772-b517-1f3105b5fa53`
+  - US P0 data/strategy: `Epicurus` / `019f2de6-8908-7eb0-ab5d-6892b0a2225c`
+  - market_data + strategy_work P1: `Banach` / `019f2de6-bef7-7f90-b73a-9edb77f0ff36`
+  - batch summary: `reports/workspace_dispatch/data_strategy_batch_20260704_r2_dispatch_summary_20260705.md`
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
 
 ## Blocked / Hold
