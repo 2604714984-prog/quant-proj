@@ -14,7 +14,7 @@
 
 ## In Progress
 
-- `post_acceptance_accepted_next_batch_20260704`: P0 dispatch prepared for `TASK-029` through `TASK-033`.
+- `post_acceptance_accepted_next_batch_20260704`: P0 complete for `TASK-029` through `TASK-033`; P1 dispatch ready for `TASK-034` through `TASK-038`.
 
 ## Blocked / Hold
 
@@ -49,3 +49,8 @@
 - `TASK-027 A11 Candidate Safety Advisory Review`: Reasonix-Advisory PASS; no blocker/high/medium/low/test-gap findings; residual monitoring notes only.
 - `TASK-028 US Strategy Safety Advisory Review`: Reasonix-Advisory PASS; no blocker/high/medium/low/test-gap findings; residual monitoring notes only.
 - `post_acceptance_followup_chatgpt_external_audit`: verdict `ACCEPT_POST_ACCEPTANCE_FOLLOWUP_PACKET`; controller-workspace follow-up process accepted; next batch `TASK-029` through `TASK-038` imported.
+- `TASK-029 A11 Candidate Gate Unblock Plan`: accepted with warnings by Codex-Dev; A-share source commit `ce26b391e0eebf5eca35aae974052a236cdf5bca`; 83 research candidates remain ticket-ineligible and data repair alone still yields 0 eligible.
+- `TASK-030 A-share L1 Local DuckDB Capability Diagnosis`: accepted with warnings by Codex-Dev; A-share source commit `ce26b391e0eebf5eca35aae974052a236cdf5bca`; suspension rows absent for L1, limit-price coverage remains 0.4, no write/network/readiness change.
+- `TASK-031 US 44-Symbol Metadata Gap Repair Plan`: accepted with warnings by Codex-Dev; US source commit `4d4e21f35374fd2aca6c6f756830ab9d1b353593`; 44-symbol metadata blocker remains unresolved without an approved source and future unique `HG-EXEC-TASK-*`.
+- `TASK-032 US Qualitative Feedback Bootstrap Schema`: Reasonix-Strategy draft normalized and US Codex-Dev accepted with required guardrails; US source commit `30a4dffb8d84c61be812dc1d36ede1649e2f60b6`; no `actionable_feedback=true`, no eligibility candidate, no ticket.
+- `TASK-033 Final Metadata Packet Standard`: accepted in controller workspace; final-publication metadata runbook/template created and dispatcher checklist updated.
