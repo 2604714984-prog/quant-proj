@@ -31,6 +31,23 @@ ChatGPT task list
 - Validate task packets before dispatch using `runbooks/task_packet_validation.md`.
 - For final ChatGPT external-audit publications, create post-tag final publication metadata using `runbooks/final_publication_metadata.md`.
 
+## External Audit Trigger Policy
+
+Do not create ChatGPT external-audit packets for ordinary task lists, dispatcher routing, Reasonix advisory output, Codex acceptance output, research-only candidates, blocked/no-recommendation states, or controller process bookkeeping.
+
+Ordinary source work should end with `CODEX_ACCEPTANCE` or `REASONIX_REPORT`, plus commit/tree and validation evidence when files changed.
+
+Only prepare a ChatGPT external-audit packet when one of these gates is being opened or changed:
+
+- A-share research candidates are proposed for real `PENDING_HUMAN_REVIEW`.
+- US creates a real `eligibility_candidate` for `PENDING_HUMAN_REVIEW`.
+- `market_data` changes an A-share or US route into an active product route.
+- readiness moves from research/warning into HITL data prerequisite or production recommendation readiness.
+- broker/order/paper/live/auto behavior is introduced or changed.
+- the Human-Gate permission model, registry activation rules, secret handling, or broker/live boundary changes.
+
+If none of those triggers are present, do not start Codex-Audit or ChatGPT external audit for the controller. Ask which blocker to repair next.
+
 ## Downstream Agent Choices
 
 | Task type | Agent |

@@ -14,7 +14,7 @@
 
 ## In Progress
 
-- `post_acceptance_accepted_next_batch_20260704`: P1 dispatch prepared for `TASK-034` through `TASK-038`.
+- `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
 
 ## Blocked / Hold
 
@@ -54,3 +54,6 @@
 - `TASK-031 US 44-Symbol Metadata Gap Repair Plan`: accepted with warnings by Codex-Dev; US source commit `4d4e21f35374fd2aca6c6f756830ab9d1b353593`; 44-symbol metadata blocker remains unresolved without an approved source and future unique `HG-EXEC-TASK-*`.
 - `TASK-032 US Qualitative Feedback Bootstrap Schema`: Reasonix-Strategy draft normalized and US Codex-Dev accepted with required guardrails; US source commit `30a4dffb8d84c61be812dc1d36ede1649e2f60b6`; no `actionable_feedback=true`, no eligibility candidate, no ticket.
 - `TASK-033 Final Metadata Packet Standard`: accepted in controller workspace; final-publication metadata runbook/template created and dispatcher checklist updated.
+- `TASK-034 A11 Candidate Safety Regression Tests`: accepted with warnings by Codex-Dev; A-share source commit `ef1f3107ea83a5c3f556929622479951fcd13ff1`; 83 research candidates remain non-actionable, ticket-ineligible, and blocked by readiness/product-read/evidence gates.
+- `TASK-035 US Eligibility Gate Object Contract`: accepted with warnings after source thread systemError recovery; US source commit `c1ef75cb63c3a2546e8046692a0ad9221f8f312a`; qualitative metadata cannot set `actionable_feedback=true`, no live-use eligibility candidate or ticket emitted.
+- `controller-external-audit-loop-stop-20260704`: dispatcher runbook updated; no ChatGPT external-audit packet for ordinary task lists, Reasonix advisory, Codex acceptance, research-only candidates, or blocked/no-recommendation states.
