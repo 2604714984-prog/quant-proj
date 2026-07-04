@@ -14,7 +14,7 @@
 
 ## In Progress
 
-- `post_acceptance_accepted_next_batch_20260704`: P0 complete for `TASK-029` through `TASK-033`; P1 dispatch ready for `TASK-034` through `TASK-038`.
+- `post_acceptance_accepted_next_batch_20260704`: P1 dispatch prepared for `TASK-034` through `TASK-038`.
 
 ## Blocked / Hold
 
