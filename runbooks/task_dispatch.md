@@ -29,6 +29,7 @@ ChatGPT task list
 - Refresh the registry before assigning work that depends on current source-project state.
 - Record Human-Gate decisions durably when approval is required.
 - Validate task packets before dispatch using `runbooks/task_packet_validation.md`.
+- For final ChatGPT external-audit publications, create post-tag final publication metadata using `runbooks/final_publication_metadata.md`.
 
 ## Downstream Agent Choices
 
@@ -91,3 +92,4 @@ Before dispatch, validate the permission level. L1-L4 execution requests require
 - Do not let Reasonix-Strategy promote research drafts into A-share/US source repos without Codex-Dev.
 - Do not let Reasonix-Advisory edit files unless the task is explicitly converted into a Codex-Dev implementation task.
 - Do not let Codex-Audit fix code.
+- Do not close a final external-audit publication without recording the final tag object, commit, tree, tag URL, packet path, and manifest path in a final publication metadata closeout.

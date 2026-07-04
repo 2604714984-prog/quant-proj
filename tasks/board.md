@@ -6,6 +6,7 @@
 - `20260704-controller-workspace-p0-dispatch-list`: imported controller workspace P0 dispatch list; converted into task packets.
 - `20260704-updated-night-batch-recorded-execution-mode`: imported recorded execution mode update and night batch task list.
 - `20260704-night-batch-external-audit-accepted-followups`: imported ChatGPT external audit acceptance and next task list.
+- `20260704-post-acceptance-followup-accepted-next-batch`: imported ChatGPT `ACCEPT_POST_ACCEPTANCE_FOLLOWUP_PACKET` result and next task list.
 
 ## Backlog
 
@@ -13,7 +14,7 @@
 
 ## In Progress
 
-- `post_acceptance_followup_20260704`: P0 and P1 complete; Codex-Audit handoff pending.
+- `post_acceptance_accepted_next_batch_20260704`: P0 dispatch prepared for `TASK-029` through `TASK-033`.
 
 ## Blocked / Hold
 
@@ -22,6 +23,7 @@
 - `HOLD-003 US 300-symbol network ingest`: preflight blockers first; requires new `HG-EXEC-TASK-*`.
 - `HOLD-004 A-share network ingest for suspension/limit repair`: repair plan first; requires new `HG-EXEC-TASK-*` if network/write.
 - `HOLD-005 active product route replacement`: requires separate source-project packet and likely external audit.
+- `HOLD-006 production_recommendation_data_ready=true`: explicitly out of scope.
 
 ## Done
 
@@ -46,3 +48,4 @@
 - `TASK-025 market_data Access-Gate Regression`: accepted with warnings by Codex-Dev; market_data source commit `52570b51369e7eb295871c123d1528b0e0b8372a`; access-gate regression tests prove candidate/blocked routes cannot become product/recommendation/broker/live/auto ready.
 - `TASK-027 A11 Candidate Safety Advisory Review`: Reasonix-Advisory PASS; no blocker/high/medium/low/test-gap findings; residual monitoring notes only.
 - `TASK-028 US Strategy Safety Advisory Review`: Reasonix-Advisory PASS; no blocker/high/medium/low/test-gap findings; residual monitoring notes only.
+- `post_acceptance_followup_chatgpt_external_audit`: verdict `ACCEPT_POST_ACCEPTANCE_FOLLOWUP_PACKET`; controller-workspace follow-up process accepted; next batch `TASK-029` through `TASK-038` imported.

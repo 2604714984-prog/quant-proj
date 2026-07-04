@@ -1,0 +1,70 @@
+{
+  "task_id": "TASK-032",
+  "status": "RESEARCH_DRAFT_NORMALIZED",
+  "role": "Reasonix-Strategy",
+  "model": "deepseek-v4-pro",
+  "effort": "high",
+  "mode": "L0_RESEARCH_DIAGNOSTIC",
+  "transcript": "reports/workspace_dispatch/reasonix_strategy_task_032_20260704.jsonl",
+  "schema_fields": [
+    "user_watch_reason",
+    "user_rejected_reason",
+    "sector_preference",
+    "risk_concern",
+    "time_horizon_preference",
+    "data_quality_concern",
+    "wants_more_evidence"
+  ],
+  "forbidden_fields": [
+    "buy_now",
+    "sell_now",
+    "execute",
+    "position_size",
+    "target_weight",
+    "entry_price",
+    "broker_id",
+    "order_type",
+    "allocation_pct",
+    "trade_plan"
+  ],
+  "backlog_mapping": {
+    "US-10": [
+      "user_watch_reason",
+      "user_rejected_reason",
+      "wants_more_evidence"
+    ],
+    "US-11": [
+      "sector_preference",
+      "risk_concern",
+      "time_horizon_preference"
+    ]
+  },
+  "required_tests_for_future_codex_dev": [
+    "only allowed fields are accepted",
+    "forbidden field names are rejected",
+    "forbidden trading or advice terms in free text are blocked or quarantined",
+    "schema reads do not set ticket_emitted=true",
+    "schema reads do not set actionable_feedback=true by themselves",
+    "schema reads do not create eligibility_candidate",
+    "no broker/order/paper/live/auto flags can be set",
+    "derived qualitative signal is disabled by default behind a research-only feature flag"
+  ],
+  "normalization_notes": [
+    "TASK-032 is L0 research/schema draft only and does not require HG-EXEC-TASK-*",
+    "future source-project implementation must be a separate Codex-Dev task",
+    "future L1-L4 execution requires a unique pre-execution HG-EXEC-TASK-*",
+    "TASK-033 is reserved for quant-proj final publication metadata standards"
+  ],
+  "non_authorization": {
+    "recommendation": false,
+    "hitl_ticket": false,
+    "broker_order": false,
+    "paper_live_auto": false,
+    "db_write": false,
+    "network_ingest": false,
+    "registry_activation": false,
+    "readiness_change": false,
+    "raw_data_migration": false,
+    "secret_handling": false
+  }
+}
