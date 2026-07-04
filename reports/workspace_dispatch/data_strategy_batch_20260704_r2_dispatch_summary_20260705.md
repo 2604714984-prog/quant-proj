@@ -97,3 +97,30 @@ This is an ordinary source-project Data + Strategy batch. No controller external
 - External audit packet: `NOT_CREATED`
 - Controller audit packet: `NOT_CREATED`
 - Ticket/product-route tasks: `NOT_CREATED`
+
+## Priority Amendment 2026-07-05
+
+The latest GitHub/current-file review keeps the batch inside the same Data + Strategy scope but sharpens execution priorities:
+
+- A-share should prioritize robustness and candidate quality, not more gate/controller work.
+- A-share `conservative_momentum_liquidity_affordability` is the first strategy to deep-dive because it has a small candidate set and positive median 20d/60d/120d returns in the latest review context.
+- A-share low-vol strategy variants should not be prioritized merely because they produce more candidates; they need robustness and regime-dependency checks.
+- A-share data-gap reporting must explicitly cover qfq_close missing `11`, turnover missing `4`, and whether suspension event history with only `3` rows affects strategy research.
+- US should not let the `44` missing metadata symbols block all strategy research. Create a dual track:
+  - `US-300A` / `US-239 metadata-valid research universe`: research-only strategy scan may proceed if local data supports it.
+  - `US-300B`: pending metadata enrichment for the `44` missing symbols, split into active equity, ETF, delisted/historical, and unsupported/remove-from-current-universe.
+- market_data should sync A-share research-route metadata wording to `Level2 accepted for research` while keeping product route disabled.
+- market_data should express US-300A / US-300B as non-product research/status routes.
+- strategy_work should synchronize current state away from old `265` A-share / `63` US descriptions toward A-share `1000 Level2 / 203 candidates / 152 unique` and US `239 valid + 44 metadata gap`.
+
+Additional instructions were sent to all three downstream agents:
+
+| Workstream | Agent ID | Amendment |
+|---|---|---|
+| A-share P0 | `019f2de6-2943-7772-b517-1f3105b5fa53` | Focus walk-forward robustness, 16 conservative-momentum deep dive, small data-gap impact, and deduped 1/2/3-symbol research pool feasibility. |
+| US P0 | `019f2de6-8908-7eb0-ab5d-6892b0a2225c` | Add US-239/US-300A research-only scan path and split the 44 metadata gaps by active equity / ETF / delisted-historical / unsupported. |
+| market_data + strategy_work | `019f2de6-bef7-7f90-b73a-9edb77f0ff36` | Follow up on Level2 accepted-for-research wording, US-300A/US-300B status expression, and strategy_work current-state sync. |
+
+Reasonix sidecar status is tracked in `reports/workspace_dispatch/reasonix_data_strategy_batch_r2_sidecar_summary_20260705.md`.
+
+The amendment does not authorize recommendations, tickets, product route activation, production readiness, broker/order/paper/live/auto, or controller/ChatGPT external-audit packets.
