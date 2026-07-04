@@ -1,0 +1,160 @@
+{
+  "review_id": "post_acceptance_followup_process_review_20260704",
+  "created_date": "2026-07-04",
+  "source_thread_id": "019f2766-7c5f-7562-b2e3-b4d76de7bfa9",
+  "reviewer_role": "Codex-Audit / Process Reviewer",
+  "project": "quant-proj",
+  "overall_status": "PASS_WITH_FINDINGS",
+  "ready_for_final_chatgpt_external_audit_packet_publication": true,
+  "ready_scope": "controller-workspace post-acceptance follow-up batch covering P0 TASK-021 through TASK-024, P1 TASK-025 through TASK-028, and TASK-026 Human-Gate pre-execution template enforcement; not product, recommendation, broker, order, paper-trading, auto-execution, live-trading, raw-data-migration, DB-write, schema-migration, registry-activation, readiness-change, HITL-ticket-approval, or secret-handling approval",
+  "audit_point": {
+    "repository": "2604714984-prog/quant-proj",
+    "branch": "main",
+    "commit": "84530a594c4f98499d2b8cde2571761ecfc4be45",
+    "tree": "b9ebd90d5db98ec134cde5f8875ba8ab375c3f18"
+  },
+  "scope_reviewed": [
+    "reports/agent_handoff/post_acceptance_followup_codex_audit_handoff_20260704.md",
+    "reports/agent_handoff/night_batch_recorded_execution_chatgpt_external_audit_result_20260704.md",
+    "reports/workspace_dispatch/post_acceptance_followup_dispatch_20260704.md",
+    "reports/workspace_dispatch/post_acceptance_followup_p0_results_20260704.md",
+    "reports/workspace_dispatch/post_acceptance_p1_dispatch_20260704.md",
+    "reports/workspace_dispatch/post_acceptance_p1_results_20260704.md",
+    "reports/workspace_dispatch/post_acceptance_p0_task026_manifest_20260704.sha256",
+    "reports/workspace_dispatch/post_acceptance_p1_manifest_20260704.sha256",
+    "reports/workspace_dispatch/task_026_hg_exec_template_enforcement_20260704.md",
+    "runbooks/task_packet_validation.md",
+    "runbooks/human_gate.md",
+    "runbooks/task_dispatch.md",
+    "reports/human_gate/templates/hg_exec_task_record_template.json",
+    "reports/human_gate/templates/hg_exec_task_hold_example.json",
+    "tasks/board.md",
+    "reports/deepseek_audit/task_027_a11_candidate_safety_review.md",
+    "reports/deepseek_audit/task_028_us_strategy_safety_review.md",
+    "reports/workspace_dispatch/reasonix_advisory_task_027_20260704.jsonl",
+    "reports/workspace_dispatch/reasonix_advisory_task_028_20260704.jsonl"
+  ],
+  "downstream_refs_verified": {
+    "TASK-021": {
+      "project": "A_Share_Monitor",
+      "commit": "025f773d42fa16916e31da8d153382d67c02ebe1",
+      "tree": "eb2654997b2db16f587ea1eba6cac57a47b4d31c",
+      "status": "PASS"
+    },
+    "TASK-023": {
+      "project": "US_Stock_Monitor",
+      "commit": "356f56ab5b7452e342c05d44087d867853e3fea0",
+      "tree": "0a4daf80f4be6b8335a4ccfaa90056fc201cb06f",
+      "status": "PASS"
+    },
+    "TASK-024": {
+      "project": "US_Stock_Monitor",
+      "commit": "04e7e6742a7fa87d04ea9a65ebc5cf6f0f55a3a7",
+      "tree": "c8cbda0ad747d21fc4ec8bf9f1b0a0bfea9745ad",
+      "status": "PASS"
+    },
+    "TASK-025": {
+      "project": "market_data",
+      "commit": "52570b51369e7eb295871c123d1528b0e0b8372a",
+      "tree": "759c4a3ccad350f356a6df9e7ae8d10e92488ba8",
+      "status": "PASS"
+    }
+  },
+  "audit_question_verdicts": {
+    "p0_p1_task_results_and_downstream_refs": "PASS",
+    "task_026_hg_exec_future_rule_enforcement": "PASS",
+    "boundary_preservation": "PASS",
+    "reasonix_advisory_advisory_only": "PASS",
+    "ready_for_final_chatgpt_external_audit_packet_publication": "PASS_WITH_FINDINGS"
+  },
+  "boundary_verdicts": {
+    "no_recommendation_or_buy_sell_advice": "PASS",
+    "no_hitl_ticket_emission": "PASS",
+    "no_broker_order_auto_paper_live_trading": "PASS",
+    "no_db_write_network_readiness_authorization_from_packet": "PASS",
+    "no_raw_data_migration": "PASS",
+    "no_env_or_secret_handling": "PASS",
+    "reasonix_advisory_not_audit_replacement": "PASS"
+  },
+  "findings": {
+    "blocking": [],
+    "high": [],
+    "medium": [],
+    "low": [
+      {
+        "id": "LOW-001",
+        "title": "P0/TASK-026 manifest is historical and no longer validates two shared files",
+        "severity": "LOW",
+        "evidence": [
+          "shasum -a 256 -c reports/workspace_dispatch/post_acceptance_p0_task026_manifest_20260704.sha256 fails for reports/workspace_dispatch/post_acceptance_followup_dispatch_20260704.md and tasks/board.md",
+          "the current hashes for those files match reports/workspace_dispatch/post_acceptance_p1_manifest_20260704.sha256",
+          "shasum -a 256 -c reports/workspace_dispatch/post_acceptance_p1_manifest_20260704.sha256 passes for all entries"
+        ],
+        "impact": "Non-blocking packaging clarity issue. The P0 manifest appears to represent a checkpoint before P1 updated shared dispatch and task-board files.",
+        "recommended_publication_handling": "Treat the P0 manifest as historical checkpoint evidence, regenerate it before publication, or rely on the P1/current manifest for current shared-file integrity and explain the distinction in the final packet."
+      }
+    ]
+  },
+  "validation_results": [
+    {
+      "check": "audit point commit/tree",
+      "status": "PASS",
+      "summary": "84530a594c4f98499d2b8cde2571761ecfc4be45 / b9ebd90d5db98ec134cde5f8875ba8ab375c3f18"
+    },
+    {
+      "check": "required artifact presence at audit commit",
+      "status": "PASS",
+      "summary": "all requested primary artifacts are present"
+    },
+    {
+      "check": "downstream commit/tree verification",
+      "status": "PASS",
+      "summary": "TASK-021, TASK-023, TASK-024, and TASK-025 refs match requested trees"
+    },
+    {
+      "check": "Human-Gate templates JSON parse",
+      "status": "PASS",
+      "summary": "hg_exec_task_record_template.json and hg_exec_task_hold_example.json parse"
+    },
+    {
+      "check": "Reasonix advisory JSONL parse",
+      "status": "PASS",
+      "summary": "TASK-027 and TASK-028 advisory transcripts parse"
+    },
+    {
+      "check": "P1 manifest",
+      "status": "PASS",
+      "summary": "post_acceptance_p1_manifest_20260704.sha256 verifies all entries"
+    },
+    {
+      "check": "P0/TASK-026 manifest",
+      "status": "PASS_WITH_FINDINGS",
+      "summary": "two shared files differ from the P0 manifest but match the P1 manifest"
+    },
+    {
+      "check": "registry YAML parse",
+      "status": "PASS",
+      "summary": "registry/projects.yaml and registry/agents.yaml parse"
+    },
+    {
+      "check": "sampled downstream JSON parse",
+      "status": "PASS",
+      "summary": "TASK-021, TASK-024, and TASK-022 JSON artifacts parse"
+    },
+    {
+      "check": "forbidden artifact scan",
+      "status": "PASS",
+      "summary": "no .env, .env.*, .duckdb, .sqlite, .parquet, .zip, or .tar.gz files found in quant-proj"
+    },
+    {
+      "check": "git diff --check before audit artifacts",
+      "status": "PASS",
+      "summary": "no whitespace issues reported"
+    }
+  ],
+  "residual_notes": [
+    "TASK-026 closes the future-rule gap by requiring unique pre-execution HG-EXEC-TASK-* records before L1-L4 execution.",
+    "Reasonix-Advisory outputs are advisory-only and do not replace Codex-Audit or ChatGPT final external audit.",
+    "This PASS_WITH_FINDINGS is limited to controller process and final packet publication readiness. It must not be represented as product readiness, recommendation readiness, HITL ticket approval, broker/order readiness, paper/live trading readiness, DB-write authorization, schema-migration authorization, raw-data migration approval, secret-handling approval, or ChatGPT final external verdict."
+  ]
+}
