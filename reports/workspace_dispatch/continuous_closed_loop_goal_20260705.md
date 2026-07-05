@@ -49,11 +49,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R7_20260705_IN_PROGRESS
+Current task batch: DATA_STRATEGY_BATCH_R7_20260705_CLOSEOUT_PACKAGING
 
 Objective:
 
-GPT Pro accepted the R6 closeout and returned R7 as the next ordinary research-only Data/Strategy task batch. R7 has been imported, dispatched to fixed downstream Codex threads, and sent to Reasonix/DeepSeek sidecars. Continue collecting `CODEX_ACCEPTANCE` / `REASONIX_REPORT` results, then close out and continue the permanent loop. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
+GPT Pro accepted the R6 closeout and returned R7 as the next ordinary research-only Data/Strategy task batch. R7 has been imported, dispatched, completed by downstream Codex threads, completed by Reasonix sidecars, and packaged into closeout/request artifacts. Commit and push the R7 closeout package, then submit it to the fixed GPT Pro external-audit conversation for verdict and the next concrete Data/Strategy task batch. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
 
 Latest completed batch:
 
@@ -81,10 +81,16 @@ Current dispatch/result state:
 - Reasonix-DB R7 sidecar completed as dry-run/advisory; artifact `reports/workspace_dispatch/reasonix_db_data_strategy_batch_r7_result_20260705.md`.
 - Reasonix-Strategy fixed session `quant-reasonix-strategy` remains open; after correcting from path-based file reading to pasted no-file-read context, it completed `RESEARCH_DRAFT`; artifact `reports/workspace_dispatch/reasonix_strategy_data_strategy_batch_r7_result_20260705.md`.
 - Reasonix persistent-session handling is documented in `runbooks/reasonix_sessions.md` and `reports/workspace_dispatch/reasonix_data_strategy_batch_r7_sidecar_summary_20260705.md`.
+- A-share R7 accepted with warnings at commit `c10dfd1f2e7d2178bcf4fd7e334bb54cb34eedab`.
+- US R7 completed and was pushed after follow-up at commit `45c722410eca56556a6b37c82b770565236e6041`.
+- market_data R7 accepted with warnings at commit `9606e5838f312d765964dfda4dc5caec079bccd3`.
+- strategy_work R7 accepted at commit `9324943c12160b51a8a0e206f4a2f3fb50476d46`.
+- R7 closeout artifact: `reports/workspace_dispatch/data_strategy_batch_r7_20260705_closeout.md`.
+- R7 GPT Pro request artifact: `reports/external_audit/data_strategy_batch_r7_gpt_pro_external_audit_request_20260705.md`.
 
 Next dispatcher actions:
 
-1. Commit and push the R7 Reasonix prompt/transcript/result/summary artifacts and session-policy update.
-2. Wait in coarse intervals for downstream Codex results.
-3. Collect downstream `CODEX_ACCEPTANCE` / reports from A-share, US, market_data, and strategy_work.
-4. Record R7 closeout, push, then continue the permanent closed loop.
+1. Commit and push the R7 closeout package.
+2. Use Chrome with the fixed GPT Pro `外审对话` conversation to submit the R7 short external-audit request.
+3. Capture GPT Pro verdict and next task batch.
+4. Record the result, commit/push, then dispatch the next batch.
