@@ -50,42 +50,35 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R12_20260705 dispatch
+Current task batch: DATA_STRATEGY_BATCH_R12_20260705 execution and result collection
 
 Objective:
 
-R11 GPT Pro external review is complete in the fresh `New Audit Handoff` conversation. GPT Pro accepted R11, confirmed no external-audit trigger is open, required no fixes before R12 dispatch, and issued `DATA_STRATEGY_BATCH_R12_20260705`. Dispatch R12 to fixed downstream Codex-Dev and Reasonix sidecar sessions, keep `strategy_work` final sync dependency-gated until source acceptances are available, collect results, close out, push, and then continue the closed loop.
+Continue R12 as Quant-Dispatcher only. R11 GPT Pro external review accepted the prior batch, confirmed no external-audit trigger, and issued R12. R12 remains an ordinary research-only data/strategy batch focused on data quality, strategy experiments, and candidate quality. Do not create a controller external-audit package for ordinary R12 work. Collect downstream results, record controller evidence, commit/push, dispatch `strategy_work` only after source acceptances are available, close out R12, then use the fresh GPT Pro audit conversation for the next batch only when no active task remains.
 
-Latest completed batch:
-
-- DATA_STRATEGY_BATCH_R11_20260705
-- closeout: `reports/workspace_dispatch/data_strategy_batch_r11_20260705_closeout.md`
-- controller classification: ordinary research-only data/strategy batch
-- source acceptances: A-share `05b79ddabb05003067e1ae86e10411604271ff26`; US `c9dce3782df1e250987129c7ce5350c786e1821d`; market_data `96a325423d00af02c8829d85d770b7d73e30c6f6`; strategy_work `ad33605ec3ae001bc7c17b132f7333f76f60ae74`
-- Reasonix sidecars: `reports/workspace_dispatch/reasonix_data_strategy_batch_r11_sidecar_summary_20260705.md`
-
-Current intake:
+Current intake and controller records:
 
 - R12 intake: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_intake.md`
 - R11 GPT Pro result: `reports/agent_handoff/data_strategy_batch_r11_gpt_pro_external_audit_result_20260705.md`
 - R12 dispatch summary: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_dispatch_summary.md`
-- registry refresh: `reports/workspace_status/registry_refresh_snapshot_20260705_r12_dispatch.md`
-- classification: ordinary research-only data/strategy batch
-- external-audit trigger opened by R12 intake: `no`
-
-Current dispatch/result state:
-
+- R12 registry refresh: `reports/workspace_status/registry_refresh_snapshot_20260705_r12_dispatch.md`
 - Fresh GPT Pro audit conversation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
-- GPT Pro accepted R11 and returned R12 tasks focused on data quality, strategy experiments, and candidate quality.
-- R12 controller intake, registry refresh, and dispatch summary are prepared.
-- R12 A-share and US Codex-Dev prompts are active in new R12-specific threads because older fixed threads were stuck on prior approval waits.
-- R12 market_data Codex-Dev prompt is active in the R11/R12 worktree thread and has requested git-operation continuation approval.
-- R12 Reasonix-DB and Reasonix-Strategy sidecar drafts have been captured with `deepseek-v4-pro` / high effort.
-- R12 strategy_work final memo sync remains dependency-gated until source acceptances are available.
+- Classification: ordinary research-only data/strategy batch
+- External-audit trigger opened by R12 intake: `no`
+
+Current result state:
+
+- Controller dispatch/Reasonix records have been committed and pushed through controller commit `666a5a1`.
+- US R12 returned `CODEX_ACCEPTANCE_DATA_STRATEGY_BATCH_R12_US` at commit `017c1e25b4b05d088121b618f8951ec898145b23`; controller still needs to record the result.
+- market_data R12 source work was validated and manually committed/pushed at commit `97f1360762e663894ea84af7a6356b89d8cd4f2d`; controller still needs to record the result.
+- A-share R12 remains active in Codex thread `019f32bd-082d-73e2-b902-3d48b8d198ba`; wait in coarse intervals and do not duplicate-dispatch.
+- `strategy_work` R12 final memo sync remains dependency-gated until A-share, US, and market_data acceptances are all available.
+- Reasonix-DB and Reasonix-Strategy R12 sidecar drafts have been captured with `deepseek-v4-pro` / high effort and committed in controller.
 
 Next dispatcher actions:
 
-1. Commit and push the R12 dispatch summary and Reasonix sidecar records.
-2. Wait in coarse intervals for A-share, US, and market_data Codex-Dev returns.
-3. Dispatch SW-R12-1 only after source acceptances are available.
-4. Record source results, commit/push closeout, submit to GPT Pro when no active task remains, and continue the closed loop.
+1. Wait in coarse intervals for A-share R12 to return `CODEX_ACCEPTANCE` or a blocker.
+2. Record US and market_data R12 results in controller artifacts without staging unrelated dirty files.
+3. After A-share returns, dispatch `SW-R12-1` to the fixed `strategy_work` Codex-Dev thread.
+4. Record `strategy_work` output, write R12 closeout, update board and this mutable task section, validate controller checks, commit/push.
+5. When no active task remains, submit the R12 closeout to the fresh GPT Pro audit conversation and continue with the next batch it issues.
