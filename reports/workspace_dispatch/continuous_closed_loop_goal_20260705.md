@@ -50,11 +50,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R10_20260705_CLOSEOUT_AND_GPT_PRO_R11_REQUEST
+Current task batch: DATA_STRATEGY_BATCH_R10_20260705_NEW_GPT_PRO_AUDIT_CONVERSATION
 
 Objective:
 
-R10 ordinary research-only Data/Strategy work is complete. Record and push the R10 result summary, closeout, board update, and GPT Pro request artifact, then submit the closeout to the fixed GPT Pro `外审对话` to request verdict, external-audit-trigger confirmation, fixes if any, and next concrete `DATA_STRATEGY_BATCH_R11_20260705` tasks.
+R10 ordinary research-only Data/Strategy work is complete and controller closeout has been pushed. The prior fixed GPT Pro `外审对话` is too long and unstable, so start a fresh GPT Pro audit conversation using `reports/external_audit/new_gpt_pro_audit_conversation_handoff_20260705.md`. The new conversation must be handed the final project goal and the rule that ordinary batches should focus on data and strategy/candidate-quality development, not architecture/gate/controller loops. Request R10 verdict, external-audit-trigger confirmation, fixes if any, and next concrete `DATA_STRATEGY_BATCH_R11_20260705` tasks.
 
 Latest completed batch:
 
@@ -72,6 +72,8 @@ Current intake:
 - result summary: `reports/workspace_dispatch/data_strategy_batch_r10_20260705_result_summary.md`
 - closeout: `reports/workspace_dispatch/data_strategy_batch_r10_20260705_closeout.md`
 - GPT Pro request draft: `reports/external_audit/data_strategy_batch_r10_gpt_pro_external_audit_request_20260705.md`
+- new GPT Pro handoff: `reports/external_audit/new_gpt_pro_audit_conversation_handoff_20260705.md`
+- rollover record: `reports/workspace_dispatch/new_external_audit_conversation_rollover_20260705.md`
 - classification: ordinary research-only data/strategy batch
 - external-audit trigger opened by R10: `no`
 
@@ -82,11 +84,12 @@ Current dispatch/result state:
 - strategy_work completed a final R10 memo sync after source results became available and pushed commit `570944f8839bfa28fa27cd9f59d24cc0f74c9850`.
 - R10 Reasonix-DB and Reasonix-Strategy sidecars completed as advisory drafts in existing persistent CLI-like sessions; sessions were not closed, restarted, or recreated.
 - R10 result summary, closeout, and GPT Pro request draft are prepared in controller workspace.
+- Prior fixed GPT Pro `外审对话` became unstable during R10 submission; a fresh GPT Pro audit-conversation handoff is now prepared to avoid long-thread UI/tool failures.
 
 Next dispatcher actions:
 
-1. Validate the new controller R10 closeout artifacts.
-2. Commit and push controller R10 closeout records.
-3. Use Chrome with the fixed GPT Pro `外审对话` to submit `reports/external_audit/data_strategy_batch_r10_gpt_pro_external_audit_request_20260705.md`.
+1. Validate, commit, and push the new GPT Pro audit-conversation handoff records.
+2. Start a fresh GPT Pro audit conversation.
+3. Submit `reports/external_audit/new_gpt_pro_audit_conversation_handoff_20260705.md`.
 4. Capture GPT Pro verdict and next-task instructions.
-5. Record the result in controller workspace, commit/push, then dispatch `DATA_STRATEGY_BATCH_R11_20260705` if tasks are provided.
+5. Record the new conversation URL/result in controller workspace, commit/push, then dispatch `DATA_STRATEGY_BATCH_R11_20260705` if tasks are provided.
