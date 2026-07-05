@@ -84,12 +84,14 @@ Current dispatch/result state:
 - strategy_work completed a final R10 memo sync after source results became available and pushed commit `570944f8839bfa28fa27cd9f59d24cc0f74c9850`.
 - R10 Reasonix-DB and Reasonix-Strategy sidecars completed as advisory drafts in existing persistent CLI-like sessions; sessions were not closed, restarted, or recreated.
 - R10 result summary, closeout, and GPT Pro request draft are prepared in controller workspace.
-- Prior fixed GPT Pro `外审对话` became unstable during R10 submission; a fresh GPT Pro audit-conversation handoff is now prepared to avoid long-thread UI/tool failures.
+- Prior fixed GPT Pro `外审对话` became unstable during R10 submission; a fresh GPT Pro audit-conversation handoff was prepared to avoid long-thread UI/tool failures.
+- Fresh GPT Pro audit conversation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
+- Submitted R10 handoff through Chrome using `Pro 扩展` / Pro extended. GPT Pro is currently generating the review result.
 
 Next dispatcher actions:
 
-1. Validate, commit, and push the new GPT Pro audit-conversation handoff records.
-2. Start a fresh GPT Pro audit conversation.
-3. Submit `reports/external_audit/new_gpt_pro_audit_conversation_handoff_20260705.md`.
-4. Capture GPT Pro verdict and next-task instructions.
-5. Record the new conversation URL/result in controller workspace, commit/push, then dispatch `DATA_STRATEGY_BATCH_R11_20260705` if tasks are provided.
+1. Wait in coarse intervals for the fresh GPT Pro conversation to finish.
+2. Capture GPT Pro verdict and next-task instructions.
+3. Record the new conversation URL/result in controller workspace.
+4. Commit/push the captured result.
+5. Dispatch `DATA_STRATEGY_BATCH_R11_20260705` if tasks are provided.
