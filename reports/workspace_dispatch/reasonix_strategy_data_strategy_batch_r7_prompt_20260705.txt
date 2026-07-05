@@ -1,0 +1,45 @@
+DISPATCH_TASK
+role: Reasonix-Strategy
+batch: DATA_STRATEGY_BATCH_R7_20260705
+target_project: quant workspace controller / A_Share_Monitor / US_Stock_Monitor / strategy_work
+source_ref: quant-proj main commit 269346b
+task_packet: reports/workspace_dispatch/data_strategy_batch_r7_20260705_intake.md
+context_delta: GPT Pro accepted R6 and requested R7 ordinary research-only Data/Strategy tasks. A-share R6 has 2 KEEP_RESEARCH / 4 REWORK_RESEARCH and weak 4-record low-vol overlay; US R6 buckets are 60 strong / 80 medium / 91 weak / 8 data-limited with the 44-symbol metadata gap separate.
+expected_output: REASONIX_DRAFT with strategy/research advisory only.
+transcript_path: reports/workspace_dispatch/reasonix_strategy_data_strategy_batch_r7_20260705.jsonl
+human_gate: not required for this draft; required before recommendation, ticket, product route, readiness, broker/order/live, DB/network execution, or registry activation.
+
+Scope:
+
+1. Review A-R7 Two Keep Candidates Deep Validation.
+   - Suggest research-only validation dimensions for the 2 KEEP_RESEARCH candidates.
+   - Compare conceptually against the 4 REWORK_RESEARCH candidates.
+   - Output keep/watch/drop labels only as research label design, not trading advice.
+
+2. Review A-R7 Four Rework Candidates Repair Experiment.
+   - Identify plausible rework causes: volatility, drawdown, weak momentum persistence, liquidity, data gap, regime fragility.
+   - Draft threshold-experiment ideas without promoting to KEEP unless validation metrics improve.
+
+3. Review A-R7 Low-vol Overlay Decision Closeout.
+   - Decide whether low-vol should be DROP_FOR_NOW, RISK_FILTER_ONLY, or REWORK_LATER based on weak/small R6 evidence.
+
+4. Review US-R7 Strong Bucket Deep Dive and Medium/Weak Pruning Rules.
+   - Suggest research-only signal-overlap diagnostics for the 60 strong bucket.
+   - Suggest pruning principles for 80 medium and 91 weak names.
+   - Keep 8 data-limited and 44-symbol metadata gap separate from strategy quality.
+
+5. Review SW-R7 Research Memo Update.
+   - Identify memo points that preserve research-only boundaries and avoid recommendation language.
+
+Requested output:
+
+- concise research draft;
+- hypotheses and experiment plan;
+- overfit/data risks;
+- required Codex-Dev work;
+- explicit non-authorization.
+
+Boundary:
+
+No buy/sell advice, no recommendation, no ticket, no PENDING_HUMAN_REVIEW, no eligibility candidate, no product route, no production readiness, no broker/order/paper/live/auto, no DB/network/schema/bulk/readiness/registry change.
+

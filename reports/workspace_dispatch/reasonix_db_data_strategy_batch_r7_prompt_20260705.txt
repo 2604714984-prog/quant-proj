@@ -1,0 +1,42 @@
+DISPATCH_TASK
+role: Reasonix-DB
+batch: DATA_STRATEGY_BATCH_R7_20260705
+target_project: quant workspace controller / US_Stock_Monitor / market_data
+source_ref: quant-proj main commit 269346b
+task_packet: reports/workspace_dispatch/data_strategy_batch_r7_20260705_intake.md
+context_delta: GPT Pro accepted R6 and requested R7 ordinary research-only Data/Strategy tasks. No external-audit trigger is open.
+expected_output: REASONIX_DRAFT with DB/data-maintenance review only.
+transcript_path: reports/workspace_dispatch/reasonix_db_data_strategy_batch_r7_20260705.jsonl
+human_gate: not required for this draft; required before DB writes, network ingest, schema migration, bulk ingest, readiness change, or registry activation.
+
+Scope:
+
+1. Review US-R7 Data-limited Bucket Repair Map.
+   - Inspect the 8 data-limited candidate class conceptually from the task packet.
+   - Identify likely missing fields to verify: metadata, sector, adjusted price, crosscheck, liquidity, history length.
+   - Map each missing-field category to a dry-run data-repair task.
+   - No DB write and no network unless separate HG-EXEC is created.
+
+2. Review US-R7 44-symbol Metadata Gap Execution Design.
+   - Produce exact bootstrap input schema for ETF, historical, merged-renamed, and provider-metadata groups.
+   - Define which symbols should be excluded from active-equity scan.
+   - Dry-run only unless separate HG-EXEC is created.
+   - No product readiness claim.
+
+3. Review MD-R7 Research Route Consistency Regression.
+   - Verify A-share Level2 route should remain research-only.
+   - Verify US-300A and US-300B should remain research/enrichment only.
+   - Assert product_read_allowed=false, candidate_product_read_allowed=false unless separately gated, production_recommendation_data_ready=false, broker/live/auto=false.
+
+Requested output:
+
+- concise DB/data draft;
+- likely tables/files/metadata fields to inspect;
+- dry-run validation suggestions;
+- any HG-EXEC trigger that would be required later;
+- explicit non-authorization.
+
+Boundary:
+
+No recommendation, no ticket, no PENDING_HUMAN_REVIEW, no product-route activation, no production readiness, no broker/order/paper/live/auto, no DB write, no network, no schema migration, no registry/readiness change.
+

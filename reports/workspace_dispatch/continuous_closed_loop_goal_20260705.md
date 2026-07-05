@@ -49,11 +49,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R7_20260705_DISPATCH
+Current task batch: DATA_STRATEGY_BATCH_R7_20260705_IN_PROGRESS
 
 Objective:
 
-GPT Pro accepted the R6 closeout and returned R7 as the next ordinary research-only Data/Strategy task batch. Record the R6 GPT Pro result, import R7, dispatch R7 to the fixed downstream agents and Reasonix/DeepSeek sidecars as appropriate, collect `CODEX_ACCEPTANCE` / `REASONIX_REPORT` results, then close out and continue the permanent loop. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
+GPT Pro accepted the R6 closeout and returned R7 as the next ordinary research-only Data/Strategy task batch. R7 has been imported, dispatched to fixed downstream Codex threads, and sent to Reasonix/DeepSeek sidecars. Continue collecting `CODEX_ACCEPTANCE` / `REASONIX_REPORT` results, then close out and continue the permanent loop. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
 
 Latest completed batch:
 
@@ -71,12 +71,20 @@ Current intake:
 - fixes required: `none`
 - classification: ordinary research-only data/strategy batch
 
+Current dispatch/result state:
+
+- Controller R6 GPT result and R7 intake were committed and pushed at `269346b`.
+- A-share R7 tasks 1-4 were dispatched to fixed Codex-Dev thread `019f2a5a-8b4b-76b3-b838-abc6b54e4992`.
+- US R7 tasks 5-9 were dispatched to fixed Codex-Dev thread `019f2a5a-8f92-7672-bbff-db71694e8676`.
+- market_data R7 task 10 was dispatched to fixed Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`.
+- strategy_work R7 task 11 was dispatched to fixed Codex-Dev thread `019f30c3-247e-7f43-af60-96164539a183`.
+- Reasonix-DB R7 sidecar completed as dry-run/advisory; artifact `reports/workspace_dispatch/reasonix_db_data_strategy_batch_r7_result_20260705.md`.
+- Reasonix-Strategy fixed session `quant-reasonix-strategy` remains open; after correcting from path-based file reading to pasted no-file-read context, it completed `RESEARCH_DRAFT`; artifact `reports/workspace_dispatch/reasonix_strategy_data_strategy_batch_r7_result_20260705.md`.
+- Reasonix persistent-session handling is documented in `runbooks/reasonix_sessions.md` and `reports/workspace_dispatch/reasonix_data_strategy_batch_r7_sidecar_summary_20260705.md`.
+
 Next dispatcher actions:
 
-1. Commit and push the R6 GPT Pro result and R7 intake/controller records.
-2. Dispatch A-share R7 tasks 1-4 to the fixed A_Share_Monitor Codex-Dev thread.
-3. Dispatch US R7 tasks 5-9 to the fixed US_Stock_Monitor Codex-Dev thread.
-4. Dispatch market_data R7 task 10 to the fixed market_data Codex-Dev thread.
-5. Dispatch strategy_work R7 task 11 to the fixed strategy_work Codex-Dev thread.
-6. Dispatch Reasonix/DeepSeek sidecars for DB/data and strategy advisory where appropriate.
-7. Collect downstream results, record closeout, push, then continue the permanent closed loop.
+1. Commit and push the R7 Reasonix prompt/transcript/result/summary artifacts and session-policy update.
+2. Wait in coarse intervals for downstream Codex results.
+3. Collect downstream `CODEX_ACCEPTANCE` / reports from A-share, US, market_data, and strategy_work.
+4. Record R7 closeout, push, then continue the permanent closed loop.

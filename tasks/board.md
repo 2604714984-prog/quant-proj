@@ -17,7 +17,7 @@
 ## In Progress
 
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
-- `DATA_STRATEGY_BATCH_R7_20260705`: imported from fixed GPT Pro `外审对话`; ordinary research-only Data + Strategy batch; dispatch pending to A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, and Reasonix/DeepSeek sidecars as appropriate; no external-audit trigger, recommendation, ticket, product-route, production-readiness, broker/order/paper/live/auto, or ungated DB/network/schema/bulk/readiness/registry change.
+- `DATA_STRATEGY_BATCH_R7_20260705`: imported from fixed GPT Pro `外审对话`; ordinary research-only Data + Strategy batch; dispatched to A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, and Reasonix/DeepSeek sidecars; Reasonix-Strategy fixed session `quant-reasonix-strategy` remains open and completed a no-file-read `RESEARCH_DRAFT`; awaiting downstream Codex acceptances; no external-audit trigger, recommendation, ticket, product-route, production-readiness, broker/order/paper/live/auto, or ungated DB/network/schema/bulk/readiness/registry change.
 
 ## Blocked / Hold
 

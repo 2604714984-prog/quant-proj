@@ -80,6 +80,27 @@ human_gate: <required | not required | standing authorization plus HG-EXEC requi
 
 Keep this envelope short. If the fixed session already has the relevant background, `context_delta` can be `N/A` or one sentence.
 
+## Persistent PTY Operation
+
+Keep fixed Reasonix conversations open like CLI sessions. Do not close the
+`quant-reasonix-db`, `quant-reasonix-strategy`, or `quant-reasonix-advisory`
+PTY after each task merely to save or reset context.
+
+Operational rules:
+
+- Resume the fixed session and keep the PTY alive between tasks whenever the
+  desktop thread still has the session handle.
+- Submit messages with a single return key. If a paste appears as a paste block,
+  press return once to send it.
+- If a Reasonix turn starts looping on unavailable local file tools, stop only
+  the current turn with `Esc`; do not exit the session.
+- Do not rely on Reasonix to read local project files unless its filesystem MCP
+  is confirmed active in that session.
+- For sidecars without file tools, paste a compact self-contained task context
+  instead of a path-only handoff.
+- Record transcripts and result markdown in `reports/workspace_dispatch/`, but
+  keep the live Reasonix conversation open for future task deltas.
+
 ## Compact And Summaries
 
 Default:
