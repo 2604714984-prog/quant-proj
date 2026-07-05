@@ -72,13 +72,14 @@ Current result state:
 - US R12 returned `CODEX_ACCEPTANCE_DATA_STRATEGY_BATCH_R12_US` at commit `017c1e25b4b05d088121b618f8951ec898145b23`; controller still needs to record the result.
 - market_data R12 source work was validated and manually committed/pushed at commit `97f1360762e663894ea84af7a6356b89d8cd4f2d`; controller still needs to record the result.
 - A-share R12 remains active in Codex thread `019f32bd-082d-73e2-b902-3d48b8d198ba`; wait in coarse intervals and do not duplicate-dispatch.
+- A-share R12 memory incident was handled by stopping a runaway full-cache `FeatureStore(store).build()` Python process and recording `reports/workspace_dispatch/data_strategy_batch_r12_memory_incident_20260705.md`; the A-share R12 thread was instructed to avoid full-cache builds and return `BLOCKED` with a chunking plan if required.
 - `strategy_work` R12 final memo sync remains dependency-gated until A-share, US, and market_data acceptances are all available.
 - Reasonix-DB and Reasonix-Strategy R12 sidecar drafts have been captured with `deepseek-v4-pro` / high effort and committed in controller.
 
 Next dispatcher actions:
 
 1. Wait in coarse intervals for A-share R12 to return `CODEX_ACCEPTANCE` or a blocker.
-2. Record US and market_data R12 results in controller artifacts without staging unrelated dirty files.
+2. Record US, market_data, and memory-incident R12 results in controller artifacts without staging unrelated dirty files.
 3. After A-share returns, dispatch `SW-R12-1` to the fixed `strategy_work` Codex-Dev thread.
 4. Record `strategy_work` output, write R12 closeout, update board and this mutable task section, validate controller checks, commit/push.
 5. When no active task remains, submit the R12 closeout to the fresh GPT Pro audit conversation and continue with the next batch it issues.
