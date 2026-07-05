@@ -2,7 +2,6 @@
 
 ## Inbox
 
-- `DATA_STRATEGY_BATCH_R5_20260705`: imported from ChatGPT external-audit result for R4; ordinary research-only Data + Strategy batch; dispatch A-share R5, US R5, market_data R5, strategy_work R5, and Reasonix sidecars; no ChatGPT external-audit packet, no Codex-Audit task, no recommendation/ticket/product-route/production-readiness/broker/order/paper/live authorization.
 - `DATA_STRATEGY_BATCH_R4_20260705`: imported Data + Strategy route package; ordinary source execution only; no controller/ChatGPT external audit packet.
 - `DATA_STRATEGY_BATCH_20260704_R2`: imported next Data + Strategy batch; ordinary source execution only; no controller/ChatGPT external audit packet.
 - `20260704-chatgpt-external-audit-fixes`: imported ChatGPT external audit fix list; classified by Quant-Dispatcher.
@@ -17,6 +16,7 @@
 
 ## In Progress
 
+- `DATA_STRATEGY_BATCH_R5_20260705`: dispatched to fixed A-share, US, market_data, and strategy_work Codex-Dev threads; Reasonix-DB and Reasonix-Strategy sidecars completed as `EMBEDDED_FACTS_DRAFT`; waiting for downstream `CODEX_ACCEPTANCE` / `DATA_REPORT` / `STRATEGY_REPORT`; no ChatGPT external-audit packet unless a trigger opens.
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
 
 ## Blocked / Hold

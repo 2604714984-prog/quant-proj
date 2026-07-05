@@ -12,6 +12,7 @@ Codex threads are created fresh per fixed role/project lane and pinned in the Co
 | `Codex-Dev` | `A_Share_Monitor` | `Codex-Dev | A_Share_Monitor | TASK-021 Root Cause` | `019f2a5a-8b4b-76b3-b838-abc6b54e4992` |
 | `Codex-Dev` | `US_Stock_Monitor` | `Codex-Dev | US_Stock_Monitor | TASK-023-024 Blockers` | `019f2a5a-8f92-7672-bbff-db71694e8676` |
 | `Codex-Dev` | `market_data` | `Codex-Dev | market_data | Registry Readiness Tasks` | `019f2957-de0a-7721-ade9-1abfef298127` |
+| `Codex-Dev` | `strategy_work` | `Codex-Dev | strategy_work | DATA_STRATEGY_BATCH_R5_20260705` | `019f30c3-247e-7f43-af60-96164539a183` |
 | `Codex-Audit` | `quant-proj` | `Codex-Audit | quant-proj | Dispatcher Execution Test` | `019f2913-528a-7d22-bd0b-589f0750e09f` |
 
 Retired endpoints:
