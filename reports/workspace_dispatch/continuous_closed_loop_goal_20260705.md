@@ -50,43 +50,37 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R12_20260705 closed; GPT Pro next-batch request pending
+Current task batch: DATA_STRATEGY_BATCH_R13_20260706 active dispatch
 
 Objective:
 
-Continue R12 as Quant-Dispatcher only. R11 GPT Pro external review accepted the prior batch, confirmed no external-audit trigger, and issued R12. R12 remains an ordinary research-only data/strategy batch focused on data quality, strategy experiments, and candidate quality. Do not create a controller external-audit package for ordinary R12 work. Collect downstream results, record controller evidence, commit/push, dispatch `strategy_work` only after source acceptances are available, close out R12, then use the fresh GPT Pro audit conversation for the next batch only when no active task remains.
+Continue as Quant-Dispatcher only. GPT Pro reviewed the R12 external-audit packet and returned `ACCEPT_WITH_WARNINGS`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, and `FIXES_REQUIRED: none before dispatching R13`. R13 is an ordinary research-only data/strategy batch focused on safe 3068-symbol A-share `features_daily` construction, coverage/leakage validation, and wider `low_vol_quality` research diagnostics. Do not create a controller architecture/gate loop. Do not authorize recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, or secrets.
 
 Current intake and controller records:
 
-- R12 intake: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_intake.md`
-- R11 GPT Pro result: `reports/agent_handoff/data_strategy_batch_r11_gpt_pro_external_audit_result_20260705.md`
-- R12 dispatch summary: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_dispatch_summary.md`
-- R12 registry refresh: `reports/workspace_status/registry_refresh_snapshot_20260705_r12_dispatch.md`
-- Fresh GPT Pro audit conversation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
+- R12 GPT Pro result: `reports/agent_handoff/data_strategy_batch_r12_gpt_pro_external_audit_result_20260706.md`
+- R13 intake: `reports/workspace_dispatch/data_strategy_batch_r13_20260706_intake.md`
+- R13 task packet: `tasks/in_progress/data-strategy-batch-r13-20260706/spec.md`
+- R13 dispatch summary: `reports/workspace_dispatch/data_strategy_batch_r13_20260706_dispatch_summary.md`
+- Fresh GPT Pro audit conversation for later loop continuation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
 - Classification: ordinary research-only data/strategy batch
-- External-audit trigger opened by R12 intake: `no`
+- External-audit trigger opened by R13 intake: `no`
 
-Current result state:
+Current dispatch plan:
 
-- Controller dispatch/Reasonix records have been committed and pushed through controller commit `666a5a1`.
-- US R12 returned `CODEX_ACCEPTANCE_DATA_STRATEGY_BATCH_R12_US` at commit `017c1e25b4b05d088121b618f8951ec898145b23`; controller partial result summary now records the result.
-- market_data R12 source work was validated and manually committed/pushed at commit `97f1360762e663894ea84af7a6356b89d8cd4f2d`; controller partial result summary now records the result.
-- A-share R12 returned `CODEX_ACCEPTANCE DATA_STRATEGY_BATCH_R12_20260705` at commit `30910a1e46b729f0e50efb81150b15a7c91f5083`; controller result summary now records the result.
-- A-share R12 memory incident was handled by stopping a runaway full-cache `FeatureStore(store).build()` Python process and recording `reports/workspace_dispatch/data_strategy_batch_r12_memory_incident_20260705.md`; the A-share R12 thread was instructed to avoid full-cache builds and return `BLOCKED` with a chunking plan if required.
-- FeatureStore root fix is now implemented and pushed in A_Share_Monitor commit `18c19016809210780272512b99b6dd07be074425`; it guards all major FeatureStore source tables and adds chunked `build_to_store()` output. Controller coordination record: `reports/workspace_dispatch/data_source_coordination_20260705.md`.
-- DeepSeek/Reasonix A-share data pull completed as local data-source evidence only. Treat it as not data-clear, not product-ready, and not recommendation-ready. Next data-source priority is provider/evidence contracts for `simonlin1212/a-stock-data` and `simonlin1212/global-stock-data`.
-- A subsequent old-style full-cache `fs.build()` command was observed and killed; downstream guidance now requires `build_to_store()`, bounded windows, or metadata inspection only.
-- Data-source priority tasks have been dispatched in `reports/workspace_dispatch/data_source_priority_20260705_dispatch_summary.md`: `DS-US-1`, `MD-DS-1`, `DS-A-1` after A-share R12, and `SW-DS-1`.
-- Direct user-requested strategy clean-cache rerun completed and pushed in `strategy_work` commit `b0d7d823f956067c6e58fef013dfc5e2e721c1ea`; controller record `reports/workspace_dispatch/data_source_priority_strategy_clean_cache_rerun_20260705.md`. The selected 50-symbol clean cache removed the `fina_indicator`/data-quality mis-kill path, but all candidates remained rejected on validation, parameter stability, cost stress, or trade-count blockers. Next data-source priority remains safe `features_daily` construction for the cleaned 3068-symbol `data/cache`.
-- User requested rolling back the strict `FeatureStore.build()` guard because ordinary research runs became unusable. A_Share_Monitor commit `89373e8f133b946e7d8c3048e704b8c6c5a6f9e2` restores legacy `build()` DataFrame behavior while keeping explicit `build_to_store()` available; controller record `reports/workspace_dispatch/feature_store_build_rollback_20260705.md`.
-- `strategy_work` R12 final memo sync `SW-R12-1` returned `ACCEPTED_WITH_WARNINGS` at commit `0c7583dc6bce19d2c4ff58eb256e225a3b03603e`; controller result summary now records the result.
-- Reasonix-DB and Reasonix-Strategy R12 sidecar drafts have been captured with `deepseek-v4-pro` / high effort and committed in controller.
-- Result summary: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_result_summary.md`
-- Closeout: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_closeout.md`
+- `A_Share_Monitor` fixed thread `019f32bd-082d-73e2-b902-3d48b8d198ba`: `A-R13-1` through `A-R13-5`.
+- `strategy_work` fixed thread `019f30c3-247e-7f43-af60-96164539a183`: `SW-R13-1`, `SW-R13-2`, `SW-R13-3`.
+- `market_data` fixed thread `019f3283-a821-7002-961b-6f533d3518c2`: `MD-R13-1`.
+
+R13 hard execution rule:
+
+- `StrategySearch.run()` must not auto-fallback to full in-memory `FeatureStore.build()` over 3068-symbol `data/cache` when `features_daily` is missing or empty.
+- A-share must first run read-only preflight, then `python -m qta features build` or equivalent `FeatureStore.build_to_store()`, then coverage/leakage validation, and only then `research discover`.
 
 Next dispatcher actions:
 
-1. Validate controller closeout files and commit/push the R12 controller records without staging unrelated older Reasonix transcript edits.
-2. Submit the R12 closeout to the fresh GPT Pro audit conversation and request verdict plus the next concrete data/strategy task batch.
-3. Record the GPT Pro result in quant-proj, commit/push, then dispatch the next batch if accepted.
-4. Keep data-source-priority follow-up results recorded separately from the R12 closeout so DS-US/DS-A/SW-DS work does not blur the R12 acceptance commits.
+1. Send R13 prompt-only handoffs to the fixed A-share, strategy_work, and market_data Codex-Dev threads without model/thinking overrides.
+2. Commit and push the R13 controller intake/dispatch records.
+3. Poll downstream threads in coarse intervals.
+4. Record source acceptances as they arrive, then trigger strategy_work final sync only after A-share and market_data acceptances are available.
+5. Close out R13, push controller records, and request the next GPT Pro batch only when no active task remains or a true external-audit trigger opens.
