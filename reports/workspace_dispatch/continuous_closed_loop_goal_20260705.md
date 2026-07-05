@@ -50,23 +50,23 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R8_20260705_GPT_PRO_REQUEST
+Current task batch: DATA_STRATEGY_BATCH_R9_20260705_DISPATCH
 
 Objective:
 
-GPT Pro accepted the R7 closeout and returned R8 as the next ordinary research-only Data/Strategy task batch. R8 has been dispatched, completed, closed out, and pushed. Prepare and submit the fixed GPT Pro `外审对话` request for R8 verdict and R9 task instructions, then record the result and continue the permanent closed loop.
+GPT Pro accepted the R8 closeout and returned R9 as the next ordinary research-only Data/Strategy task batch. Record the R8 GPT Pro result, dispatch R9 to fixed downstream Codex-Dev agents and persistent Reasonix sidecars, collect CODEX_ACCEPTANCE / REASONIX_DRAFT outputs, close out R9, push controller records, then continue the permanent closed loop.
 
 Latest completed batch:
 
-- DATA_STRATEGY_BATCH_R7_20260705
-- closeout: `reports/workspace_dispatch/data_strategy_batch_r7_20260705_closeout.md`
+- DATA_STRATEGY_BATCH_R8_20260705
+- closeout: `reports/workspace_dispatch/data_strategy_batch_r8_20260705_closeout.md`
 - controller classification: ordinary research-only data/strategy batch
-- source acceptances: A-share `c10dfd1f2e7d2178bcf4fd7e334bb54cb34eedab`; US `45c722410eca56556a6b37c82b770565236e6041`; market_data `9606e5838f312d765964dfda4dc5caec079bccd3`; strategy_work `9324943c12160b51a8a0e206f4a2f3fb50476d46`
-- GPT Pro result: `reports/agent_handoff/data_strategy_batch_r7_gpt_pro_external_audit_result_20260705.md`
+- source acceptances: A-share `5deaab12a53830528b09159f37678fecbab589a0`; US `c52c3ad5c64e8f624154c1e60f7a1edf67e0b22c`; market_data `92a60d2bd84968db032e71e1e232d94b4cf2ad12`; strategy_work `5f2c0eee84457b5d8f20254a01fbb9a695c8f985`
+- GPT Pro result: `reports/agent_handoff/data_strategy_batch_r8_gpt_pro_external_audit_result_20260705.md`
 
 Current intake:
 
-- R8 intake: `reports/workspace_dispatch/data_strategy_batch_r8_20260705_intake.md`
+- R9 intake: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_intake.md`
 - verdict: `ACCEPT`
 - external-audit trigger open: `no`
 - fixes required: `none`
@@ -74,19 +74,16 @@ Current intake:
 
 Current dispatch/result state:
 
-- R8 downstream Codex-Dev acceptances have been collected:
-  - A_Share_Monitor: `5deaab12a53830528b09159f37678fecbab589a0`
-  - US_Stock_Monitor: `c52c3ad5c64e8f624154c1e60f7a1edf67e0b22c`
-  - market_data: `92a60d2bd84968db032e71e1e232d94b4cf2ad12`
-  - strategy_work: `5f2c0eee84457b5d8f20254a01fbb9a695c8f985`
-- R8 Reasonix-DB and Reasonix-Strategy sidecars completed and remain open.
-- R8 closeout was recorded at `reports/workspace_dispatch/data_strategy_batch_r8_20260705_closeout.md`.
-- No external-audit trigger opened from R8.
-- R8 closeout was pushed at controller commit `ad9003561590792a8b62f4abf1decbf885c48cdc`.
-- R8 GPT Pro request was prepared at `reports/external_audit/data_strategy_batch_r8_gpt_pro_external_audit_request_20260705.md`.
+- R8 GPT Pro request was submitted through the fixed `外审对话`.
+- R8 GPT Pro result was captured at `reports/agent_handoff/data_strategy_batch_r8_gpt_pro_external_audit_result_20260705.md`.
+- R9 intake was recorded at `reports/workspace_dispatch/data_strategy_batch_r9_20260705_intake.md`.
+- R9 downstream dispatch is pending.
+- Reasonix-DB and Reasonix-Strategy must remain open and be reused as persistent CLI-like sessions.
 
 Next dispatcher actions:
 
-1. Commit and push the R8 GPT Pro request record.
-2. Submit through Chrome/Computer Use with single-click discipline.
-3. Capture the GPT Pro verdict/task batch, record it, push, and continue the loop.
+1. Update `tasks/board.md`.
+2. Commit and push the R8 GPT Pro result plus R9 intake.
+3. Dispatch R9 to fixed Codex-Dev downstream agents/projects.
+4. Dispatch R9 sidecar prompts to the persistent Reasonix-DB and Reasonix-Strategy sessions without closing or recreating them.
+5. Wait in coarse intervals, collect downstream outputs, then close out R9.
