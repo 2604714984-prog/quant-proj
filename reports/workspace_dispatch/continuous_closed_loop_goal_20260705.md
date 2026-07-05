@@ -46,6 +46,7 @@ These rules are permanent. Do not delete them when updating the current task.
 - Preserve blocked and non-actionable states honestly; do not convert blocked research candidates into recommendations.
 - For cross-thread Codex sends, send prompt content only. Do not pass model or thinking overrides.
 - Reasonix sidecars use fixed sessions with model deepseek-v4-pro and effort high.
+- Reasonix fixed sessions are persistent CLI-like conversations. Keep `quant-reasonix-db`, `quant-reasonix-strategy`, and `quant-reasonix-advisory` open and reuse the same live session when possible; do not close or recreate them after each task.
 
 ## Mutable Current Task
 
