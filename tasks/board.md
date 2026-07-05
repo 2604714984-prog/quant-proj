@@ -17,7 +17,7 @@
 ## In Progress
 
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
-- `DATA_STRATEGY_BATCH_R8_20260705_CLOSEOUT`: fixed GPT Pro `外审对话` returned `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none` for R7 and issued R8; R8 downstream acceptances collected from A_Share_Monitor, US_Stock_Monitor, market_data, and strategy_work; Reasonix-DB and Reasonix-Strategy persistent sidecars completed and remain open; closeout recorded at `reports/workspace_dispatch/data_strategy_batch_r8_20260705_closeout.md`; preparing next fixed GPT Pro request; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto or ungated DB/network/schema/bulk/readiness/registry change.
+- `DATA_STRATEGY_BATCH_R8_20260705_GPT_PRO_REQUEST`: fixed GPT Pro `外审对话` returned `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none` for R7 and issued R8; R8 downstream acceptances collected from A_Share_Monitor, US_Stock_Monitor, market_data, and strategy_work; Reasonix-DB and Reasonix-Strategy persistent sidecars completed and remain open; closeout recorded and pushed at `ad9003561590792a8b62f4abf1decbf885c48cdc`; GPT Pro request prepared at `reports/external_audit/data_strategy_batch_r8_gpt_pro_external_audit_request_20260705.md`; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto or ungated DB/network/schema/bulk/readiness/registry change.
 
 ## Blocked / Hold
 

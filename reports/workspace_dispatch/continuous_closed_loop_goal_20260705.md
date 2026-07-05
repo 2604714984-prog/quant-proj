@@ -50,11 +50,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R8_20260705_CLOSEOUT
+Current task batch: DATA_STRATEGY_BATCH_R8_20260705_GPT_PRO_REQUEST
 
 Objective:
 
-GPT Pro accepted the R7 closeout and returned R8 as the next ordinary research-only Data/Strategy task batch. R8 has been dispatched to the fixed downstream Codex-Dev threads and persistent Reasonix sidecars. Downstream acceptances have been collected. Record R8 closeout, push, then continue the permanent closed loop by preparing the next GPT Pro verdict/task-batch request.
+GPT Pro accepted the R7 closeout and returned R8 as the next ordinary research-only Data/Strategy task batch. R8 has been dispatched, completed, closed out, and pushed. Prepare and submit the fixed GPT Pro `外审对话` request for R8 verdict and R9 task instructions, then record the result and continue the permanent closed loop.
 
 Latest completed batch:
 
@@ -82,10 +82,11 @@ Current dispatch/result state:
 - R8 Reasonix-DB and Reasonix-Strategy sidecars completed and remain open.
 - R8 closeout was recorded at `reports/workspace_dispatch/data_strategy_batch_r8_20260705_closeout.md`.
 - No external-audit trigger opened from R8.
+- R8 closeout was pushed at controller commit `ad9003561590792a8b62f4abf1decbf885c48cdc`.
+- R8 GPT Pro request was prepared at `reports/external_audit/data_strategy_batch_r8_gpt_pro_external_audit_request_20260705.md`.
 
 Next dispatcher actions:
 
-1. Commit and push the R8 closeout records.
-2. Prepare the fixed GPT Pro `外审对话` request for R8 verdict and R9 task instructions.
-3. Submit through Chrome/Computer Use with single-click discipline.
-4. Capture the GPT Pro verdict/task batch, record it, push, and continue the loop.
+1. Commit and push the R8 GPT Pro request record.
+2. Submit through Chrome/Computer Use with single-click discipline.
+3. Capture the GPT Pro verdict/task batch, record it, push, and continue the loop.
