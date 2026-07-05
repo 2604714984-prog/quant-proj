@@ -50,11 +50,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R13_20260706 active dispatch
+Current task batch: DATA_STRATEGY_BATCH_R13_20260706 interim external audit requested
 
 Objective:
 
-Continue as Quant-Dispatcher only. GPT Pro reviewed the R12 external-audit packet and returned `ACCEPT_WITH_WARNINGS`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, and `FIXES_REQUIRED: none before dispatching R13`. R13 is an ordinary research-only data/strategy batch focused on safe 3068-symbol A-share `features_daily` construction, coverage/leakage validation, and wider `low_vol_quality` research diagnostics. Do not create a controller architecture/gate loop. Do not authorize recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, or secrets.
+Continue as Quant-Dispatcher only. R13 ordinary research-only work reached an interim blocked state: A_Share_Monitor safely built and validated the 3068-symbol `features_daily`, but intentionally did not run wide `research discover` because current `StrategySearch.run()` requires full `daily` and `features_daily` DataFrames in memory. The user requested external audit before continuing.
 
 Current intake and controller records:
 
@@ -62,25 +62,25 @@ Current intake and controller records:
 - R13 intake: `reports/workspace_dispatch/data_strategy_batch_r13_20260706_intake.md`
 - R13 task packet: `tasks/in_progress/data-strategy-batch-r13-20260706/spec.md`
 - R13 dispatch summary: `reports/workspace_dispatch/data_strategy_batch_r13_20260706_dispatch_summary.md`
+- R13 interim result summary: `reports/workspace_dispatch/data_strategy_batch_r13_20260706_interim_result_summary.md`
+- R13 interim external-audit packet: `reports/agent_handoff/data_strategy_batch_r13_interim_external_audit_packet_20260706.md`
 - Fresh GPT Pro audit conversation for later loop continuation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
-- Classification: ordinary research-only data/strategy batch
-- External-audit trigger opened by R13 intake: `no`
+- Classification: ordinary research-only data/strategy batch, interim external audit user-requested
+- External-audit trigger opened by R13 itself: `no`
 
-Current dispatch plan:
+Current result state:
 
-- `A_Share_Monitor` fixed thread `019f32bd-082d-73e2-b902-3d48b8d198ba`: `A-R13-1` through `A-R13-5`.
-- `strategy_work` fixed thread `019f30c3-247e-7f43-af60-96164539a183`: `SW-R13-1`, `SW-R13-2`, `SW-R13-3`.
-- `market_data` fixed thread `019f3283-a821-7002-961b-6f533d3518c2`: `MD-R13-1`.
-
-R13 hard execution rule:
-
-- `StrategySearch.run()` must not auto-fallback to full in-memory `FeatureStore.build()` over 3068-symbol `data/cache` when `features_daily` is missing or empty.
-- A-share must first run read-only preflight, then `python -m qta features build` or equivalent `FeatureStore.build_to_store()`, then coverage/leakage validation, and only then `research discover`.
+- A_Share_Monitor R13 source commit `b5928fb`: `ACCEPTED_FEATURE_BUILD_VALIDATION_WITH_STRATEGY_BLOCKED`.
+- `features_daily` built safely: `6,262,517` rows, `3068` symbols, `183` columns, `35` chunks, duplicate keys `0`.
+- Final build max RSS: about `5.16 GB`; peak memory footprint: about `8.45 GB` on an 8 GB machine.
+- Wide strategy runs were not executed because current strategy search still loads full feature data into pandas.
+- strategy_work R13 config-prep commit `9424c1b`: `CODEX_ACCEPTANCE_SW_R13_CONFIG_PREP_DEPENDENCY_GATED`.
+- market_data R13 acceptance is not available; fixed thread remains tied up on older approval state.
 
 Next dispatcher actions:
 
-1. Send R13 prompt-only handoffs to the fixed A-share, strategy_work, and market_data Codex-Dev threads without model/thinking overrides.
-2. Commit and push the R13 controller intake/dispatch records.
-3. Poll downstream threads in coarse intervals.
-4. Record source acceptances as they arrive, then trigger strategy_work final sync only after A-share and market_data acceptances are available.
-5. Close out R13, push controller records, and request the next GPT Pro batch only when no active task remains or a true external-audit trigger opens.
+1. Commit/push the R13 interim external-audit packet and result summary.
+2. Submit or provide the packet to GPT Pro external audit if user wants active submission.
+3. Capture GPT Pro verdict and next task batch.
+4. Likely next batch: implement chunked strategy search/backtest before any 3068-symbol wide research discover run.
+5. Keep all boundaries closed: no recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, or secrets.
