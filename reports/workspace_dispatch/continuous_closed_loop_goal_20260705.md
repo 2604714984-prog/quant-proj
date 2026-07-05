@@ -68,6 +68,7 @@ Current intake:
 
 - R12 intake: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_intake.md`
 - R11 GPT Pro result: `reports/agent_handoff/data_strategy_batch_r11_gpt_pro_external_audit_result_20260705.md`
+- R12 dispatch summary: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_dispatch_summary.md`
 - registry refresh: `reports/workspace_status/registry_refresh_snapshot_20260705_r12_dispatch.md`
 - classification: ordinary research-only data/strategy batch
 - external-audit trigger opened by R12 intake: `no`
@@ -76,14 +77,14 @@ Current dispatch/result state:
 
 - Fresh GPT Pro audit conversation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
 - GPT Pro accepted R11 and returned R12 tasks focused on data quality, strategy experiments, and candidate quality.
-- R12 controller intake and registry refresh are prepared.
-- R12 A-share, US, and market_data Codex-Dev prompts need to be sent to fixed threads/worktrees.
-- R12 Reasonix-DB and Reasonix-Strategy sidecar drafts need to be requested with `deepseek-v4-pro` / high effort.
+- R12 controller intake, registry refresh, and dispatch summary are prepared.
+- R12 A-share, US, and market_data Codex-Dev prompts have been sent to fixed threads/worktrees.
+- R12 Reasonix-DB and Reasonix-Strategy sidecar drafts have been captured with `deepseek-v4-pro` / high effort.
 - R12 strategy_work final memo sync remains dependency-gated until source acceptances are available.
 
 Next dispatcher actions:
 
-1. Commit and push the R11 GPT Pro result, R12 intake, registry refresh, board update, and goal update.
-2. Send R12 prompts to A-share, US, and market_data fixed Codex-Dev threads/worktrees.
-3. Run Reasonix-DB and Reasonix-Strategy R12 advisory sidecars with fixed persistent sessions where possible and durable transcript capture.
-4. Record R12 dispatch summary, commit/push, wait in coarse intervals for source acceptances, then dispatch SW-R12-1.
+1. Commit and push the R12 dispatch summary and Reasonix sidecar records.
+2. Wait in coarse intervals for A-share, US, and market_data Codex-Dev returns.
+3. Dispatch SW-R12-1 only after source acceptances are available.
+4. Record source results, commit/push closeout, submit to GPT Pro when no active task remains, and continue the closed loop.
