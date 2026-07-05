@@ -16,7 +16,7 @@
 
 ## In Progress
 
-- `DATA_SOURCE_PRIORITY_20260705`: FeatureStore memory guard fixed; DeepSeek/Reasonix A-share data pull observed and recorded; provider/evidence contract tasks dispatched to US, market_data, A-share after-R12 follow-up, and strategy_work parking lot; dispatch summary `reports/workspace_dispatch/data_source_priority_20260705_dispatch_summary.md`.
+- `DATA_SOURCE_PRIORITY_20260705`: FeatureStore memory guard fixed; DeepSeek/Reasonix A-share data pull observed and recorded; provider/evidence contract tasks dispatched to US, market_data, A-share after-R12 follow-up, and strategy_work parking lot; strategy clean-cache rerun completed in `strategy_work` commit `b0d7d823f956067c6e58fef013dfc5e2e721c1ea` with controller record `reports/workspace_dispatch/data_source_priority_strategy_clean_cache_rerun_20260705.md`; next priority is safe `features_daily` construction for cleaned 3068-symbol `data/cache`; dispatch summary `reports/workspace_dispatch/data_source_priority_20260705_dispatch_summary.md`.
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
 
 ## Blocked / Hold
