@@ -1,0 +1,119 @@
+MIGRATION_PREP_SOURCE_REPO_HEADS_20260706
+
+Scope:
+- Source machine: old 8GB Mac.
+- Migration target: new Windows + WSL2 machine.
+- Inventory only. No wide backtest, DB rebuild, provider/network ingest, raw-data migration, or secret access performed.
+
+Repository: quant proj
+Path exists: yes
+Path: /Users/rongyuxu/Desktop/quant proj
+Branch: main
+HEAD: 9d17b8eaf1c869395f23e310a1ca887f07e5752f
+Remote origin: git@github.com:2604714984-prog/quant-proj.git
+Status: ## main...origin/main
+Worktree: clean at initial migration-prep inspection
+Latest relevant tags:
+- data-strategy-r13-interim-external-audit-20260706
+- data-strategy-r12-external-audit-packet-20260706
+- quant-workspace-data-strategy-r4-chatgpt-packet-20260705
+- quant-workspace-data-strategy-r2-r3-chatgpt-packet-20260705
+- a-share-l1-readiness-refresh-chatgpt-packet-20260704
+Recent commits:
+- 9d17b8e Record downstream completion callback protocol
+- 5cd13c8 Record simonlin1212 data source policy
+- 9f7d2ae Record R13C dispatch follow-ups
+- 8e56c6c Dispatch R13C chunked search batch
+- 6a3e509 Package R13 interim external audit
+
+Repository: A_Share_Monitor
+Path exists: yes
+Path: /Users/rongyuxu/Desktop/A_Share_Monitor
+Branch: codex/harden-a-share-research-pipeline
+HEAD: 6bfeb816ac8bd6d38b747e30d6f44e81cc8da0bc
+Remote origin: git@github.com:2604714984-prog/A_Share_Monitor.git
+Status: ## codex/harden-a-share-research-pipeline...origin/codex/harden-a-share-research-pipeline
+Worktree: clean at migration-prep inspection
+Latest relevant tags:
+- data-strategy-batch-r12-20260705
+- stage-a10-external-audit-packet-20260703
+- stage-a9-external-audit-packet-20260703
+- stage-a8-external-audit-packet-20260703
+- stage-a7-external-audit-packet-20260702
+Recent commits:
+- 6bfeb81 Implement chunked R13 strategy search
+- b5928fb R13 safe features_daily build diagnostics
+- aadf1da scripts: fill_all_extras.py - margin/holders/financials/indices data collector
+- b595d4f scripts: fill_tencent.py - Tencent Finance API for PE/PB/market cap
+- fdfcb2a research: make survivor and cost stress gates configurable
+
+Repository: US_Stock_Monitor
+Path exists: yes
+Path: /Users/rongyuxu/Desktop/US_Stock_Monitor
+Branch: main
+HEAD: 831ef21eda20ecf971bef9ab2f3487b8e96e1001
+Remote origin: git@github.com:2604714984-prog/US_Stock_Monitor.git
+Status: ## main...origin/main [ahead 2]
+Additional status: ?? logs/
+Worktree: dirty due to untracked logs/ and local branch ahead of origin/main by 2 commits
+Latest relevant tags:
+- phase-us13-audit-r1
+- phase-us12-audit-r1
+- phase-us11-audit-r1
+- phase-us10-audit-r1
+- phase-us8-9-audit-r1
+Recent commits:
+- 831ef21 daily_update_us: switch from yfinance to Tencent
+- 5fc588b scripts: fill_us_tencent.py - Tencent US stock API
+- c808e05 scripts: daily_update_us.py - yfinance incremental pull for US stocks
+- 05585ab data: US stock Parquet cache - 326 symbols, 689k rows from DuckDB export
+- bf83205 Add DeepSeek advisory review framework
+
+Repository: market_data
+Path exists: yes
+Path: /Users/rongyuxu/Desktop/market_data
+Branch: main
+HEAD: ff24166479638b0f35e1cd7a8d0f1d01cdafb495
+Remote origin: git@github.com:2604714984-prog/market_data.git
+Status: ## main...origin/main
+Worktree: clean at migration-prep inspection
+Latest relevant tags:
+- db-2-high001-closed-external-audit-20260703
+- db-2-documented-warning-external-audit-20260703
+- market-data-1-external-audit-20260703
+Recent commits:
+- ff24166 DeepSeek-DB P0-P4 deliverables: DB_OPS review, 265/500/1000 summaries, final handoff
+- c8a8bc8 market_data: DB maintainer handoff - GAP extracts, ops reviews, expansion reports
+- 4483fda Finalize DB-2 current-state audit packet
+- e97a563 Package DB-2 documented warning audit packet
+- 77f22d8 Publish MARKET-DATA-1 external audit packet
+
+Repository: strategy_work
+Path exists: yes
+Path: /Users/rongyuxu/Desktop/strategy_work
+Branch: main
+HEAD: 63c779db89b63ccb65819fe87945cd9e5cbe0c15
+Remote origin: git@github.com:2604714984-prog/strategy_work.git
+Status: ## main...origin/main
+Worktree: clean at migration-prep inspection
+Recent commits:
+- 63c779d migration: clarify - only code via git clone, data rebuilt fresh
+- 49128fb migration guide: complete database rebuild, scripts, crontab, verification checklist
+- d4f9439 migration doc: MIGRATION.md complete migration steps, strategy ranking, code change list, config quick reference
+- 2c74518 strategy scan: 6 templates x parameters x 2 universes
+- 8e07aca SW-R13C: add chunked wide-run notes
+
+Migration handoff files already present on source side:
+- /Users/rongyuxu/Desktop/strategy_work/MIGRATION.md
+- /Users/rongyuxu/Desktop/strategy_work/reports/planning/MIGRATION_GUIDE.md
+- /Users/rongyuxu/Desktop/market_data/reports/agent_handoff/database_maintenance_handoff.md
+- /Users/rongyuxu/Desktop/market_data/reports/agent_handoff/deepseek_db_p0_p4_final_handoff.md
+- /Users/rongyuxu/Desktop/market_data/reports/deepseek_db/us_db_2_migration_plan.md
+
+R13 interim anchor verification:
+- Tag data-strategy-r13-interim-external-audit-20260706: local ref exists, object 262dfc48e44363426113c8a2c1cbc41a6599cfe4
+- Commit 6a3e509f15cf5b22a9bced561f1a7540df0f4b06: local commit object exists and is ancestor of current quant-proj HEAD
+- reports/agent_handoff/data_strategy_batch_r13_interim_external_audit_packet_20260706.md: found
+- reports/workspace_dispatch/data_strategy_batch_r13_20260706_interim_result_summary.md: found
+- reports/workspace_dispatch/downstream_completion_callback_protocol_20260706.md: found
+- reports/workspace_dispatch/data_strategy_batch_r13c_20260706_result_summary.md: found
