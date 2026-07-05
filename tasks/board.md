@@ -28,6 +28,7 @@
 
 ## Done
 
+- `DATA_STRATEGY_BATCH_20260705_R3_DUPLICATE_INTAKE`: duplicate task list received and reconciled against completed `DATA_STRATEGY_BATCH_20260704_R2`; no new downstream dispatch, no controller/ChatGPT external-audit packet, and no source-project rerun required; duplicate intake report at `reports/workspace_dispatch/data_strategy_batch_20260705_r3_duplicate_intake_20260705.md`.
 - `recorded-execution-mode-v1-policy-update-20260704`: controller policy updated; Human-Gate batch record added; follow-up task packets created; no L1-L4 execution performed.
 - `dispatcher-dry-run-a-strat-1-gap-reacceptance-20260704`: task packet created, handoff prepared, no source-project execution.
 - `TASK-001 CODEX_ACCEPTANCE_A11_RESEARCH_RUNNER`: accepted with warnings by Codex-Dev; A-share source commit `012006c40897f999f2a2ba5c69e2630b9d50a552`.
