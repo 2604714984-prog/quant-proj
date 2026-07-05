@@ -15,11 +15,7 @@
 
 ## In Progress
 
-- `DATA_STRATEGY_BATCH_20260704_R2`: dispatched by Quant-Dispatcher on 2026-07-05; no external audit packet; no ticket/product-route task; source execution assigned to agents:
-  - A-share P0 data/strategy: `Arendt` / `019f2de6-2943-7772-b517-1f3105b5fa53`
-  - US P0 data/strategy: `Epicurus` / `019f2de6-8908-7eb0-ab5d-6892b0a2225c`
-  - market_data + strategy_work P1: `Banach` / `019f2de6-bef7-7f90-b73a-9edb77f0ff36`
-  - batch summary: `reports/workspace_dispatch/data_strategy_batch_20260704_r2_dispatch_summary_20260705.md`
+- `DATA_STRATEGY_BATCH_20260704_R2_US_P0_PARTIAL`: US P0 agent `Epicurus` / `019f2de6-8908-7eb0-ab5d-6892b0a2225c` was shut down after repeated no-response finalization attempts; dirty source worktree remains in `/Users/rongyuxu/Desktop/US_Stock_Monitor` and requires a follow-up takeover before acceptance.
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
 
 ## Blocked / Hold
@@ -71,3 +67,6 @@
 - `TASK-040 A-share Level2 Product-Read Route Activation Plan`: accepted plan-only by Codex-Dev; market_data source commit `3b0453c243e786e2cfbb8699ae2ba25c32a4f4c8`; no registry/catalog change and no product route activation; future activation requires separate L3 Human-Gate, source commit, Codex-Audit, and ChatGPT external audit.
 - `TASK-041 A11 Ticket Gate Preconditions Checklist`: accepted checklist-only by Codex-Dev in A-share source commit `25b7ce74dbec6a3c5d452bf357c2f44cca879cb8`; documents required market_data product route, candidate-level evidence/micro gates, A11 research-only removal, snapshot alignment, ticket schema safety, false broker/order/live flags, and external-audit trigger before any real `PENDING_HUMAN_REVIEW` ticket.
 - `TASK-042 US 44 Missing Metadata Symbols Repair Dry-run`: accepted with blocked dry-run by Codex-Dev; US source commit `5d7e89dd55b7b21019f6d9d72efd769f6d6f5724`; 44 metadata symbols still missing; local source/canonical metadata and daily rows remain 0; no network, DB write, product route, recommendation, or ticket; future bootstrap requires a new task-level HG-EXEC record.
+- `DATA_STRATEGY_BATCH_20260704_R2_DISPATCH`: controller dispatch accepted; commit `24ebef017a0d9c5988a5b969c7399776f5e33e1d`; no external audit packet, no ticket/product-route task; Reasonix-DB/Strategy sidecars recorded; A-share P0 and market_data/strategy_work workstreams completed, US P0 remains partial blocked.
+- `DATA_STRATEGY_BATCH_20260704_R2_A_SHARE_P0`: completed and pushed by A-share workstream; A-share source commit `668b7353a19e8c03fb566edff432f0ab3b97487d`; validates 203 research-only records / 152 unique symbols, conservative 16-candidate deep dive, walk-forward weakness, small data gaps, and micro-account research-pool feasibility; no recommendation/ticket.
+- `DATA_STRATEGY_BATCH_20260704_R2_MD_SW`: completed and pushed by market_data/strategy_work workstream; market_data commit `7d56ee4742bea8d40c872a6a8fa9f3332e863863`, strategy_work commit `741a3abf8ffa2cc277e239a38998b8146aadd824`; A-share Level2 is `LEVEL2_ACCEPTED_FOR_RESEARCH` only, US-300A/US-300B research split recorded, product route remains disabled.

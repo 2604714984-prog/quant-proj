@@ -93,10 +93,11 @@ This is an ordinary source-project Data + Strategy batch. No controller external
 
 ## Status
 
-- Dispatch status: `IN_PROGRESS`
+- Dispatch status: `PARTIAL_COMPLETE_US_P0_BLOCKED`
 - External audit packet: `NOT_CREATED`
 - Controller audit packet: `NOT_CREATED`
 - Ticket/product-route tasks: `NOT_CREATED`
+- Closeout: `reports/workspace_dispatch/data_strategy_batch_20260704_r2_closeout_20260705.md`
 
 ## Priority Amendment 2026-07-05
 
