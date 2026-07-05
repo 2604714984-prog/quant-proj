@@ -50,25 +50,27 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R11_20260705
+Current task batch: DATA_STRATEGY_BATCH_R11_20260705 closeout / GPT Pro submission
 
 Objective:
 
-R10 GPT Pro external review is complete in the fresh `New Audit Handoff` conversation. GPT Pro accepted R10 as `CLOSED_ACCEPTED_WITH_WARNINGS`, confirmed no external-audit trigger is open, required no fixes before R11 dispatch, and issued `DATA_STRATEGY_BATCH_R11_20260705`. Dispatch R11 to fixed downstream Codex-Dev and Reasonix sidecar sessions, keep `strategy_work` final sync dependency-gated until source acceptances are available, collect results, close out, push, and then continue the closed loop.
+R11 ordinary research-only Data/Strategy source work is complete. Record and push the R11 controller closeout, then submit the R11 closeout to the fresh GPT Pro audit conversation to request a verdict, external-trigger check, fixes if any, and next concrete `DATA_STRATEGY_BATCH_R12_20260705` tasks. The submission must keep the project focused on data quality, strategy experiments, and candidate quality, and must avoid drifting into controller/gate architecture loops unless a real boundary change opens.
 
 Latest completed batch:
 
-- DATA_STRATEGY_BATCH_R10_20260705
-- closeout: `reports/workspace_dispatch/data_strategy_batch_r10_20260705_closeout.md`
+- DATA_STRATEGY_BATCH_R11_20260705
+- closeout: `reports/workspace_dispatch/data_strategy_batch_r11_20260705_closeout.md`
 - controller classification: ordinary research-only data/strategy batch
-- source acceptances: A-share `a908179a7c8c0a3dcb9013ffe7214fd3e4704600`; US `9f89b03b9c2dcab9dc82a86d705c69e4dfb11862`; market_data `b977e9682f078f359286b50be15fe34a6b03a83c`; strategy_work `570944f8839bfa28fa27cd9f59d24cc0f74c9850`
-- Reasonix sidecars: `reports/workspace_dispatch/reasonix_data_strategy_batch_r10_sidecar_summary_20260705.md`
+- source acceptances: A-share `05b79ddabb05003067e1ae86e10411604271ff26`; US `c9dce3782df1e250987129c7ce5350c786e1821d`; market_data `96a325423d00af02c8829d85d770b7d73e30c6f6`; strategy_work `ad33605ec3ae001bc7c17b132f7333f76f60ae74`
+- Reasonix sidecars: `reports/workspace_dispatch/reasonix_data_strategy_batch_r11_sidecar_summary_20260705.md`
 
 Current intake:
 
 - R11 intake: `reports/workspace_dispatch/data_strategy_batch_r11_20260705_intake.md`
 - R10 GPT Pro result: `reports/agent_handoff/data_strategy_batch_r10_gpt_pro_external_audit_result_20260705.md`
 - R11 dispatch summary: `reports/workspace_dispatch/data_strategy_batch_r11_20260705_dispatch_summary.md`
+- R11 result summary: `reports/workspace_dispatch/data_strategy_batch_r11_20260705_result_summary.md`
+- R11 closeout: `reports/workspace_dispatch/data_strategy_batch_r11_20260705_closeout.md`
 - registry refresh: `reports/workspace_status/registry_refresh_snapshot_20260705_r11_dispatch.md`
 - classification: ordinary research-only data/strategy batch
 - external-audit trigger opened by R11: `no`
@@ -76,16 +78,17 @@ Current intake:
 Current dispatch/result state:
 
 - Fresh GPT Pro audit conversation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
-- GPT Pro result captured after an English retry because the first two outputs were truncated to `我`.
-- R11 controller intake, dispatch summary, and registry refresh are prepared.
-- Source-project registry refresh observed dirty paths in A_Share_Monitor and strategy_work; downstream agents must not revert or overwrite them.
-- R11 A-share, US, and market_data Codex-Dev prompts have been sent to fixed threads.
+- R11 controller intake, dispatch summary, registry refresh, result summary, and closeout are prepared.
+- A-share R11 source result is accepted with warnings at commit `05b79ddabb05003067e1ae86e10411604271ff26`.
+- US R11 source result is accepted at commit `c9dce3782df1e250987129c7ce5350c786e1821d`.
+- market_data R11 source result is accepted with warnings at commit `96a325423d00af02c8829d85d770b7d73e30c6f6`.
+- strategy_work R11 final memo sync is accepted at commit `ad33605ec3ae001bc7c17b132f7333f76f60ae74`.
 - R11 Reasonix-DB and Reasonix-Strategy sidecar drafts have been captured; persistent sessions were resumed and left open.
-- R11 strategy_work final memo sync remains dependency-gated until source acceptances are available.
+- R11 remains research-only and non-actionable.
 
 Next dispatcher actions:
 
-1. Commit and push the R11 dispatch and Reasonix sidecar records.
-2. Wait in coarse intervals for A-share, US, and market_data Codex-Dev returns.
-3. Dispatch strategy_work final memo sync only after source acceptances are available.
-4. Record source results, commit/push closeout, and continue the closed loop.
+1. Validate, commit, and push the R11 controller closeout records.
+2. Submit the R11 closeout to the fresh GPT Pro audit conversation.
+3. Capture the verdict and next R12 task instructions in `reports/agent_handoff/`.
+4. Commit/push the GPT Pro result and dispatch R12 if provided.

@@ -16,7 +16,6 @@
 
 ## In Progress
 
-- `DATA_STRATEGY_BATCH_R11_20260705`: imported from fresh GPT Pro `New Audit Handoff`; ordinary research-only Data + Strategy batch; dispatch A-R11-1~3, US-R11-1~4, MD-R11-1~2, Reasonix sidecars, and hold SW-R11-1 until source acceptances are available.
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
 
 ## Blocked / Hold
@@ -30,6 +29,7 @@
 
 ## Done
 
+- `DATA_STRATEGY_BATCH_R11_20260705`: completed ordinary research-only Data + Strategy batch; A-share commit `05b79ddabb05003067e1ae86e10411604271ff26`, US commit `c9dce3782df1e250987129c7ce5350c786e1821d`, market_data commit `96a325423d00af02c8829d85d770b7d73e30c6f6`, strategy_work final sync commit `ad33605ec3ae001bc7c17b132f7333f76f60ae74`; Reasonix-DB/Strategy sidecars recorded as advisory drafts and kept open; closeout `reports/workspace_dispatch/data_strategy_batch_r11_20260705_closeout.md`; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto authorization.
 - `DATA_STRATEGY_BATCH_R10_GPT_PRO_EXTERNAL_AUDIT_RESULT`: fresh GPT Pro `New Audit Handoff` returned `VERDICT: ACCEPT R10 as CLOSED_ACCEPTED_WITH_WARNINGS`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none before R11 dispatch`; result recorded at `reports/agent_handoff/data_strategy_batch_r10_gpt_pro_external_audit_result_20260705.md`; R11 intake recorded at `reports/workspace_dispatch/data_strategy_batch_r11_20260705_intake.md`; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto authorization.
 - `DATA_STRATEGY_BATCH_R10_NEW_GPT_PRO_AUDIT_CONVERSATION`: fresh GPT Pro audit conversation started at `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`; submission record `reports/agent_handoff/data_strategy_batch_r10_gpt_pro_external_audit_submission_20260705.md`; first two GPT Pro outputs were truncated to `我`, then an English retry produced the R11 task batch.
 - `DATA_STRATEGY_BATCH_R10_GPT_PRO_EXTERNAL_AUDIT_REQUEST_PREPARED`: R10 controller closeout request prepared and pushed at controller commit `a83e14455373bdf46c2f4d3871e421776780d963`; previous fixed `外审对话` was not successfully submitted because Chrome/browser UI became unstable; rollover handoff created for a fresh GPT Pro audit conversation.
