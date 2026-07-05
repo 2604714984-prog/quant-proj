@@ -47,6 +47,7 @@ These rules are permanent. Do not delete them when updating the current task.
 - For cross-thread Codex sends, send prompt content only. Do not pass model or thinking overrides.
 - Reasonix sidecars use fixed sessions with model deepseek-v4-pro and effort high.
 - Reasonix fixed sessions are persistent CLI-like conversations. Keep `quant-reasonix-db`, `quant-reasonix-strategy`, and `quant-reasonix-advisory` open and reuse the same live session when possible; do not close or recreate them after each task.
+- Future data-source work must source provider candidates from `https://github.com/simonlin1212` unless the user explicitly changes this policy. This source restriction does not authorize network ingest, DB writes, data-clear promotion, readiness changes, product routes, tickets, recommendations, or broker/order/paper/live/auto behavior.
 
 ## Mutable Current Task
 

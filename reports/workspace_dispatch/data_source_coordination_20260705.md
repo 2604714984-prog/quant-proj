@@ -5,6 +5,20 @@ Role: Quant-Dispatcher
 Recorded: 2026-07-05
 Status: ACTIVE_DATA_SOURCE_PRIORITY
 
+## Permanent Source Policy
+
+As of 2026-07-06, the user directed that future data-source work must use projects under:
+
+```text
+https://github.com/simonlin1212
+```
+
+Controller policy record:
+
+- `reports/workspace_dispatch/simonlin1212_data_source_policy_20260706.md`
+
+Do not introduce a new external data-source provider outside `github.com/simonlin1212` unless the user explicitly changes this policy. This does not by itself authorize network ingest, DB writes, provider-data persistence, data-clear promotion, readiness changes, product routes, tickets, or recommendations.
+
 ## Current Priority
 
 The current data-source priority is to fix the evidence chain before more strategy expansion:
