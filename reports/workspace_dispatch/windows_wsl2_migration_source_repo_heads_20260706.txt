@@ -53,9 +53,9 @@ Path: /Users/rongyuxu/Desktop/US_Stock_Monitor
 Branch: main
 HEAD: 831ef21eda20ecf971bef9ab2f3487b8e96e1001
 Remote origin: git@github.com:2604714984-prog/US_Stock_Monitor.git
-Status: ## main...origin/main [ahead 2]
+Status after push cleanup: ## main...origin/main
 Additional status: ?? logs/
-Worktree: dirty due to untracked logs/ and local branch ahead of origin/main by 2 commits
+Worktree: tracked commits pushed and synced; dirty only due to untracked logs/
 Latest relevant tags:
 - phase-us13-audit-r1
 - phase-us12-audit-r1
@@ -68,6 +68,10 @@ Recent commits:
 - c808e05 scripts: daily_update_us.py - yfinance incremental pull for US stocks
 - 05585ab data: US stock Parquet cache - 326 symbols, 689k rows from DuckDB export
 - bf83205 Add DeepSeek advisory review framework
+
+Push cleanup:
+- The two local US_Stock_Monitor commits observed during migration-prep were pushed to `origin/main`.
+- Untracked `logs/` remains local runtime output and was not committed or pushed.
 
 Repository: market_data
 Path exists: yes

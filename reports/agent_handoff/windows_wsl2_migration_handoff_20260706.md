@@ -15,11 +15,11 @@ This workspace coordinates research-only quant/data systems across A-share, US s
 |---|---|---|
 | `/Users/rongyuxu/Desktop/quant proj` | `2604714984-prog/quant-proj` | `main` / `9d17b8eaf1c869395f23e310a1ca887f07e5752f` |
 | `/Users/rongyuxu/Desktop/A_Share_Monitor` | `2604714984-prog/A_Share_Monitor` | `codex/harden-a-share-research-pipeline` / `6bfeb816ac8bd6d38b747e30d6f44e81cc8da0bc` |
-| `/Users/rongyuxu/Desktop/US_Stock_Monitor` | `2604714984-prog/US_Stock_Monitor` | `main` / `831ef21eda20ecf971bef9ab2f3487b8e96e1001`; local branch ahead of origin/main by 2, untracked `logs/` present |
+| `/Users/rongyuxu/Desktop/US_Stock_Monitor` | `2604714984-prog/US_Stock_Monitor` | `main` / `831ef21eda20ecf971bef9ab2f3487b8e96e1001`; pushed/synced with origin/main after cleanup; untracked `logs/` present locally |
 | `/Users/rongyuxu/Desktop/market_data` | `2604714984-prog/market_data` | `main` / `ff24166479638b0f35e1cd7a8d0f1d01cdafb495` |
 | `/Users/rongyuxu/Desktop/strategy_work` | `2604714984-prog/strategy_work` | `main` / `63c779db89b63ccb65819fe87945cd9e5cbe0c15` |
 
-Before starting work on the new machine, inspect whether the US_Stock_Monitor two local commits should be pushed or replicated. Do not copy untracked `logs/` unless explicitly required.
+The US_Stock_Monitor Tencent-source commits are pushed to `origin/main`. Do not copy untracked `logs/` unless explicitly required.
 
 ## R13 Interim Anchor
 
