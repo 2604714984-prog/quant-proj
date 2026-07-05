@@ -17,6 +17,7 @@
 ## In Progress
 
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
+- `DATA_STRATEGY_BATCH_R7_20260705`: imported from fixed GPT Pro `外审对话`; ordinary research-only Data + Strategy batch; dispatch pending to A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, and Reasonix/DeepSeek sidecars as appropriate; no external-audit trigger, recommendation, ticket, product-route, production-readiness, broker/order/paper/live/auto, or ungated DB/network/schema/bulk/readiness/registry change.
 
 ## Blocked / Hold
 
@@ -29,6 +30,7 @@
 
 ## Done
 
+- `DATA_STRATEGY_BATCH_R6_GPT_PRO_EXTERNAL_AUDIT_RESULT`: fixed external-audit conversation `外审对话` returned `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none`; result recorded at `reports/agent_handoff/data_strategy_batch_r6_gpt_pro_external_audit_result_20260705.md`; R7 intake recorded at `reports/workspace_dispatch/data_strategy_batch_r7_20260705_intake.md`; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto authorization.
 - `DATA_STRATEGY_BATCH_R6_20260705`: completed ordinary research-only Data + Strategy batch; A-share commit `8beac22d0ed2f9dea72392df5456b4441b2a9180`, US commit `4e1304cbac0984c11ccc0c66d39d6685db289866`, market_data commit `9439dc094ad7ebe9e5ddcc46601c707bf013a090`, strategy_work commit `1775637dd42cbc858c144da7c4aa60cfaa90a81d`; Reasonix sidecars recorded as draft/advisory; closeout `reports/workspace_dispatch/data_strategy_batch_r6_20260705_closeout.md`; next closed-loop GPT Pro request prepared at `reports/external_audit/data_strategy_batch_r6_gpt_pro_external_audit_request_20260705.md`; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto authorization.
 - `DATA_STRATEGY_BATCH_R5_GPT_PRO_EXTERNAL_AUDIT_RESULT`: fixed external-audit conversation `外审对话` returned `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none`; result recorded at `reports/agent_handoff/data_strategy_batch_r5_gpt_pro_external_audit_result_20260705.md`; R6 intake recorded at `reports/workspace_dispatch/data_strategy_batch_r6_20260705_intake.md`; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto authorization.
 - `DATA_STRATEGY_BATCH_R5_20260705`: completed ordinary research-only Data + Strategy batch; A-share commit `fa8d9b724d9f535c9e8287f017b08b150ba1656f`, US commit `2eb659dad1689872975231242fabbd7eaf20ed50`, market_data commit `ede3c6df156ef820707865e6f1bfc35a7c5e03c6`, strategy_work commit `94b0f8b2d2b5c0310488707500abc681dd1fe5ff`; Reasonix sidecars recorded as `EMBEDDED_FACTS_DRAFT`; closeout `reports/workspace_dispatch/data_strategy_batch_r5_20260705_closeout.md`; no external audit, recommendation, ticket, product-route, broker/order/paper/live/auto authorization.
