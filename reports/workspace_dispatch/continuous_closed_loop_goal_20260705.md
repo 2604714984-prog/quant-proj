@@ -79,13 +79,13 @@ Current dispatch/result state:
 - GPT Pro result captured after an English retry because the first two outputs were truncated to `我`.
 - R11 controller intake, dispatch summary, and registry refresh are prepared.
 - Source-project registry refresh observed dirty paths in A_Share_Monitor and strategy_work; downstream agents must not revert or overwrite them.
-- R11 Codex/Reasonix dispatch is pending send.
+- R11 A-share, US, and market_data Codex-Dev prompts have been sent to fixed threads.
+- R11 Reasonix-DB and Reasonix-Strategy sidecar drafts have been captured; persistent sessions were resumed and left open.
+- R11 strategy_work final memo sync remains dependency-gated until source acceptances are available.
 
 Next dispatcher actions:
 
-1. Validate, commit, and push R11 intake/result/dispatch/registry controller records.
-2. Send R11 prompt-only tasks to A_Share_Monitor, US_Stock_Monitor, and market_data fixed Codex-Dev threads.
-3. Send R11 advisory sidecars to persistent Reasonix-DB and Reasonix-Strategy sessions without closing or recreating them.
-4. Wait for A-share, US, market_data, and Reasonix returns.
-5. Dispatch strategy_work final memo sync only after source acceptances are available.
-6. Record results, commit/push closeout, and continue the closed loop.
+1. Commit and push the R11 dispatch and Reasonix sidecar records.
+2. Wait in coarse intervals for A-share, US, and market_data Codex-Dev returns.
+3. Dispatch strategy_work final memo sync only after source acceptances are available.
+4. Record source results, commit/push closeout, and continue the closed loop.
