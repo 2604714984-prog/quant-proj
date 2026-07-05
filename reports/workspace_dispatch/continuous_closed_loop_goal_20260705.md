@@ -50,11 +50,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R8_20260705_IN_PROGRESS
+Current task batch: DATA_STRATEGY_BATCH_R8_20260705_CLOSEOUT
 
 Objective:
 
-GPT Pro accepted the R7 closeout and returned R8 as the next ordinary research-only Data/Strategy task batch. R8 has been imported and recorded. Dispatch R8 to the fixed downstream Codex-Dev threads and Reasonix persistent sidecars, collect CODEX_ACCEPTANCE / REASONIX_REPORT results, close out, push, then continue the permanent closed loop.
+GPT Pro accepted the R7 closeout and returned R8 as the next ordinary research-only Data/Strategy task batch. R8 has been dispatched to the fixed downstream Codex-Dev threads and persistent Reasonix sidecars. Downstream acceptances have been collected. Record R8 closeout, push, then continue the permanent closed loop by preparing the next GPT Pro verdict/task-batch request.
 
 Latest completed batch:
 
@@ -74,19 +74,18 @@ Current intake:
 
 Current dispatch/result state:
 
-- Controller R7 closeout was pushed at `372b81b`.
-- Persistent Reasonix session rule was clarified and pushed at `1fae882`.
-- R7 GPT Pro result was captured from fixed `外审对话`.
-- R8 intake was recorded as ordinary research-only data/strategy work.
-- R8 downstream Codex-Dev dispatch was sent to the fixed A_Share_Monitor, US_Stock_Monitor, market_data, and strategy_work threads.
-- R8 Reasonix-DB persistent sidecar completed and remains open.
-- R8 Reasonix-Strategy persistent sidecar completed and remains open.
-- R8 Reasonix result summaries were recorded in `reports/workspace_dispatch/reasonix_db_data_strategy_batch_r8_result_20260705.md`, `reports/workspace_dispatch/reasonix_strategy_data_strategy_batch_r8_result_20260705.md`, and `reports/workspace_dispatch/reasonix_data_strategy_batch_r8_sidecar_summary_20260705.md`.
-- No external-audit trigger opened from the Reasonix sidecars.
+- R8 downstream Codex-Dev acceptances have been collected:
+  - A_Share_Monitor: `5deaab12a53830528b09159f37678fecbab589a0`
+  - US_Stock_Monitor: `c52c3ad5c64e8f624154c1e60f7a1edf67e0b22c`
+  - market_data: `92a60d2bd84968db032e71e1e232d94b4cf2ad12`
+  - strategy_work: `5f2c0eee84457b5d8f20254a01fbb9a695c8f985`
+- R8 Reasonix-DB and Reasonix-Strategy sidecars completed and remain open.
+- R8 closeout was recorded at `reports/workspace_dispatch/data_strategy_batch_r8_20260705_closeout.md`.
+- No external-audit trigger opened from R8.
 
 Next dispatcher actions:
 
-1. Commit and push the R8 Reasonix sidecar result records.
-2. Wait in coarse intervals for fixed Codex-Dev thread outputs.
-3. Collect A-share, US, market_data, and strategy_work CODEX_ACCEPTANCE results.
-4. Record R8 closeout, push, and continue the closed loop.
+1. Commit and push the R8 closeout records.
+2. Prepare the fixed GPT Pro `外审对话` request for R8 verdict and R9 task instructions.
+3. Submit through Chrome/Computer Use with single-click discipline.
+4. Capture the GPT Pro verdict/task batch, record it, push, and continue the loop.
