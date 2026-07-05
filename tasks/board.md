@@ -17,7 +17,7 @@
 ## In Progress
 
 - `DATA_STRATEGY_BATCH_R12_20260705`: imported from fresh GPT Pro `New Audit Handoff`; ordinary research-only Data + Strategy batch; US R12 accepted at `017c1e25b4b05d088121b618f8951ec898145b23`; market_data R12 accepted at `97f1360762e663894ea84af7a6356b89d8cd4f2d`; A-share R12 still active, but FeatureStore memory fix is pushed at `18c19016809210780272512b99b6dd07be074425`; hold SW-R12-1 until A-share acceptance is available.
-- `DATA_SOURCE_PRIORITY_20260705`: FeatureStore memory guard fixed; DeepSeek/Reasonix A-share data pull observed and recorded; next priority is provider/evidence contracts for `simonlin1212/a-stock-data` and `simonlin1212/global-stock-data`, then market_data negative tests.
+- `DATA_SOURCE_PRIORITY_20260705`: FeatureStore memory guard fixed; DeepSeek/Reasonix A-share data pull observed and recorded; provider/evidence contract tasks dispatched to US, market_data, A-share after-R12 follow-up, and strategy_work parking lot; dispatch summary `reports/workspace_dispatch/data_source_priority_20260705_dispatch_summary.md`.
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
 
 ## Blocked / Hold

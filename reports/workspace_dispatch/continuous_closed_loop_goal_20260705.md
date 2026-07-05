@@ -75,6 +75,8 @@ Current result state:
 - A-share R12 memory incident was handled by stopping a runaway full-cache `FeatureStore(store).build()` Python process and recording `reports/workspace_dispatch/data_strategy_batch_r12_memory_incident_20260705.md`; the A-share R12 thread was instructed to avoid full-cache builds and return `BLOCKED` with a chunking plan if required.
 - FeatureStore root fix is now implemented and pushed in A_Share_Monitor commit `18c19016809210780272512b99b6dd07be074425`; it guards all major FeatureStore source tables and adds chunked `build_to_store()` output. Controller coordination record: `reports/workspace_dispatch/data_source_coordination_20260705.md`.
 - DeepSeek/Reasonix A-share data pull completed as local data-source evidence only. Treat it as not data-clear, not product-ready, and not recommendation-ready. Next data-source priority is provider/evidence contracts for `simonlin1212/a-stock-data` and `simonlin1212/global-stock-data`.
+- A subsequent old-style full-cache `fs.build()` command was observed and killed; downstream guidance now requires `build_to_store()`, bounded windows, or metadata inspection only.
+- Data-source priority tasks have been dispatched in `reports/workspace_dispatch/data_source_priority_20260705_dispatch_summary.md`: `DS-US-1`, `MD-DS-1`, `DS-A-1` after A-share R12, and `SW-DS-1`.
 - `strategy_work` R12 final memo sync remains dependency-gated until A-share, US, and market_data acceptances are all available.
 - Reasonix-DB and Reasonix-Strategy R12 sidecar drafts have been captured with `deepseek-v4-pro` / high effort and committed in controller.
 - Partial result summary: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_result_summary.md`

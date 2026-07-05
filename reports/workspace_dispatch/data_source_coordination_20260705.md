@@ -73,6 +73,24 @@ Interpretation:
 - It is not production recommendation readiness.
 - It does not authorize recommendation, ticket, broker/order, paper/live, or auto execution.
 
+## Unsafe Full-Build Retry
+
+After the FeatureStore fix was pushed, a Reasonix-parented Python child launched the old unsafe command pattern again:
+
+```text
+store = ParquetDataStore('data/cache')
+fs = FeatureStore(store)
+feat = fs.build()
+```
+
+The dispatcher stopped that child process. Follow-up guidance was sent to the A-share R12 thread:
+
+- Do not run the old full-cache returned-DataFrame pattern again.
+- Use `FeatureStore(store).build_to_store(...)` for chunked output.
+- Use bounded `FeatureStore.build(start=..., end=..., max_in_memory_rows=...)` only for explicitly small windows.
+- Use manifest/report/Parquet metadata inspection for diagnostics.
+- If strategy search requires all features in memory, return `BLOCKED` with a chunked-search design instead of executing it.
+
 ## Next Data-Source Tasks
 
 `DS-A-1`: A-share provider spec from `simonlin1212/a-stock-data`
