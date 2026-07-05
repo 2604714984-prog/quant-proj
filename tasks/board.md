@@ -17,7 +17,7 @@
 ## In Progress
 
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
-- `DATA_STRATEGY_BATCH_R9_20260705_DISPATCH`: fixed GPT Pro `外审对话` returned `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none` for R8 and issued R9; result recorded at `reports/agent_handoff/data_strategy_batch_r8_gpt_pro_external_audit_result_20260705.md`; R9 intake recorded at `reports/workspace_dispatch/data_strategy_batch_r9_20260705_intake.md`; dispatch pending to A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, and persistent Reasonix-DB/Strategy sidecars; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto or ungated DB/network/schema/bulk/readiness/registry change.
+- `DATA_STRATEGY_BATCH_R9_20260705_DISPATCH`: fixed GPT Pro `外审对话` returned `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none` for R8 and issued R9; result recorded at `reports/agent_handoff/data_strategy_batch_r8_gpt_pro_external_audit_result_20260705.md`; R9 intake recorded at `reports/workspace_dispatch/data_strategy_batch_r9_20260705_intake.md`; dispatch sent to A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, and persistent Reasonix-DB/Strategy sidecars; dispatch summary `reports/workspace_dispatch/data_strategy_batch_r9_20260705_dispatch_summary.md`; waiting for downstream CODEX_ACCEPTANCE / REASONIX_DRAFT outputs; no recommendation/ticket/product-route/production-readiness/broker/order/paper/live/auto or ungated DB/network/schema/bulk/readiness/registry change.
 
 ## Blocked / Hold
 

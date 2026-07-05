@@ -77,13 +77,12 @@ Current dispatch/result state:
 - R8 GPT Pro request was submitted through the fixed `外审对话`.
 - R8 GPT Pro result was captured at `reports/agent_handoff/data_strategy_batch_r8_gpt_pro_external_audit_result_20260705.md`.
 - R9 intake was recorded at `reports/workspace_dispatch/data_strategy_batch_r9_20260705_intake.md`.
-- R9 downstream dispatch is pending.
+- R9 downstream dispatch was sent to A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, Reasonix-DB, and Reasonix-Strategy.
+- R9 dispatch summary was recorded at `reports/workspace_dispatch/data_strategy_batch_r9_20260705_dispatch_summary.md`.
 - Reasonix-DB and Reasonix-Strategy must remain open and be reused as persistent CLI-like sessions.
 
 Next dispatcher actions:
 
-1. Update `tasks/board.md`.
-2. Commit and push the R8 GPT Pro result plus R9 intake.
-3. Dispatch R9 to fixed Codex-Dev downstream agents/projects.
-4. Dispatch R9 sidecar prompts to the persistent Reasonix-DB and Reasonix-Strategy sessions without closing or recreating them.
-5. Wait in coarse intervals, collect downstream outputs, then close out R9.
+1. Commit and push the R9 dispatch summary.
+2. Wait in coarse intervals for downstream CODEX_ACCEPTANCE / REASONIX_DRAFT outputs.
+3. Record downstream results, update board, close out R9, push, then continue the permanent loop.
