@@ -1,0 +1,36 @@
+DISPATCH_TASK
+role: Reasonix-DB
+batch: DATA_STRATEGY_BATCH_R6_20260705
+target_project: quant workspace controller / market_data / US_Stock_Monitor
+source_ref: quant-proj main at R5 closeout commit e5416a36907ce45c03b8bdf3e04b33bd8d584ca1
+task_packet: reports/workspace_dispatch/data_strategy_batch_r6_20260705_intake.md
+context_delta: GPT Pro accepted R5 and requested R6 ordinary research-only Data/Strategy tasks. No external-audit trigger is open.
+expected_output: REASONIX_DRAFT with DB/data-maintenance review only.
+transcript_path: reports/workspace_dispatch/reasonix_db_data_strategy_batch_r6_20260705.jsonl
+human_gate: not required for this draft; required before DB writes, network ingest, schema migration, bulk ingest, readiness change, or registry activation.
+
+Scope:
+
+1. Review TASK-US-R6-002 Metadata Enrichment Implementation Plan.
+   - Use the R5 44-symbol queue split.
+   - Design CSV/JSON metadata bootstrap for ETF, historical, merged, and provider-metadata groups.
+   - Dry-run only unless separate HG-EXEC is created.
+   - No network and no DB write by default.
+
+2. Review TASK-MD-R6-001 Research Route Consistency Regression.
+   - Verify A-share research route should remain PASS_LEVEL_2_FOR_RESEARCH with product_read_allowed=false.
+   - Verify US-300A and US-300B should remain research/enrichment only.
+   - Verify production_recommendation_data_ready=false.
+   - Verify broker/live/auto=false.
+
+Requested output:
+
+- concise DB/data draft;
+- likely tables/files/metadata fields to inspect;
+- dry-run validation suggestions;
+- any HG-EXEC trigger that would be required later;
+- explicit non-authorization.
+
+Boundary:
+
+No recommendation, no ticket, no PENDING_HUMAN_REVIEW, no product-route activation, no production readiness, no broker/order/paper/live/auto, no DB write, no network, no schema migration, no registry/readiness change.

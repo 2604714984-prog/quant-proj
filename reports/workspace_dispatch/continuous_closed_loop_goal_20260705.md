@@ -27,11 +27,13 @@ Quant-Dispatcher must continuously run the following loop:
    - REASONIX_DRAFT
 6. Record controller-layer evidence in quant-proj, including dispatch summaries, result summaries, acceptance records, and board updates.
 7. Commit and push controller records after each meaningful dispatch/result/closeout step.
-8. Use Chrome with the fixed GPT Pro external-audit conversation only when:
-   - the user explicitly asks for an external audit packet, or
-   - a real external-audit trigger opens, including ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, secret handling, or Human-Gate model change.
-9. When external audit is triggered, submit the GitHub/tag/packet through the fixed ChatGPT Pro audit conversation, capture the verdict and next-task instructions, record them in quant-proj, commit/push, then continue the loop with the next task batch.
-10. When waiting for downstream agents or GPT Pro, wait in coarse intervals rather than polling tightly.
+8. When there is no active user task list or downstream result to process, do not idle indefinitely. Package the latest completed batch state and use Chrome with the fixed GPT Pro external-audit conversation to request a verdict and the next concrete Data/Strategy task batch.
+9. Use Chrome with the fixed GPT Pro external-audit conversation immediately when:
+   - the user explicitly asks for an external audit packet,
+   - a real external-audit trigger opens, including ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, secret handling, or Human-Gate model change, or
+   - the dispatcher has no active task and needs the next task batch to continue the closed loop.
+10. When external audit is requested or needed for loop continuation, submit the GitHub/commit/report paths through the fixed ChatGPT Pro audit conversation, capture the verdict and next-task instructions, record them in quant-proj, commit/push, then continue the loop with the next task batch.
+11. When waiting for downstream agents or GPT Pro, wait in coarse intervals rather than polling tightly.
 
 ## Permanent Boundary Rules
 
@@ -47,22 +49,30 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WAITING_FOR_NEXT_BATCH
+Current task batch: DATA_STRATEGY_BATCH_R6_20260705_DISPATCH
 
 Objective:
 
-R5 is closed out. Wait for the next user task list, ChatGPT external-audit verdict, or downstream acceptance result. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
+GPT Pro accepted the R5 closeout for closed-loop continuation and returned the next concrete Data/Strategy task batch. Import and dispatch `DATA_STRATEGY_BATCH_R6_20260705` to the fixed downstream agents, collect `CODEX_ACCEPTANCE` / `DATA_REPORT` / `STRATEGY_REPORT` / `REASONIX_DRAFT` outputs, record controller-layer evidence, commit/push, close out R6, then continue the permanent closed loop. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
 
 Latest completed batch:
 
 - DATA_STRATEGY_BATCH_R5_20260705
 - closeout: `reports/workspace_dispatch/data_strategy_batch_r5_20260705_closeout.md`
 - controller classification: ordinary research-only data/strategy batch
-- external audit: not triggered
+- external audit: `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none`
+- result: `reports/agent_handoff/data_strategy_batch_r5_gpt_pro_external_audit_result_20260705.md`
+
+Current intake:
+
+- DATA_STRATEGY_BATCH_R6_20260705
+- intake: `reports/workspace_dispatch/data_strategy_batch_r6_20260705_intake.md`
+- classification: ordinary research-only data/strategy batch
 
 Next dispatcher actions:
 
-1. Wait for the next task list or external-audit result.
-2. Classify it against the permanent trigger rules.
-3. Update only this mutable current-task section for the new batch.
-4. Dispatch to fixed downstream agents and continue the loop.
+1. Create and send R6 downstream dispatch prompts to fixed Codex-Dev threads.
+2. Send R6 Reasonix-DB and Reasonix-Strategy advisory sidecars using `deepseek-v4-pro` / effort `high`.
+3. Record R6 dispatch summary and controller evidence.
+4. Commit and push controller records.
+5. Poll downstream agents in coarse intervals and continue the loop.

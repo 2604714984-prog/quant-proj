@@ -1,0 +1,49 @@
+DISPATCH_TASK
+role: Reasonix-Strategy
+batch: DATA_STRATEGY_BATCH_R6_20260705
+target_project: quant workspace controller / A_Share_Monitor / US_Stock_Monitor / strategy_work
+source_ref: quant-proj main at R5 closeout commit e5416a36907ce45c03b8bdf3e04b33bd8d584ca1
+task_packet: reports/workspace_dispatch/data_strategy_batch_r6_20260705_intake.md
+context_delta: GPT Pro accepted R5 and requested R6 ordinary research-only Data/Strategy tasks. No external-audit trigger is open.
+expected_output: REASONIX_DRAFT with strategy research review only.
+transcript_path: reports/workspace_dispatch/reasonix_strategy_data_strategy_batch_r6_20260705.jsonl
+human_gate: not required for this draft; required before any recommendation, ticket, readiness promotion, or trading-adjacent action.
+
+Scope:
+
+1. Review TASK-A-R6-001 Conservative Momentum Robustness Deep Dive.
+   - Focus only on conservative_momentum_liquidity_affordability.
+   - Analyze 6 kept candidates from R5.
+   - Compare 20d/60d/120d/252d returns, volatility, drawdown, liquidity, and industry concentration.
+   - Produce keep/rework/drop research decision framework.
+
+2. Review TASK-A-R6-002 Low-vol Rebuild Experiment.
+   - Treat low-vol as a risk filter, not a candidate generator.
+   - Add momentum floor or relative-strength filter.
+   - Compare against R5 baseline.
+
+3. Review TASK-US-R6-001 US-239 Candidate Quality Breakdown.
+   - Analyze overlap among momentum/liquidity, low-vol, drawdown-controlled, SPY/QQQ relative strength, and quality proxy.
+   - Classify candidates into strong, medium, weak, and data-limited buckets.
+   - Flag sector-metadata and crosscheck limitations.
+
+4. Review TASK-US-R6-003 Feedback Bootstrap Usability Test.
+   - Verify non-transactional feedback can create durable research feedback context.
+   - Do not set recommendation authorization.
+   - Do not emit eligibility_candidate or ticket.
+
+5. Review TASK-SW-R6-001 Research Memo Sync.
+   - Sync R5 outputs into research-only memos.
+   - Avoid product gate or recommendation wording.
+
+Requested output:
+
+- concise research draft;
+- hypothesis and experiment framework;
+- overfit/data-risk checks;
+- expected Codex-Dev implementation/reporting work;
+- explicit non-authorization.
+
+Boundary:
+
+No recommendation, no ticket, no PENDING_HUMAN_REVIEW, no buy/sell wording, no eligibility_candidate, no product-route activation, no production readiness, no broker/order/paper/live/auto.
