@@ -1,4 +1,4 @@
-generated_at: "2026-07-04T04:06:35+08:00"
+generated_at: "2026-07-05T22:55:00+08:00"
 workspace_root: "/Users/rongyuxu/Desktop/quant proj"
 decision: "controller_workspace_first_no_physical_merge_yet"
 registry_kind: "point_in_time_controller_snapshot"
@@ -34,15 +34,21 @@ projects:
     cli: "python -m qta"
     size: "1.7G"
     git_branch: "codex/harden-a-share-research-pipeline"
-    latest_commit: "a2c8b82 Record A11 HITL gated ticket attempt"
-    latest_commit_full: "a2c8b825942a59d7c03429f41336ca1b9145a875"
-    latest_tree: "77766d5b96e0e4de03ac3ab4ee03708edf0b3311"
-    working_tree: "clean"
-    last_describe: "stage-a10-external-audit-packet-20260703-9-g012006c"
+    latest_commit: "a908179 Add R10 A-share research diagnostics"
+    latest_commit_full: "a908179a7c8c0a3dcb9013ffe7214fd3e4704600"
+    latest_tree: "e8b18b795611451a49625913faea9c34c325fa11"
+    working_tree: "dirty"
+    last_describe: "stage-a10-external-audit-packet-20260703-31-ga908179-dirty"
     tracked_files: 630
     migration_status: "defer"
     migration_reason: "large local data, absolute-path audit/data manifests, and no approved physical migration stage"
-    dirty_files_observed: []
+    dirty_files_observed:
+      - "reports/research_loop/a_share_micro_next_questions.md"
+      - "reports/research_loop/a_share_micro_observation_candidates.md"
+      - "reports/research_loop/a_share_micro_phase3_handoff_required.md"
+      - "reports/research_loop/a_share_micro_rejected_patterns.md"
+      - "reports/research_loop/a_share_micro_research_ledger.csv"
+      - "reports/research_loop/a_share_micro_strategy_backlog.md"
     data:
       duckdb_path: "/Users/rongyuxu/Desktop/A_Share_Monitor/data/local_market/a_share_market.duckdb"
       duckdb_size: "1.25GB"
@@ -59,6 +65,10 @@ projects:
       task_009_ticket_emitted: false
       task_009_candidate_count: 83
       task_009_eligible_ticket_candidate_count: 0
+      r10_retained_symbol: "600177.SH"
+      r10_v2_records_after: 2
+      r10_v2_unique_symbols_after: 1
+      r10_ticket_emitted: false
       task_009_blockers:
         - "A11_RESEARCH_ONLY_NOT_TICKET_ENABLED"
         - "A11_SNAPSHOT_NOT_TASK007_EXPANSION"
@@ -79,11 +89,11 @@ projects:
     cli: "python -m usq"
     size: "261M"
     git_branch: "codex/duckdb-provider"
-    latest_commit: "8b537ae Record TASK-010 US ticket refresh gate attempt"
-    latest_commit_full: "8b537ae214fa805d177fa067af879e3fbb83b035"
-    latest_tree: "3d1338180c3ac8d2c0c495a26e4cff9b77461247"
+    latest_commit: "9f89b03 Add R10 US data strategy research artifacts"
+    latest_commit_full: "9f89b03b9c2dcab9dc82a86d705c69e4dfb11862"
+    latest_tree: "144783c1c5c44362e015c393c2d18e407a9f9567"
     working_tree: "clean"
-    last_describe: "phase-us13-audit-r1-6-gc046c0c"
+    last_describe: "phase-us13-audit-r1-23-g9f89b03"
     tracked_files: 962
     migration_status: "defer"
     migration_reason: "active US-13 and DuckDB-provider route, ignored local data, and no approved physical migration stage"
@@ -107,6 +117,9 @@ projects:
       task_010_gate_status: "NO_RECOMMENDATION_AVAILABLE"
       task_010_ticket_emitted: false
       task_010_eligibility_candidate: false
+      r10_signal_strong_data_clear: "0/60"
+      r10_tightened_survivors_data_clear: "0/61"
+      r10_metadata_queue: 44
       task_010_blockers:
         - "BLOCKED_BY_EVIDENCE_GAP_PERSISTING"
         - "BLOCKED_BY_INSUFFICIENT_FEEDBACK"
@@ -121,12 +134,12 @@ projects:
     package: "market_data"
     cli: "python -m market_data or direct scripts"
     size: "2.4M"
-    git_branch: "codex/task-008-market-data-registry-readiness"
-    latest_commit: "413829f Record TASK-008 registry readiness update"
-    latest_commit_full: "413829f0179c5142e26f57594d52e1b6de9c338f"
-    latest_tree: "bc2cc31f3c6b6c571ee7d2352dc71eb1a68e78e4"
+    git_branch: "codex/data-strategy-r10-market-data-data-clear"
+    latest_commit: "b977e96 Add R10 research data-clear contract"
+    latest_commit_full: "b977e9682f078f359286b50be15fe34a6b03a83c"
+    latest_tree: "d036ece9b9d5ac4b4afc8eb24cc3ce3c20f912ca"
     working_tree: "clean"
-    last_describe: "db-2-high001-closed-external-audit-20260703-2-gff2416647963"
+    last_describe: "db-2-high001-closed-external-audit-20260703-15-gb977e96"
     tracked_files: 80
     migration_status: "defer_until_registry_refresh"
     migration_reason: "registry/access-gate package with uncommitted reports and stale current facts"
@@ -137,6 +150,8 @@ projects:
     task_008_a_share_candidate_readiness: "WARNING_LEVEL_1"
     task_008_a_share_candidate_product_read_allowed: false
     task_008_us_route_status: "INGEST_PREFLIGHT_BLOCKED"
+    r10_us_300a_status: "DATA_CLEAR_RESEARCH_PENDING_CRITERIA"
+    r10_product_read_allowed: false
 
   strategy_work:
     path: "/Users/rongyuxu/Desktop/strategy_work"
@@ -144,14 +159,16 @@ projects:
     cli: "none"
     size: "436K"
     git_branch: "main"
-    latest_commit: "a674049 Codex-Dev task prompt: A-STRAT-02~10 + US-STRAT-04~09 with priorities and code templates"
-    latest_commit_full: "a67404900f424bdf918d3254540653446bda12ad"
-    latest_tree: "6b1f826123d3a9d078dfe41abbbd89634b140b24"
-    working_tree: "clean"
-    last_describe: "a67404900f42"
+    latest_commit: "570944f TASK-SW-R10: sync final source results"
+    latest_commit_full: "570944f8839bfa28fa27cd9f59d24cc0f74c9850"
+    latest_tree: "f4a6d93ad9dc200ac886e05a35c2201fde0d3d87"
+    working_tree: "dirty"
+    last_describe: "570944f"
     tracked_files: 19
     migration_status: "candidate_after_refresh_and_scope_gate"
-    migration_reason: "small repo and clean worktree, but still requires explicit migration task, human_gate, and audit stage before physical movement"
+    migration_reason: "small repo but currently has untracked local analysis/ content; still requires explicit migration task, human_gate, and audit stage before physical movement"
+    dirty_files_observed:
+      - "analysis/"
 
 do_not_migrate_without_explicit_audit_stage:
   - ".env"
