@@ -30,6 +30,7 @@ ChatGPT task list
 - Record Human-Gate decisions durably when approval is required.
 - Validate task packets before dispatch using `runbooks/task_packet_validation.md`.
 - For final ChatGPT external-audit publications, create post-tag final publication metadata using `runbooks/final_publication_metadata.md`.
+- Include the downstream completion callback requirement in every Codex-Dev handoff. Downstream Codex threads must send a prompt-only callback to Quant-Dispatcher thread `019f2766-7c5f-7562-b2e3-b4d76de7bfa9` after finishing, or include the callback envelope in their final answer if thread messaging is unavailable.
 
 ## External Audit Trigger Policy
 
@@ -72,6 +73,18 @@ Default:
 - use Reasonix compact as the default context-control mechanism;
 - create manual `SESSION_SUMMARY` artifacts only for audit, handoff, or fresh-session restart;
 - keep old mixed Reasonix sessions as reference-only unless the user explicitly asks to continue them.
+
+## Downstream Completion Callback
+
+For Codex-Dev thread dispatches, append this standing instruction:
+
+```text
+Completion callback required: after finishing, send a prompt-only callback to Quant-Dispatcher thread 019f2766-7c5f-7562-b2e3-b4d76de7bfa9 with CODEX_ACCEPTANCE/DATA_REPORT/STRATEGY_REPORT or BLOCKED, commit/tree, artifacts, validation, residual blockers, and boundary statement. If the thread tool is unavailable, include the callback envelope in your final answer.
+```
+
+Controller protocol record:
+
+- `reports/workspace_dispatch/downstream_completion_callback_protocol_20260706.md`
 
 ## Required Task Packet Files
 

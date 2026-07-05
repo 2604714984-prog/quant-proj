@@ -25,6 +25,7 @@ Quant-Dispatcher must continuously run the following loop:
    - DATA_REPORT
    - STRATEGY_REPORT
    - REASONIX_DRAFT
+   Downstream Codex-Dev threads must send completion callbacks to dispatcher thread `019f2766-7c5f-7562-b2e3-b4d76de7bfa9`, or include the callback envelope in their final answer if direct thread messaging is unavailable.
 6. Record controller-layer evidence in quant-proj, including dispatch summaries, result summaries, acceptance records, and board updates.
 7. Commit and push controller records after each meaningful dispatch/result/closeout step.
 8. When there is no active user task list or downstream result to process, do not idle indefinitely. Package the latest completed batch state and use Chrome with the fixed GPT Pro external-audit conversation to request a verdict and the next concrete Data/Strategy task batch.
@@ -48,6 +49,7 @@ These rules are permanent. Do not delete them when updating the current task.
 - Reasonix sidecars use fixed sessions with model deepseek-v4-pro and effort high.
 - Reasonix fixed sessions are persistent CLI-like conversations. Keep `quant-reasonix-db`, `quant-reasonix-strategy`, and `quant-reasonix-advisory` open and reuse the same live session when possible; do not close or recreate them after each task.
 - Future data-source work must source provider candidates from `https://github.com/simonlin1212` unless the user explicitly changes this policy. This source restriction does not authorize network ingest, DB writes, data-clear promotion, readiness changes, product routes, tickets, recommendations, or broker/order/paper/live/auto behavior.
+- Downstream Codex-Dev completion callbacks are required for future dispatches. Callback protocol record: `reports/workspace_dispatch/downstream_completion_callback_protocol_20260706.md`.
 
 ## Mutable Current Task
 
