@@ -50,42 +50,43 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R10_20260705_DISPATCH
+Current task batch: DATA_STRATEGY_BATCH_R10_20260705_CLOSEOUT_AND_GPT_PRO_R11_REQUEST
 
 Objective:
 
-R9 was accepted by the fixed GPT Pro `外审对话` with `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, and `FIXES_REQUIRED: none`. R10 has been imported as an ordinary research-only Data/Strategy batch. Record and push the R9 GPT Pro result and R10 intake, dispatch R10 to fixed downstream agents and persistent Reasonix sidecar sessions, collect CODEX_ACCEPTANCE / REASONIX_DRAFT outputs, close out R10, then continue the permanent closed loop.
+R10 ordinary research-only Data/Strategy work is complete. Record and push the R10 result summary, closeout, board update, and GPT Pro request artifact, then submit the closeout to the fixed GPT Pro `外审对话` to request verdict, external-audit-trigger confirmation, fixes if any, and next concrete `DATA_STRATEGY_BATCH_R11_20260705` tasks.
 
 Latest completed batch:
 
-- DATA_STRATEGY_BATCH_R9_20260705
-- closeout: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_closeout.md`
+- DATA_STRATEGY_BATCH_R10_20260705
+- closeout: `reports/workspace_dispatch/data_strategy_batch_r10_20260705_closeout.md`
 - controller classification: ordinary research-only data/strategy batch
-- source acceptances: A-share `77dec660ffb3a3a18c8e98b8e6dae53bbe238f27`; US `9dd4f468b4d26092a29e3cb30d3e4ced0b8ad5c7`; market_data `21ce90be2533e14389e253c5d94b3ca18a106850`; strategy_work `9b74db4fa535156cfa0c310b4a5818454e643a64`
-- Reasonix sidecars: `reports/workspace_dispatch/reasonix_data_strategy_batch_r9_sidecar_summary_20260705.md`
+- source acceptances: A-share `a908179a7c8c0a3dcb9013ffe7214fd3e4704600`; US `9f89b03b9c2dcab9dc82a86d705c69e4dfb11862`; market_data `b977e9682f078f359286b50be15fe34a6b03a83c`; strategy_work `570944f8839bfa28fa27cd9f59d24cc0f74c9850`
+- Reasonix sidecars: `reports/workspace_dispatch/reasonix_data_strategy_batch_r10_sidecar_summary_20260705.md`
 
 Current intake:
 
 - R10 intake: `reports/workspace_dispatch/data_strategy_batch_r10_20260705_intake.md`
 - R9 GPT Pro result: `reports/agent_handoff/data_strategy_batch_r9_gpt_pro_external_audit_result_20260705.md`
-- R9 intake: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_intake.md`
-- result summary: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_result_summary.md`
-- closeout: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_closeout.md`
+- R10 dispatch summary: `reports/workspace_dispatch/data_strategy_batch_r10_20260705_dispatch_summary.md`
+- result summary: `reports/workspace_dispatch/data_strategy_batch_r10_20260705_result_summary.md`
+- closeout: `reports/workspace_dispatch/data_strategy_batch_r10_20260705_closeout.md`
+- GPT Pro request draft: `reports/external_audit/data_strategy_batch_r10_gpt_pro_external_audit_request_20260705.md`
 - classification: ordinary research-only data/strategy batch
-- external-audit trigger opened by R9: `no`
+- external-audit trigger opened by R10: `no`
 
 Current dispatch/result state:
 
-- R9 downstream dispatch completed for A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, Reasonix-DB, and Reasonix-Strategy.
-- R9 result summary and closeout are recorded in controller workspace.
-- GPT Pro accepted R9 and issued `DATA_STRATEGY_BATCH_R10_20260705`.
-- R10 downstream Codex dispatch completed for A_Share_Monitor, US_Stock_Monitor, market_data, and strategy_work.
-- R10 Reasonix-DB and Reasonix-Strategy sidecar prompts were submitted in the existing persistent CLI-like sessions; sessions were not closed, restarted, or recreated.
-- Reasonix-Strategy runaway file-reading attempt was stopped with `Esc` without closing the session; a compact pasted evidence packet completed the R9 strategy draft.
+- R10 downstream Codex work completed for A_Share_Monitor, US_Stock_Monitor, market_data, and strategy_work.
+- A_Share_Monitor completed R10 after a systemError recovery follow-up and pushed commit `a908179a7c8c0a3dcb9013ffe7214fd3e4704600`.
+- strategy_work completed a final R10 memo sync after source results became available and pushed commit `570944f8839bfa28fa27cd9f59d24cc0f74c9850`.
+- R10 Reasonix-DB and Reasonix-Strategy sidecars completed as advisory drafts in existing persistent CLI-like sessions; sessions were not closed, restarted, or recreated.
+- R10 result summary, closeout, and GPT Pro request draft are prepared in controller workspace.
 
 Next dispatcher actions:
 
-1. Record and push R10 dispatch evidence.
-2. Wait in coarse intervals for downstream CODEX_ACCEPTANCE and REASONIX_DRAFT outputs.
-3. Collect downstream outputs and close out R10.
-4. When R10 is complete, continue the permanent closed loop by packaging the latest state and asking the fixed GPT Pro `外审对话` for verdict plus R11 instructions.
+1. Validate the new controller R10 closeout artifacts.
+2. Commit and push controller R10 closeout records.
+3. Use Chrome with the fixed GPT Pro `外审对话` to submit `reports/external_audit/data_strategy_batch_r10_gpt_pro_external_audit_request_20260705.md`.
+4. Capture GPT Pro verdict and next-task instructions.
+5. Record the result in controller workspace, commit/push, then dispatch `DATA_STRATEGY_BATCH_R11_20260705` if tasks are provided.
