@@ -116,12 +116,61 @@ R4 focuses only on:
 
 ## Status
 
-- Dispatch status: `IN_PROGRESS`
+- Dispatch status: `COMPLETE`
 - External audit packet: `NOT_CREATED`
 - Controller audit packet: `NOT_CREATED`
 - Ticket/product-route tasks: `NOT_CREATED`
+- Closeout: `reports/workspace_dispatch/data_strategy_batch_r4_20260705_closeout.md`
 
 ## Interim Results
+
+### A-share
+
+- Agent: `Leibniz` / `019f307e-94f3-77d1-b60f-5df575a692b2`
+- Status: `COMPLETE_PUSHED`
+- Commit: `4c3f2409f30d4658a7d603298321cf9fd9d80834`
+- Tree: `db695ea3fc49cb4611eca8c2061894d58d8af149`
+- Branch: `codex/harden-a-share-research-pipeline`
+- Push: `origin/codex/harden-a-share-research-pipeline`
+
+Delivered:
+
+- `reports/codex_dev/task_a_r4_001_a11_walk_forward_robustness.md`
+- `reports/codex_dev/task_a_r4_001_a11_walk_forward_robustness.json`
+- `reports/codex_dev/task_a_r4_002_conservative_momentum_deep_dive.md`
+- `reports/codex_dev/task_a_r4_002_conservative_momentum_deep_dive.json`
+- `reports/codex_dev/task_a_r4_002_conservative_momentum_deep_dive.csv`
+- `reports/deepseek_research/task_a_r4_003_low_vol_reality_check.md`
+- `reports/deepseek_research/task_a_r4_003_low_vol_reality_check.json`
+- `reports/codex_dev/task_a_r4_004_micro_portfolio_feasibility.md`
+- `reports/codex_dev/task_a_r4_004_micro_portfolio_feasibility.json`
+- `reports/codex_dev/task_a_r4_005_qfq_turnover_gap_repair_plan.md`
+- `reports/codex_dev/task_a_r4_005_qfq_turnover_gap_repair_plan.json`
+- `reports/deepseek_db/task_a_r4_006_suspension_event_usefulness_decision.md`
+- `reports/deepseek_db/task_a_r4_006_suspension_event_usefulness_decision.json`
+
+Validation reported:
+
+- JSON parse and boundary checks passed for all six JSON deliverables.
+- CSV check passed with `16` rows.
+- Focused pytest: `4 passed`, with existing pandas/deprecation warnings only.
+- `git diff --check`: passed.
+- `git diff --cached --check`: passed.
+
+Key findings:
+
+- Walk-forward is a retrospective research proxy, not independent reselection.
+- Conservative momentum is `BEAR_MARKET_FRAGILE`.
+- Low-vol proxy is `DROP_OR_DEPRIORITIZE`.
+- Conservative 16-candidate deep dive: `6` keep for next research round, `4` volatility risk, `3` data-check required, `3` weak-signal drops.
+- Low-vol decision: `REWORK_WITH_MOMENTUM_FLOOR`.
+- Micro feasibility: `152` unique symbols; one-lot caps at 4000/6000/8000 leave `142`/`150`/`152` eligible symbols respectively; no symbol selection, weights, or sizing emitted.
+- Gap plan: 11 latest `qfq_close` missing symbols and 4 latest turnover missing symbols; zero overlap with the 203 candidates and zero overlap with the 16 conservative candidates.
+- Suspension decision: `REPAIR_BEFORE_PRODUCT_ROUTE_ONLY`; no immediate current-strategy impact.
+
+Packaging note:
+
+- A-share still has unrelated pre-existing local modifications under `reports/research_loop/`; worker did not stage or commit them.
 
 ### market_data
 

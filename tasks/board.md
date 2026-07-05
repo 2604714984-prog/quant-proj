@@ -16,8 +16,6 @@
 
 ## In Progress
 
-- `DATA_STRATEGY_BATCH_R4_20260705`: dispatched to A-share agent `Leibniz` / `019f307e-94f3-77d1-b60f-5df575a692b2`, US agent `Mendel` / `019f307e-95f0-7393-b711-6dba081907af`, market_data agent `Locke` / `019f307e-96c4-7232-bd2c-83db6fb84943`, strategy_work agent `Russell` / `019f307e-97a2-77a3-b621-9817fab8ab7c`; Reasonix DB/Strategy sidecars running; no external audit, ticket, or product-route task.
-- `DATA_STRATEGY_BATCH_R4_20260705_PARTIAL_RESULTS`: market_data completed/pushed commit `883d17359925135104219127c3a5acc0a110239f`; strategy_work completed/pushed isolated branch commit `0ab58649e3b129615ecc92ff68f0857fc4bbcd9f`; A-share and US still running.
 - `ordinary-source-execution-mode-20260704`: controller external-audit loop stopped for ordinary task lists; continue with source-project `CODEX_ACCEPTANCE` / `REASONIX_REPORT` only unless a real external-audit trigger opens.
 
 ## Blocked / Hold
@@ -31,6 +29,7 @@
 
 ## Done
 
+- `DATA_STRATEGY_BATCH_R4_20260705`: completed ordinary Data + Strategy batch; A-share commit `4c3f2409f30d4658a7d603298321cf9fd9d80834`, US commit `f9f0c8ccc953674b984df1f55994f947a707e7aa`, market_data commit `883d17359925135104219127c3a5acc0a110239f`, strategy_work isolated branch commit `0ab58649e3b129615ecc92ff68f0857fc4bbcd9f`; closeout `reports/workspace_dispatch/data_strategy_batch_r4_20260705_closeout.md`; no external audit, recommendation, ticket, product-route, broker/order/paper/live/auto authorization.
 - `DATA_STRATEGY_BATCH_R2_R3_CHATGPT_EXTERNAL_AUDIT_PACKET`: user-requested external-audit packet prepared for completed R2 and duplicate R3 intake; packet path `reports/agent_handoff/data_strategy_batch_r2_r3_chatgpt_external_audit_packet_20260705.md`; manifest path `reports/agent_handoff/data_strategy_batch_r2_r3_chatgpt_external_audit_packet_manifest_20260705.sha256`; final tag `quant-workspace-data-strategy-r2-r3-chatgpt-packet-20260705`; final publication metadata `reports/agent_handoff/data_strategy_batch_r2_r3_final_publication_metadata_20260705.md`; scope is research-only batch closeout and duplicate-intake handling, with no recommendation/ticket/product-route/broker/order/paper/live/auto authorization.
 - `DATA_STRATEGY_BATCH_20260705_R3_DUPLICATE_INTAKE`: duplicate task list received and reconciled against completed `DATA_STRATEGY_BATCH_20260704_R2`; no new downstream dispatch, no controller/ChatGPT external-audit packet, and no source-project rerun required; duplicate intake report at `reports/workspace_dispatch/data_strategy_batch_20260705_r3_duplicate_intake_20260705.md`.
 - `recorded-execution-mode-v1-policy-update-20260704`: controller policy updated; Human-Gate batch record added; follow-up task packets created; no L1-L4 execution performed.
