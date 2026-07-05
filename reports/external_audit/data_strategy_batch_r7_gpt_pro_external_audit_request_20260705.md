@@ -4,7 +4,12 @@ Project: quant-proj
 Controller repo: git@github.com:2604714984-prog/quant-proj.git
 Controller closeout: `reports/workspace_dispatch/data_strategy_batch_r7_20260705_closeout.md`
 Goal anchor: `reports/workspace_dispatch/continuous_closed_loop_goal_20260705.md`
-Controller commit: `bd5427739bcd6717806ddd2b24046f790a94b94c`
+Controller commit: `1fae88255ab214e529591a563c4f225bd2d89b52`
+Controller tree: `d43dc9b0cca7cd013f4a8fa18bd0958999115e54`
+
+Note: this commit includes the R7 closeout plus the permanent Reasonix
+persistent-session rule clarification. The R7 closeout itself was recorded in
+prior pushed commit `372b81b`.
 
 R7 status:
 
