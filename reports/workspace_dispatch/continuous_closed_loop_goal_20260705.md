@@ -50,7 +50,7 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R8_20260705_DISPATCH
+Current task batch: DATA_STRATEGY_BATCH_R8_20260705_IN_PROGRESS
 
 Objective:
 
@@ -78,15 +78,15 @@ Current dispatch/result state:
 - Persistent Reasonix session rule was clarified and pushed at `1fae882`.
 - R7 GPT Pro result was captured from fixed `外审对话`.
 - R8 intake was recorded as ordinary research-only data/strategy work.
-- R8 downstream Codex-Dev dispatch is pending.
-- R8 Reasonix-DB and Reasonix-Strategy persistent sidecar dispatch is pending.
+- R8 downstream Codex-Dev dispatch was sent to the fixed A_Share_Monitor, US_Stock_Monitor, market_data, and strategy_work threads.
+- R8 Reasonix-DB persistent sidecar completed and remains open.
+- R8 Reasonix-Strategy persistent sidecar completed and remains open.
+- R8 Reasonix result summaries were recorded in `reports/workspace_dispatch/reasonix_db_data_strategy_batch_r8_result_20260705.md`, `reports/workspace_dispatch/reasonix_strategy_data_strategy_batch_r8_result_20260705.md`, and `reports/workspace_dispatch/reasonix_data_strategy_batch_r8_sidecar_summary_20260705.md`.
+- No external-audit trigger opened from the Reasonix sidecars.
 
 Next dispatcher actions:
 
-1. Commit and push the R7 GPT Pro result plus R8 intake records.
-2. Dispatch R8 tasks 1-4 to `A_Share_Monitor` fixed Codex-Dev thread `019f2a5a-8b4b-76b3-b838-abc6b54e4992`.
-3. Dispatch R8 tasks 5-9 to `US_Stock_Monitor` fixed Codex-Dev thread `019f2a5a-8f92-7672-bbff-db71694e8676`.
-4. Dispatch R8 task 10 to `market_data` fixed Codex-Dev thread `019f2957-de0a-7721-ade9-1abfef298127`.
-5. Dispatch R8 task 11 to `strategy_work` fixed Codex-Dev thread `019f30c3-247e-7f43-af60-96164539a183`.
-6. Dispatch compact R8 sidecar prompts to persistent Reasonix sessions without closing them.
-7. Collect results, close out R8, push, and continue the loop.
+1. Commit and push the R8 Reasonix sidecar result records.
+2. Wait in coarse intervals for fixed Codex-Dev thread outputs.
+3. Collect A-share, US, market_data, and strategy_work CODEX_ACCEPTANCE results.
+4. Record R8 closeout, push, and continue the closed loop.
