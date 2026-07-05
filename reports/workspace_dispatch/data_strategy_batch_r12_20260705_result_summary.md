@@ -5,16 +5,16 @@ Role: Quant-Dispatcher
 Recorded: 2026-07-05
 Classification: ordinary research-only data/strategy batch
 External-audit trigger open: no
-Status: PARTIAL_RESULT_COLLECTION_IN_PROGRESS
+Status: COMPLETE_PENDING_CONTROLLER_COMMIT
 
 ## Downstream Results
 
 | Target | Status | Branch / Session | Commit | Tree |
 |---|---|---|---|---|
-| `A_Share_Monitor` | `IN_PROGRESS` | `codex/harden-a-share-research-pipeline` | pending | pending |
+| `A_Share_Monitor` | `ACCEPTED_WITH_WARNINGS` | `codex/harden-a-share-research-pipeline` | `30910a1e46b729f0e50efb81150b15a7c91f5083` | `8f9989b1865c1d02868f7354ed857145d86c6771` |
 | `US_Stock_Monitor` | `CODEX_ACCEPTANCE_DATA_STRATEGY_BATCH_R12_US` | `codex/duckdb-provider` | `017c1e25b4b05d088121b618f8951ec898145b23` | `dc21596a810aa7bf0d5d7d555752eff328aefa3d` |
 | `market_data` | `ACCEPTED_WITH_WARNINGS` | `codex/data-strategy-r10-market-data-data-clear` | `97f1360762e663894ea84af7a6356b89d8cd4f2d` | `5ddeeb5806ad6dbcd2c7e8ee7c72d25d6f162d7b` |
-| `strategy_work` | `DEPENDENCY_GATED` | fixed Codex-Dev thread | pending | pending |
+| `strategy_work` | `ACCEPTED_WITH_WARNINGS` | `main` | `0c7583dc6bce19d2c4ff58eb256e225a3b03603e` | `51418498a07ff564e59252762923d8ed2f00f1b7` |
 | `Reasonix-DB` | `WARNING_ADVISORY_ONLY` | `quant-reasonix-db` | n/a | n/a |
 | `Reasonix-Strategy` | `RESEARCH_DRAFT` | `quant-reasonix-strategy` | n/a | n/a |
 
@@ -91,13 +91,50 @@ Validation:
 - Forbidden true scan over R12 surfaces: PASS
 - `git diff --check`: PASS
 
-## A-Share Status
+## A-Share Result
 
 Source thread: `019f32bd-082d-73e2-b902-3d48b8d198ba`
 
-Status: `IN_PROGRESS_WITH_FEATURESTORE_FIX_PUSHED`
+Source acceptance: `CODEX_ACCEPTANCE DATA_STRATEGY_BATCH_R12_20260705`
 
-R12 A-share work remains active. During execution, a memory incident was observed from a Reasonix-parented full-cache `FeatureStore(store).build()` over `data/cache`; the dispatcher stopped the runaway process and sent an urgent constraint to the A-share thread:
+Artifacts:
+
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_data_report.json`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_data_report.md`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_strategy_report.json`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_strategy_report.md`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_codex_acceptance.json`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_codex_acceptance.md`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_snapshot_eligibility_reconciliation.csv`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_temporal_stress_summary.csv`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_temporal_stress_retained_symbols.csv`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_temporal_stress_600177_drift.csv`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_amount_scale_decomposition.csv`
+- `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/data_strategy_batch_r12_20260705_recovered_symbol_fragility_taxonomy.csv`
+
+Key results:
+
+- A-R12-1: no true post-freeze A11 holdout snapshot is available locally.
+- `600177.SH` is present in `a_expand_20260704_l1_local1000_0317`, but only as baseline/in-snapshot evidence: `BASELINE_ONLY_NOT_FORWARD_HOLDOUT`.
+- Snapshot reconciliation class counts: `BASELINE_ONLY_NOT_FORWARD_HOLDOUT=1`, `COVERAGE_INSUFFICIENT=4`, `SYNTHETIC_ONLY_INVALID=2`.
+- A-R12-2: `IN_SAMPLE_TEMPORAL_STRESS_NOT_FORWARD_HOLDOUT`; earlier cutoffs weaken the `600177.SH` strict-v2 conclusion, and strict/risk-control variants retain it only at the final baseline cutoff.
+- A-R12-3: `RISK_CONTROL_SURVIVES_SCALE_NORMALIZATION_AMOUNT_SIZE_ARTIFACT_REMAINS`.
+- A-R12-4 recovered-symbol taxonomy: `600177.SH=risk_control_stable`, `000776.SZ=amount_scale_artifact`, `000921.SZ=weak_symbol_reintroduced`, `600060.SH=recent_momentum_only`.
+- Final delivery tag: `data-strategy-batch-r12-20260705`.
+
+Validation:
+
+- `python scripts/agent_safety_check.py`: PASS
+- `pytest -q tests/test_data_strategy_batch_r12_reports.py`: PASS, `5 passed`
+- Focused R5-R12/A11 safety report regression slice: PASS
+- R12 JSON parse validation: PASS
+- Forbidden action-term scan over R12 artifacts: PASS
+- `git diff --check`: PASS
+- DeepSeek-Audit: PASS_WITH_WARNINGS, no blocker/high/medium/required fixes; residual low advisory notes only
+
+Memory incident handling:
+
+During execution, a memory incident was observed from a Reasonix-parented full-cache `FeatureStore(store).build()` over `data/cache`; the dispatcher stopped the runaway process and sent an urgent constraint to the A-share thread:
 
 - Do not run full-cache `FeatureStore(store).build()` over all of `data/cache`.
 - Use bounded existing artifacts, chunked reads, manifest inspection, or narrow symbol/date windows only.
@@ -112,13 +149,44 @@ FeatureStore root fix:
 - Source report: `/Users/rongyuxu/Desktop/A_Share_Monitor/reports/codex_dev/feature_store_memory_guard_20260705.md`
 - Controller coordination: `reports/workspace_dispatch/data_source_coordination_20260705.md`
 
-The fix prevents large returned-DataFrame `FeatureStore.build()` calls from reading full source tables. It counts `daily`, `daily_basic`, `adj_factor`, `stk_limit`, `suspend_d`, and `index_daily`, and provides `build_to_store()` for chunked Parquet dataset output.
+The fix prevents large returned-DataFrame `FeatureStore.build()` calls from reading full source tables. It counts `daily`, `daily_basic`, `adj_factor`, `stk_limit`, `suspend_d`, and `index_daily`, and provides `build_to_store()` for chunked Parquet dataset output. R12 itself did not run full-cache returned-DataFrame `FeatureStore(store).build()`; it used existing artifacts, read-only local DuckDB reconciliation, and bounded CSV/manifest inspection.
 
 ## strategy_work Status
 
-Status: `DEPENDENCY_GATED`
+Source acceptance: `CODEX_ACCEPTANCE_SW_R12_FINAL_MEMO_SYNC_RESEARCH_ONLY`
 
-`SW-R12-1` remains held until A-share, US, and market_data source acceptances are all available. It must sync only final R12 accepted facts into research memos and must not promote configs, recommendations, tickets, product routes, readiness, or trading paths.
+Artifacts:
+
+- `/Users/rongyuxu/Desktop/strategy_work/README.md`
+- `/Users/rongyuxu/Desktop/strategy_work/reports/a_share/a11_203_candidate_research_memo_r12.md`
+- `/Users/rongyuxu/Desktop/strategy_work/reports/us_stock/us239_44_dual_track_research_memo_r12.md`
+- `/Users/rongyuxu/Desktop/strategy_work/reports/planning/data_strategy_batch_r12_20260705_strategy_report.md`
+
+Key results:
+
+- Final R12 source results were synced into strategy_work research memos after A-share, US, and market_data acceptances.
+- A-share was recorded as having no true post-freeze holdout, baseline-only `600177.SH` evidence, weakened in-snapshot temporal stress, and remaining amount/size artifact risk.
+- US was recorded with `0` controlled-complete rows, `0` valid imports, `0` data-clear rows, and no controlled second source.
+- market_data was recorded with US-300A still pending criteria and A-share true forward holdout still unavailable.
+- FeatureStore memory-safety guidance was recorded as research/ops context only: use `build_to_store()`, bounded windows, or metadata inspection, with no runtime promotion.
+
+Validation:
+
+- `git diff --check HEAD~1..HEAD`: PASS
+- Disabled-route enabling scan: no matches
+- Restricted action-term scan: no matches
+- Placeholder/draft scan: no matches
+
+Warnings:
+
+- strategy_work was not pushed because `main` was already ahead of `origin/main` by unrelated prior local commits.
+- Pre-existing `configs/a_share_300_minimal.yaml` remained dirty and was not staged by the R12 memo-sync task.
+
+Residual blockers:
+
+- A-share: no true post-freeze holdout; baseline-only `600177.SH` evidence; temporal stress weakens strict-v2; amount/size artifact remains.
+- US: metadata, provenance, crosscheck, and second-source blockers persist.
+- market_data: US-300A remains pending criteria and not data-clear.
 
 ## Reasonix Sidecars
 
@@ -152,4 +220,4 @@ R12 remains research-only and non-actionable.
 - DB write/network/schema/bulk/readiness/registry change from controller: not performed
 - Raw-data migration or secret handling: not performed
 
-This file is a partial result record. R12 cannot be closed until A-share returns and `strategy_work` completes its dependency-gated final memo sync.
+This file remains open until `strategy_work` completes `SW-R12-1` and the dispatcher writes the R12 closeout.

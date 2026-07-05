@@ -12,10 +12,10 @@ Registry refresh: `reports/workspace_status/registry_refresh_snapshot_20260705_r
 
 | Target | Fixed thread | Assigned tasks | Send mode | Status |
 |---|---:|---|---|---|
-| A_Share_Monitor | `019f32bd-082d-73e2-b902-3d48b8d198ba` | A-R12-1, A-R12-2, A-R12-3, A-R12-4 | prompt-only, no model/thinking override | sent and active |
-| US_Stock_Monitor | `019f32bd-af98-7eb0-bc5c-d1067e1fb145` | US-R12-1, US-R12-2, US-R12-3, US-R12-4 | prompt-only, no model/thinking override | sent and active |
-| market_data | `019f3283-a821-7002-961b-6f533d3518c2` | MD-R12-1, MD-R12-2, MD-R12-3 | prompt-only, no model/thinking override | sent |
-| strategy_work | `019f30c3-247e-7f43-af60-96164539a183` | SW-R12-1 | dependency-gated; send after source acceptances | waiting |
+| A_Share_Monitor | `019f32bd-082d-73e2-b902-3d48b8d198ba` | A-R12-1, A-R12-2, A-R12-3, A-R12-4 | prompt-only, no model/thinking override | accepted with warnings |
+| US_Stock_Monitor | `019f32bd-af98-7eb0-bc5c-d1067e1fb145` | US-R12-1, US-R12-2, US-R12-3, US-R12-4 | prompt-only, no model/thinking override | accepted |
+| market_data | `019f3283-a821-7002-961b-6f533d3518c2` | MD-R12-1, MD-R12-2, MD-R12-3 | prompt-only, no model/thinking override | accepted with warnings |
+| strategy_work | `019f30c3-247e-7f43-af60-96164539a183` | SW-R12-1 | prompt-only, no model/thinking override after source acceptances | accepted with warnings |
 
 Earlier R12 prompts were also sent to the prior A-share and US fixed threads, but those older threads were still paused on prior git-operation approval states. Quant-Dispatcher opened new R12-specific Codex-Dev threads to avoid losing the active batch behind stale approval waits.
 
@@ -50,3 +50,16 @@ Reasonix outputs:
 - No broker/order/paper/live/auto.
 - No DB write, network ingest, schema migration, bulk ingest, readiness change, registry activation, provider-data persistence, or raw-data migration unless a separate task-level `HG-EXEC` record is created.
 - Reasonix outputs remain draft/advisory unless Codex-Dev implements and validates them.
+
+## Final Memo Sync Dispatch
+
+`SW-R12-1` was dispatched to the fixed strategy_work Codex-Dev thread after A-share, US, and market_data R12 source acceptances were available.
+
+The dispatch explicitly preserved:
+
+- R12 is research-only and non-actionable.
+- A-share has no true post-freeze forward holdout.
+- US has zero `DATA_CLEAR_RESEARCH` rows and no controlled second source.
+- market_data keeps US-300A pending criteria and rejects baseline-only A-share rows as forward holdout.
+- FeatureStore full-cache returned-DataFrame builds remain forbidden for large local caches.
+- No recommendation, ticket, data-clear promotion, product route, readiness, broker/order/paper/live/auto, DB write, network ingest, registry activation, or secret handling is authorized.

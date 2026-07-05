@@ -50,7 +50,7 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R12_20260705 execution and result collection
+Current task batch: DATA_STRATEGY_BATCH_R12_20260705 closed; GPT Pro next-batch request pending
 
 Objective:
 
@@ -71,20 +71,20 @@ Current result state:
 - Controller dispatch/Reasonix records have been committed and pushed through controller commit `666a5a1`.
 - US R12 returned `CODEX_ACCEPTANCE_DATA_STRATEGY_BATCH_R12_US` at commit `017c1e25b4b05d088121b618f8951ec898145b23`; controller partial result summary now records the result.
 - market_data R12 source work was validated and manually committed/pushed at commit `97f1360762e663894ea84af7a6356b89d8cd4f2d`; controller partial result summary now records the result.
-- A-share R12 remains active in Codex thread `019f32bd-082d-73e2-b902-3d48b8d198ba`; wait in coarse intervals and do not duplicate-dispatch.
+- A-share R12 returned `CODEX_ACCEPTANCE DATA_STRATEGY_BATCH_R12_20260705` at commit `30910a1e46b729f0e50efb81150b15a7c91f5083`; controller result summary now records the result.
 - A-share R12 memory incident was handled by stopping a runaway full-cache `FeatureStore(store).build()` Python process and recording `reports/workspace_dispatch/data_strategy_batch_r12_memory_incident_20260705.md`; the A-share R12 thread was instructed to avoid full-cache builds and return `BLOCKED` with a chunking plan if required.
 - FeatureStore root fix is now implemented and pushed in A_Share_Monitor commit `18c19016809210780272512b99b6dd07be074425`; it guards all major FeatureStore source tables and adds chunked `build_to_store()` output. Controller coordination record: `reports/workspace_dispatch/data_source_coordination_20260705.md`.
 - DeepSeek/Reasonix A-share data pull completed as local data-source evidence only. Treat it as not data-clear, not product-ready, and not recommendation-ready. Next data-source priority is provider/evidence contracts for `simonlin1212/a-stock-data` and `simonlin1212/global-stock-data`.
 - A subsequent old-style full-cache `fs.build()` command was observed and killed; downstream guidance now requires `build_to_store()`, bounded windows, or metadata inspection only.
 - Data-source priority tasks have been dispatched in `reports/workspace_dispatch/data_source_priority_20260705_dispatch_summary.md`: `DS-US-1`, `MD-DS-1`, `DS-A-1` after A-share R12, and `SW-DS-1`.
-- `strategy_work` R12 final memo sync remains dependency-gated until A-share, US, and market_data acceptances are all available.
+- `strategy_work` R12 final memo sync `SW-R12-1` returned `ACCEPTED_WITH_WARNINGS` at commit `0c7583dc6bce19d2c4ff58eb256e225a3b03603e`; controller result summary now records the result.
 - Reasonix-DB and Reasonix-Strategy R12 sidecar drafts have been captured with `deepseek-v4-pro` / high effort and committed in controller.
-- Partial result summary: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_result_summary.md`
+- Result summary: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_result_summary.md`
+- Closeout: `reports/workspace_dispatch/data_strategy_batch_r12_20260705_closeout.md`
 
 Next dispatcher actions:
 
-1. Wait in coarse intervals for A-share R12 to return `CODEX_ACCEPTANCE` or a blocker.
-2. Keep US, market_data, and memory-incident R12 results recorded in controller artifacts without staging unrelated dirty files.
-3. After A-share returns, dispatch `SW-R12-1` to the fixed `strategy_work` Codex-Dev thread.
-4. Record `strategy_work` output, write R12 closeout, update board and this mutable task section, validate controller checks, commit/push.
-5. When no active task remains, submit the R12 closeout to the fresh GPT Pro audit conversation and continue with the next batch it issues.
+1. Validate controller closeout files and commit/push the R12 controller records without staging unrelated older Reasonix transcript edits.
+2. Submit the R12 closeout to the fresh GPT Pro audit conversation and request verdict plus the next concrete data/strategy task batch.
+3. Record the GPT Pro result in quant-proj, commit/push, then dispatch the next batch if accepted.
+4. Keep data-source-priority follow-up results recorded separately from the R12 closeout so DS-US/DS-A/SW-DS work does not blur the R12 acceptance commits.
