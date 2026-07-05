@@ -78,7 +78,8 @@ Current dispatch/result state:
 - Fresh GPT Pro audit conversation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
 - GPT Pro accepted R11 and returned R12 tasks focused on data quality, strategy experiments, and candidate quality.
 - R12 controller intake, registry refresh, and dispatch summary are prepared.
-- R12 A-share, US, and market_data Codex-Dev prompts have been sent to fixed threads/worktrees.
+- R12 A-share and US Codex-Dev prompts are active in new R12-specific threads because older fixed threads were stuck on prior approval waits.
+- R12 market_data Codex-Dev prompt is active in the R11/R12 worktree thread and has requested git-operation continuation approval.
 - R12 Reasonix-DB and Reasonix-Strategy sidecar drafts have been captured with `deepseek-v4-pro` / high effort.
 - R12 strategy_work final memo sync remains dependency-gated until source acceptances are available.
 

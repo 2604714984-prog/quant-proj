@@ -12,10 +12,12 @@ Registry refresh: `reports/workspace_status/registry_refresh_snapshot_20260705_r
 
 | Target | Fixed thread | Assigned tasks | Send mode | Status |
 |---|---:|---|---|---|
-| A_Share_Monitor | `019f2a5a-8b4b-76b3-b838-abc6b54e4992` | A-R12-1, A-R12-2, A-R12-3, A-R12-4 | prompt-only, no model/thinking override | sent |
-| US_Stock_Monitor | `019f3284-073b-7253-88c9-d0d86f03746e` | US-R12-1, US-R12-2, US-R12-3, US-R12-4 | prompt-only, no model/thinking override | sent |
+| A_Share_Monitor | `019f32bd-082d-73e2-b902-3d48b8d198ba` | A-R12-1, A-R12-2, A-R12-3, A-R12-4 | prompt-only, no model/thinking override | sent and active |
+| US_Stock_Monitor | `019f32bd-af98-7eb0-bc5c-d1067e1fb145` | US-R12-1, US-R12-2, US-R12-3, US-R12-4 | prompt-only, no model/thinking override | sent and active |
 | market_data | `019f3283-a821-7002-961b-6f533d3518c2` | MD-R12-1, MD-R12-2, MD-R12-3 | prompt-only, no model/thinking override | sent |
 | strategy_work | `019f30c3-247e-7f43-af60-96164539a183` | SW-R12-1 | dependency-gated; send after source acceptances | waiting |
+
+Earlier R12 prompts were also sent to the prior A-share and US fixed threads, but those older threads were still paused on prior git-operation approval states. Quant-Dispatcher opened new R12-specific Codex-Dev threads to avoid losing the active batch behind stale approval waits.
 
 ## Reasonix Sidecars
 
