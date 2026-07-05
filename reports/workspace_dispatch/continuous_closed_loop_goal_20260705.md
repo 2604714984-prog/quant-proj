@@ -79,12 +79,13 @@ Current dispatch/result state:
 - R9 downstream dispatch completed for A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, Reasonix-DB, and Reasonix-Strategy.
 - R9 result summary and closeout are recorded in controller workspace.
 - GPT Pro accepted R9 and issued `DATA_STRATEGY_BATCH_R10_20260705`.
-- Reasonix-DB and Reasonix-Strategy remained open and are to be reused as persistent CLI-like sessions.
+- R10 downstream Codex dispatch completed for A_Share_Monitor, US_Stock_Monitor, market_data, and strategy_work.
+- R10 Reasonix-DB and Reasonix-Strategy sidecar prompts were submitted in the existing persistent CLI-like sessions; sessions were not closed, restarted, or recreated.
 - Reasonix-Strategy runaway file-reading attempt was stopped with `Esc` without closing the session; a compact pasted evidence packet completed the R9 strategy draft.
 
 Next dispatcher actions:
 
-1. Commit and push the R9 GPT Pro result and R10 intake controller records.
-2. Dispatch R10 to fixed downstream Codex-Dev agents/projects.
-3. Send compact R10 evidence/task bundles to persistent Reasonix-DB and Reasonix-Strategy sessions without closing or recreating them.
-4. Collect downstream CODEX_ACCEPTANCE / REASONIX_DRAFT outputs and close out R10.
+1. Record and push R10 dispatch evidence.
+2. Wait in coarse intervals for downstream CODEX_ACCEPTANCE and REASONIX_DRAFT outputs.
+3. Collect downstream outputs and close out R10.
+4. When R10 is complete, continue the permanent closed loop by packaging the latest state and asking the fixed GPT Pro `外审对话` for verdict plus R11 instructions.
