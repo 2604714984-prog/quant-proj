@@ -47,47 +47,22 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R5_20260705
+Current task batch: WAITING_FOR_NEXT_BATCH
 
 Objective:
 
-Run the R5 research-only data/strategy batch from dispatch through downstream result collection and controller closeout. Do not create an external audit packet unless a trigger opens.
+R5 is closed out. Wait for the next user task list, ChatGPT external-audit verdict, or downstream acceptance result. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
 
-Current dispatch queue:
+Latest completed batch:
 
-- A_Share_Monitor:
-  - TASK-A-R5-001 Conservative Momentum Strategy Rework
-  - TASK-A-R5-002 Low-vol Strategy Downgrade or Rebuild
-  - TASK-A-R5-003 A11 Candidate Quality Dataset Freeze
-  - TASK-A-R5-004 A-share Data Gap Repair Design
-- US_Stock_Monitor:
-  - TASK-US-R5-001 US-239 Candidate Quality Breakdown
-  - TASK-US-R5-002 44 Metadata Enrichment Queue Split
-  - TASK-US-R5-003 US Sector Metadata Repair Plan
-  - TASK-US-R5-004 Feedback Bootstrap First Usable Loop
-  - TASK-US-R5-005 US-239 Strategy Weakness Report
-- market_data:
-  - TASK-MD-R5-001 A-share Research Route Metadata Consistency Check
-  - TASK-MD-R5-002 US-300A / US-300B Access-Gate Tests
-- strategy_work:
-  - TASK-SW-R5-001 Merge / Reconcile R4 Strategy Work Branch
-  - TASK-SW-R5-002 A-share 203 Candidate Research Memo
-  - TASK-SW-R5-003 US 239/44 Dual-track Research Memo
-- Reasonix-DB:
-  - TASK-A-R5-004
-  - TASK-US-R5-002
-  - TASK-US-R5-003
-- Reasonix-Strategy:
-  - TASK-A-R5-001
-  - TASK-A-R5-002
-  - TASK-US-R5-001
-  - TASK-US-R5-005
-  - TASK-SW-R5-*
+- DATA_STRATEGY_BATCH_R5_20260705
+- closeout: `reports/workspace_dispatch/data_strategy_batch_r5_20260705_closeout.md`
+- controller classification: ordinary research-only data/strategy batch
+- external audit: not triggered
 
 Next dispatcher actions:
 
-1. Send R5 prompts to fixed Codex-Dev threads.
-2. Create and record a fixed strategy_work Codex-Dev thread if no fixed endpoint exists.
-3. Run Reasonix-DB and Reasonix-Strategy sidecars as draft/advisory only.
-4. Collect downstream results.
-5. Record closeout, commit, and push controller changes.
+1. Wait for the next task list or external-audit result.
+2. Classify it against the permanent trigger rules.
+3. Update only this mutable current-task section for the new batch.
+4. Dispatch to fixed downstream agents and continue the loop.
