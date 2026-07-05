@@ -1,8 +1,8 @@
 # DATA_STRATEGY_BATCH_20260704_R2 Closeout
 
-Status: `PARTIAL_COMPLETE_US_P0_BLOCKED`
+Status: `COMPLETE`
 
-Quant-Dispatcher imported and dispatched the batch on 2026-07-05. This closeout records completed workstreams and the one incomplete US workstream. No controller external-audit packet or ChatGPT external-audit packet was created.
+Quant-Dispatcher imported and dispatched the batch on 2026-07-05. This closeout records the completed source-project workstreams and the focused US takeover that recovered the prior dirty worktree. No controller external-audit packet or ChatGPT external-audit packet was created.
 
 ## Completed Workstreams
 
@@ -67,6 +67,54 @@ Validation reported:
 - market_data focused tests: `54 passed`, pandas optional dependency warnings only.
 - `git diff --check`: passed in both repos.
 
+### US P0 Data + Strategy
+
+- Original agent: `Epicurus` / `019f2de6-8908-7eb0-ab5d-6892b0a2225c`
+- Takeover agent: `Boole` / `019f2fc7-e490-71c0-8cd4-49984e71caeb`
+- Repo: `/Users/rongyuxu/Desktop/US_Stock_Monitor`
+- Branch: `codex/duckdb-provider`
+- Commit: `2cbc829f835687b2bac2df8a76cc35353b753de1`
+- Push status: pushed to `origin/codex/duckdb-provider`.
+
+Delivered:
+
+- `TASK-US-DATA-201`
+- `TASK-US-DATA-202`
+- `TASK-US-DATA-203`
+- `TASK-US-STRAT-201`
+- `TASK-US-STRAT-202`
+- `TASK-US-STRAT-203`
+- inherited dirty-worktree classification and recovery
+
+Key result:
+
+- `TASK-US-DATA-201`: `network_call_made=true`, `db_write_performed=false`; metadata repair remains blocked by incomplete source/classification issues.
+- `TASK-US-DATA-202`: `network_call_made=false`, `db_write_performed=false`; stayed read-only because `TASK-US-DATA-201` did not succeed.
+- `TASK-US-DATA-203`: `network_call_made=true`, `db_write_performed=false`; 20-symbol second-source sample completed.
+- `TASK-US-STRAT-203`: `network_call_made=false`, `db_write_performed=false`; read-only US-239 metadata-valid scan completed.
+- Priority amendment applied: US-300 is split into US-300A / US-239 metadata-valid research-only scan and US-300B / 44-symbol metadata enrichment track.
+- No recommendation, ticket, product route activation, production readiness, broker/order/paper/live/auto path was opened.
+
+HG-EXEC validation:
+
+- `TASK-US-DATA-201/202/203` records are present and approved in `reports/human_gate/decisions.jsonl`.
+- Commands and paths are bounded.
+- `TASK-US-DATA-202` write/network permission was conditional and remained unused.
+
+Validation reported:
+
+- JSON parse for all six new JSON reports: PASS.
+- HG JSONL validation: PASS.
+- Boundary flag validation: PASS.
+- Focused tests: `25 passed`.
+- US12/US13 guardrails: `14 passed`.
+- DB/crosscheck tests: `14 passed`.
+- Safety check: PASS.
+- `python -m usq smoke`: PASS.
+- Qualitative bootstrap smoke: PASS.
+- Metadata-valid scan smoke/flags: PASS.
+- `git diff --check`: PASS.
+
 ## Reasonix Sidecars
 
 Usable sidecars:
@@ -77,68 +125,11 @@ Usable sidecars:
 
 Reasonix-Advisory attempts were not accepted as evidence because the first attempts used incorrect context and the corrected attempt failed with an SSE body read error.
 
-## Incomplete Workstream
+## Remaining Follow-Up
 
-### US P0 Data + Strategy
-
-- Agent: `Epicurus` / `019f2de6-8908-7eb0-ab5d-6892b0a2225c`
-- Status: `PARTIAL_BLOCKED_WITH_DIRTY_WORKTREE`
-- Action taken: agent shut down after repeated no-response finalization attempts.
-- Repo: `/Users/rongyuxu/Desktop/US_Stock_Monitor`
-- Branch: `codex/duckdb-provider`
-- Last clean remote commit before dirty work: `e5ca4ad88bae853242a5c58c1b473c744906ac6d`
-
-Observed dirty files at shutdown:
-
-- modified `reports/human_gate/decisions.jsonl`
-- modified `usq/cli.py`
-- modified `usq/research/us_strategy_experiments/__init__.py`
-- modified `usq/research/us_strategy_experiments/runner.py`
-- untracked `reports/codex_dev/task_us_data_201_command_transcript.txt`
-- untracked `reports/codex_dev/task_us_data_202_command_transcript.txt`
-- untracked `reports/codex_dev/task_us_data_203_command_transcript.txt`
-- untracked `reports/codex_dev/task_us_strat_202_command_transcript.txt`
-- untracked `reports/codex_dev/task_us_strat_203_us239_command_transcript.txt`
-- untracked `reports/codex_dev/us_strat_202_qualitative_feedback_bootstrap_cli_report.json`
-- untracked `reports/codex_dev/us_strat_202_qualitative_feedback_bootstrap_cli_report.md`
-- untracked `scripts/db_ops/bootstrap_symbol_metadata.py`
-- untracked `tests/test_us_data_201_metadata_bootstrap.py`
-- untracked `tests/test_us_strat_202_qualitative_feedback_bootstrap.py`
-- untracked `tests/test_us_strat_203_metadata_valid_scan.py`
-- untracked `usq/research/us_strategy_experiments/metadata_valid_scan.py`
-- untracked `usq/research/us_strategy_experiments/qualitative_bootstrap.py`
-
-Observed partial progress:
-
-- HG-EXEC records for `TASK-US-DATA-201`, `TASK-US-DATA-202`, and `TASK-US-DATA-203` were added to `reports/human_gate/decisions.jsonl`.
-- US-DATA-201 record allows controlled metadata lookup/write only under strict stop conditions.
-- US-DATA-202 record is conditional on US-DATA-201 success and read-only preflight clear.
-- US-DATA-203 record allows a sample second-source crosscheck with no DuckDB writes.
-- Qualitative feedback bootstrap CLI report files exist, but final required `task_us_*` report files were not produced.
-
-Not accepted:
-
-- No US commit was created.
-- No US push was performed.
-- Required reports for `TASK-US-DATA-201/202/203` and `TASK-US-STRAT-201/202/203` were not present at shutdown.
-- Validation status is unknown.
-- Network-call and DB-write final status was not reported by the agent.
-
-## Required Next Step
-
-Open a focused US takeover task before any further US execution:
-
-```text
-TASK-US-R2-TAKEOVER:
-Inspect the dirty US_Stock_Monitor worktree left by Epicurus.
-Do not assume it is valid.
-Classify every dirty file as keep/fix/drop.
-Verify whether network_call_made or db_write_performed occurred from transcripts.
-Validate HG-EXEC records.
-Produce missing task_us_* reports or explicitly mark blocked.
-Run focused tests and safety checks.
-Commit/push only after validation.
-```
+- A-share: continue research-only robustness work around the 16 conservative-momentum candidates before considering any future ticket path.
+- US: repair the 44-symbol metadata enrichment track with better source/classification evidence before rerunning full US-300 expansion.
+- market_data: keep A-share Level2 and US-300A/US-300B routes research/status-only unless a future authorized product-route task is opened.
 
 ## Non-Authorization
 

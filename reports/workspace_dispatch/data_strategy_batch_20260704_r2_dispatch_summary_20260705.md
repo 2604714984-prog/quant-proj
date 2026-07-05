@@ -28,7 +28,7 @@ This is an ordinary source-project Data + Strategy batch. No controller external
 | Workstream | Agent | Agent ID | Scope | Commit/Push |
 |---|---|---|---|---|
 | A-share P0 data + strategy | Arendt | `019f2de6-2943-7772-b517-1f3105b5fa53` | `TASK-A-DATA-201/202/203`, `TASK-A-STRAT-201/202/203/204` in `/Users/rongyuxu/Desktop/A_Share_Monitor` | Agent may commit/push A-share repo after validation |
-| US P0 data + strategy | Epicurus | `019f2de6-8908-7eb0-ab5d-6892b0a2225c` | `TASK-US-DATA-201/202/203`, `TASK-US-STRAT-201/202/203` in `/Users/rongyuxu/Desktop/US_Stock_Monitor` | Agent may commit/push US repo after validation |
+| US P0 data + strategy | Epicurus, recovered by Boole | `019f2de6-8908-7eb0-ab5d-6892b0a2225c`, `019f2fc7-e490-71c0-8cd4-49984e71caeb` | `TASK-US-DATA-201/202/203`, `TASK-US-STRAT-201/202/203` in `/Users/rongyuxu/Desktop/US_Stock_Monitor` | Completed and pushed as `2cbc829f835687b2bac2df8a76cc35353b753de1` |
 | market_data + strategy_work P1 | Banach | `019f2de6-bef7-7f90-b73a-9edb77f0ff36` | `TASK-MD-201/202`, `TASK-SW-201` in `/Users/rongyuxu/Desktop/market_data` and `/Users/rongyuxu/Desktop/strategy_work` if present | Agent may commit/push changed repo(s) after validation |
 
 ## Dependency Handling
@@ -93,11 +93,12 @@ This is an ordinary source-project Data + Strategy batch. No controller external
 
 ## Status
 
-- Dispatch status: `PARTIAL_COMPLETE_US_P0_BLOCKED`
+- Dispatch status: `COMPLETE`
 - External audit packet: `NOT_CREATED`
 - Controller audit packet: `NOT_CREATED`
 - Ticket/product-route tasks: `NOT_CREATED`
 - Closeout: `reports/workspace_dispatch/data_strategy_batch_20260704_r2_closeout_20260705.md`
+- US takeover: completed by `Boole` / `019f2fc7-e490-71c0-8cd4-49984e71caeb`; US repo commit `2cbc829f835687b2bac2df8a76cc35353b753de1` pushed to `origin/codex/duckdb-provider`.
 
 ## Priority Amendment 2026-07-05
 
