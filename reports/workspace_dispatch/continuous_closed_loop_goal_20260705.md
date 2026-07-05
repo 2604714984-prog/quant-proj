@@ -50,39 +50,39 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R9_20260705_DISPATCH
+Current task batch: DATA_STRATEGY_BATCH_R9_20260705_CLOSEOUT_TO_GPT_PRO
 
 Objective:
 
-GPT Pro accepted the R8 closeout and returned R9 as the next ordinary research-only Data/Strategy task batch. Record the R8 GPT Pro result, dispatch R9 to fixed downstream Codex-Dev agents and persistent Reasonix sidecars, collect CODEX_ACCEPTANCE / REASONIX_DRAFT outputs, close out R9, push controller records, then continue the permanent closed loop.
+R9 is closed as an ordinary research-only Data/Strategy batch. Record the closeout, commit and push controller records, prepare the fixed GPT Pro `外审对话` request for R9 verdict and R10 task instructions, submit through Chrome, capture the verdict/next batch, then continue the permanent closed loop.
 
 Latest completed batch:
 
-- DATA_STRATEGY_BATCH_R8_20260705
-- closeout: `reports/workspace_dispatch/data_strategy_batch_r8_20260705_closeout.md`
+- DATA_STRATEGY_BATCH_R9_20260705
+- closeout: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_closeout.md`
 - controller classification: ordinary research-only data/strategy batch
-- source acceptances: A-share `5deaab12a53830528b09159f37678fecbab589a0`; US `c52c3ad5c64e8f624154c1e60f7a1edf67e0b22c`; market_data `92a60d2bd84968db032e71e1e232d94b4cf2ad12`; strategy_work `5f2c0eee84457b5d8f20254a01fbb9a695c8f985`
-- GPT Pro result: `reports/agent_handoff/data_strategy_batch_r8_gpt_pro_external_audit_result_20260705.md`
+- source acceptances: A-share `77dec660ffb3a3a18c8e98b8e6dae53bbe238f27`; US `9dd4f468b4d26092a29e3cb30d3e4ced0b8ad5c7`; market_data `21ce90be2533e14389e253c5d94b3ca18a106850`; strategy_work `9b74db4fa535156cfa0c310b4a5818454e643a64`
+- Reasonix sidecars: `reports/workspace_dispatch/reasonix_data_strategy_batch_r9_sidecar_summary_20260705.md`
 
 Current intake:
 
 - R9 intake: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_intake.md`
-- verdict: `ACCEPT`
-- external-audit trigger open: `no`
-- fixes required: `none`
+- R8 GPT Pro result: `reports/agent_handoff/data_strategy_batch_r8_gpt_pro_external_audit_result_20260705.md`
+- result summary: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_result_summary.md`
+- closeout: `reports/workspace_dispatch/data_strategy_batch_r9_20260705_closeout.md`
 - classification: ordinary research-only data/strategy batch
+- external-audit trigger opened by R9: `no`
 
 Current dispatch/result state:
 
-- R8 GPT Pro request was submitted through the fixed `外审对话`.
-- R8 GPT Pro result was captured at `reports/agent_handoff/data_strategy_batch_r8_gpt_pro_external_audit_result_20260705.md`.
-- R9 intake was recorded at `reports/workspace_dispatch/data_strategy_batch_r9_20260705_intake.md`.
-- R9 downstream dispatch was sent to A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, Reasonix-DB, and Reasonix-Strategy.
-- R9 dispatch summary was recorded at `reports/workspace_dispatch/data_strategy_batch_r9_20260705_dispatch_summary.md`.
-- Reasonix-DB and Reasonix-Strategy must remain open and be reused as persistent CLI-like sessions.
+- R9 downstream dispatch completed for A_Share_Monitor, US_Stock_Monitor, market_data, strategy_work, Reasonix-DB, and Reasonix-Strategy.
+- R9 result summary and closeout are recorded in controller workspace.
+- Reasonix-DB and Reasonix-Strategy remained open and are to be reused as persistent CLI-like sessions.
+- Reasonix-Strategy runaway file-reading attempt was stopped with `Esc` without closing the session; a compact pasted evidence packet completed the R9 strategy draft.
 
 Next dispatcher actions:
 
-1. Commit and push the R9 dispatch summary.
-2. Wait in coarse intervals for downstream CODEX_ACCEPTANCE / REASONIX_DRAFT outputs.
-3. Record downstream results, update board, close out R9, push, then continue the permanent loop.
+1. Validate and commit the R9 controller result/closeout records.
+2. Push controller records.
+3. Prepare R9 GPT Pro request and submit it through the fixed Chrome `外审对话`.
+4. Capture GPT Pro verdict and next concrete task batch, then dispatch that next batch.
