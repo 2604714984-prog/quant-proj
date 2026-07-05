@@ -49,30 +49,27 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R6_20260705_DISPATCH
+Current task batch: DATA_STRATEGY_BATCH_R6_20260705_CLOSEOUT_AND_NEXT_GPT_PRO_REQUEST
 
 Objective:
 
-GPT Pro accepted the R5 closeout for closed-loop continuation and returned the next concrete Data/Strategy task batch. Import and dispatch `DATA_STRATEGY_BATCH_R6_20260705` to the fixed downstream agents, collect `CODEX_ACCEPTANCE` / `DATA_REPORT` / `STRATEGY_REPORT` / `REASONIX_DRAFT` outputs, record controller-layer evidence, commit/push, close out R6, then continue the permanent closed loop. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
+R6 downstream execution is complete. Record the R6 controller closeout, commit/push the controller records, submit the R6 closeout to the fixed GPT Pro external-audit conversation for a short verdict and next concrete Data/Strategy task batch, record the returned verdict/tasks, then continue the permanent closed loop. Preserve the permanent closed-loop process above. On the next batch, replace only this mutable current-task section.
 
 Latest completed batch:
 
-- DATA_STRATEGY_BATCH_R5_20260705
-- closeout: `reports/workspace_dispatch/data_strategy_batch_r5_20260705_closeout.md`
+- DATA_STRATEGY_BATCH_R6_20260705
+- closeout: `reports/workspace_dispatch/data_strategy_batch_r6_20260705_closeout.md`
 - controller classification: ordinary research-only data/strategy batch
-- external audit: `VERDICT: ACCEPT`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, `FIXES_REQUIRED: none`
-- result: `reports/agent_handoff/data_strategy_batch_r5_gpt_pro_external_audit_result_20260705.md`
+- source acceptances: A-share `8beac22d0ed2f9dea72392df5456b4441b2a9180`; US `4e1304cbac0984c11ccc0c66d39d6685db289866`; market_data `9439dc094ad7ebe9e5ddcc46601c707bf013a090`; strategy_work `1775637dd42cbc858c144da7c4aa60cfaa90a81d`
+- next GPT Pro request draft: `reports/external_audit/data_strategy_batch_r6_gpt_pro_external_audit_request_20260705.md`
 
 Current intake:
 
-- DATA_STRATEGY_BATCH_R6_20260705
-- intake: `reports/workspace_dispatch/data_strategy_batch_r6_20260705_intake.md`
-- classification: ordinary research-only data/strategy batch
+- pending GPT Pro closed-loop verdict and next task batch for R7
 
 Next dispatcher actions:
 
-1. Create and send R6 downstream dispatch prompts to fixed Codex-Dev threads.
-2. Send R6 Reasonix-DB and Reasonix-Strategy advisory sidecars using `deepseek-v4-pro` / effort `high`.
-3. Record R6 dispatch summary and controller evidence.
-4. Commit and push controller records.
-5. Poll downstream agents in coarse intervals and continue the loop.
+1. Commit and push R6 closeout/controller records.
+2. Submit `reports/external_audit/data_strategy_batch_r6_gpt_pro_external_audit_request_20260705.md` to the fixed GPT Pro external-audit conversation.
+3. Capture GPT Pro verdict and next task batch.
+4. Record the verdict/tasks in quant-proj, commit/push, dispatch the next batch, and continue the loop.
