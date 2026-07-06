@@ -94,4 +94,3 @@ R15 remained research-only. No recommendation/advice, `PENDING_HUMAN_REVIEW`, ti
 
 External-audit trigger open: `no`.
 Fixes required from local validation: `none`.
-

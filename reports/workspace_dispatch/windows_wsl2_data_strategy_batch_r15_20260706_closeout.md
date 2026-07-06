@@ -84,4 +84,3 @@ R15 did not open a controller external-audit trigger and did not authorize or pe
 No R15 downstream task remains active. Quant-Dispatcher should wait for the user to paste the next task list, downstream callback, or GPT Pro / ChatGPT external-audit result.
 
 Because R15 is ordinary research-only work and `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, no controller external-audit packet is created by the dispatcher for this closeout.
-
