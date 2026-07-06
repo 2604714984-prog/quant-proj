@@ -47,6 +47,27 @@ Interpretation:
 - If a downstream thread tool is unavailable, the final answer must include the
   callback envelope.
 
+## Windows WSL2 Downstream Threads
+
+Recorded: 2026-07-07
+Status: READY_ACKNOWLEDGED
+
+The user directed Quant-Dispatcher to create new downstream threads on the
+Windows WSL2 host. New thread ids and initialization acknowledgements:
+
+| Project | New thread id | Status |
+|---|---|---|
+| `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `CODEX_ACCEPTANCE / A_SHARE_MONITOR_WSL2_DOWNSTREAM_THREAD_READY` |
+| `US_Stock_Monitor` | `019f387b-a161-7ad0-8678-f03a099612ba` | `CODEX_ACCEPTANCE / US_STOCK_MONITOR_WSL2_DOWNSTREAM_THREAD_READY` |
+| `market_data` | `019f387b-e763-7c01-ae3d-6be552cdb6dc` | `CODEX_ACCEPTANCE / MARKET_DATA_WSL2_DOWNSTREAM_THREAD_READY` |
+| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `CODEX_ACCEPTANCE / STRATEGY_WORK_WSL2_DOWNSTREAM_THREAD_READY` |
+
+All four acknowledgements confirm the callback target:
+
+```text
+019f3830-4b44-7a83-944d-247a0d4dc169
+```
+
 ## Required Callback
 
 At task completion, the downstream Codex thread should send a prompt-only message to the dispatcher thread with:

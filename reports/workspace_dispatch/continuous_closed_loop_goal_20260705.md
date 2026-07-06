@@ -62,6 +62,7 @@ Continue as Quant-Dispatcher only. The user clarified Windows WSL2 operating rul
 - GPT Pro / ChatGPT external-audit UI operation is user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
 - For normal scoped controller work, execute and record instead of asking repeatedly.
 - Old Mac-side downstream Codex thread ids are not visible on the current local host; current dispatcher thread is `019f3830-4b44-7a83-944d-247a0d4dc169`.
+- New Windows WSL2 downstream Codex-Dev threads were created and acknowledged on 2026-07-07.
 - Use DS v4 pro max through Claude Code CLI for advisory project review when requested.
 
 Do not create a controller/gate loop unless a real boundary trigger opens. Do not authorize recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, or secrets.
@@ -82,9 +83,11 @@ Current intake and controller records:
 
 Current dispatch plan:
 
-- No WSL2-visible downstream Codex thread is currently established for `A_Share_Monitor`, `US_Stock_Monitor`, `market_data`, or `strategy_work`.
-- Old Mac-side fixed thread ids were read/send tested and returned `No Codex thread found` on the current local host.
-- Future downstream handoffs must use WSL2-visible threads or final-answer callback envelopes.
+- `A_Share_Monitor`: `019f387b-617e-7273-b539-161216ae3002`, acknowledged `A_SHARE_MONITOR_WSL2_DOWNSTREAM_THREAD_READY`.
+- `US_Stock_Monitor`: `019f387b-a161-7ad0-8678-f03a099612ba`, acknowledged `US_STOCK_MONITOR_WSL2_DOWNSTREAM_THREAD_READY`.
+- `market_data`: `019f387b-e763-7c01-ae3d-6be552cdb6dc`, acknowledged `MARKET_DATA_WSL2_DOWNSTREAM_THREAD_READY`.
+- `strategy_work`: `019f3881-5293-74a1-8535-814bd83c8681`, acknowledged `STRATEGY_WORK_WSL2_DOWNSTREAM_THREAD_READY`.
+- Future downstream handoffs must use these WSL2-visible threads and the active dispatcher callback target, or final-answer callback envelopes if thread sending is unavailable.
 
 R13C / WSL2 hard execution rule:
 
@@ -96,7 +99,7 @@ R13C / WSL2 hard execution rule:
 Next dispatcher actions:
 
 1. Commit and push the Windows WSL2 runtime clarification, callback update, registry refresh, and DS review records.
-2. If the user wants new downstream Codex-Dev execution, establish WSL2-visible downstream threads and include the updated callback instruction.
+2. Use the new WSL2-visible downstream Codex-Dev threads for future source-project handoffs and include the updated callback instruction.
 3. When the user pastes a GPT Pro verdict or new task list, write intake / task packet / dispatch summary and classify boundary triggers.
 4. Keep `market_data` old thread state as historical/stale unless the user reopens that thread or a new downstream thread is established.
 5. Track DS review follow-ups: downstream hardcoded path fixes, downstream `CLAUDE.md`/policy propagation, cross-project consistency check, and A-share 3068-symbol full-frame guard unit test.

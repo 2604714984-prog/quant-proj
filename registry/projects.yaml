@@ -95,6 +95,12 @@ projects:
       lowvol_quality_approved_candidates: 0
       ticket_emitted: false
       eligibility_candidate: false
+    downstream_thread:
+      thread_id: "019f387b-617e-7273-b539-161216ae3002"
+      title: "A_Share_Monitor WSL2 Downstream"
+      status: "ready_acknowledged"
+      callback_target: "019f3830-4b44-7a83-944d-247a0d4dc169"
+      acknowledged_at: "2026-07-07T01:13:00+08:00"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
@@ -132,6 +138,12 @@ projects:
       old_machine_untracked_logs_migrated: false
       ticket_emitted: false
       eligibility_candidate: false
+    downstream_thread:
+      thread_id: "019f387b-a161-7ad0-8678-f03a099612ba"
+      title: "US_Stock_Monitor WSL2 Downstream"
+      status: "ready_acknowledged"
+      callback_target: "019f3830-4b44-7a83-944d-247a0d4dc169"
+      acknowledged_at: "2026-07-07T01:13:00+08:00"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
@@ -170,6 +182,12 @@ projects:
       data_clear_status: "not_promoted"
       ticket_emitted: false
       eligibility_candidate: false
+    downstream_thread:
+      thread_id: "019f387b-e763-7c01-ae3d-6be552cdb6dc"
+      title: "market_data WSL2 Downstream"
+      status: "ready_acknowledged"
+      callback_target: "019f3830-4b44-7a83-944d-247a0d4dc169"
+      acknowledged_at: "2026-07-07T01:13:00+08:00"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
@@ -201,6 +219,12 @@ projects:
       strategy_status: "all current wide reruns rejected or research-only"
       ticket_emitted: false
       eligibility_candidate: false
+    downstream_thread:
+      thread_id: "019f3881-5293-74a1-8535-814bd83c8681"
+      title: "strategy_work WSL2 Downstream"
+      status: "ready_acknowledged"
+      callback_target: "019f3830-4b44-7a83-944d-247a0d4dc169"
+      acknowledged_at: "2026-07-07T01:13:00+08:00"
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
@@ -216,7 +240,12 @@ downstream_threads:
     us_stock_monitor: "019f32bd-af98-7eb0-bc5c-d1067e1fb145"
     market_data: "019f3283-a821-7002-961b-6f533d3518c2"
     strategy_work: "019f30c3-247e-7f43-af60-96164539a183"
-  callback_status: "old thread ids unavailable; establish new downstream threads before prompt-only dispatch"
+  new_wsl2_downstream_threads:
+    a_share_monitor: "019f387b-617e-7273-b539-161216ae3002"
+    us_stock_monitor: "019f387b-a161-7ad0-8678-f03a099612ba"
+    market_data: "019f387b-e763-7c01-ae3d-6be552cdb6dc"
+    strategy_work: "019f3881-5293-74a1-8535-814bd83c8681"
+  callback_status: "new WSL2 downstream threads created and acknowledged initialization callbacks"
 
 data_source_policy:
   active_policy_record: "reports/workspace_dispatch/simonlin1212_data_source_policy_20260706.md"
