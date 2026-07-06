@@ -107,6 +107,7 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Commit and push the R15 result summary and closeout records.
-2. Wait for the user to paste the next task list, downstream callback, or GPT Pro / ChatGPT external-audit result.
-3. Do not create a controller external-audit packet for R15 unless the user explicitly requests one; R15 remained ordinary research-only work and `EXTERNAL_AUDIT_TRIGGER_OPEN: no`.
+1. User explicitly requested an R15 external-audit packet after closeout.
+2. Packet prepared at `reports/agent_handoff/windows_wsl2_data_strategy_batch_r15_external_audit_packet_20260707.md`.
+3. Wait for the user to submit it to GPT Pro / ChatGPT and paste the verdict or next task list.
+4. Do not operate GPT Pro / ChatGPT directly from the dispatcher.
