@@ -53,7 +53,7 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_DATA_STRATEGY_AND_BASE_BATCH_R15_20260706 dispatched; awaiting downstream callbacks
+Current task batch: WINDOWS_WSL2_DATA_STRATEGY_AND_BASE_BATCH_R15_20260706 closed accepted research-only with warnings
 
 Objective:
 
@@ -85,13 +85,18 @@ Current intake and controller records:
 - Current classification: ordinary research-only data/strategy/data-base batch
 - External-audit trigger opened by R15 intake: `no`
 
-Current dispatch plan:
+Final R15 source states:
 
-- `A_Share_Monitor`: `019f387b-617e-7273-b539-161216ae3002`, assigned `A-WIN-R15-1` through `A-WIN-R15-15`.
-- `market_data`: `019f387b-e763-7c01-ae3d-6be552cdb6dc`, assigned `MD-WIN-R15-1` through `MD-WIN-R15-4`.
-- `strategy_work`: `019f3881-5293-74a1-8535-814bd83c8681`, assigned `SW-WIN-R15-1` through `SW-WIN-R15-3`.
+- `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, completed `A-WIN-R15-1` through `A-WIN-R15-15`, commit `518081d0e110a0518f5c31adc19722e42a6b94a7`, pushed to `origin/codex/harden-a-share-research-pipeline`.
+- `market_data`: thread `019f387b-e763-7c01-ae3d-6be552cdb6dc`, completed `MD-WIN-R15-1` through `MD-WIN-R15-4`, commit `fa014470b39b07ae342996d629f1b2356138111f`, pushed to `origin/main`.
+- `strategy_work`: thread `019f3881-5293-74a1-8535-814bd83c8681`, completed `SW-WIN-R15-1` through `SW-WIN-R15-3`, final-sync commit `bc70517bb5740105989f404510e7b815644d3bf6`, pushed to `origin/main`.
 - `US_Stock_Monitor`: `019f387b-a161-7ad0-8678-f03a099612ba`, ready but not assigned because the R15 US branch was optional and not explicitly requested.
 - Future downstream handoffs must use these WSL2-visible threads and the active dispatcher callback target, or final-answer callback envelopes if thread sending is unavailable.
+
+R15 controller records:
+
+- Result summary: `reports/workspace_dispatch/windows_wsl2_data_strategy_batch_r15_20260706_result_summary.md`
+- Closeout: `reports/workspace_dispatch/windows_wsl2_data_strategy_batch_r15_20260706_closeout.md`
 
 R13C / WSL2 hard execution rule:
 
@@ -102,8 +107,6 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Commit and push the R15 intake/task/dispatch records.
-2. Poll downstream threads in coarse intervals for callbacks.
-3. Record A_Share_Monitor, market_data, and strategy_work callbacks as they arrive.
-4. Trigger `strategy_work` final sync only after A_Share_Monitor and market_data source acceptances are available.
-5. Prepare R15 result summary and closeout after required callbacks.
+1. Commit and push the R15 result summary and closeout records.
+2. Wait for the user to paste the next task list, downstream callback, or GPT Pro / ChatGPT external-audit result.
+3. Do not create a controller external-audit packet for R15 unless the user explicitly requests one; R15 remained ordinary research-only work and `EXTERNAL_AUDIT_TRIGGER_OPEN: no`.
