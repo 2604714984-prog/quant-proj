@@ -15,6 +15,38 @@ Dispatcher thread id:
 019f2766-7c5f-7562-b2e3-b4d76de7bfa9
 ```
 
+## Windows WSL2 Runtime Update
+
+Recorded: 2026-07-07
+Status: OLD_THREAD_IDS_NOT_VISIBLE_ON_CURRENT_HOST
+
+Current Windows WSL2 dispatcher thread id:
+
+```text
+019f3830-4b44-7a83-944d-247a0d4dc169
+```
+
+Codex thread inspection on the current local host found only the new
+Quant-Dispatcher thread for this quant workspace. The old fixed downstream
+thread ids from the Mac-side controller records were not visible:
+
+- `A_Share_Monitor` old thread `019f32bd-082d-73e2-b902-3d48b8d198ba`: `No Codex thread found`
+- `strategy_work` old thread `019f30c3-247e-7f43-af60-96164539a183`: `No Codex thread found`
+- `US_Stock_Monitor` old thread `019f32bd-af98-7eb0-bc5c-d1067e1fb145`: `No Codex thread found`
+- `market_data` old thread `019f3283-a821-7002-961b-6f533d3518c2`: `No Codex thread found`
+
+Send-message smoke tests to the old `market_data` and `A_Share_Monitor` thread
+ids also returned `No Codex thread found`.
+
+Interpretation:
+
+- The old callback target and downstream thread acknowledgements remain
+  historical Mac-side records.
+- New Windows WSL2 downstream handoffs must use the current dispatcher thread id
+  above after WSL2-visible downstream Codex threads are established.
+- If a downstream thread tool is unavailable, the final answer must include the
+  callback envelope.
+
 ## Required Callback
 
 At task completion, the downstream Codex thread should send a prompt-only message to the dispatcher thread with:
@@ -64,7 +96,7 @@ If a downstream Codex thread cannot send a message to the dispatcher thread, its
 All future Quant-Dispatcher handoffs must include:
 
 ```text
-Completion callback required: after finishing, send a prompt-only callback to Quant-Dispatcher thread 019f2766-7c5f-7562-b2e3-b4d76de7bfa9 with CODEX_ACCEPTANCE/DATA_REPORT/STRATEGY_REPORT or BLOCKED, commit/tree, artifacts, validation, residual blockers, and boundary statement. If the thread tool is unavailable, include the callback envelope in your final answer.
+Completion callback required: after finishing, send a prompt-only callback to the active Quant-Dispatcher thread with CODEX_ACCEPTANCE/DATA_REPORT/STRATEGY_REPORT or BLOCKED, commit/tree, artifacts, validation, residual blockers, and boundary statement. On the Windows WSL2 host, the active dispatcher thread is 019f3830-4b44-7a83-944d-247a0d4dc169. If the thread tool is unavailable, include the callback envelope in your final answer.
 ```
 
 ## Boundary

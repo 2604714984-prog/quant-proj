@@ -1,7 +1,7 @@
-generated_at: "2026-07-05T22:28:38+08:00"
-workspace_root: "/Users/rongyuxu/Desktop/quant proj"
-decision: "controller_workspace_first_no_physical_merge_yet"
-registry_kind: "point_in_time_controller_snapshot"
+generated_at: "2026-07-07T00:42:00+08:00"
+workspace_root: "/home/rongyu/workspace/quant-proj"
+decision: "windows_wsl2_controller_workspace_active_no_physical_merge"
+registry_kind: "fresh_wsl2_controller_snapshot"
 registry_refresh_policy:
   required_before:
     - "batch task dispatch"
@@ -18,187 +18,213 @@ registry_refresh_policy:
   stale_registry_rule: "If this registry disagrees with a live source-project check, treat this registry as historical evidence and refresh before dispatch."
 
 tools:
-  codex_cli:
-    path: "/Applications/Codex.app/Contents/Resources/codex"
-    version: "codex-cli 0.142.5"
-    role: "primary development, integration, validation, audit packet preparation"
+  codex_desktop:
+    path: "Codex desktop local host"
+    current_dispatcher_thread: "019f3830-4b44-7a83-944d-247a0d4dc169"
+    role: "primary controller coordination, thread inspection, and dispatch when downstream Codex threads exist"
+  claude_code_cli:
+    path: "C:/Users/rongyu/AppData/Roaming/npm/claude.ps1"
+    version: "2.1.201 (Claude Code)"
+    configured_provider: "DeepSeek Anthropic-compatible API"
+    configured_model: "deepseek-v4-pro[1m]"
+    effort: "max"
+    role: "user-authorized DS advisory review through Claude Code CLI"
   reasonix_cli:
-    path: "/Users/rongyuxu/.local/bin/reasonix"
-    version: "reasonix 0.53.2"
-    role: "advisory review, semantic indexing, test-gap review, report review"
+    path: null
+    version: null
+    role: "removed from current Windows setup; legacy reports remain historical evidence"
 
 projects:
+  quant_proj:
+    path: "/home/rongyu/workspace/quant-proj"
+    package: "controller_workspace"
+    cli: "none"
+    size: "6.5M"
+    git_branch: "main"
+    latest_commit: "4f3d0de Record WSL2 dispatcher role acceptance"
+    latest_commit_full: "4f3d0dea6bab26bdc7ab44ea1f5f8d8d0209015d"
+    latest_tree: "5d5858df67aa47a493b8f25a9198eeb39373dbb5"
+    working_tree: "clean_at_refresh"
+    upstream: "origin/main"
+    upstream_ahead_behind: "0 0"
+    last_describe: "data-strategy-r13-interim-external-audit-20260706-9-g4f3d0de"
+    tracked_files: 361
+    current_role: "Quant-Dispatcher controller"
+    current_dispatcher_thread: "019f3830-4b44-7a83-944d-247a0d4dc169"
+    prior_dispatcher_thread: "019f2766-7c5f-7562-b2e3-b4d76de7bfa9"
+
   a_share_monitor:
-    path: "/Users/rongyuxu/Desktop/A_Share_Monitor"
+    path: "/home/rongyu/workspace/A_Share_Monitor"
+    legacy_path_symlink: "/Users/rongyuxu/Desktop/A_Share_Monitor"
+    active_dispatch_worktree: null
     package: "qta"
     cli: "python -m qta"
-    size: "1.7G"
+    size: "6.7G"
     git_branch: "codex/harden-a-share-research-pipeline"
-    latest_commit: "05b79dd Add R11 A-share holdout diagnostics"
-    latest_commit_full: "05b79ddabb05003067e1ae86e10411604271ff26"
-    latest_tree: "05a99d23041fc09d54796501a35789fdf0caa182"
-    working_tree: "dirty"
-    last_describe: "stage-a10-external-audit-packet-20260703-32-g05b79dd-dirty"
-    tracked_files: 630
-    migration_status: "defer"
-    migration_reason: "large local data, absolute-path audit/data manifests, and no approved physical migration stage"
-    dirty_files_observed:
-      - "reports/research_loop/a_share_micro_next_questions.md"
-      - "reports/research_loop/a_share_micro_observation_candidates.md"
-      - "reports/research_loop/a_share_micro_phase3_handoff_required.md"
-      - "reports/research_loop/a_share_micro_rejected_patterns.md"
-      - "reports/research_loop/a_share_micro_research_ledger.csv"
-      - "reports/research_loop/a_share_micro_strategy_backlog.md"
+    latest_commit: "dd3089e Add WSL2 R14 data strategy evidence"
+    latest_commit_full: "dd3089e2a9c1693ea0571db37c185d6584f1bc14"
+    latest_tree: "d6d35676e5753ae42dab7fa08459fb9c3e9d4810"
+    working_tree: "clean"
+    upstream: "origin/codex/harden-a-share-research-pipeline"
+    last_describe: "windows-wsl2-data-strategy-batch-r14-20260706"
+    tracked_files: 918
+    migration_status: "active_wsl2_clone"
+    migration_reason: "code cloned in WSL2; data rebuilt/validated as WSL2 staging evidence; no raw-data migration into controller"
+    dirty_files_observed: []
+    worktrees_observed:
+      - "/home/rongyu/workspace/A_Share_Monitor"
     data:
-      duckdb_path: "/Users/rongyuxu/Desktop/A_Share_Monitor/data/local_market/a_share_market.duckdb"
-      duckdb_size: "1.25GB"
-      canonical_daily_bars_rows_current: 2059000
-      canonical_daily_bars_symbols_current: 1000
-      canonical_date_range_current: "20180102..20260701"
-      latest_snapshot_id: "a_expand_20260704_l1_local1000_0317"
-      readiness_status_current: "WARNING_LEVEL_1"
-      st_list_coverage_status_current: "PASS"
-      suspension_status_current: "WARNING_EVENT_TABLE_EMPTY"
-      limit_price_status_current: "WARNING_LOW_COVERAGE"
+      duckdb_path: "/home/rongyu/workspace/A_Share_Monitor/data/local_market/a_share_market.duckdb"
+      duckdb_size: "961M"
+      current_status_source: "reports/workspace_dispatch/windows_wsl2_data_chain_repair_and_strategy_rerun_20260706.md"
+      staging_snapshot_id: "wsl2_chain_repair_20260706_195210"
+      exported_daily_rows: 5398232
+      exported_daily_symbols: 3068
+      exported_date_range: "20180102..20260703"
+      features_daily_rows: 5398232
+      east_money_crosscheck_status: "PARTIAL_COVERAGE_ONLY"
+      east_money_crosscheck_pairs: 325293
+      readiness_status_current: "research_staging_only_no_data_clear"
     current_real_state:
-      task_009_gate_status: "NO_RECOMMENDATION_AVAILABLE"
-      task_009_ticket_emitted: false
-      task_009_candidate_count: 83
-      task_009_eligible_ticket_candidate_count: 0
-      r10_retained_symbol: "600177.SH"
-      r10_v2_records_after: 2
-      r10_v2_unique_symbols_after: 1
-      r11_forward_holdout_status: "NO_FORWARD_HOLDOUT_DATA_AVAILABLE"
-      r11_strict_v2_records_after: 2
-      r11_strict_v2_unique_symbols_after: 1
-      r11_risk_control_balanced_records_after: 3
-      r11_liquidity_affordability_balanced_records_after: 7
-      r11_peer_control_result: "RISK_CONTROL_DISTINCTIVENESS_SURVIVES_BUT_AMOUNT_SCALE_ARTIFACT_REMAINS"
-      r10_ticket_emitted: false
-      task_009_blockers:
-        - "A11_RESEARCH_ONLY_NOT_TICKET_ENABLED"
-        - "A11_SNAPSHOT_NOT_TASK007_EXPANSION"
-        - "PHASE3_EVIDENCE_NOT_READY"
-        - "MICRO_RECOMMENDATION_DATA_NOT_READY"
-        - "SUSPENSION_CAPABILITY_INCOMPLETE"
-        - "LIMIT_PRICE_COVERAGE_LOW"
-        - "MARKET_DATA_PRODUCT_READ_NOT_ALLOWED"
-        - "PRODUCTION_RECOMMENDATION_DATA_NOT_READY"
+      r13_interim_status: "ACCEPT_WITH_WARNINGS"
+      r13c_chunked_strategy_search: "implemented"
+      r13c_full_frame_guard: "implemented"
+      r14_data_chain_repair_status: "source_level_accept_with_warnings"
+      latest_strategy_rerun_status: "all_candidates_rejected_research_only"
+      bare_minimum_test_sharpe_latest_reported: -0.881046
+      lowvol_quality_approved_candidates: 0
+      ticket_emitted: false
+      eligibility_candidate: false
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
+      paper_trading_allowed: false
       live_trading_allowed: false
 
   us_stock_monitor:
-    path: "/Users/rongyuxu/Desktop/US_Stock_Monitor"
-    active_dispatch_worktree: "/Users/rongyuxu/.codex/worktrees/c4f8/US_Stock_Monitor"
+    path: "/home/rongyu/workspace/US_Stock_Monitor"
+    legacy_path_symlink: "/Users/rongyuxu/Desktop/US_Stock_Monitor"
+    active_dispatch_worktree: null
     package: "usq"
     cli: "python -m usq"
-    size: "261M"
-    git_branch: "codex/duckdb-provider"
-    latest_commit: "c9dce37 Add R11 US metadata readiness diagnostics"
-    latest_commit_full: "c9dce3782df1e250987129c7ce5350c786e1821d"
-    latest_tree: "ed1bd5c17cfd804ee06fabb509fa42c72e148392"
-    working_tree: "worktree_clean_main_checkout_dirty_untracked"
-    last_describe: "phase-us13-audit-r1-24-gc9dce37"
-    tracked_files: 962
-    migration_status: "defer"
-    migration_reason: "active US-13 and DuckDB-provider route, ignored local data, and no approved physical migration stage"
-    dirty_files_observed:
-      - "main_checkout_untracked: reports/recommendation/"
-      - "main_checkout_untracked: reports/research/"
-      - "main_checkout_untracked: reports/trade_reviews/"
-      - "main_checkout_untracked: scripts/fill_missing_us.py"
-      - "main_checkout_untracked: scripts/fill_us_data.py"
-      - "main_checkout_untracked: scripts/fill_us_nasdaq.py"
-      - "main_checkout_untracked: scripts/fill_us_nasdaq_v2.py"
-      - "main_checkout_untracked: scripts/fill_us_nasdaq_v3.py"
-      - "main_checkout_untracked: scripts/fill_us_slow.py"
-      - "main_checkout_untracked: scripts/fill_us_stooq.py"
-      - "main_checkout_untracked: yfinance_cache.sqlite"
+    size: "187M"
+    git_branch: "main"
+    latest_commit: "831ef21 daily_update_us: switch from yfinance to Tencent"
+    latest_commit_full: "831ef21eda20ecf971bef9ab2f3487b8e96e1001"
+    latest_tree: "fe5442c0846a8fb5b432ed4a0fe28d143f8c234f"
+    working_tree: "clean"
+    upstream: "origin/main"
+    last_describe: "phase-deepseek-framework-audit-r1-4-g831ef21"
+    tracked_files: 438
+    migration_status: "active_wsl2_clone_code_only"
+    migration_reason: "tracked source was pushed before migration; old local logs were not migrated"
+    dirty_files_observed: []
+    worktrees_observed:
+      - "/home/rongyu/workspace/US_Stock_Monitor"
     data:
-      duckdb_path: "/Users/rongyuxu/Desktop/US_Stock_Monitor/data/local_market/us_stock_market.duckdb"
-      duckdb_size: "70MB"
-      canonical_daily_bars_rows_current: 689626
-      canonical_daily_bars_symbols_current: 326
-      canonical_date_range_current: "2020-01-02..2026-07-02"
-      readiness_status_current: "PASS_LEVEL_2"
-      latest_controlled_expansion_attempt: "us_expand_20260704_nasdaq_300"
-      latest_controlled_expansion_status: "INGEST_PREFLIGHT_BLOCKED"
-      latest_controlled_expansion_rows_written: 0
+      duckdb_path: "/home/rongyu/workspace/US_Stock_Monitor/data/local_market/us_stock_market.duckdb"
+      duckdb_status: "missing_in_wsl2_clone_at_refresh"
+      current_status_source: "reports/agent_handoff/windows_wsl2_migration_handoff_20260706.md"
+      latest_known_source_commit: "831ef21eda20ecf971bef9ab2f3487b8e96e1001"
+      readiness_status_current: "not_refreshed_on_wsl2"
     current_real_state:
-      us13_status: "NO_RECOMMENDATION_AVAILABLE"
-      active_ticket_status: "NO_ACTIVE_TICKET_AFTER_USER_APPROVED_METADATA_ONLY"
-      real_fill_count: 0
-      task_003_db_ops_warning: "EXISTING_AAPL_DUPLICATE_DAILY_ROWS_DETECTED_READ_ONLY"
-      task_006_db_ops_warning: "BLOCKED_BY_EXISTING_DB_DUPLICATES_AND_SYMBOLS_MISSING_FROM_METADATA"
-      task_010_gate_status: "NO_RECOMMENDATION_AVAILABLE"
-      task_010_ticket_emitted: false
-      task_010_eligibility_candidate: false
-      r10_signal_strong_data_clear: "0/60"
-      r10_tightened_survivors_data_clear: "0/61"
-      r10_metadata_queue: 44
-      r11_metadata_blocker_matrix_rows: 165
-      r11_signal_review_blocked_records: 121
-      r11_metadata_queue_blocked_records: 44
-      r11_metadata_validator_status: "IMPORT_BLOCKED_DRY_RUN_ONLY"
-      r11_offline_crosscheck_status: "OFFLINE_CROSSCHECK_HARNESS_COMPLETE_SYNTHETIC_ONLY"
-      r11_research_evidence_count: 0
-      task_010_blockers:
-        - "BLOCKED_BY_EVIDENCE_GAP_PERSISTING"
-        - "BLOCKED_BY_INSUFFICIENT_FEEDBACK"
-        - "BLOCKED_BY_NO_TICKET_ELIGIBILITY_CANDIDATE"
+      latest_known_us_data_source: "Tencent daily update switch committed"
+      old_machine_untracked_logs_migrated: false
+      ticket_emitted: false
+      eligibility_candidate: false
     boundaries:
       recommendation_runtime_enabled: false
       broker_api_allowed: false
+      paper_trading_allowed: false
       live_trading_allowed: false
 
   market_data:
-    path: "/Users/rongyuxu/Desktop/market_data"
-    active_dispatch_worktree: "/Users/rongyuxu/.codex/worktrees/c385/market_data"
+    path: "/home/rongyu/workspace/market_data"
+    legacy_path_symlink: "/Users/rongyuxu/Desktop/market_data"
+    active_dispatch_worktree: null
     package: "market_data"
     cli: "python -m market_data or direct scripts"
-    size: "2.4M"
-    git_branch: "codex/data-strategy-r10-market-data-data-clear"
-    latest_commit: "96a3254 Add R11 market data research contract checks"
-    latest_commit_full: "96a325423d00af02c8829d85d770b7d73e30c6f6"
-    latest_tree: "287fe38fc93d3e0852951638205c99a734e81d0e"
-    working_tree: "worktree_clean_main_checkout_older"
-    last_describe: "db-2-high001-closed-external-audit-20260703-16-g96a3254"
-    tracked_files: 80
-    migration_status: "defer_until_registry_refresh"
-    migration_reason: "registry/access-gate package with uncommitted reports and stale current facts"
-    physical_db_migration_allowed_current_registry: false
-    role: "registry, read-only access gate, external audit packet hub"
-    task_008_status: "ACCEPTED_WITH_WARNINGS"
-    task_008_a_share_candidate_snapshot: "a_expand_20260704_l1_local1000_0317"
-    task_008_a_share_candidate_readiness: "WARNING_LEVEL_1"
-    task_008_a_share_candidate_product_read_allowed: false
-    task_008_us_route_status: "INGEST_PREFLIGHT_BLOCKED"
-    r10_us_300a_status: "DATA_CLEAR_RESEARCH_PENDING_CRITERIA"
-    r11_us_300a_status: "DATA_CLEAR_RESEARCH_PENDING_CRITERIA"
-    r11_a_share_inventory_snapshot_count: 4
-    r11_a_share_only_600177_snapshot: "a_expand_20260704_l1_local1000_0317"
-    r11_a_share_600177_inventory_rows: 2059
-    r11_a_share_500_snapshot_gap: "MISSING_COVERAGE_RECORD_MISSING_READINESS_RECORD_MISSING_MANIFEST_RECORD"
-    r10_product_read_allowed: false
+    size: "1.7M"
+    git_branch: "main"
+    latest_commit: "ff24166 DeepSeek-DB P0-P4 deliverables: DB_OPS review, 265/500/1000 summaries, final handoff"
+    latest_commit_full: "ff24166479638b0f35e1cd7a8d0f1d01cdafb495"
+    latest_tree: "03ff42577d23784924511efcc7ccc7f9f3217fc4"
+    working_tree: "clean"
+    upstream: "origin/main"
+    last_describe: "db-2-high001-closed-external-audit-20260703-2-gff24166"
+    tracked_files: 123
+    migration_status: "active_wsl2_clone"
+    migration_reason: "code cloned and clean; old macOS active_dispatch_worktree is unavailable on current Codex host"
+    dirty_files_observed: []
+    worktrees_observed:
+      - "/home/rongyu/workspace/market_data"
+    current_thread_status:
+      old_thread_id: "019f3283-a821-7002-961b-6f533d3518c2"
+      old_thread_read_result: "No Codex thread found on current local host"
+      old_thread_send_test_result: "No Codex thread found on current local host"
+      callback_ack_recorded: false
+      dispatcher_interpretation: "legacy thread unavailable; treat prior approval-blocked state as stale until user reopens or new downstream thread is established"
+    current_real_state:
+      role: "registry, read-only access gate, external audit packet hub"
+      product_read_allowed: false
+      data_clear_status: "not_promoted"
+      ticket_emitted: false
+      eligibility_candidate: false
+    boundaries:
+      recommendation_runtime_enabled: false
+      broker_api_allowed: false
+      paper_trading_allowed: false
+      live_trading_allowed: false
 
   strategy_work:
-    path: "/Users/rongyuxu/Desktop/strategy_work"
+    path: "/home/rongyu/workspace/strategy_work"
+    legacy_path_symlink: "/Users/rongyuxu/Desktop/strategy_work"
+    active_dispatch_worktree: null
     package: "reports_and_configs"
     cli: "none"
-    size: "436K"
+    size: "1.1M"
     git_branch: "main"
-    latest_commit: "ad33605 Sync R11 strategy research memos"
-    latest_commit_full: "ad33605ec3ae001bc7c17b132f7333f76f60ae74"
-    latest_tree: "b84fd7ea66c0a6c771ea021eeabe68111888f11b"
-    working_tree: "dirty"
-    last_describe: "ad33605"
-    tracked_files: 19
-    migration_status: "candidate_after_refresh_and_scope_gate"
-    migration_reason: "small repo but currently has untracked local analysis/ content; still requires explicit migration task, human_gate, and audit stage before physical movement"
-    dirty_files_observed:
-      - "analysis/"
+    latest_commit: "2bfbe33 Sync WSL2 data chain repair research memo"
+    latest_commit_full: "2bfbe33e654e7ceb76117ab7b156ff44f2d979be"
+    latest_tree: "6695c18a446743c2d21d1fedd6788c0a47ac7f43"
+    working_tree: "clean"
+    upstream: "origin/main"
+    last_describe: "2bfbe33"
+    tracked_files: 79
+    migration_status: "active_wsl2_clone"
+    migration_reason: "code/docs cloned and clean; strategy outputs remain research-only"
+    dirty_files_observed: []
+    worktrees_observed:
+      - "/home/rongyu/workspace/strategy_work"
+    current_real_state:
+      latest_sync: "WSL2 data chain repair research memo"
+      strategy_status: "all current wide reruns rejected or research-only"
+      ticket_emitted: false
+      eligibility_candidate: false
+    boundaries:
+      recommendation_runtime_enabled: false
+      broker_api_allowed: false
+      paper_trading_allowed: false
+      live_trading_allowed: false
+
+downstream_threads:
+  current_dispatcher_thread: "019f3830-4b44-7a83-944d-247a0d4dc169"
+  old_dispatcher_thread: "019f2766-7c5f-7562-b2e3-b4d76de7bfa9"
+  old_fixed_downstream_threads_visible_on_current_host: false
+  old_fixed_downstream_threads_checked:
+    a_share_monitor: "019f32bd-082d-73e2-b902-3d48b8d198ba"
+    us_stock_monitor: "019f32bd-af98-7eb0-bc5c-d1067e1fb145"
+    market_data: "019f3283-a821-7002-961b-6f533d3518c2"
+    strategy_work: "019f30c3-247e-7f43-af60-96164539a183"
+  callback_status: "old thread ids unavailable; establish new downstream threads before prompt-only dispatch"
+
+data_source_policy:
+  active_policy_record: "reports/workspace_dispatch/simonlin1212_data_source_policy_20260706.md"
+  provider_candidate_source: "https://github.com/simonlin1212"
+  primary_repos:
+    - "simonlin1212/a-stock-data"
+    - "simonlin1212/global-stock-data"
+  boundary: "provider code exists != imported evidence; network can fetch != data-clear; partial provenance/freshness/crosscheck != readiness/product/ticket"
 
 do_not_migrate_without_explicit_audit_stage:
   - ".env"

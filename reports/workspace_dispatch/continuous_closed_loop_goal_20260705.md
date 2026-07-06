@@ -25,16 +25,16 @@ Quant-Dispatcher must continuously run the following loop:
    - DATA_REPORT
    - STRATEGY_REPORT
    - REASONIX_DRAFT
-   Downstream Codex-Dev threads must send completion callbacks to dispatcher thread `019f2766-7c5f-7562-b2e3-b4d76de7bfa9`, or include the callback envelope in their final answer if direct thread messaging is unavailable.
+   Downstream Codex-Dev threads must send completion callbacks to the active dispatcher thread. On the Windows WSL2 host, the active dispatcher thread is `019f3830-4b44-7a83-944d-247a0d4dc169`. If direct thread messaging is unavailable, downstream threads must include the callback envelope in their final answer.
 6. Record controller-layer evidence in quant-proj, including dispatch summaries, result summaries, acceptance records, and board updates.
 7. Commit and push controller records after each meaningful dispatch/result/closeout step.
-8. When there is no active user task list or downstream result to process, do not idle indefinitely. Package the latest completed batch state and use Chrome with the fixed GPT Pro external-audit conversation to request a verdict and the next concrete Data/Strategy task batch.
-9. Use Chrome with the fixed GPT Pro external-audit conversation immediately when:
-   - the user explicitly asks for an external audit packet,
+8. Updated 2026-07-07: GPT Pro / ChatGPT external-audit operation is user-operated. Quant-Dispatcher must not drive Chrome/GPT Pro itself. When there is no active user task list or downstream result to process, prepare current controller status if useful and ask the user for the next pasted task list, verdict, or external-audit result.
+9. Use controller external-audit classification immediately when:
+   - the user explicitly brings an external-audit verdict or asks for packet preparation,
    - a real external-audit trigger opens, including ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, secret handling, or Human-Gate model change, or
-   - the dispatcher has no active task and needs the next task batch to continue the closed loop.
-10. When external audit is requested or needed for loop continuation, submit the GitHub/commit/report paths through the fixed ChatGPT Pro audit conversation, capture the verdict and next-task instructions, record them in quant-proj, commit/push, then continue the loop with the next task batch.
-11. When waiting for downstream agents or GPT Pro, wait in coarse intervals rather than polling tightly.
+   - the dispatcher has no active task and needs the next user-provided task batch to continue the closed loop.
+10. When external audit is requested or needed for loop continuation, Quant-Dispatcher may prepare controller records or packet paths when asked, but the user performs GPT Pro submission. Quant-Dispatcher records the pasted verdict and next-task instructions in quant-proj, commit/pushes, then continues the loop with the next task batch.
+11. When waiting for downstream agents or user-provided GPT Pro results, wait in coarse intervals rather than polling tightly.
 
 ## Permanent Boundary Rules
 
@@ -53,11 +53,18 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: DATA_STRATEGY_BATCH_R13_CHUNKED_SEARCH_20260706 active dispatch
+Current task batch: WINDOWS_WSL2_DISPATCHER_RUNTIME_CLARIFICATION_20260707 completed; awaiting next user-provided task list / downstream callback / GPT Pro verdict
 
 Objective:
 
-Continue as Quant-Dispatcher only. GPT Pro reviewed the R13 interim packet and returned `ACCEPT_WITH_WARNINGS`, `EXTERNAL_AUDIT_TRIGGER_OPEN: no`, and `FIXES_REQUIRED: none before dispatching the next ordinary data/strategy batch`. R13C is an ordinary research-only data/strategy execution batch focused on implementing chunked strategy search/backtest so the already-built 3068-symbol A-share `features_daily` can be consumed safely on the current 8 GB machine. Do not create a controller/gate loop. Do not authorize recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, or secrets.
+Continue as Quant-Dispatcher only. The user clarified Windows WSL2 operating rules on 2026-07-07:
+
+- GPT Pro / ChatGPT external-audit UI operation is user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
+- For normal scoped controller work, execute and record instead of asking repeatedly.
+- Old Mac-side downstream Codex thread ids are not visible on the current local host; current dispatcher thread is `019f3830-4b44-7a83-944d-247a0d4dc169`.
+- Use DS v4 pro max through Claude Code CLI for advisory project review when requested.
+
+Do not create a controller/gate loop unless a real boundary trigger opens. Do not authorize recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, or secrets.
 
 Current intake and controller records:
 
@@ -65,28 +72,31 @@ Current intake and controller records:
 - R13C intake: `reports/workspace_dispatch/data_strategy_batch_r13c_20260706_intake.md`
 - R13C task packet: `tasks/in_progress/data-strategy-batch-r13c-20260706/spec.md`
 - R13C dispatch summary: `reports/workspace_dispatch/data_strategy_batch_r13c_20260706_dispatch_summary.md`
-- Fresh GPT Pro audit conversation for later loop continuation: `https://chatgpt.com/c/6a4a510b-c9ac-83ea-bf15-af2c9f157f88`
-- Classification: ordinary research-only data/strategy batch
-- External-audit trigger opened by R13C intake: `no`
+- Windows WSL2 dispatcher role acceptance: `reports/workspace_dispatch/windows_wsl2_dispatcher_role_acceptance_20260707.md`
+- Windows WSL2 registry refresh: `reports/workspace_status/windows_wsl2_registry_refresh_20260707.md`
+- Runtime clarification and DS review: `reports/workspace_dispatch/dispatcher_runtime_clarification_and_ds_review_20260707.md`
+- Refreshed registry: `registry/projects.yaml`
+- GPT Pro audit operation after 2026-07-07 is user-operated; Quant-Dispatcher receives pasted verdicts/task lists and does not operate Chrome/GPT Pro directly.
+- Current classification: controller runtime clarification, registry refresh, and DS advisory review
+- External-audit trigger opened by this clarification: `no`
 
 Current dispatch plan:
 
-- `A_Share_Monitor` fixed thread `019f32bd-082d-73e2-b902-3d48b8d198ba`: `A-R13C-1` through `A-R13C-6`.
-- `strategy_work` fixed thread `019f30c3-247e-7f43-af60-96164539a183`: `SW-R13C-1`, `SW-R13C-2`.
-- `market_data` fixed local-main thread `019f2957-de0a-7721-ade9-1abfef298127`: `MD-R13C-1`.
+- No WSL2-visible downstream Codex thread is currently established for `A_Share_Monitor`, `US_Stock_Monitor`, `market_data`, or `strategy_work`.
+- Old Mac-side fixed thread ids were read/send tested and returned `No Codex thread found` on the current local host.
+- Future downstream handoffs must use WSL2-visible threads or final-answer callback envelopes.
 
-R13C hard execution rule:
+R13C / WSL2 hard execution rule:
 
-- Do not run 3068-symbol full-frame pandas strategy search on the 8 GB machine.
+- Do not run 3068-symbol full-frame pandas strategy search.
 - Add fail-closed guard for unsafe full-frame `StrategySearch.run()`.
 - Implement chunked feature reading and chunked backtest state handling.
 - Prove full-frame vs chunked equivalence on small cache before wide3068 dry run.
 
 Next dispatcher actions:
 
-1. Send R13C prompt-only handoffs to A-share, strategy_work, and market_data threads without model/thinking overrides.
-2. Commit and push the R13C controller intake/dispatch records.
-3. Poll downstream threads in coarse intervals.
-4. Record source acceptances as they arrive.
-5. Trigger strategy_work final sync only after A-share and market_data acceptances are available.
-6. Close out R13C, push controller records, and request the next GPT Pro batch only when no active task remains or a true external-audit trigger opens.
+1. Commit and push the Windows WSL2 runtime clarification, callback update, registry refresh, and DS review records.
+2. If the user wants new downstream Codex-Dev execution, establish WSL2-visible downstream threads and include the updated callback instruction.
+3. When the user pastes a GPT Pro verdict or new task list, write intake / task packet / dispatch summary and classify boundary triggers.
+4. Keep `market_data` old thread state as historical/stale unless the user reopens that thread or a new downstream thread is established.
+5. Track DS review follow-ups: downstream hardcoded path fixes, downstream `CLAUDE.md`/policy propagation, cross-project consistency check, and A-share 3068-symbol full-frame guard unit test.

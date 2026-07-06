@@ -30,7 +30,7 @@ ChatGPT task list
 - Record Human-Gate decisions durably when approval is required.
 - Validate task packets before dispatch using `runbooks/task_packet_validation.md`.
 - For final ChatGPT external-audit publications, create post-tag final publication metadata using `runbooks/final_publication_metadata.md`.
-- Include the downstream completion callback requirement in every Codex-Dev handoff. Downstream Codex threads must send a prompt-only callback to Quant-Dispatcher thread `019f2766-7c5f-7562-b2e3-b4d76de7bfa9` after finishing, or include the callback envelope in their final answer if thread messaging is unavailable.
+- Include the downstream completion callback requirement in every Codex-Dev handoff. Downstream Codex threads must send a prompt-only callback to the active Quant-Dispatcher thread after finishing, or include the callback envelope in their final answer if thread messaging is unavailable. On the Windows WSL2 host, the active dispatcher thread is `019f3830-4b44-7a83-944d-247a0d4dc169`.
 
 ## External Audit Trigger Policy
 
@@ -79,7 +79,7 @@ Default:
 For Codex-Dev thread dispatches, append this standing instruction:
 
 ```text
-Completion callback required: after finishing, send a prompt-only callback to Quant-Dispatcher thread 019f2766-7c5f-7562-b2e3-b4d76de7bfa9 with CODEX_ACCEPTANCE/DATA_REPORT/STRATEGY_REPORT or BLOCKED, commit/tree, artifacts, validation, residual blockers, and boundary statement. If the thread tool is unavailable, include the callback envelope in your final answer.
+Completion callback required: after finishing, send a prompt-only callback to the active Quant-Dispatcher thread with CODEX_ACCEPTANCE/DATA_REPORT/STRATEGY_REPORT or BLOCKED, commit/tree, artifacts, validation, residual blockers, and boundary statement. On the Windows WSL2 host, the active dispatcher thread is 019f3830-4b44-7a83-944d-247a0d4dc169. If the thread tool is unavailable, include the callback envelope in your final answer.
 ```
 
 Controller protocol record:
