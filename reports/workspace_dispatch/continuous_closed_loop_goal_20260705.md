@@ -53,11 +53,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707 dispatching / awaiting downstream callbacks
+Current task batch: WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707 awaiting US callback and user-operated external audit verdict
 
 Objective:
 
-Continue as Quant-Dispatcher only. The user granted all previously discussed authorizations on 2026-07-07, including required installation, while stating the available GPU hardware is RTX 5090 only. The dispatcher recorded broad Human-Gate authorization plus task-level records and is dispatching scoped controlled workstreams.
+Continue as Quant-Dispatcher only. The user granted all previously discussed authorizations on 2026-07-07, including required installation, while stating the available GPU hardware is RTX 5090 only. The dispatcher recorded broad Human-Gate authorization plus task-level records and dispatched scoped controlled workstreams. A_Share_Monitor has completed and pushed the GPU/East Money workstream. market_data has completed product-route prep, passed Codex-Audit, and pushed the reviewed commit; user-operated external audit verdict is still required before any activation.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
@@ -123,6 +123,13 @@ Final R16 source states:
 - Broad Human-Gate authorization: `reports/human_gate/windows_wsl2_broad_authorization_20260707.md`
 - Broad controlled advancement task packet: `tasks/in_progress/windows-wsl2-authorized-controlled-advancement-20260707/spec.md`
 - Broad controlled advancement dispatch summary: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_dispatch_summary.md`
+- Broad controlled advancement result summary: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_result_summary.md`
+- A_Share_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_callback.md`
+- A_Share_Monitor push callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_push_callback.md`
+- market_data callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_market_data_callback.md`
+- market_data Codex-Audit callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_market_data_codex_audit_callback.md`
+- market_data push callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_market_data_push_callback.md`
+- market_data external audit packet: `reports/agent_handoff/windows_wsl2_authorized_controlled_advancement_market_data_external_audit_packet_20260707.md`
 - Task-level HG records: `HG-EXEC-TASK-GPU-ENV-PHASE2-PHASE3-20260707`, `HG-EXEC-TASK-A-EAST-MONEY-COVERAGE-20260707`, `HG-EXEC-TASK-US-METADATA-REPAIR-20260707`, `HG-EXEC-TASK-MD-PRODUCT-ROUTE-PREP-20260707`
 
 GPU Phase 2 dispatch state:
@@ -140,9 +147,9 @@ GPU Phase 3 dispatch state:
 
 Authorized controlled advancement dispatch state:
 
-- `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, assigned GPU environment enablement plus Phase 2/3 resume and A-share East Money coverage expansion.
-- `US_Stock_Monitor`: thread `019f387b-a161-7ad0-8678-f03a099612ba`, assigned US metadata repair / bounded US 300-symbol ingest.
-- `market_data`: thread `019f387b-e763-7c01-ae3d-6be552cdb6dc`, assigned product-read route/readiness preparation and external-audit packet material.
+- `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, completed GPU environment enablement plus Phase 2/3 resume and A-share East Money bounded probe at pushed commit `a1d57f55a94382e20bfd4a184ad21c42bf9bde37`.
+- `US_Stock_Monitor`: thread `019f387b-a161-7ad0-8678-f03a099612ba`, assigned US metadata repair / bounded US 300-symbol ingest; callback pending.
+- `market_data`: thread `019f387b-e763-7c01-ae3d-6be552cdb6dc`, completed product-read route/readiness preparation at pushed commit `64840aa60e520cb7f0aa17078b941e0c4bc1586e`; Codex-Audit PASS; user-operated GPT Pro / ChatGPT external audit verdict pending before any activation.
 
 R13C / WSL2 hard execution rule:
 
@@ -153,6 +160,6 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Send prompt-only downstream dispatches for the authorized controlled advancement batch.
-2. Commit and push controller authorization/task/dispatch records.
-3. Await downstream callbacks and record result summaries/closeouts.
+1. Commit and push controller callback/audit/external-packet records.
+2. Await `US_Stock_Monitor` callback for `HG-EXEC-TASK-US-METADATA-REPAIR-20260707`.
+3. Await user-operated GPT Pro / ChatGPT external audit verdict for market_data product-route prep before any activation task.
