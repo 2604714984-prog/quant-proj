@@ -53,11 +53,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707 awaiting user-operated GitHub / GitHub connector external audit verdict
+Current task batch: WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707 partially returned; A-share blocked on GPU 400W cap, market_data accepted
 
 Objective:
 
-Continue as Quant-Dispatcher only. The user granted all previously discussed authorizations on 2026-07-07, including required installation, while stating the available GPU hardware is RTX 5090 only. The dispatcher recorded broad Human-Gate authorization plus task-level records and dispatched scoped controlled workstreams. A_Share_Monitor has completed and pushed the GPU/East Money workstream. US_Stock_Monitor has completed and pushed the metadata repair / bounded staging workstream. market_data has completed product-route prep, passed Codex-Audit, and pushed the reviewed commit; user-operated GitHub / GitHub connector external audit verdict is still required before any activation. The user added that future RTX 5090 runs must be locked to 400W unless a separate higher-power authorization is granted.
+Continue as Quant-Dispatcher only. The post-R15 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707`. R17 is ordinary research-only strategy signal mining. A_Share_Monitor stopped before R17 execution because RTX 5090 power cap could not be verified or set to 400W; both WSL and Windows `nvidia-smi -pl 400` return insufficient permissions and the reported power limit remains 600W. market_data completed and accepted the R17 boundary/schema work at local commit `84b752da2a602995aa5a1ce95755385a4ad44455`, with push confirmation still pending. R17 must not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, or exceed the RTX 5090 400W cap without separate authorization.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
@@ -129,6 +129,13 @@ Final R16 source states:
 - RTX 5090 power cap policy: `reports/human_gate/windows_wsl2_5090_gpu_power_cap_policy_20260707.md`
 - Post-R15 progress summary: `reports/workspace_dispatch/windows_wsl2_post_r15_development_progress_summary_20260707.md`
 - Post-R15 user-requested external audit packet: `reports/agent_handoff/windows_wsl2_post_r15_development_external_audit_packet_20260707.md`
+- Post-R15 external-audit result: `reports/agent_handoff/windows_wsl2_post_r15_development_external_audit_result_20260707.md`
+- R17 intake: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_intake.md`
+- R17 task packet: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/spec.md`
+- R17 dispatch summary: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_dispatch_summary.md`
+- R17 A_Share_Monitor callback: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_a_share_callback.md`
+- R17 market_data callback: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_market_data_callback.md`
+- R17 result summary: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_result_summary.md`
 - A_Share_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_callback.md`
 - A_Share_Monitor push callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_push_callback.md`
 - US_Stock_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_us_callback.md`
@@ -167,6 +174,8 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Commit and publish controller callback/audit/external-packet/power-policy records.
-2. Provide the user-requested post-R15 external audit packet for GitHub / GitHub connector review.
-3. Await user-operated GitHub / GitHub connector external audit verdict for market_data product-route prep or broader post-R15 review before any activation task.
+1. Ask the user to set or authorize a host/driver-level 400W RTX 5090 power cap, then verify `nvidia-smi` reports `power.limit=400.00W`.
+2. Redispatch or resume A_Share_Monitor R17 only after the 400W cap is verifiable, unless the user explicitly relaxes the sustained-GPU stop condition.
+3. Obtain push-only confirmation for market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.
+4. Dispatch or accept strategy_work final sync only after A-share and market_data R17 callbacks are available.
+5. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
