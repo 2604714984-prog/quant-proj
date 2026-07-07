@@ -5,6 +5,8 @@ Role: Quant-Dispatcher
 Recorded: 2026-07-07T13:46:58+08:00
 Source: user message granting all previously discussed authorizations and permitting required installation; GPU hardware available is RTX 5090 only.
 
+Power update: subsequent RTX 5090 runs must be locked to 400W. Higher power requires separate user authorization for that task.
+
 ## User Authorization Interpreted
 
 The user authorized the controller to proceed with the categories previously identified as blocked or authorization-benefiting:
@@ -31,3 +33,5 @@ This does not authorize:
 ## Execution Control
 
 The broad user authorization is recorded as standing approval plus task-level execution records. Actual L1-L4 work still must use the matching `HG-EXEC-TASK-*` record, command transcript, bounded flags, manifest/count/hash evidence, Codex-Dev callback, and required audit gates.
+
+For GPU work, downstream handoffs must include `GPU_POWER_LIMIT_WATTS=400`, record power-cap status in the callback, and stop before exceeding 400W unless a separate higher-power authorization exists.

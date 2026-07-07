@@ -53,17 +53,19 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707 awaiting US callback and user-operated external audit verdict
+Current task batch: WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707 awaiting user-operated external audit verdict
 
 Objective:
 
-Continue as Quant-Dispatcher only. The user granted all previously discussed authorizations on 2026-07-07, including required installation, while stating the available GPU hardware is RTX 5090 only. The dispatcher recorded broad Human-Gate authorization plus task-level records and dispatched scoped controlled workstreams. A_Share_Monitor has completed and pushed the GPU/East Money workstream. market_data has completed product-route prep, passed Codex-Audit, and pushed the reviewed commit; user-operated external audit verdict is still required before any activation.
+Continue as Quant-Dispatcher only. The user granted all previously discussed authorizations on 2026-07-07, including required installation, while stating the available GPU hardware is RTX 5090 only. The dispatcher recorded broad Human-Gate authorization plus task-level records and dispatched scoped controlled workstreams. A_Share_Monitor has completed and pushed the GPU/East Money workstream. US_Stock_Monitor has completed and pushed the metadata repair / bounded staging workstream. market_data has completed product-route prep, passed Codex-Audit, and pushed the reviewed commit; user-operated external audit verdict is still required before any activation. The user added that future RTX 5090 runs must be locked to 400W unless a separate higher-power authorization is granted.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
 - GPT Pro / ChatGPT external-audit UI operation remains user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
 
 Do not create a controller/gate loop unless a real boundary trigger opens. The new authorization permits bounded install/network/write/route-prep work only through task-level HG records. It still does not authorize local LLM/Qwen deployment, recommendation, production recommendation readiness, broker/order/paper/live/auto, secret access/output, raw-data migration into quant-proj, transformer/RL/complex ensemble start, test-performance model selection, or weak-result candidate promotion.
+
+GPU power policy: future RTX 5090 runs must include `GPU_POWER_LIMIT_WATTS=400`, record `GPU_POWER_CAP_STATUS`, and stop before using higher power unless the user grants a separate task-specific authorization.
 
 Current intake and controller records:
 
@@ -124,8 +126,11 @@ Final R16 source states:
 - Broad controlled advancement task packet: `tasks/in_progress/windows-wsl2-authorized-controlled-advancement-20260707/spec.md`
 - Broad controlled advancement dispatch summary: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_dispatch_summary.md`
 - Broad controlled advancement result summary: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_result_summary.md`
+- RTX 5090 power cap policy: `reports/human_gate/windows_wsl2_5090_gpu_power_cap_policy_20260707.md`
 - A_Share_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_callback.md`
 - A_Share_Monitor push callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_push_callback.md`
+- US_Stock_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_us_callback.md`
+- US_Stock_Monitor push callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_us_push_callback.md`
 - market_data callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_market_data_callback.md`
 - market_data Codex-Audit callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_market_data_codex_audit_callback.md`
 - market_data push callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_market_data_push_callback.md`
@@ -148,7 +153,7 @@ GPU Phase 3 dispatch state:
 Authorized controlled advancement dispatch state:
 
 - `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, completed GPU environment enablement plus Phase 2/3 resume and A-share East Money bounded probe at pushed commit `a1d57f55a94382e20bfd4a184ad21c42bf9bde37`.
-- `US_Stock_Monitor`: thread `019f387b-a161-7ad0-8678-f03a099612ba`, assigned US metadata repair / bounded US 300-symbol ingest; callback pending.
+- `US_Stock_Monitor`: thread `019f387b-a161-7ad0-8678-f03a099612ba`, completed US metadata repair / bounded US staging at pushed commit `9264773852daf46b4abf09f347f571c5f118d634`.
 - `market_data`: thread `019f387b-e763-7c01-ae3d-6be552cdb6dc`, completed product-read route/readiness preparation at pushed commit `64840aa60e520cb7f0aa17078b941e0c4bc1586e`; Codex-Audit PASS; user-operated GPT Pro / ChatGPT external audit verdict pending before any activation.
 
 R13C / WSL2 hard execution rule:
@@ -160,6 +165,5 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Commit and push controller callback/audit/external-packet records.
-2. Await `US_Stock_Monitor` callback for `HG-EXEC-TASK-US-METADATA-REPAIR-20260707`.
-3. Await user-operated GPT Pro / ChatGPT external audit verdict for market_data product-route prep before any activation task.
+1. Commit and publish controller callback/audit/external-packet/power-policy records.
+2. Await user-operated GPT Pro / ChatGPT external audit verdict for market_data product-route prep before any activation task.
