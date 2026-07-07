@@ -53,13 +53,15 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_A_SHARE_ETF_ROTATION_STRATEGY_BATCH_E1_20260707 dispatched
+Current task batch: WINDOWS_WSL2_A_SHARE_ETF_ROTATION_STRATEGY_BATCH_E1_20260707 blocked
 
 Objective:
 
-Continue as Quant-Dispatcher only. The user supplied an ETF momentum rotation screenshot analysis and requested `WINDOWS_WSL2_A_SHARE_ETF_ROTATION_STRATEGY_BATCH_E1_20260707`. E1 is ordinary research-only A-share ETF rotation strategy-family work. The screenshot result is treated as a hypothesis only, not evidence. E1 is dispatched to A_Share_Monitor for ETF universe freeze, data audit, no-future timing, screenshot-definition reproduction, baseline comparison, pre-registered grid, walk-forward, cost/slippage, regime attribution, group contribution, bootstrap/permutation, and research-only leaderboard. E1 must not create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths/daily signals, perform provider/network fetch, perform DB/cache write or rebuild, activate market_data/product routes, use same-day close-to-close execution, or tune parameters after seeing test results.
+Continue as Quant-Dispatcher only. The user supplied an ETF momentum rotation screenshot analysis and requested `WINDOWS_WSL2_A_SHARE_ETF_ROTATION_STRATEGY_BATCH_E1_20260707`. E1 is ordinary research-only A-share ETF rotation strategy-family work. The screenshot result is treated as a hypothesis only, not evidence. E1 was dispatched to A_Share_Monitor and stopped at the pre-registered `HG_EXEC_REQUIRED_FOR_ETF_DATA_FETCH` condition because the local A-share cache contains stock symbols only and no usable ETF OHLC/NAV dataset. E1 must not create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths/daily signals, perform provider/network fetch, perform DB/cache write or rebuild, activate market_data/product routes, use same-day close-to-close execution, or tune parameters after seeing test results.
 
 - External-audit trigger opened: `no`.
+- E1 result summary: `reports/workspace_dispatch/windows_wsl2_a_share_etf_rotation_strategy_batch_e1_20260707_result_summary.md`
+- E1 closeout: `reports/workspace_dispatch/windows_wsl2_a_share_etf_rotation_strategy_batch_e1_20260707_closeout.md`
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
 - GitHub / GitHub connector external-audit operation remains user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
 
@@ -196,6 +198,6 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Collect A_Share_Monitor E1 callback.
-2. If ETF data is unavailable, record `HG_EXEC_REQUIRED_FOR_ETF_DATA_FETCH` and wait for a separate task-level authorization before any provider/network fetch.
+1. Await explicit user authorization before creating any ETF data fetch/load HG-EXEC task.
+2. If authorized, create a separate bounded ETF data fetch/load task packet with manifest/count/hash/provenance requirements and redispatch E1 resume.
 3. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
