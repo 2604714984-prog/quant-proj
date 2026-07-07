@@ -3,7 +3,7 @@
 Project: quant-proj
 Role: Quant-Dispatcher
 Updated: 2026-07-07 Asia/Shanghai
-Status: `SOURCE_PUSHES_COMPLETE_FINAL_SYNC_PENDING`
+Status: `CLOSED_ACCEPTED_RESEARCH_ONLY_WITH_WARNINGS`
 Classification: ordinary research-only strategy hypothesis expansion batch
 External-audit trigger open for R18: `no`
 
@@ -13,11 +13,11 @@ External-audit trigger open for R18: `no`
 |---|---|---|---|---|---|
 | `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `81fab19db69ddd6caba59d52711275a34cf5c542` | `df258bb4f185ef3137cc0eb1ee1bbd3093e0fc2e` | `COMPLETED_RESEARCH_ONLY_WITH_WARNINGS`; push `PASS` | accepted and pushed; no wide-eligible strategy |
 | `market_data` | `019f387b-e763-7c01-ae3d-6be552cdb6dc` | `449de8537881f1b4a1dadb46dc71dba570787351` | `d2da92a0b8714e47066e7b36ac36296e75aa0206` | `ACCEPTED_RESEARCH_ONLY_WITH_VALIDATION_PASS`; push `PASS` | accepted and pushed; product-route prep inactive; no activation |
-| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `63cdb09dcac71b4c8779d2740fe073c570d7ac93` | `37cc3e699e402043c209db0f25a3ce3aff3bf475` | `CODEX_ACCEPTANCE_SW_R18_MEMO_AND_FAMILY_MAP_SOURCE_SYNC_GATED`; push `PASS` | memo/map accepted and pushed; final sync pending |
+| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `0b370fcd8cf4b4d4d4d8200187711f73df58d241` | `bfe751221c660998474f551d3e9c18651b44f34a` | `CODEX_ACCEPTANCE_SW_R18_FINAL_SYNC_RESEARCH_ONLY_WITH_WARNINGS`; push `PASS` | final sync accepted and pushed |
 
 ## Pending Callbacks
 
-- `strategy_work` final sync after accepted and source-preserved callbacks.
+None for R18.
 
 ## Current R18 Facts
 
@@ -76,9 +76,13 @@ Accepted artifacts:
 - `reports/planning/windows_wsl2_strategy_hypothesis_expansion_batch_r18_strategy_memo_20260707.md`
 - `reports/planning/windows_wsl2_r18_strategy_search_map_by_family_20260707.md`
 
-`SW-WIN-R18-3` can proceed because A-share, market_data, and strategy_work memo/map callbacks are accepted and source-preserved. The final sync artifact was intentionally not created in the earlier memo/map callback.
+`SW-WIN-R18-3` is complete. Final sync artifact:
+
+- `reports/planning/windows_wsl2_strategy_hypothesis_expansion_batch_r18_final_sync_20260707.md`
 
 Push-only preservation completed for commit `63cdb09dcac71b4c8779d2740fe073c570d7ac93`; downstream verified `origin/main` resolves to the expected commit and no source/report files were created or edited during the push step.
+
+Final sync commit `0b370fcd8cf4b4d4d4d8200187711f73df58d241` was pushed to `origin/main` and verified by GitHub API remote ref.
 
 ## Boundary
 
@@ -86,5 +90,4 @@ Research-only boundary preserved. No recommendation/advice, `PENDING_HUMAN_REVIE
 
 ## Next Controller Actions
 
-1. Collect strategy_work final sync for `SW-WIN-R18-3`.
-2. Prepare R18 closeout only after final sync is accepted.
+R18 is closed. No R18 implementation task remains open.

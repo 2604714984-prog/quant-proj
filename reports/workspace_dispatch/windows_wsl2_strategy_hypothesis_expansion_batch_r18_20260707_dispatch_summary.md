@@ -19,7 +19,7 @@ External-audit trigger open for R18: `no`
 |---|---|---|---|---|
 | `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `A-WIN-R18-1` through `A-WIN-R18-20` | prompt-only, no model/thinking override | accepted research-only and pushed at `81fab19db69ddd6caba59d52711275a34cf5c542`; zero wide-eligible |
 | `market_data` | `019f387b-e763-7c01-ae3d-6be552cdb6dc` | `MD-WIN-R18-1` through `MD-WIN-R18-3` | prompt-only, no model/thinking override | accepted research-only and pushed at `449de8537881f1b4a1dadb46dc71dba570787351`; no activation |
-| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `SW-WIN-R18-1` through `SW-WIN-R18-3` | prompt-only, no model/thinking override | memo/map accepted and pushed at `63cdb09dcac71b4c8779d2740fe073c570d7ac93`; final sync pending |
+| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `SW-WIN-R18-1` through `SW-WIN-R18-3` | prompt-only, no model/thinking override | final sync accepted and pushed at `0b370fcd8cf4b4d4d4d8200187711f73df58d241` |
 
 ## Handoff Files
 
@@ -39,7 +39,9 @@ External-audit trigger open for R18: `no`
 - market_data push callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_market_data_push_callback.md`
 - strategy_work callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_strategy_work_callback.md`
 - strategy_work push callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_strategy_work_push_callback.md`
+- strategy_work final sync callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_strategy_work_final_sync_callback.md`
 - partial result summary: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_result_summary.md`
+- closeout: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_closeout.md`
 
 ## Boundary
 

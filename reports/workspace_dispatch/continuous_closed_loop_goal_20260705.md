@@ -53,11 +53,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_STRATEGY_HYPOTHESIS_EXPANSION_BATCH_R18_20260707 partial callbacks accepted
+Current task batch: WINDOWS_WSL2_STRATEGY_HYPOTHESIS_EXPANSION_BATCH_R18_20260707 closed
 
 Objective:
 
-Continue as Quant-Dispatcher only. The R17 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_HYPOTHESIS_EXPANSION_BATCH_R18_20260707`. R18 is ordinary research-only strategy hypothesis expansion. It is dispatched to A_Share_Monitor for broad strategy-family expansion, market_data for inactive-boundary/manifest/overclaim support, and strategy_work for interpretation/final sync. A_Share_Monitor R18 strategy hypothesis expansion is accepted and pushed at commit `81fab19db69ddd6caba59d52711275a34cf5c542`, with zero wide-eligible rows. market_data R18 boundary/schema/overclaim support is accepted and pushed at commit `449de8537881f1b4a1dadb46dc71dba570787351`. strategy_work R18 memo/map is accepted and pushed at commit `63cdb09dcac71b4c8779d2740fe073c570d7ac93`, with final sync pending. R18 must not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, run full-frame wide3068, use test results to select parameters, use the shadow leaderboard as actionable ranking, use ML score as recommendation, or perform any unapproved network/DB/secret action.
+Continue as Quant-Dispatcher only. The R17 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_HYPOTHESIS_EXPANSION_BATCH_R18_20260707`. R18 is ordinary research-only strategy hypothesis expansion and is closed as `CLOSED_ACCEPTED_RESEARCH_ONLY_WITH_WARNINGS`. A_Share_Monitor R18 strategy hypothesis expansion is accepted and pushed at commit `81fab19db69ddd6caba59d52711275a34cf5c542`, with zero wide-eligible rows. market_data R18 boundary/schema/overclaim support is accepted and pushed at commit `449de8537881f1b4a1dadb46dc71dba570787351`. strategy_work R18 final sync is accepted and pushed at commit `0b370fcd8cf4b4d4d4d8200187711f73df58d241`. R18 did not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, run full-frame wide3068, use test results to select parameters, use the shadow leaderboard as actionable ranking, use ML score as recommendation, or perform any unapproved network/DB/secret action.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
@@ -150,6 +150,8 @@ Final R16 source states:
 - R18 market_data push callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_market_data_push_callback.md`
 - R18 strategy_work callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_strategy_work_callback.md`
 - R18 strategy_work push callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_strategy_work_push_callback.md`
+- R18 strategy_work final sync callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_strategy_work_final_sync_callback.md`
+- R18 closeout: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_closeout.md`
 - R18 partial result summary: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_result_summary.md`
 - R17 A-share resume handoff after power-policy revocation: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_a_share_resume_after_power_policy_revocation.md`
 - RTX 5090 power cap revocation: `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`
@@ -191,6 +193,5 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Collect strategy_work R18 final sync.
-2. Prepare R18 closeout after all downstream callbacks are accepted.
-3. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
+1. Wait for the next user-provided task list, downstream callback, or external-audit verdict.
+2. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
