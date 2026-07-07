@@ -3,21 +3,22 @@
 Project: quant-proj
 Role: Quant-Dispatcher
 Recorded: 2026-07-07 Asia/Shanghai
-Status: `A_SHARE_RESUME_AUTHORIZED_AFTER_GPU_POWER_CAP_REVOCATION_MARKET_DATA_ACCEPTED`
+Status: `SOURCE_CALLBACKS_ACCEPTED_AND_PUSHED_STRATEGY_WORK_FINAL_SYNC_READY`
 External-audit trigger open for R17: `no`
 
 ## Received Callbacks
 
 | Source | Commit | Status | Follow-up |
 |---|---|---|---|
-| `A_Share_Monitor` | `a1d57f55a94382e20bfd4a184ad21c42bf9bde37` | `BLOCKED_SUPERSEDED_BY_USER_POWER_POLICY_REVOCATION` | prior 400W cap blocker superseded; resume under host/driver default GPU power policy |
-| `market_data` | `84b752da2a602995aa5a1ce95755385a4ad44455` | `ACCEPTED_RESEARCH_ONLY_WITH_VALIDATION_PASS` | push-only follow-up needed; route activation remains blocked |
+| `A_Share_Monitor` | `e9ed119f69413d7432904e11f12f7c4ff3c9243f` | `COMPLETED_RESEARCH_ONLY_WITH_WARNINGS` | pushed to origin branch; no wide-eligible strategy |
+| `market_data` | `84b752da2a602995aa5a1ce95755385a4ad44455` | `ACCEPTED_RESEARCH_ONLY_WITH_VALIDATION_PASS` | pushed to origin/main; route activation remains blocked |
 
 ## Pending
 
-- `strategy_work` R17 final sync is gated because A_Share_Monitor R17 is blocked.
-- R17 A-share signal mining is now authorized to resume because the user explicitly revoked the 400W cap and directed continuation.
-- `market_data` R17 commit `84b752da2a602995aa5a1ce95755385a4ad44455` is local ahead of `origin/main` by 1 per controller verification; push confirmation is pending.
+- `strategy_work` R17 final sync is ready to run from accepted and pushed source callbacks.
+- A_Share_Monitor R17 completed after the user explicitly revoked the 400W cap and directed continuation.
+- A_Share_Monitor R17 commit `e9ed119f69413d7432904e11f12f7c4ff3c9243f` is pushed to `origin/codex/harden-a-share-research-pipeline`.
+- `market_data` R17 commit `84b752da2a602995aa5a1ce95755385a4ad44455` is pushed to `origin/main`.
 
 ## A_Share_Monitor Prior Blocker
 
@@ -44,6 +45,21 @@ New controller record:
 
 R17 may proceed under host/driver default GPU power policy. Downstream must still report observed power limit/draw and preserve all research-only boundaries.
 
+## A_Share_Monitor Accepted Scope
+
+A_Share_Monitor completed `A-WIN-R17-1` through `A-WIN-R17-8` as research-only signal mining:
+
+- evidence freeze preserved R16 labels `WEAK=5`, `UNSTABLE=8`, `POSITIVE=1`;
+- East Money split preserved as `77/121/2870`;
+- single positive factor identified as `medium_overlap_198_not_pass / low_vol_20`;
+- four signal transformations pre-registered before diagnostics;
+- small/medium transformed-signal diagnostics produced 8 rows and 0 wide-prequalified rows;
+- wide3068 result: `NO_R17_WIDE_PROBE_ELIGIBLE_STRATEGY`;
+- no chunked wide probe executed and no full-frame wide3068 run attempted;
+- `strategy_candidate_available=false`.
+
+GPU policy status: `GPU_POWER_POLICY_REVOKED_PROCEEDED_UNDER_HOST_DRIVER_DEFAULT`; observed power limit stayed `600.0W`; sustained CuPy fixed matrix-multiply workload executed; no privileged or manual power-limit change was attempted.
+
 ## market_data Accepted Scope
 
 market_data completed the R17 boundary/schema work:
@@ -53,10 +69,15 @@ market_data completed the R17 boundary/schema work:
 - R17 strategy mining does not depend on the prepared product route;
 - `R17_WIDE_PROBE_ELIGIBLE` is encoded as not candidate, readiness, recommendation, or ticket evidence.
 
+## Push Confirmations
+
+- A_Share_Monitor push PASS: `origin/codex/harden-a-share-research-pipeline` resolves to `e9ed119f69413d7432904e11f12f7c4ff3c9243f`.
+- market_data push PASS: `origin/main` resolves to `84b752da2a602995aa5a1ce95755385a4ad44455`.
+
 ## Boundary Result
 
 No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, strategy candidate promotion, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration, unapproved network/provider fetch, DB/cache write/rebuild, secret output, or unrecorded GPU policy change occurred.
 
 ## Next Controller Action
 
-Resume the A_Share_Monitor R17 tasks under the revoked 400W cap policy and obtain a push-only confirmation for market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.
+Dispatch strategy_work R17 final sync using accepted and pushed A_Share_Monitor commit `e9ed119f69413d7432904e11f12f7c4ff3c9243f` and market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.

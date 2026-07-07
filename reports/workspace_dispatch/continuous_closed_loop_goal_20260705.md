@@ -53,11 +53,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707 resumed after GPU 400W cap revocation; market_data accepted
+Current task batch: WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707 source callbacks accepted and pushed; strategy_work final sync ready
 
 Objective:
 
-Continue as Quant-Dispatcher only. The post-R15 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707`. R17 is ordinary research-only strategy signal mining. A_Share_Monitor stopped before R17 execution because RTX 5090 power cap could not be verified or set to 400W; both WSL and Windows `nvidia-smi -pl 400` returned insufficient permissions and the reported power limit remained 600W. The user then revoked the 400W cap and directed R17 to continue under host/driver default GPU power policy. market_data completed and accepted the R17 boundary/schema work at local commit `84b752da2a602995aa5a1ce95755385a4ad44455`, with push confirmation still pending. R17 must not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, or perform any unapproved network/DB/secret action.
+Continue as Quant-Dispatcher only. The post-R15 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707`. R17 is ordinary research-only strategy signal mining. A_Share_Monitor first stopped before R17 execution because RTX 5090 power cap could not be verified or set to 400W; both WSL and Windows `nvidia-smi -pl 400` returned insufficient permissions and the reported power limit remained 600W. The user then revoked the 400W cap and directed R17 to continue under host/driver default GPU power policy. A_Share_Monitor completed and pushed R17 at commit `e9ed119f69413d7432904e11f12f7c4ff3c9243f`, with `strategy_candidate_available=false` and `NO_R17_WIDE_PROBE_ELIGIBLE_STRATEGY`. market_data completed and pushed the R17 boundary/schema work at commit `84b752da2a602995aa5a1ce95755385a4ad44455`. R17 must not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, or perform any unapproved network/DB/secret action.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
@@ -176,8 +176,7 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Resume A_Share_Monitor R17 under the user-revoked 400W cap policy and host/driver default GPU power policy.
-2. Require A_Share_Monitor to report observed GPU power telemetry in its next callback.
-3. Obtain push-only confirmation for market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.
-4. Dispatch or accept strategy_work final sync only after A-share and market_data R17 callbacks are available.
-5. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
+1. Dispatch or accept strategy_work final sync using pushed A_Share_Monitor commit `e9ed119f69413d7432904e11f12f7c4ff3c9243f` and pushed market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.
+2. Record strategy_work final sync and close out R17 only after callback validation.
+3. Prepare R17 result summary and closeout after all downstream callbacks are accepted.
+4. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.

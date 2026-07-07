@@ -13,7 +13,7 @@ Source thread: `019f387b-e763-7c01-ae3d-6be552cdb6dc`
 - Commit: `84b752da2a602995aa5a1ce95755385a4ad44455`
 - Tree: `3bdab5f40169452b59c54136335f44266a5b7eab`
 - Status: `ACCEPTED_RESEARCH_ONLY_WITH_VALIDATION_PASS`
-- Push state: controller verification shows local `main` ahead of `origin/main` by 1; push not yet confirmed in callback.
+- Push state: initial callback was local `main` ahead of `origin/main` by 1; later push-only callback confirmed `PASS`.
 
 ## Completed Tasks
 
@@ -53,4 +53,4 @@ No product-route activation, active registry change, readiness change, raw data 
 
 ## Next Source Action
 
-Quant-Dispatcher can record the R17 market_data boundary/schema acceptance. A push-only follow-up is needed for existing commit `84b752da2a602995aa5a1ce95755385a4ad44455`. Any future product-route activation remains a separate externally approved activation task.
+Quant-Dispatcher can use origin/main commit `84b752da2a602995aa5a1ce95755385a4ad44455` for R17 remote preservation and downstream verification. Any future product-route activation remains a separate externally approved activation task.

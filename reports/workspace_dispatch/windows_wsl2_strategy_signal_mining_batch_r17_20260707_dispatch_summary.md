@@ -17,9 +17,9 @@ External-audit trigger open for R17: no
 
 | Target | WSL2 thread | Assigned tasks | Send mode | Initial status |
 |---|---|---|---|---|
-| `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `A-WIN-R17-1` through `A-WIN-R17-8` | prompt-only, no model/thinking override | resume authorized after 400W cap revocation |
-| `market_data` | `019f387b-e763-7c01-ae3d-6be552cdb6dc` | `MD-WIN-R17-1` through `MD-WIN-R17-2` | prompt-only, no model/thinking override | callback received: accepted |
-| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `SW-WIN-R17-1` through `SW-WIN-R17-2` | prompt-only, no model/thinking override | handoff prepared |
+| `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `A-WIN-R17-1` through `A-WIN-R17-8` | prompt-only, no model/thinking override | callback accepted and pushed |
+| `market_data` | `019f387b-e763-7c01-ae3d-6be552cdb6dc` | `MD-WIN-R17-1` through `MD-WIN-R17-2` | prompt-only, no model/thinking override | callback accepted and pushed |
+| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `SW-WIN-R17-1` through `SW-WIN-R17-2` | prompt-only, no model/thinking override | final sync ready |
 
 ## Send Status
 
@@ -29,13 +29,17 @@ Handoff files:
 
 - A_Share_Monitor: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_a_share.md`
 - A_Share_Monitor resume after power-policy revocation: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_a_share_resume_after_power_policy_revocation.md`
+- A_Share_Monitor push-only follow-up: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_a_share_push_existing_r17.md`
 - market_data: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_market_data.md`
+- market_data push-only follow-up: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_market_data_push_existing_r17.md`
 - strategy_work: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_strategy_work.md`
 
 ## Callback Records
 
 - A_Share_Monitor: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_a_share_callback.md`
+- A_Share_Monitor push: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_a_share_push_callback.md`
 - market_data: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_market_data_callback.md`
+- market_data push: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_market_data_push_callback.md`
 - Result summary: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_result_summary.md`
 
 ## Power Policy Update
