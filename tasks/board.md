@@ -2,6 +2,7 @@
 
 ## Inbox
 
+- `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_EXTERNAL_AUDIT_20260707`: user requested external audit after R17 closeout; packet prepared at `reports/agent_handoff/windows_wsl2_strategy_signal_mining_batch_r17_external_audit_packet_20260707.md`; prompt prepared at `reports/agent_handoff/windows_wsl2_strategy_signal_mining_batch_r17_external_audit_prompt_20260707.md`; operation is user-operated through GitHub / GitHub connector.
 - `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707`: imported post-R15 GitHub connector external-audit result and R17 task list; ordinary research-only strategy signal mining batch; audit result recorded at `reports/agent_handoff/windows_wsl2_post_r15_development_external_audit_result_20260707.md`.
 - `WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707`: user granted all previously discussed authorizations; controller recorded broad Human-Gate authorization at `reports/human_gate/windows_wsl2_broad_authorization_20260707.md`; task packet `tasks/in_progress/windows-wsl2-authorized-controlled-advancement-20260707/spec.md`.
 - `WINDOWS_WSL2_5090_GPU_ML_SIGNAL_RESEARCH_PHASE3_20260707`: imported GPU ML signal research task list; ordinary research-only ML signal research batch if environment preconditions exist; original command copied to `tasks/inbox/20260707-windows-wsl2-5090-gpu-ml-signal-research-phase3-command.md`.
