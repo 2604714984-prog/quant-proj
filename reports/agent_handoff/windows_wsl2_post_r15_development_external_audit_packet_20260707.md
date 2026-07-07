@@ -3,13 +3,40 @@
 Project: quant-proj
 Role: Quant-Dispatcher
 Prepared: 2026-07-07 Asia/Shanghai
-Submission: user-operated GPT Pro / ChatGPT external audit
+Submission: user-operated external audit through GitHub / GitHub connector
 
 ## Review Request
 
-Please externally review the work completed since the last user-operated R15 external audit. This packet covers R16 strategy discovery, authorized GPU/ML numeric research, bounded East Money probing, US metadata repair, market_data product-route preparation, Codex-Audit result, and the new RTX 5090 400W power cap policy.
+Please externally review the work completed since the last user-operated R15 external audit by reading the GitHub repositories and commits listed below. This packet covers R16 strategy discovery, authorized GPU/ML numeric research, bounded East Money probing, US metadata repair, market_data product-route preparation, Codex-Audit result, and the new RTX 5090 400W power cap policy.
 
 This packet is an audit handoff and progress review. It is not an activation request, not a recommendation request, and not a trading or readiness request.
+
+## GitHub Review Source Map
+
+Use GitHub / GitHub connector as the primary evidence source. Local workspace paths are included only as path references that map to the GitHub repositories.
+
+Controller:
+
+- Repo: `https://github.com/2604714984-prog/quant-proj`
+- Remote `main`: `66b2c0a2d27bf9b7bfa534f58b833b9d6291f19d`
+- Tree: `bf23e1ac13f246e25520c8493a16789678071122`
+- This packet: `reports/agent_handoff/windows_wsl2_post_r15_development_external_audit_packet_20260707.md`
+- Progress summary: `reports/workspace_dispatch/windows_wsl2_post_r15_development_progress_summary_20260707.md`
+
+Source repositories:
+
+| Repo | Branch / ref | Commit | Primary review scope |
+|---|---|---|---|
+| `https://github.com/2604714984-prog/A_Share_Monitor` | `codex/harden-a-share-research-pipeline` | `a1d57f55a94382e20bfd4a184ad21c42bf9bde37` | R16 strategy discovery plus GPU Phase2/Phase3 and bounded East Money probe artifacts |
+| `https://github.com/2604714984-prog/US_Stock_Monitor` | `main` | `9264773852daf46b4abf09f347f571c5f118d634` | US metadata repair / bounded staging artifacts |
+| `https://github.com/2604714984-prog/market_data` | `main` | `64840aa60e520cb7f0aa17078b941e0c4bc1586e` | product-route preparation package and access-gate regression |
+| `https://github.com/2604714984-prog/strategy_work` | `main` | `094af646175131bc60b0c9aabc7c785cba0c13a6` | R16 strategy memo, blocker map, and final sync |
+
+Audit instruction:
+
+- Review the GitHub files at the listed commits, not untracked local data.
+- Treat ignored local staging artifacts as non-GitHub evidence only when the committed reports provide hashes/counts.
+- Do not infer activation or readiness from the existence of a prep package.
 
 ## Last External Audit Baseline
 
@@ -50,7 +77,7 @@ Current controller status:
 - A_Share_Monitor controlled GPU/East Money work is completed and pushed.
 - US_Stock_Monitor metadata repair / bounded staging is completed and pushed.
 - market_data product-route preparation is completed, pushed, and Codex-Audit PASS.
-- The only open gate is user-operated external audit for market_data product-route preparation before any activation.
+- The only open gate is user-operated GitHub / GitHub connector external audit for market_data product-route preparation before any activation.
 
 ## Development Since Last External Audit
 
@@ -270,7 +297,7 @@ Audit focus:
 
 ## Open Items / Residual Blockers
 
-- User-operated external audit verdict is still required for market_data product-route preparation before any activation.
+- User-operated GitHub / GitHub connector external audit verdict is still required for market_data product-route preparation before any activation.
 - No market_data activation task has been created.
 - Broader East Money reconciliation/integration remains a future separately authorized task.
 - Complete legacy US metadata repair for Tencent-only/current-source conflicts and historical/delisted names requires a separate source/policy decision if needed.

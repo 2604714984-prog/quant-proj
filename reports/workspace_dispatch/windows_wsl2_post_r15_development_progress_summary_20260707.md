@@ -3,7 +3,7 @@
 Project: quant-proj
 Role: Quant-Dispatcher
 Prepared: 2026-07-07 Asia/Shanghai
-Scope: progress since the user-pasted R15 GPT Pro / GitHub connector external-audit result.
+Scope: progress since the user-pasted R15 GitHub / GitHub connector external-audit result.
 
 ## Baseline
 
@@ -25,7 +25,7 @@ Baseline facts preserved after R15:
 
 ## Current State
 
-Current controller status: all downstream callbacks for `WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707` have been received and recorded. The only open gate is the user-operated GPT Pro / ChatGPT external-audit verdict for the market_data product-route preparation package. No product-route activation is allowed before that verdict and a later separate activation task.
+Current controller status: all downstream callbacks for `WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707` have been received and recorded. The only open gate is the user-operated GitHub / GitHub connector external-audit verdict for the market_data product-route preparation package. No product-route activation is allowed before that verdict and a later separate activation task.
 
 ## Completed Since R15 External Audit
 
@@ -124,7 +124,7 @@ Prepared route facts:
 
 Open gate:
 
-- User-operated GPT Pro / ChatGPT external-audit verdict is required before any activation request.
+- User-operated GitHub / GitHub connector external-audit verdict is required before any activation request.
 - Any later activation must be a separate authorized/audited change with rollback and access-gate validation.
 
 ### RTX 5090 Power Policy
@@ -139,7 +139,7 @@ New standing constraint:
 
 ## Remaining Gates
 
-- User-operated GPT Pro / ChatGPT external audit for the market_data product-route preparation package.
+- User-operated GitHub / GitHub connector external audit for the market_data product-route preparation package.
 - No market_data activation task may start before that verdict.
 - Broader East Money reconciliation/integration remains a future separately authorized task if desired.
 - Any complete legacy US metadata repair beyond source-based current-universe staging requires a separate source/policy decision.
