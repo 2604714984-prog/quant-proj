@@ -204,6 +204,7 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Collect A_Share_Monitor callback for `WINDOWS_WSL2_RESEARCH_DATA_FASTPATH_CATCHUP_20260707`.
-2. Collect US_Stock_Monitor callback for `WINDOWS_WSL2_RESEARCH_DATA_FASTPATH_CATCHUP_20260707`.
-3. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
+1. `WINDOWS_WSL2_RESEARCH_DATA_FASTPATH_CATCHUP_20260707` is closed accepted research-only with warnings.
+2. A_Share_Monitor ETF E1 and A-share old-hold audit are complete and pushed at `db43041f28537787a5bdf941142a9cebb2c1c962`; East Money broad reconciliation remains provider-blocked with zero accepted new coverage rows.
+3. US_Stock_Monitor current-universe research staging is complete and pushed at `a25b2a0693cc267a8bc7658fd3525723dcaca6f0`; US DB/registry/readiness/product/raw migration remains separately hard-gated.
+4. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
