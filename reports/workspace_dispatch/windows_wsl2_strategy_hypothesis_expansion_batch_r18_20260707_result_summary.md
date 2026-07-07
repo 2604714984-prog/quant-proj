@@ -3,7 +3,7 @@
 Project: quant-proj
 Role: Quant-Dispatcher
 Updated: 2026-07-07 Asia/Shanghai
-Status: `SOURCE_CALLBACKS_ACCEPTED_FINAL_SYNC_PENDING`
+Status: `SOURCE_PUSHES_PARTIAL_FINAL_SYNC_PENDING`
 Classification: ordinary research-only strategy hypothesis expansion batch
 External-audit trigger open for R18: `no`
 
@@ -11,15 +11,14 @@ External-audit trigger open for R18: `no`
 
 | Target | Thread | Commit | Tree | Status | Controller state |
 |---|---|---|---|---|---|
-| `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `81fab19db69ddd6caba59d52711275a34cf5c542` | `df258bb4f185ef3137cc0eb1ee1bbd3093e0fc2e` | `COMPLETED_RESEARCH_ONLY_WITH_WARNINGS` | accepted; push pending; no wide-eligible strategy |
+| `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `81fab19db69ddd6caba59d52711275a34cf5c542` | `df258bb4f185ef3137cc0eb1ee1bbd3093e0fc2e` | `COMPLETED_RESEARCH_ONLY_WITH_WARNINGS`; push `PASS` | accepted and pushed; no wide-eligible strategy |
 | `market_data` | `019f387b-e763-7c01-ae3d-6be552cdb6dc` | `449de8537881f1b4a1dadb46dc71dba570787351` | `d2da92a0b8714e47066e7b36ac36296e75aa0206` | `ACCEPTED_RESEARCH_ONLY_WITH_VALIDATION_PASS` | accepted; product-route prep inactive; no activation |
-| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `63cdb09dcac71b4c8779d2740fe073c570d7ac93` | `37cc3e699e402043c209db0f25a3ce3aff3bf475` | `CODEX_ACCEPTANCE_SW_R18_MEMO_AND_FAMILY_MAP_SOURCE_SYNC_GATED` | memo/map accepted; final sync gated; push pending |
+| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `63cdb09dcac71b4c8779d2740fe073c570d7ac93` | `37cc3e699e402043c209db0f25a3ce3aff3bf475` | `CODEX_ACCEPTANCE_SW_R18_MEMO_AND_FAMILY_MAP_SOURCE_SYNC_GATED`; push `PASS` | memo/map accepted and pushed; final sync pending |
 
 ## Pending Callbacks
 
-- `A_Share_Monitor` push-only confirmation for commit `81fab19db69ddd6caba59d52711275a34cf5c542`.
-- `strategy_work` push-only confirmation for commit `63cdb09dcac71b4c8779d2740fe073c570d7ac93`.
-- `strategy_work` final sync after accepted and preserved source callbacks.
+- `market_data` push-only confirmation for commit `449de8537881f1b4a1dadb46dc71dba570787351`, unless already current on `origin/main`.
+- `strategy_work` final sync after accepted source callbacks and any required source-preservation checks.
 
 ## Current R18 Facts
 
@@ -50,6 +49,8 @@ Reported validation passed `py_compile`, focused pytest, `agent_safety_check.py`
 `WIDE_RESEARCH_PROBE_ELIGIBLE_COUNT=0`.
 `STRATEGY_CANDIDATE_AVAILABLE=false`.
 
+Push-only preservation completed for commit `81fab19db69ddd6caba59d52711275a34cf5c542`; downstream verified local HEAD equals upstream and no source/report/data changes were made during the push step.
+
 ## market_data Acceptance
 
 The market_data callback is accepted as boundary/schema/overclaim support only.
@@ -74,7 +75,9 @@ Accepted artifacts:
 - `reports/planning/windows_wsl2_strategy_hypothesis_expansion_batch_r18_strategy_memo_20260707.md`
 - `reports/planning/windows_wsl2_r18_strategy_search_map_by_family_20260707.md`
 
-`SW-WIN-R18-3` can proceed after source preservation callbacks because accepted A-share and market_data callbacks are now available. The final sync artifact was intentionally not created in the earlier memo/map callback.
+`SW-WIN-R18-3` can proceed after accepted A-share and market_data callbacks, with A-share and strategy_work now pushed and market_data push preservation pending unless already current on `origin/main`. The final sync artifact was intentionally not created in the earlier memo/map callback.
+
+Push-only preservation completed for commit `63cdb09dcac71b4c8779d2740fe073c570d7ac93`; downstream verified `origin/main` resolves to the expected commit and no source/report files were created or edited during the push step.
 
 ## Boundary
 
@@ -82,7 +85,6 @@ Research-only boundary preserved. No recommendation/advice, `PENDING_HUMAN_REVIE
 
 ## Next Controller Actions
 
-1. Dispatch or collect A_Share_Monitor push-only confirmation for commit `81fab19db69ddd6caba59d52711275a34cf5c542`.
-2. Dispatch or collect strategy_work push-only confirmation for commit `63cdb09dcac71b4c8779d2740fe073c570d7ac93`.
-3. After source preservation callbacks, collect strategy_work final sync.
-4. Prepare R18 closeout only after all required callbacks are accepted.
+1. Dispatch or collect market_data push-only confirmation for commit `449de8537881f1b4a1dadb46dc71dba570787351`, unless it is already current on `origin/main`.
+2. Collect strategy_work final sync after source-preservation confirmation.
+3. Prepare R18 closeout only after all required callbacks are accepted.

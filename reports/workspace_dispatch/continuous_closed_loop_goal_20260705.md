@@ -57,7 +57,7 @@ Current task batch: WINDOWS_WSL2_STRATEGY_HYPOTHESIS_EXPANSION_BATCH_R18_2026070
 
 Objective:
 
-Continue as Quant-Dispatcher only. The R17 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_HYPOTHESIS_EXPANSION_BATCH_R18_20260707`. R18 is ordinary research-only strategy hypothesis expansion. It is dispatched to A_Share_Monitor for broad strategy-family expansion, market_data for inactive-boundary/manifest/overclaim support, and strategy_work for interpretation/final sync. A_Share_Monitor R18 strategy hypothesis expansion is accepted at commit `81fab19db69ddd6caba59d52711275a34cf5c542`, with zero wide-eligible rows and push pending. market_data R18 boundary/schema/overclaim support is accepted at commit `449de8537881f1b4a1dadb46dc71dba570787351`. strategy_work R18 memo/map is accepted at commit `63cdb09dcac71b4c8779d2740fe073c570d7ac93`, with push pending and final sync pending source preservation. R18 must not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, run full-frame wide3068, use test results to select parameters, use the shadow leaderboard as actionable ranking, use ML score as recommendation, or perform any unapproved network/DB/secret action.
+Continue as Quant-Dispatcher only. The R17 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_HYPOTHESIS_EXPANSION_BATCH_R18_20260707`. R18 is ordinary research-only strategy hypothesis expansion. It is dispatched to A_Share_Monitor for broad strategy-family expansion, market_data for inactive-boundary/manifest/overclaim support, and strategy_work for interpretation/final sync. A_Share_Monitor R18 strategy hypothesis expansion is accepted and pushed at commit `81fab19db69ddd6caba59d52711275a34cf5c542`, with zero wide-eligible rows. market_data R18 boundary/schema/overclaim support is accepted at commit `449de8537881f1b4a1dadb46dc71dba570787351`, with push-preservation pending unless already current on `origin/main`. strategy_work R18 memo/map is accepted and pushed at commit `63cdb09dcac71b4c8779d2740fe073c570d7ac93`, with final sync pending. R18 must not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, run full-frame wide3068, use test results to select parameters, use the shadow leaderboard as actionable ranking, use ML score as recommendation, or perform any unapproved network/DB/secret action.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
@@ -145,8 +145,10 @@ Final R16 source states:
 - R18 task packet: `tasks/in_progress/windows-wsl2-strategy-hypothesis-expansion-batch-r18-20260707/spec.md`
 - R18 dispatch summary: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_dispatch_summary.md`
 - R18 A_Share_Monitor callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_a_share_callback.md`
+- R18 A_Share_Monitor push callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_a_share_push_callback.md`
 - R18 market_data callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_market_data_callback.md`
 - R18 strategy_work callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_strategy_work_callback.md`
+- R18 strategy_work push callback: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_strategy_work_push_callback.md`
 - R18 partial result summary: `reports/workspace_dispatch/windows_wsl2_strategy_hypothesis_expansion_batch_r18_20260707_result_summary.md`
 - R17 A-share resume handoff after power-policy revocation: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_a_share_resume_after_power_policy_revocation.md`
 - RTX 5090 power cap revocation: `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`
@@ -188,8 +190,7 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Dispatch or collect A_Share_Monitor push-only confirmation for commit `81fab19db69ddd6caba59d52711275a34cf5c542`.
-2. Dispatch or collect strategy_work push-only confirmation for commit `63cdb09dcac71b4c8779d2740fe073c570d7ac93`.
-3. Collect strategy_work R18 final sync after source preservation.
+1. Dispatch or collect market_data push-only confirmation for commit `449de8537881f1b4a1dadb46dc71dba570787351`, unless already current on `origin/main`.
+2. Collect strategy_work R18 final sync after source-preservation confirmation.
 4. Prepare R18 closeout after all downstream callbacks are accepted.
 5. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
