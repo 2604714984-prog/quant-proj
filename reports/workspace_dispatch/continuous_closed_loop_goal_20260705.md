@@ -53,17 +53,17 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_5090_GPU_NUMERIC_DIAGNOSTICS_PHASE2_20260707 blocked / awaiting user environment authorization
+Current task batch: WINDOWS_WSL2_5090_GPU_ML_SIGNAL_RESEARCH_PHASE3_20260707 blocked / awaiting user environment authorization
 
 Objective:
 
-Continue as Quant-Dispatcher only. The user pasted a GPU numeric diagnostics Phase 2 task list on 2026-07-07. The batch is ordinary research-only numeric diagnostics work. A_Share_Monitor returned `BLOCKED_CUDA_PYTHON_UNAVAILABLE` after confirming WSL can see RTX 5090 but the project `.venv` has no already-installed Python CUDA numeric library.
+Continue as Quant-Dispatcher only. The user pasted a GPU ML signal research Phase 3 task list on 2026-07-07. The batch is ordinary research-only ML signal work if environment preconditions are met. It is blocked before downstream execution because Phase 2 closed as `BLOCKED_CUDA_PYTHON_UNAVAILABLE`, and a fresh non-mutating check confirms A_Share_Monitor `.venv` has no installed Python CUDA/ML stack for logistic, MLP, or XGBoost GPU baselines.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
 - GPT Pro / ChatGPT external-audit UI operation remains user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
 
-Do not create a controller/gate loop unless a real boundary trigger opens. Do not authorize local LLM/Qwen deployment, recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, provider/network fetch, DB/cache rebuild/write, schema/readiness/registry changes, raw-data migration, or secrets.
+Do not create a controller/gate loop unless a real boundary trigger opens. Do not authorize local LLM deployment, recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, provider/network fetch, DB/cache rebuild/write, schema/readiness/registry changes, raw-data migration, secrets, transformer/RL/complex ensemble start, test-performance model selection, or weak-result candidate promotion.
 
 Current intake and controller records:
 
@@ -113,6 +113,13 @@ Final R16 source states:
 - GPU Phase 2 closeout: `reports/workspace_dispatch/windows_wsl2_5090_gpu_numeric_diagnostics_phase2_20260707_closeout.md`
 - GPU Phase 2 classification: ordinary research-only numeric diagnostics batch
 - External-audit trigger opened by GPU Phase 2 intake: `no`
+- GPU Phase 3 intake: `reports/workspace_dispatch/windows_wsl2_5090_gpu_ml_signal_research_phase3_20260707_intake.md`
+- GPU Phase 3 task packet: `tasks/in_progress/windows-wsl2-5090-gpu-ml-signal-research-phase3-20260707/spec.md`
+- GPU Phase 3 dispatch summary: `reports/workspace_dispatch/windows_wsl2_5090_gpu_ml_signal_research_phase3_20260707_dispatch_summary.md`
+- GPU Phase 3 result summary: `reports/workspace_dispatch/windows_wsl2_5090_gpu_ml_signal_research_phase3_20260707_result_summary.md`
+- GPU Phase 3 closeout: `reports/workspace_dispatch/windows_wsl2_5090_gpu_ml_signal_research_phase3_20260707_closeout.md`
+- GPU Phase 3 classification: ordinary research-only ML signal research batch if environment preconditions are met
+- External-audit trigger opened by GPU Phase 3 intake: `no`
 
 GPU Phase 2 dispatch state:
 
@@ -120,6 +127,12 @@ GPU Phase 2 dispatch state:
 - `market_data`, `strategy_work`, and `US_Stock_Monitor` are not assigned in this batch.
 - GPU visible through WSL `nvidia-smi`: NVIDIA GeForce RTX 5090, driver `610.47`, reported memory `32607 MiB`.
 - Python CUDA numeric libraries unavailable in A_Share_Monitor `.venv`: `torch`, `cupy`, `numba`, `jax`, `jaxlib`, `tensorflow`, `pycuda`, and `triton` all absent per callback.
+
+GPU Phase 3 dispatch state:
+
+- `A_Share_Monitor`: intended owner thread `019f387b-617e-7273-b539-161216ae3002`; handoff prepared but not sent because environment precondition remains unmet.
+- Fresh non-mutating check confirms GPU visible through WSL `nvidia-smi`: NVIDIA GeForce RTX 5090, driver `610.47`, reported memory `32607 MiB`.
+- Python CUDA/ML libraries unavailable in A_Share_Monitor `.venv`: `torch`, `cupy`, `numba`, `jax`, `jaxlib`, `tensorflow`, `pycuda`, `triton`, `xgboost`, `sklearn`, and `cuml` absent.
 
 R13C / WSL2 hard execution rule:
 
@@ -130,6 +143,6 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Commit and push GPU Phase 2 intake/task/dispatch/result/closeout records.
-2. Await user instruction for an approved already-installed CUDA Python numeric environment path or separate environment/toolchain authorization.
-3. Do not resume GPU Phase 2 diagnostics until the Python CUDA smoke and CPU/GPU parity path is authorized and available.
+1. Commit and push GPU Phase 3 intake/task/dispatch/result/closeout records.
+2. Await user instruction for an approved already-installed CUDA ML environment path or separate environment/toolchain authorization.
+3. Do not resume GPU Phase 3 execution until Python CUDA/ML smoke, strict split, leakage checks, and CPU/GPU parity path are authorized and available.
