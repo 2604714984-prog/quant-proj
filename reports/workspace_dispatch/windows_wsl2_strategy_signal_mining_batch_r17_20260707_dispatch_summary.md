@@ -17,7 +17,7 @@ External-audit trigger open for R17: no
 
 | Target | WSL2 thread | Assigned tasks | Send mode | Initial status |
 |---|---|---|---|---|
-| `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `A-WIN-R17-1` through `A-WIN-R17-8` | prompt-only, no model/thinking override | callback received: BLOCKED_GPU_POWER_CAP_NOT_VERIFIED |
+| `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `A-WIN-R17-1` through `A-WIN-R17-8` | prompt-only, no model/thinking override | resume authorized after 400W cap revocation |
 | `market_data` | `019f387b-e763-7c01-ae3d-6be552cdb6dc` | `MD-WIN-R17-1` through `MD-WIN-R17-2` | prompt-only, no model/thinking override | callback received: accepted |
 | `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `SW-WIN-R17-1` through `SW-WIN-R17-2` | prompt-only, no model/thinking override | handoff prepared |
 
@@ -28,6 +28,7 @@ Controller handoff artifacts are prepared. Direct app thread-send was attempted 
 Handoff files:
 
 - A_Share_Monitor: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_a_share.md`
+- A_Share_Monitor resume after power-policy revocation: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_a_share_resume_after_power_policy_revocation.md`
 - market_data: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_market_data.md`
 - strategy_work: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_strategy_work.md`
 
@@ -36,6 +37,10 @@ Handoff files:
 - A_Share_Monitor: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_a_share_callback.md`
 - market_data: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_market_data_callback.md`
 - Result summary: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_result_summary.md`
+
+## Power Policy Update
+
+The prior RTX 5090 400W cap is superseded by user revocation. R17 may proceed under host/driver default GPU power policy while reporting observed power telemetry. This revocation does not authorize local LLM/Qwen, recommendation, candidate promotion, readiness, product route activation, or trading paths.
 
 ## Callback Target
 
@@ -47,6 +52,6 @@ All downstream threads must send prompt-only callbacks to:
 
 ## Boundary
 
-R17 is research-only and non-actionable. No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, strategy candidate promotion, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration, `.env` access, key output, secret handling, schema/readiness/registry change, market_data activation, or >400W GPU operation is authorized.
+R17 is research-only and non-actionable. No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, strategy candidate promotion, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration, `.env` access, key output, secret handling, schema/readiness/registry change, or market_data activation is authorized.
 
-Future provider/network fetch, DB/cache write or rebuild, route activation, and GPU operation above 400W require separate task-level authorization.
+Future provider/network fetch, DB/cache write or rebuild, and route activation require separate task-level authorization.

@@ -46,4 +46,4 @@ Each downstream must send prompt-only callback to dispatcher thread `019f3830-4b
 
 ## Boundary
 
-No local LLM/Qwen, no recommendation/advice, no production recommendation readiness, no broker/order/paper/live/auto, no secret access/output, and no raw-data migration into quant-proj. Subsequent RTX 5090 runs are capped at 400W unless separately authorized.
+No local LLM/Qwen, no recommendation/advice, no production recommendation readiness, no broker/order/paper/live/auto, no secret access/output, and no raw-data migration into quant-proj. The earlier RTX 5090 400W cap was later revoked by the user for research GPU continuation under host/driver default power policy.

@@ -35,12 +35,12 @@ External-audit trigger open: `yes`, for market_data product-route preparation be
 - Recorded US_Stock_Monitor metadata repair callback.
 - Sent push-only follow-up to US_Stock_Monitor.
 - Recorded US_Stock_Monitor push PASS callback.
-- Recorded RTX 5090 power cap policy: future GPU runs are capped at 400W unless separately authorized.
+- Recorded RTX 5090 power cap policy, later superseded by the user revocation record allowing R17 continuation under host/driver default GPU power policy.
 
 ## GPU Power Policy
 
-Future RTX 5090 runs must use `GPU_POWER_LIMIT_WATTS=400`. Any task that needs more than 400W must stop and request separate user authorization before continuing.
+The earlier `GPU_POWER_LIMIT_WATTS=400` rule is superseded by `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`. Future RTX 5090 research diagnostics must report observed host/driver power-limit and power-draw telemetry and must not attempt privileged power-limit changes unless the user separately requests them.
 
 ## Boundary Result
 
-The controller has not activated a product route, changed readiness, created a recommendation, emitted a ticket, created an eligibility candidate, enabled broker/order/paper/live/auto, migrated raw data into quant-proj, or accessed/output secrets. Higher-than-400W RTX 5090 operation is not authorized.
+The controller has not activated a product route, changed readiness, created a recommendation, emitted a ticket, created an eligibility candidate, enabled broker/order/paper/live/auto, migrated raw data into quant-proj, or accessed/output secrets. The later GPU power-policy revocation is power-only and does not authorize broader scope.

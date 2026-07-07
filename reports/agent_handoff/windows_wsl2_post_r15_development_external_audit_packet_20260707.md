@@ -7,9 +7,11 @@ Submission: user-operated external audit through GitHub / GitHub connector
 
 ## Review Request
 
-Please externally review the work completed since the last user-operated R15 external audit by reading the GitHub repositories and commits listed below. This packet covers R16 strategy discovery, authorized GPU/ML numeric research, bounded East Money probing, US metadata repair, market_data product-route preparation, Codex-Audit result, and the new RTX 5090 400W power cap policy.
+Please externally review the work completed since the last user-operated R15 external audit by reading the GitHub repositories and commits listed below. This packet covers R16 strategy discovery, authorized GPU/ML numeric research, bounded East Money probing, US metadata repair, market_data product-route preparation, Codex-Audit result, and the then-active RTX 5090 400W power cap policy.
 
 This packet is an audit handoff and progress review. It is not an activation request, not a recommendation request, and not a trading or readiness request.
+
+Post-packet update: after this packet and the external-audit verdict, the user explicitly revoked the 400W cap for R17 continuation. The active controller record is `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`.
 
 ## GitHub Review Source Map
 
@@ -284,11 +286,16 @@ Policy file:
 
 - `reports/human_gate/windows_wsl2_5090_gpu_power_cap_policy_20260707.md`
 
-New rule:
+Historical rule at packet time:
 
 - Subsequent RTX 5090 numerical research, ML research, CUDA smoke, and GPU diagnostic work must use `GPU_POWER_LIMIT_WATTS=400`.
 - Higher-than-400W operation requires separate user authorization before execution.
 - Future callbacks must include `GPU_POWER_CAP_STATUS`.
+
+Post-packet supersession:
+
+- The user later revoked this 400W cap and directed R17 to continue.
+- Active controller power-policy record: `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`.
 
 Audit focus:
 
@@ -301,7 +308,7 @@ Audit focus:
 - No market_data activation task has been created.
 - Broader East Money reconciliation/integration remains a future separately authorized task.
 - Complete legacy US metadata repair for Tencent-only/current-source conflicts and historical/delisted names requires a separate source/policy decision if needed.
-- Future RTX 5090 workloads above 400W require separate authorization.
+- The packet-time 400W RTX 5090 policy was later superseded by user revocation; future GPU work must follow the latest controller power-policy record.
 
 ## Boundary Statement
 
@@ -318,7 +325,7 @@ Across the post-R15 work reviewed in this packet:
 - No raw-data migration into `quant-proj` occurred.
 - No `.env`, key, token, auth, credential, or secret output occurred.
 - No local LLM or Qwen deployment occurred.
-- No higher-than-400W RTX 5090 authorization was granted.
+- No higher-than-400W RTX 5090 authorization was granted within the packet-time reviewed scope; a later user revocation superseded the 400W cap as a power-policy-only update.
 
 ## External Audit Questions
 
@@ -328,7 +335,7 @@ Across the post-R15 work reviewed in this packet:
 4. Can the market_data product-route prep package be accepted as preparation-only, with no activation permission?
 5. Is `EXTERNAL_AUDIT_TRIGGER_OPEN: yes` appropriate only for the market_data product-route preparation before any activation?
 6. Are any fixes required before the user may authorize a later, separate market_data activation task?
-7. Does the RTX 5090 400W cap correctly preserve a more restrictive execution boundary?
+7. At packet time, did the RTX 5090 400W cap correctly preserve a more restrictive execution boundary? Note that this was later superseded by the user revocation record for R17 continuation.
 
 ## Expected Verdict Format
 

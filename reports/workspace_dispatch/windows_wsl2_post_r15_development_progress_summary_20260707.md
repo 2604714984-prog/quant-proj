@@ -131,11 +131,11 @@ Open gate:
 
 File: `reports/human_gate/windows_wsl2_5090_gpu_power_cap_policy_20260707.md`
 
-New standing constraint:
+Superseded standing constraint:
 
-- Future RTX 5090 numerical research, ML research, CUDA smoke, and GPU diagnostic work must use `GPU_POWER_LIMIT_WATTS=400`.
-- Higher-than-400W operation requires a separate user authorization before execution.
-- Future GPU callbacks must include `GPU_POWER_CAP_STATUS`.
+- The prior `GPU_POWER_LIMIT_WATTS=400` policy was recorded after the authorized controlled-advancement batch.
+- It was later superseded by `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md` after the user revoked the cap and directed R17 to continue.
+- Future GPU callbacks must include `GPU_POWER_POLICY_STATUS` plus observed power-limit and power-draw telemetry when available.
 
 ## Remaining Gates
 
@@ -146,4 +146,4 @@ New standing constraint:
 
 ## Boundary State
 
-No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration into `quant-proj`, secret access/output, or higher-than-400W GPU authorization has occurred.
+No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration into `quant-proj`, or secret access/output has occurred. The later GPU cap revocation is power-policy only.

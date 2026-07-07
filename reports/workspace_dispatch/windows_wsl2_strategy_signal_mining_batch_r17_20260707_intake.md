@@ -17,7 +17,7 @@ Reason:
 - The post-R15 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS`.
 - Fixes required: `none before the next research-only strategy / GPU-signal development batch`.
 - The only open audit gate is market_data product-route prep / future activation, which is not part of R17 activation scope.
-- R17 explicitly forbids recommendation/advice, tickets, eligibility candidates, strategy candidate promotion, readiness, product-route activation, broker/order/paper/live/auto, raw-data migration, secrets, >400W GPU operation without separate authorization, full-frame wide strategy search, and unapproved network/DB writes.
+- R17 explicitly forbids recommendation/advice, tickets, eligibility candidates, strategy candidate promotion, readiness, product-route activation, broker/order/paper/live/auto, raw-data migration, secrets, full-frame wide strategy search, and unapproved network/DB writes. The prior 400W GPU stop condition is superseded by the later user revocation record.
 
 ## Accepted Evidence Inputs
 
@@ -30,7 +30,7 @@ Reason:
 - East Money bounded probe accepted as probe-only evidence; R15/R16 `77/121/2870` split remains preserved.
 - US metadata repair accepted as bounded current-universe staging with warnings.
 - market_data product-route prep accepted as preparation only; no activation.
-- RTX 5090 400W power cap policy accepted as standing constraint.
+- RTX 5090 400W power cap policy was accepted as a standing constraint, then superseded by the user's 2026-07-07T16:32:56+08:00 revocation for R17 continuation under host/driver default GPU power policy.
 
 ## Dispatch Scope
 
@@ -43,7 +43,7 @@ Reason:
 - `A-WIN-R17-5`: Small-cache diagnostic backtests for transformed signals.
 - `A-WIN-R17-6`: Wide3068 chunked probe only for pre-qualified families.
 - `A-WIN-R17-7`: Trade-count and cost rescue for ML/factor-derived signals.
-- `A-WIN-R17-8`: 400W GPU telemetry and compliance report.
+- `A-WIN-R17-8`: GPU power-policy telemetry and compliance report.
 
 ### market_data
 
@@ -64,4 +64,4 @@ Reason:
 
 Research-only. No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, strategy candidate promotion, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration, `.env` access, key output, secret handling, schema/readiness/registry change, or market_data activation is authorized.
 
-Future provider/network fetch, DB/cache write or rebuild, route activation, or GPU operation above 400W requires separate task-level authorization.
+Future provider/network fetch, DB/cache write or rebuild, route activation, or privileged GPU power-policy changes require separate task-level authorization.

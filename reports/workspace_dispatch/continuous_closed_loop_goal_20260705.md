@@ -53,11 +53,11 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707 partially returned; A-share blocked on GPU 400W cap, market_data accepted
+Current task batch: WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707 resumed after GPU 400W cap revocation; market_data accepted
 
 Objective:
 
-Continue as Quant-Dispatcher only. The post-R15 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707`. R17 is ordinary research-only strategy signal mining. A_Share_Monitor stopped before R17 execution because RTX 5090 power cap could not be verified or set to 400W; both WSL and Windows `nvidia-smi -pl 400` return insufficient permissions and the reported power limit remains 600W. market_data completed and accepted the R17 boundary/schema work at local commit `84b752da2a602995aa5a1ce95755385a4ad44455`, with push confirmation still pending. R17 must not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, or exceed the RTX 5090 400W cap without separate authorization.
+Continue as Quant-Dispatcher only. The post-R15 GitHub connector external audit returned `VERIFIED_ACCEPT_WITH_WARNINGS` and issued `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707`. R17 is ordinary research-only strategy signal mining. A_Share_Monitor stopped before R17 execution because RTX 5090 power cap could not be verified or set to 400W; both WSL and Windows `nvidia-smi -pl 400` returned insufficient permissions and the reported power limit remained 600W. The user then revoked the 400W cap and directed R17 to continue under host/driver default GPU power policy. market_data completed and accepted the R17 boundary/schema work at local commit `84b752da2a602995aa5a1ce95755385a4ad44455`, with push confirmation still pending. R17 must not activate market_data routes, create recommendation/ticket/eligibility/candidate/readiness/product routes/trading paths, or perform any unapproved network/DB/secret action.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
@@ -65,7 +65,7 @@ Continue as Quant-Dispatcher only. The post-R15 GitHub connector external audit 
 
 Do not create a controller/gate loop unless a real boundary trigger opens. The new authorization permits bounded install/network/write/route-prep work only through task-level HG records. It still does not authorize local LLM/Qwen deployment, recommendation, production recommendation readiness, broker/order/paper/live/auto, secret access/output, raw-data migration into quant-proj, transformer/RL/complex ensemble start, test-performance model selection, or weak-result candidate promotion.
 
-GPU power policy: future RTX 5090 runs must include `GPU_POWER_LIMIT_WATTS=400`, record `GPU_POWER_CAP_STATUS`, and stop before using higher power unless the user grants a separate task-specific authorization.
+GPU power policy: the earlier RTX 5090 `GPU_POWER_LIMIT_WATTS=400` rule is superseded by `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`. R17 may continue under host/driver default GPU power policy while reporting observed power-limit and power-draw telemetry. Privileged power-limit changes still require separate user direction.
 
 Current intake and controller records:
 
@@ -136,6 +136,8 @@ Final R16 source states:
 - R17 A_Share_Monitor callback: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_a_share_callback.md`
 - R17 market_data callback: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_market_data_callback.md`
 - R17 result summary: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_result_summary.md`
+- R17 A-share resume handoff after power-policy revocation: `tasks/in_progress/windows-wsl2-strategy-signal-mining-batch-r17-20260707/handoff_a_share_resume_after_power_policy_revocation.md`
+- RTX 5090 power cap revocation: `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`
 - A_Share_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_callback.md`
 - A_Share_Monitor push callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_push_callback.md`
 - US_Stock_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_us_callback.md`
@@ -174,8 +176,8 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Ask the user to set or authorize a host/driver-level 400W RTX 5090 power cap, then verify `nvidia-smi` reports `power.limit=400.00W`.
-2. Redispatch or resume A_Share_Monitor R17 only after the 400W cap is verifiable, unless the user explicitly relaxes the sustained-GPU stop condition.
+1. Resume A_Share_Monitor R17 under the user-revoked 400W cap policy and host/driver default GPU power policy.
+2. Require A_Share_Monitor to report observed GPU power telemetry in its next callback.
 3. Obtain push-only confirmation for market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.
 4. Dispatch or accept strategy_work final sync only after A-share and market_data R17 callbacks are available.
 5. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.

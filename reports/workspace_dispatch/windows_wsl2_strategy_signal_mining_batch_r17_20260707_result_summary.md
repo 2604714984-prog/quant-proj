@@ -3,23 +3,23 @@
 Project: quant-proj
 Role: Quant-Dispatcher
 Recorded: 2026-07-07 Asia/Shanghai
-Status: `PARTIAL_CALLBACKS_RECEIVED_A_SHARE_BLOCKED_GPU_POWER_CAP_MARKET_DATA_ACCEPTED`
+Status: `A_SHARE_RESUME_AUTHORIZED_AFTER_GPU_POWER_CAP_REVOCATION_MARKET_DATA_ACCEPTED`
 External-audit trigger open for R17: `no`
 
 ## Received Callbacks
 
 | Source | Commit | Status | Follow-up |
 |---|---|---|---|
-| `A_Share_Monitor` | `a1d57f55a94382e20bfd4a184ad21c42bf9bde37` | `BLOCKED` | needs verifiable 400W RTX 5090 power cap before GPU-dependent R17 work |
+| `A_Share_Monitor` | `a1d57f55a94382e20bfd4a184ad21c42bf9bde37` | `BLOCKED_SUPERSEDED_BY_USER_POWER_POLICY_REVOCATION` | prior 400W cap blocker superseded; resume under host/driver default GPU power policy |
 | `market_data` | `84b752da2a602995aa5a1ce95755385a4ad44455` | `ACCEPTED_RESEARCH_ONLY_WITH_VALIDATION_PASS` | push-only follow-up needed; route activation remains blocked |
 
 ## Pending
 
 - `strategy_work` R17 final sync is gated because A_Share_Monitor R17 is blocked.
-- R17 A-share signal mining remains blocked until `GPU_POWER_LIMIT_WATTS=400` is verifiably enforced or the user explicitly authorizes a different non-sustained-GPU path.
+- R17 A-share signal mining is now authorized to resume because the user explicitly revoked the 400W cap and directed continuation.
 - `market_data` R17 commit `84b752da2a602995aa5a1ce95755385a4ad44455` is local ahead of `origin/main` by 1 per controller verification; push confirmation is pending.
 
-## A_Share_Monitor Blocker
+## A_Share_Monitor Prior Blocker
 
 R17 stopped before `A-WIN-R17-1` through `A-WIN-R17-8`.
 
@@ -27,11 +27,22 @@ Observed GPU state:
 
 - RTX 5090 visible.
 - Current power limit: `600.00W`.
-- Required power limit: `400W`.
+- Prior required power limit before revocation: `400W`.
 - Attempt to run `nvidia-smi -pl 400` failed with `Insufficient Permissions`.
 - Sustained GPU work executed: `false`.
 
 Controller confirmed the same permission blocker from both Windows and WSL command contexts.
+
+## GPU Power Policy Revocation
+
+After the blocker, the user explicitly revoked the 400W cap and directed R17 to continue.
+
+New controller record:
+
+- `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`
+- decision id: `HG-STANDING-GPU-POWER-CAP-REVOKED-R17-20260707`
+
+R17 may proceed under host/driver default GPU power policy. Downstream must still report observed power limit/draw and preserve all research-only boundaries.
 
 ## market_data Accepted Scope
 
@@ -44,10 +55,8 @@ market_data completed the R17 boundary/schema work:
 
 ## Boundary Result
 
-No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, strategy candidate promotion, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration, unapproved network/provider fetch, DB/cache write/rebuild, secret output, or >400W GPU execution occurred.
+No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, strategy candidate promotion, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration, unapproved network/provider fetch, DB/cache write/rebuild, secret output, or unrecorded GPU policy change occurred.
 
 ## Next Controller Action
 
-Ask the user to set or authorize a host/driver-level mechanism that makes `nvidia-smi` report `power.limit=400.00W` for the RTX 5090, then redispatch or resume the A_Share_Monitor R17 tasks. Do not run sustained GPU-dependent R17 work while the reported power limit remains `600.00W`.
-
-Also obtain a push-only confirmation for market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.
+Resume the A_Share_Monitor R17 tasks under the revoked 400W cap policy and obtain a push-only confirmation for market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.

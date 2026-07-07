@@ -23,7 +23,7 @@ The market_data product-route prep / future activation external-audit gate remai
 - R15/R16 East Money split: `77 CROSSCHECK_PASS`, `121 CROSSCHECK_DATE_GAP`, `2870 CROSSCHECK_MISSING_EAST_MONEY`.
 - Survivor-bias scope limits.
 - Full-frame wide3068 StrategySearch unsafe guard.
-- RTX 5090 400W power cap policy.
+- RTX 5090 power policy: the prior 400W cap was revoked by the user on 2026-07-07T16:32:56+08:00; R17 may proceed under host/driver default GPU power policy while reporting observed telemetry.
 
 ## Tasks
 
@@ -36,7 +36,7 @@ The market_data product-route prep / future activation external-audit gate remai
 | `A-WIN-R17-5` | `A_Share_Monitor` | Small-cache diagnostic backtests for transformed signals. | `A-WIN-R17-4` |
 | `A-WIN-R17-6` | `A_Share_Monitor` | Wide3068 chunked probe only for pre-qualified families. | `A-WIN-R17-5`, full-frame guard active |
 | `A-WIN-R17-7` | `A_Share_Monitor` | Trade-count and cost rescue for ML/factor-derived signals. | `A-WIN-R17-5` or `A-WIN-R17-6` if run |
-| `A-WIN-R17-8` | `A_Share_Monitor` | 400W GPU telemetry and compliance report. | any R17 GPU work |
+| `A-WIN-R17-8` | `A_Share_Monitor` | GPU power-policy telemetry and compliance report. | any R17 GPU work |
 | `MD-WIN-R17-1` | `market_data` | Keep product-route prep inactive and separated. | market_data prep audit state |
 | `MD-WIN-R17-2` | `market_data` | Strategy-signal evidence manifest extension. | A-share R17 artifact paths |
 | `SW-WIN-R17-1` | `strategy_work` | Strategy signal mining memo. | R17 dispatch; final facts require source callbacks |
@@ -60,7 +60,7 @@ The market_data product-route prep / future activation external-audit gate remai
 - `reports/workspace_dispatch/windows_wsl2_r17_wide3068_chunked_probe_result_or_skip.csv`
 - `reports/workspace_dispatch/windows_wsl2_r17_trade_cost_rescue_for_signal_strategies_20260707.md`
 - `reports/workspace_dispatch/windows_wsl2_r17_trade_cost_rescue_for_signal_strategies.csv`
-- `reports/workspace_dispatch/windows_wsl2_r17_gpu_400w_compliance_20260707.md`
+- `reports/workspace_dispatch/windows_wsl2_r17_gpu_power_policy_compliance_20260707.md`
 
 ## Required market_data Deliverables
 
@@ -91,11 +91,11 @@ Only run a wide3068 chunked probe if A-WIN-R17-5 produces pre-qualified families
 
 ## GPU Power Rule
 
-All R17 GPU work must use `GPU_POWER_LIMIT_WATTS=400`.
+The previous `GPU_POWER_LIMIT_WATTS=400` rule is revoked by user instruction.
 
-Downstream may verify and, if locally permitted without secrets, apply the 400W cap. If the power cap cannot be verified for a workload expected to require sustained GPU power, stop before the GPU workload and return `BLOCKED` with `GPU_POWER_CAP_STATUS`.
+R17 GPU work may proceed under host/driver default power policy. Downstream must record observed `power.limit`, `power.draw` where available, and whether sustained GPU work was executed.
 
-Higher-than-400W operation is not authorized.
+Do not attempt privileged power-limit changes unless explicitly requested in a later task.
 
 ## Required Validation
 
@@ -111,7 +111,7 @@ A_Share_Monitor:
 - no market_data route activation.
 - no unapproved network/provider fetch.
 - no unapproved DB/cache rebuild or write.
-- GPU power cap status recorded for GPU work.
+- GPU power-policy status recorded for GPU work.
 
 market_data:
 
@@ -135,8 +135,6 @@ strategy_work:
 - `FULL_FRAME_WIDE_STRATEGY_SEARCH_ATTEMPTED`
 - `MARKET_DATA_PRODUCT_ROUTE_ACTIVATION_ATTEMPTED`
 - `R17_WIDE_PROBE_ELIGIBLE_WRITTEN_AS_CANDIDATE`
-- `GPU_POWER_LIMIT_ABOVE_400W_WITHOUT_AUTH`
-- `GPU_POWER_CAP_REQUIRED_BUT_NOT_VERIFIABLE`
 - `TEST_RESULT_USED_TO_SELECT_PARAMETERS`
 - `RECOMMENDATION_OR_TICKET_LANGUAGE_APPEARS`
 - `SECRET_OR_ENV_ACCESS_REQUIRED`
@@ -157,7 +155,7 @@ ARTIFACTS:
 VALIDATION:
 KEY_RESULTS:
 STRATEGY_CANDIDATE_AVAILABLE:
-GPU_POWER_CAP_STATUS:
+GPU_POWER_POLICY_STATUS:
 BOUNDARY_RESULT:
 EXTERNAL_AUDIT_TRIGGER_OPEN:
 FIXES_REQUIRED:

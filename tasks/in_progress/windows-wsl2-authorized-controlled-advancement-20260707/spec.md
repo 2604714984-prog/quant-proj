@@ -19,9 +19,9 @@ No local LLM deployment, no Qwen deployment, no recommendation/advice, no `PENDI
 
 ## GPU Power Control
 
-Subsequent RTX 5090 runs must include `GPU_POWER_LIMIT_WATTS=400` and record `GPU_POWER_CAP_STATUS` in the callback. Higher-than-400W operation requires separate user authorization before execution.
+The later RTX 5090 400W cap was revoked by the user on 2026-07-07T16:32:56+08:00. Future research GPU work must follow the latest controller power-policy record, currently allowing host/driver default power policy while reporting observed power-limit and power-draw telemetry.
 
-Stop conditions:
+Superseded stop conditions:
 
 - `GPU_POWER_LIMIT_ABOVE_400W_WITHOUT_AUTH`
 - `GPU_POWER_CAP_REQUIRED_BUT_NOT_VERIFIABLE`

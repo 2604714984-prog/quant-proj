@@ -47,7 +47,7 @@ Source thread: `019f387b-e763-7c01-ae3d-6be552cdb6dc`
 No product-route activation, active registry change, readiness change, raw data import, recommendation/advice, ticket, eligibility candidate, production readiness, broker/order/paper/live/auto, raw-data migration, or secret output occurred.
 
 - `STRATEGY_CANDIDATE_AVAILABLE=false`
-- `GPU_POWER_CAP_STATUS=N/A`
+- `GPU_POWER_POLICY_STATUS=N/A`
 - `EXTERNAL_AUDIT_TRIGGER_OPEN=no`
 - `FIXES_REQUIRED=none`
 

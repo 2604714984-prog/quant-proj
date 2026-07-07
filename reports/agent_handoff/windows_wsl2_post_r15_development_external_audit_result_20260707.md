@@ -29,7 +29,7 @@ R16, A-share GPU Phase2/Phase3, East Money bounded probe, and US metadata repair
 Hard carry-forward conditions:
 
 1. market_data route activation remains blocked until user-operated external audit verdict plus a separate activation task.
-2. Future GPU work must include `GPU_POWER_LIMIT_WATTS=400` and stop if higher power is needed without separate authorization.
+2. Future GPU work had a `GPU_POWER_LIMIT_WATTS=400` carry-forward condition at audit time; this was later superseded by the user's 2026-07-07T16:32:56+08:00 revocation for R17 continuation under host/driver default GPU power policy.
 3. Strategy discovery outputs remain diagnostic only. R16 found no wide-eligible strategy and did not create strategy candidate availability.
 
 ## Accepted Scope
@@ -41,7 +41,7 @@ Hard carry-forward conditions:
 - US metadata repair accepted as bounded current-universe staging with warnings.
 - market_data product-route prep accepted only as preparation.
 - Codex-Audit PASS for market_data prep accepted as source audit result, not activation approval.
-- RTX 5090 400W policy accepted as a standing constraint.
+- RTX 5090 400W policy accepted as a standing constraint at audit time, then superseded by the later user revocation record.
 
 ## Rejected Or Blocked Scope
 
@@ -51,13 +51,13 @@ Hard carry-forward conditions:
 - GPU Phase2/Phase3 cannot be used as candidate/readiness evidence.
 - East Money full-coverage claim is blocked.
 - US production or broader legacy-universe claim is blocked.
-- Any RTX 5090 task above 400W is blocked unless separately authorized.
+- Any RTX 5090 task must follow the latest controller power-policy record; after the later user revocation, the prior 400W stop condition is no longer active.
 
 ## Boundary Result
 
 `PASS_WITH_MARKET_DATA_EXTERNAL_AUDIT_GATE_OPEN`
 
-No reviewed file showed recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, strategy candidate promotion, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, secret exposure, raw-data migration into `quant-proj`, or higher-than-400W GPU authorization.
+No reviewed file showed recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, strategy candidate promotion, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, secret exposure, or raw-data migration into `quant-proj`. The later GPU power-policy revocation is a power-only update and does not authorize broader scope.
 
 ## Next Batch
 
