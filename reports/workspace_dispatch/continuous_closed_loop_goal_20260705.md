@@ -207,4 +207,5 @@ Next dispatcher actions:
 1. `WINDOWS_WSL2_RESEARCH_DATA_FASTPATH_CATCHUP_20260707` is closed accepted research-only with warnings.
 2. A_Share_Monitor ETF E1 and A-share old-hold audit are complete and pushed at `db43041f28537787a5bdf941142a9cebb2c1c962`; East Money broad reconciliation remains provider-blocked with zero accepted new coverage rows.
 3. US_Stock_Monitor current-universe research staging is complete and pushed at `a25b2a0693cc267a8bc7658fd3525723dcaca6f0`; US DB/registry/readiness/product/raw migration remains separately hard-gated.
-4. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
+4. User-requested fastpath catchup external audit packet is prepared at `reports/agent_handoff/windows_wsl2_research_data_fastpath_catchup_external_audit_packet_20260707.md`; paste prompt is `reports/agent_handoff/windows_wsl2_research_data_fastpath_catchup_external_audit_prompt_20260707.md`.
+5. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.

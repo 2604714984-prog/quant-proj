@@ -2,6 +2,7 @@
 
 ## Inbox
 
+- `WINDOWS_WSL2_RESEARCH_DATA_FASTPATH_CATCHUP_EXTERNAL_AUDIT_20260707`: user requested external audit after fastpath catchup closeout; packet prepared at `reports/agent_handoff/windows_wsl2_research_data_fastpath_catchup_external_audit_packet_20260707.md`; prompt prepared at `reports/agent_handoff/windows_wsl2_research_data_fastpath_catchup_external_audit_prompt_20260707.md`; operation is user-operated through GitHub / GitHub connector.
 - `WINDOWS_WSL2_STRATEGY_HYPOTHESIS_EXPANSION_BATCH_R18_20260707`: imported R17 GitHub connector external-audit result and R18 task list; ordinary research-only strategy hypothesis expansion batch; R17 audit result recorded at `reports/agent_handoff/windows_wsl2_strategy_signal_mining_batch_r17_external_audit_result_20260707.md`.
 - `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_EXTERNAL_AUDIT_20260707`: user requested external audit after R17 closeout; packet prepared at `reports/agent_handoff/windows_wsl2_strategy_signal_mining_batch_r17_external_audit_packet_20260707.md`; prompt prepared at `reports/agent_handoff/windows_wsl2_strategy_signal_mining_batch_r17_external_audit_prompt_20260707.md`; operation is user-operated through GitHub / GitHub connector.
 - `WINDOWS_WSL2_STRATEGY_SIGNAL_MINING_BATCH_R17_20260707`: imported post-R15 GitHub connector external-audit result and R17 task list; ordinary research-only strategy signal mining batch; audit result recorded at `reports/agent_handoff/windows_wsl2_post_r15_development_external_audit_result_20260707.md`.
