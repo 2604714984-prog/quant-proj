@@ -96,7 +96,7 @@ Each dispatched task should have:
 - optional `context.md`
 - optional `dependencies.md`
 
-Before dispatch, validate the permission level. L1-L4 execution requests require a unique pre-execution `HG-EXEC-TASK-*` record. Standing authorization alone is not enough. If the record is missing, mark the task `HOLD_FOR_MISSING_HG_EXEC_TASK_RECORD` and only allow read-only planning or diagnosis.
+Before dispatch, validate the permission level. Ordinary research-only public/no-secret network fetches and source-local research cache/staging/report/test writes use the research-data fast path and do not require per-task HG-EXEC. Boundary-changing execution requests still require a unique pre-execution `HG-EXEC-TASK-*` record. If that record is missing for boundary-changing work, mark the task `HOLD_FOR_MISSING_HG_EXEC_TASK_RECORD` and only allow read-only planning or diagnosis.
 
 ## Status Values
 
@@ -114,8 +114,9 @@ Before dispatch, validate the permission level. L1-L4 execution requests require
 
 - Do not dispatch broker/order/live-trading tasks as implementation work.
 - Do not dispatch buy/sell advice tasks.
-- Do not dispatch raw data migration or DB-write tasks without `human_gate`.
-- Do not dispatch L1-L4 execution without a unique pre-execution `HG-EXEC-TASK-*` record.
+- Do not dispatch raw data migration, active schema migration, readiness promotion, registry activation, product-route activation, ticket/candidate creation, secret handling, or trading-adjacent tasks without the required gate.
+- Do not require per-task HG-EXEC for research-data fast-path tasks that are bounded, public/no-secret, source-local, and non-actionable.
+- Do not dispatch boundary-changing L1-L4 execution without a unique pre-execution `HG-EXEC-TASK-*` record.
 - Do not treat a missing Human-Gate record as approval.
 - Do not treat a stale registry snapshot as current source-project truth.
 - Do not let Reasonix-DB write physical databases or change readiness/registry activation without `human_gate` and Codex-Dev validation.

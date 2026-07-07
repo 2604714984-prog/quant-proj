@@ -2,12 +2,10 @@
 
 Human-Gate is the approval and boundary-control role for work that could change data, readiness, migration state, source-project promotion, or trading-adjacent posture.
 
-Human-Gate records are required before execution for:
+Human-Gate records are required before execution for boundary-changing work:
 
 - physical repository migration;
-- DuckDB or SQLite writes;
-- schema migration;
-- bulk data ingest or expansion;
+- schema migration that changes an active source/project contract;
 - physical DB movement;
 - registry activation;
 - data-readiness status changes;
@@ -16,11 +14,13 @@ Human-Gate records are required before execution for:
 - external audit submission;
 - any broker, order, paper-trading, live-trading, or auto-execution adjacent request.
 
-Recorded execution uses `runbooks/recorded_execution_mode.md`. L1-L4 work is allowed only when the Human-Gate record, command transcript, bounded command flags, manifest/status evidence, and Codex acceptance requirements are satisfied.
+Research-data fast path: ordinary research-only public/no-secret network fetch and source-local research cache/staging/report/test writes or rebuilds do not require a per-task `HG-EXEC-TASK-*` record when they stay non-actionable and do not change active schema, readiness, registry, product route, ticket/candidate state, secrets, or trading paths. They still require bounded scope, command transcript, manifest/count/hash evidence, validation, and Codex callback.
 
-## Future L1-L4 Hard Rule
+Recorded execution uses `runbooks/recorded_execution_mode.md`. Gated boundary-changing work is allowed only when the Human-Gate record, command transcript, bounded command flags, manifest/status evidence, and Codex acceptance requirements are satisfied.
 
-After ChatGPT accepted the recorded-execution controller packet on 2026-07-04, all future L1-L4 execution must have a unique pre-execution `HG-EXEC-TASK-*` record before the command runs.
+## Future Gated Execution Rule
+
+After the 2026-07-07 research-data fast-path update, ordinary research-only data fetch/cache work no longer needs per-task HG-EXEC. Boundary-changing execution still must have a unique pre-execution `HG-EXEC-TASK-*` record before the command runs.
 
 The standing authorization `HG-STANDING-20260704` remains useful as user authorization for covered categories, but it is not enough by itself for execution. The dispatcher must create or locate a task-level execution record with:
 
@@ -67,10 +67,11 @@ Each approval record must include:
 
 ## Permission Levels
 
-- `L0_RESEARCH_DIAGNOSTIC`: allowed by default; no DB write, network ingest, registry activation, readiness change, or ticket emission.
-- `L1_CONTROLLED_DB_WRITE`: requires Human-Gate record, `--allow-write`, explicit snapshot id, command transcript, manifest/counts/hashes, and Codex acceptance.
-- `L2_CONTROLLED_NETWORK_INGEST`: requires Human-Gate record, `--allow-network`, explicit provider, bounded date/symbol scope, no `.env` read, no key output, command transcript, and Codex acceptance.
-- `L3_REGISTRY_READINESS_CHANGE`: requires Human-Gate record, old/new diff, rollback path, command transcript, and Codex acceptance. Broker/live/auto readiness remains forbidden.
+- `L0_RESEARCH_DIAGNOSTIC`: allowed by default when non-actionable.
+- `RESEARCH_DATA_FAST_PATH`: ordinary research-only public/no-secret network fetch and source-local research cache/staging/report/test writes or rebuilds; no per-task HG-EXEC required, but transcript, manifest/count/hash evidence, validation, and callback are required.
+- `L1_CONTROLLED_DB_WRITE`: boundary-affecting DB write outside the research-data fast path; requires Human-Gate record, `--allow-write`, explicit snapshot id, command transcript, manifest/counts/hashes, and Codex acceptance.
+- `L2_CONTROLLED_NETWORK_INGEST`: boundary-affecting network ingest outside the research-data fast path; requires Human-Gate record, `--allow-network`, explicit provider, bounded date/symbol scope, no `.env` read, no key output, command transcript, and Codex acceptance.
+- `L3_REGISTRY_READINESS_CHANGE`: active registry/readiness/product route change; requires Human-Gate record, old/new diff, rollback path, command transcript, and Codex acceptance. Broker/live/auto readiness remains forbidden.
 - `L4_PENDING_HUMAN_REVIEW_TICKET`: requires Human-Gate record and all gates passing; may emit only `PENDING_HUMAN_REVIEW`, never orders, trade plans, allocations, fills, or execution instructions.
 
 ## Decision Values
@@ -85,7 +86,7 @@ Each approval record must include:
 
 The user may grant standing authorization for repeated operational categories. Standing authorization reduces repeated confirmation prompts, but it does not remove task-level recordkeeping.
 
-When a standing authorization exists, each actual execution still needs a task-level record in `reports/human_gate/decisions.jsonl` before the command runs. The execution record must include:
+When a standing authorization exists for boundary-changing execution, each actual execution still needs a task-level record in `reports/human_gate/decisions.jsonl` before the command runs. Research-data fast-path work is exempt from this per-task HG-EXEC record and instead records bounded scope, transcript, manifest/count/hash evidence, validation, and callback in the normal task artifacts.
 
 - task id;
 - exact command or command family;

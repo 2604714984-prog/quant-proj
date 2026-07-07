@@ -32,6 +32,6 @@ This does not authorize:
 
 ## Execution Control
 
-The broad user authorization is recorded as standing approval plus task-level execution records. Actual L1-L4 work still must use the matching `HG-EXEC-TASK-*` record, command transcript, bounded flags, manifest/count/hash evidence, Codex-Dev callback, and required audit gates.
+The broad user authorization is recorded as standing approval plus task-level execution records where boundary-changing work is involved. The 2026-07-07 research-data fast path supersedes per-task HG-EXEC for ordinary research-only public/no-secret fetches and source-local research cache/staging writes; those still require transcript, bounded flags where applicable, manifest/count/hash evidence, Codex-Dev callback, and validation.
 
 For GPU work, downstream handoffs must include the active power-policy record, report observed power-limit and power-draw telemetry in the callback, and avoid privileged power-limit changes unless the user separately requests them.

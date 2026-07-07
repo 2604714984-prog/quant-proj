@@ -42,7 +42,8 @@ These rules are permanent. Do not delete them when updating the current task.
 
 - Ordinary research/data/strategy batches do not get controller external-audit packets.
 - No recommendation, ticket emission, product-route activation, production readiness, broker/order path, paper trading, live trading, or auto execution is authorized by this loop.
-- DB write, schema migration, bulk ingest, network ingest, readiness change, and registry activation require task-level HG-EXEC evidence and transcript before execution.
+- Research-data fast path is active: ordinary research-only public/no-secret network fetch and source-local research cache/staging/report/test writes or rebuilds no longer require per-task HG-EXEC, but still require bounded scope, transcript, manifest/count/hash evidence, validation, and callback. Policy: `reports/human_gate/windows_wsl2_research_data_fast_path_policy_20260707.md`.
+- Schema migration affecting active contracts, readiness promotion, registry activation, product-route activation or replacement, raw-data migration into `quant-proj`, ticket/candidate creation, recommendation, broker/order/paper/live/auto, and secret handling remain gated or forbidden as applicable.
 - Reasonix outputs remain draft/advisory unless Codex-Dev implements and validates them.
 - Preserve blocked and non-actionable states honestly; do not convert blocked research candidates into recommendations.
 - For cross-thread Codex sends, send prompt content only. Do not pass model or thinking overrides.
@@ -68,7 +69,7 @@ Continue as Quant-Dispatcher only. The user supplied an ETF momentum rotation sc
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
 - GitHub / GitHub connector external-audit operation remains user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
 
-Do not create a controller/gate loop unless a real boundary trigger opens. The new authorization permits bounded install/network/write/route-prep work only through task-level HG records. It still does not authorize local LLM/Qwen deployment, recommendation, production recommendation readiness, broker/order/paper/live/auto, secret access/output, raw-data migration into quant-proj, transformer/RL/complex ensemble start, test-performance model selection, or weak-result candidate promotion.
+Do not create a controller/gate loop unless a real boundary trigger opens. The research-data fast path removes per-task HG-EXEC friction for ordinary research-only public/no-secret fetches and source-local research cache/staging writes. It still does not authorize local LLM/Qwen deployment, recommendation, production recommendation readiness, broker/order/paper/live/auto, secret access/output, raw-data migration into quant-proj, transformer/RL/complex ensemble start, test-performance model selection, weak-result candidate promotion, readiness promotion, registry activation, or product-route activation.
 
 GPU power policy: the earlier RTX 5090 `GPU_POWER_LIMIT_WATTS=400` rule is superseded by `reports/human_gate/windows_wsl2_5090_gpu_power_cap_revocation_20260707.md`. R17 may continue under host/driver default GPU power policy while reporting observed power-limit and power-draw telemetry. Privileged power-limit changes still require separate user direction.
 

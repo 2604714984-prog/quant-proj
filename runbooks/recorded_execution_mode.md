@@ -31,7 +31,7 @@ Allowed by default:
 - Codex lightweight acceptance;
 - Reasonix advisory review.
 
-Not allowed at L0:
+Not allowed at L0 unless covered by the research-data fast path:
 
 - DB writes;
 - network ingest;
@@ -39,9 +39,26 @@ Not allowed at L0:
 - readiness status change;
 - ticket emission.
 
+### RESEARCH_DATA_FAST_PATH
+
+Allowed without per-task Human-Gate record:
+
+- ordinary research-only public/no-secret network fetch;
+- source-local research cache/staging/report/test writes or rebuilds;
+- provider/source diagnostics and coverage probes;
+- product-route/readiness prep reports, diffs, rollback plans, and tests that do not activate or change active state.
+
+Required:
+
+- bounded scope in task packet or handoff;
+- command transcript for network/write tasks;
+- manifest/count/hash evidence for generated data artifacts;
+- validation and prompt-only callback;
+- no secrets, no active schema/readiness/registry/product-route change, no ticket/candidate, no recommendation, no broker/order/paper/live/auto.
+
 ### L1_CONTROLLED_DB_WRITE
 
-Allowed with Human-Gate record:
+Allowed with Human-Gate record when outside the research-data fast path:
 
 - real DuckDB or SQLite writes;
 - local snapshot append or refresh;
@@ -63,7 +80,7 @@ Required:
 
 ### L2_CONTROLLED_NETWORK_INGEST
 
-Allowed with Human-Gate record:
+Allowed with Human-Gate record when outside the research-data fast path:
 
 - Tushare ingest;
 - Yahoo/Nasdaq/Stooq/free-source ingest;
@@ -171,8 +188,9 @@ If new ticket-gate logic is introduced, set `external_audit_required=true` befor
 
 Do not say controlled data or HITL tasks are categorically impossible. Instead:
 
-- DB writes can run with Human-Gate, `--allow-write`, transcript, manifest, and Codex acceptance.
-- Network ingest can run with Human-Gate, `--allow-network`, provider bounds, transcript, and Codex acceptance.
+- Ordinary research-data fast-path fetch/cache writes can run without per-task HG-EXEC when bounded, public/no-secret, source-local, and non-actionable; they still require transcript, manifest/count/hash evidence, validation, and callback.
+- Boundary-affecting DB writes can run with Human-Gate, `--allow-write`, transcript, manifest, and Codex acceptance.
+- Boundary-affecting network ingest can run with Human-Gate, `--allow-network`, provider bounds, transcript, and Codex acceptance.
 - Registry activation can run with Human-Gate, old/new diff, rollback path, transcript, and Codex acceptance.
 - Readiness changes can run when they do not overclaim data readiness as recommendation or trading readiness.
 - `PENDING_HUMAN_REVIEW` tickets can be emitted only as human-review entries, never as orders or trade plans.
