@@ -46,4 +46,3 @@ No task-level HG-EXEC is granted by this packet.
 - secret or environment access required.
 
 If a stop condition is encountered, downstream must stop and return `BLOCKED` with the callback envelope.
-

@@ -44,4 +44,3 @@ Ordinary research-only strategy discovery batch.
 Controller external-audit trigger opened by R16 intake: `no`.
 
 The task list contains no authorization for network/provider fetch, DB write/cache rebuild, schema migration, readiness change, registry activation, raw-data migration, secrets handling, product activation, or trading behavior. Any such need is a stop condition unless a separate task-level HG-EXEC packet is issued.
-

@@ -59,4 +59,3 @@ After finishing, send a prompt-only callback to Quant-Dispatcher thread 019f3830
 Boundary:
 Research-only. No recommendation/advice, PENDING_HUMAN_REVIEW, ticket, eligibility candidate, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration, .env access, key output, secret handling, DB write, network ingest, schema migration, readiness change, or registry activation.
 ```
-

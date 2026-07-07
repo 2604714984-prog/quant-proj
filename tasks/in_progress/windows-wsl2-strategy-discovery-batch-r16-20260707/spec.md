@@ -197,4 +197,3 @@ NEXT_SOURCE_ACTION:
 Research-only. No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate, data-clear promotion, product-route activation, production readiness, broker/order/paper/live/auto, raw-data migration, `.env` access, key output, secret handling, DB write, network ingest, schema migration, readiness change, or registry activation.
 
 Future provider/network fetch, DB/cache rebuild, schema/readiness/registry changes require separate task-level HG-EXEC.
-
