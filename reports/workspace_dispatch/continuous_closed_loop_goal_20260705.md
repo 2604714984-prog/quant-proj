@@ -204,8 +204,9 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. `WINDOWS_WSL2_RESEARCH_DATA_FASTPATH_CATCHUP_20260707` is closed accepted research-only with warnings.
-2. A_Share_Monitor ETF E1 and A-share old-hold audit are complete and pushed at `db43041f28537787a5bdf941142a9cebb2c1c962`; East Money broad reconciliation remains provider-blocked with zero accepted new coverage rows.
-3. US_Stock_Monitor current-universe research staging is complete and pushed at `a25b2a0693cc267a8bc7658fd3525723dcaca6f0`; US DB/registry/readiness/product/raw migration remains separately hard-gated.
-4. User-requested fastpath catchup external audit packet is prepared at `reports/agent_handoff/windows_wsl2_research_data_fastpath_catchup_external_audit_packet_20260707.md`; paste prompt is `reports/agent_handoff/windows_wsl2_research_data_fastpath_catchup_external_audit_prompt_20260707.md`.
-5. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
+1. Fastpath/R18 external-audit result imported at `reports/agent_handoff/windows_wsl2_fastpath_and_r18_external_audit_result_20260708.md`.
+2. `WINDOWS_WSL2_PARALLEL_STRATEGY_SEARCH_BATCH_R19_20260707` is dispatched as an ordinary research-only parallel ETF + A-share equity strategy search batch.
+3. R19 A_Share_Monitor work covers ETF rotation robust-grid/robustness diagnostics and A-share R18 failure-mode rescue diagnostics.
+4. R19 market_data work covers ETF research manifest schema and no-overclaim tests.
+5. R19 strategy_work final sync remains gated until accepted A_Share_Monitor and market_data callbacks exist.
+6. Keep market_data product-route activation blocked unless a separate activation task and audit verdict are provided.
