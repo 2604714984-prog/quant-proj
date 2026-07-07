@@ -19,7 +19,7 @@ External-audit trigger open for R17: no
 |---|---|---|---|---|
 | `A_Share_Monitor` | `019f387b-617e-7273-b539-161216ae3002` | `A-WIN-R17-1` through `A-WIN-R17-8` | prompt-only, no model/thinking override | callback accepted and pushed |
 | `market_data` | `019f387b-e763-7c01-ae3d-6be552cdb6dc` | `MD-WIN-R17-1` through `MD-WIN-R17-2` | prompt-only, no model/thinking override | callback accepted and pushed |
-| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `SW-WIN-R17-1` through `SW-WIN-R17-2` | prompt-only, no model/thinking override | final sync ready |
+| `strategy_work` | `019f3881-5293-74a1-8535-814bd83c8681` | `SW-WIN-R17-1` through `SW-WIN-R17-2` | prompt-only, no model/thinking override | final sync accepted and pushed |
 
 ## Send Status
 
@@ -40,7 +40,9 @@ Handoff files:
 - A_Share_Monitor push: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_a_share_push_callback.md`
 - market_data: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_market_data_callback.md`
 - market_data push: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_market_data_push_callback.md`
+- strategy_work: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_strategy_work_callback.md`
 - Result summary: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_result_summary.md`
+- Closeout: `reports/workspace_dispatch/windows_wsl2_strategy_signal_mining_batch_r17_20260707_closeout.md`
 
 ## Power Policy Update
 

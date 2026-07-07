@@ -3,7 +3,7 @@
 Project: quant-proj
 Role: Quant-Dispatcher
 Recorded: 2026-07-07 Asia/Shanghai
-Status: `SOURCE_CALLBACKS_ACCEPTED_AND_PUSHED_STRATEGY_WORK_FINAL_SYNC_READY`
+Status: `CLOSED_ACCEPTED_RESEARCH_ONLY_WITH_WARNINGS`
 External-audit trigger open for R17: `no`
 
 ## Received Callbacks
@@ -12,13 +12,15 @@ External-audit trigger open for R17: `no`
 |---|---|---|---|
 | `A_Share_Monitor` | `e9ed119f69413d7432904e11f12f7c4ff3c9243f` | `COMPLETED_RESEARCH_ONLY_WITH_WARNINGS` | pushed to origin branch; no wide-eligible strategy |
 | `market_data` | `84b752da2a602995aa5a1ce95755385a4ad44455` | `ACCEPTED_RESEARCH_ONLY_WITH_VALIDATION_PASS` | pushed to origin/main; route activation remains blocked |
+| `strategy_work` | `3e2215f56d19ee2bf6c85176be189ceae1b3f0a3` | `CODEX_ACCEPTANCE_SW_R17_FINAL_SYNC_RESEARCH_ONLY_WITH_WARNINGS` | pushed to origin/main; final sync complete |
 
-## Pending
+## Final State
 
-- `strategy_work` R17 final sync is ready to run from accepted and pushed source callbacks.
+- `strategy_work` R17 final sync is complete.
 - A_Share_Monitor R17 completed after the user explicitly revoked the 400W cap and directed continuation.
 - A_Share_Monitor R17 commit `e9ed119f69413d7432904e11f12f7c4ff3c9243f` is pushed to `origin/codex/harden-a-share-research-pipeline`.
 - `market_data` R17 commit `84b752da2a602995aa5a1ce95755385a4ad44455` is pushed to `origin/main`.
+- `strategy_work` final sync commit `3e2215f56d19ee2bf6c85176be189ceae1b3f0a3` is pushed to `origin/main`.
 
 ## A_Share_Monitor Prior Blocker
 
@@ -73,6 +75,16 @@ market_data completed the R17 boundary/schema work:
 
 - A_Share_Monitor push PASS: `origin/codex/harden-a-share-research-pipeline` resolves to `e9ed119f69413d7432904e11f12f7c4ff3c9243f`.
 - market_data push PASS: `origin/main` resolves to `84b752da2a602995aa5a1ce95755385a4ad44455`.
+- strategy_work push PASS: `origin/main` aligned with `3e2215f56d19ee2bf6c85176be189ceae1b3f0a3`.
+
+## strategy_work Final Sync
+
+strategy_work completed:
+
+- `reports/planning/windows_wsl2_strategy_signal_mining_batch_r17_20260707_strategy_memo.md`
+- `reports/planning/windows_wsl2_strategy_signal_mining_batch_r17_final_sync_20260707.md`
+
+Validation: `git diff --check HEAD~1..HEAD` PASS; forbidden action-word scan PASS; no candidate promotion scan PASS; no recommendation/advice scan PASS; push PASS.
 
 ## Boundary Result
 
@@ -80,4 +92,4 @@ No recommendation/advice, `PENDING_HUMAN_REVIEW`, ticket, eligibility candidate,
 
 ## Next Controller Action
 
-Dispatch strategy_work R17 final sync using accepted and pushed A_Share_Monitor commit `e9ed119f69413d7432904e11f12f7c4ff3c9243f` and market_data commit `84b752da2a602995aa5a1ce95755385a4ad44455`.
+R17 is closed. No further R17 source action is required. Any future work should be opened as a new research-only task batch unless a separate approved scope change is provided.
