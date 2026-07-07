@@ -127,6 +127,8 @@ Final R16 source states:
 - Broad controlled advancement dispatch summary: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_dispatch_summary.md`
 - Broad controlled advancement result summary: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_result_summary.md`
 - RTX 5090 power cap policy: `reports/human_gate/windows_wsl2_5090_gpu_power_cap_policy_20260707.md`
+- Post-R15 progress summary: `reports/workspace_dispatch/windows_wsl2_post_r15_development_progress_summary_20260707.md`
+- Post-R15 user-requested external audit packet: `reports/agent_handoff/windows_wsl2_post_r15_development_external_audit_packet_20260707.md`
 - A_Share_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_callback.md`
 - A_Share_Monitor push callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_a_share_push_callback.md`
 - US_Stock_Monitor callback: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_us_callback.md`
@@ -166,4 +168,5 @@ R13C / WSL2 hard execution rule:
 Next dispatcher actions:
 
 1. Commit and publish controller callback/audit/external-packet/power-policy records.
-2. Await user-operated GPT Pro / ChatGPT external audit verdict for market_data product-route prep before any activation task.
+2. Provide the user-requested post-R15 external audit packet for GPT Pro / ChatGPT review.
+3. Await user-operated GPT Pro / ChatGPT external audit verdict for market_data product-route prep or broader post-R15 review before any activation task.
