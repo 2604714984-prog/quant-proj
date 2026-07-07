@@ -101,10 +101,11 @@ Final R15 source states:
 
 R16 dispatch states:
 
-- `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, assigned `A-WIN-R16-1` through `A-WIN-R16-11`.
-- `market_data`: thread `019f387b-e763-7c01-ae3d-6be552cdb6dc`, assigned `MD-WIN-R16-1` through `MD-WIN-R16-3`.
-- `strategy_work`: thread `019f3881-5293-74a1-8535-814bd83c8681`, assigned `SW-WIN-R16-1` through `SW-WIN-R16-3`.
+- `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, completed `A-WIN-R16-1` through `A-WIN-R16-11`, commit `f5805d9cede3efb114fa01de810cf27a97ef7a6f`, pushed to `origin/codex/harden-a-share-research-pipeline`.
+- `market_data`: thread `019f387b-e763-7c01-ae3d-6be552cdb6dc`, completed `MD-WIN-R16-1` through `MD-WIN-R16-3`, commit `3c6c95172517de6fb908d73defa72c9fa1f28f85`, pushed to `origin/main`.
+- `strategy_work`: thread `019f3881-5293-74a1-8535-814bd83c8681`, completed `SW-WIN-R16-1` and `SW-WIN-R16-2`, commit `65ab9770ed21b29ee38939c537e78c6e57b0f1df`, pushed to `origin/main`; `SW-WIN-R16-3` final sync released after accepted A_Share_Monitor and market_data callbacks.
 - `US_Stock_Monitor`: thread `019f387b-a161-7ad0-8678-f03a099612ba`, ready but not assigned because the R16 US branch was optional and not explicitly requested.
+- R16 partial result summary: `reports/workspace_dispatch/windows_wsl2_strategy_discovery_batch_r16_20260707_result_summary.md`
 
 R13C / WSL2 hard execution rule:
 
@@ -116,7 +117,5 @@ R13C / WSL2 hard execution rule:
 Next dispatcher actions:
 
 1. Commit and push R16 intake/task/dispatch records.
-2. Poll downstream threads in coarse intervals for R16 callbacks.
-3. Record A_Share_Monitor and market_data callbacks when they arrive.
-4. Release `strategy_work` final sync only after accepted A_Share_Monitor and market_data R16 callbacks exist.
-5. Prepare R16 result summary and closeout after required callbacks.
+2. Poll strategy_work in coarse intervals for the R16 final-sync callback.
+3. Prepare final R16 result summary and closeout after the strategy_work final callback.
