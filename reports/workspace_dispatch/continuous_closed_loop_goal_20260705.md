@@ -53,15 +53,15 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_DATA_STRATEGY_AND_BASE_BATCH_R15_20260706 closed accepted research-only with warnings
+Current task batch: WINDOWS_WSL2_STRATEGY_DISCOVERY_BATCH_R16_20260707 dispatched / awaiting downstream callbacks
 
 Objective:
 
-Continue as Quant-Dispatcher only. The user pasted a verified R14 GitHub file-level external-audit conclusion and R15 task batch on 2026-07-07. The batch is ordinary research-only data/strategy/data-base work.
+Continue as Quant-Dispatcher only. The user pasted a GitHub-connector external-audit result accepting R15 and providing the R16 task batch on 2026-07-07. R16 is ordinary research-only strategy discovery work.
 
-- Verdict: `VERIFIED_ACCEPT_WITH_WARNINGS`.
+- R15 verdict: `VERIFIED_ACCEPT_WITH_WARNINGS`.
 - External-audit trigger opened: `no`.
-- Fixes required before next ordinary batch: `none`.
+- Fixes required before next ordinary strategy-search batch: `none`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
 - GPT Pro / ChatGPT external-audit UI operation remains user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
 
@@ -84,6 +84,12 @@ Current intake and controller records:
 - GPT Pro audit operation after 2026-07-07 is user-operated; Quant-Dispatcher receives pasted verdicts/task lists and does not operate Chrome/GPT Pro directly.
 - Current classification: ordinary research-only data/strategy/data-base batch
 - External-audit trigger opened by R15 intake: `no`
+- R15 external-audit result: `reports/agent_handoff/windows_wsl2_data_strategy_batch_r15_external_audit_result_20260707.md`
+- R16 intake: `reports/workspace_dispatch/windows_wsl2_strategy_discovery_batch_r16_20260707_intake.md`
+- R16 task packet: `tasks/in_progress/windows-wsl2-strategy-discovery-batch-r16-20260707/spec.md`
+- R16 dispatch summary: `reports/workspace_dispatch/windows_wsl2_strategy_discovery_batch_r16_20260707_dispatch_summary.md`
+- R16 classification: ordinary research-only strategy discovery batch
+- External-audit trigger opened by R16 intake: `no`
 
 Final R15 source states:
 
@@ -93,10 +99,12 @@ Final R15 source states:
 - `US_Stock_Monitor`: `019f387b-a161-7ad0-8678-f03a099612ba`, ready but not assigned because the R15 US branch was optional and not explicitly requested.
 - Future downstream handoffs must use these WSL2-visible threads and the active dispatcher callback target, or final-answer callback envelopes if thread sending is unavailable.
 
-R15 controller records:
+R16 dispatch states:
 
-- Result summary: `reports/workspace_dispatch/windows_wsl2_data_strategy_batch_r15_20260706_result_summary.md`
-- Closeout: `reports/workspace_dispatch/windows_wsl2_data_strategy_batch_r15_20260706_closeout.md`
+- `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, assigned `A-WIN-R16-1` through `A-WIN-R16-11`.
+- `market_data`: thread `019f387b-e763-7c01-ae3d-6be552cdb6dc`, assigned `MD-WIN-R16-1` through `MD-WIN-R16-3`.
+- `strategy_work`: thread `019f3881-5293-74a1-8535-814bd83c8681`, assigned `SW-WIN-R16-1` through `SW-WIN-R16-3`.
+- `US_Stock_Monitor`: thread `019f387b-a161-7ad0-8678-f03a099612ba`, ready but not assigned because the R16 US branch was optional and not explicitly requested.
 
 R13C / WSL2 hard execution rule:
 
@@ -107,7 +115,8 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. User explicitly requested an R15 external-audit packet after closeout.
-2. Packet prepared at `reports/agent_handoff/windows_wsl2_data_strategy_batch_r15_external_audit_packet_20260707.md`.
-3. Wait for the user to submit it to GPT Pro / ChatGPT and paste the verdict or next task list.
-4. Do not operate GPT Pro / ChatGPT directly from the dispatcher.
+1. Commit and push R16 intake/task/dispatch records.
+2. Poll downstream threads in coarse intervals for R16 callbacks.
+3. Record A_Share_Monitor and market_data callbacks when they arrive.
+4. Release `strategy_work` final sync only after accepted A_Share_Monitor and market_data R16 callbacks exist.
+5. Prepare R16 result summary and closeout after required callbacks.
