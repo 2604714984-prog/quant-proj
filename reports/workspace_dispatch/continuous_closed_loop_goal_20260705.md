@@ -53,19 +53,17 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_STRATEGY_DISCOVERY_BATCH_R16_20260707 closed accepted research-only with warnings
+Current task batch: WINDOWS_WSL2_5090_GPU_NUMERIC_DIAGNOSTICS_PHASE2_20260707 blocked / awaiting user environment authorization
 
 Objective:
 
-Continue as Quant-Dispatcher only. The user pasted a GitHub-connector external-audit result accepting R15 and providing the R16 task batch on 2026-07-07. R16 is ordinary research-only strategy discovery work.
+Continue as Quant-Dispatcher only. The user pasted a GPU numeric diagnostics Phase 2 task list on 2026-07-07. The batch is ordinary research-only numeric diagnostics work. A_Share_Monitor returned `BLOCKED_CUDA_PYTHON_UNAVAILABLE` after confirming WSL can see RTX 5090 but the project `.venv` has no already-installed Python CUDA numeric library.
 
-- R15 verdict: `VERIFIED_ACCEPT_WITH_WARNINGS`.
 - External-audit trigger opened: `no`.
-- Fixes required before next ordinary strategy-search batch: `none`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
 - GPT Pro / ChatGPT external-audit UI operation remains user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
 
-Do not create a controller/gate loop unless a real boundary trigger opens. Do not authorize recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, raw-data migration, or secrets.
+Do not create a controller/gate loop unless a real boundary trigger opens. Do not authorize local LLM/Qwen deployment, recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, provider/network fetch, DB/cache rebuild/write, schema/readiness/registry changes, raw-data migration, or secrets.
 
 Current intake and controller records:
 
@@ -107,6 +105,21 @@ Final R16 source states:
 - `US_Stock_Monitor`: thread `019f387b-a161-7ad0-8678-f03a099612ba`, ready but not assigned because the R16 US branch was optional and not explicitly requested.
 - R16 result summary: `reports/workspace_dispatch/windows_wsl2_strategy_discovery_batch_r16_20260707_result_summary.md`
 - R16 closeout: `reports/workspace_dispatch/windows_wsl2_strategy_discovery_batch_r16_20260707_closeout.md`
+- GPU Phase 2 intake: `reports/workspace_dispatch/windows_wsl2_5090_gpu_numeric_diagnostics_phase2_20260707_intake.md`
+- GPU Phase 2 task packet: `tasks/in_progress/windows-wsl2-5090-gpu-numeric-diagnostics-phase2-20260707/spec.md`
+- GPU Phase 2 dispatch summary: `reports/workspace_dispatch/windows_wsl2_5090_gpu_numeric_diagnostics_phase2_20260707_dispatch_summary.md`
+- GPU Phase 2 A-share callback: `reports/workspace_dispatch/windows_wsl2_5090_gpu_numeric_diagnostics_phase2_20260707_a_share_callback.md`
+- GPU Phase 2 result summary: `reports/workspace_dispatch/windows_wsl2_5090_gpu_numeric_diagnostics_phase2_20260707_result_summary.md`
+- GPU Phase 2 closeout: `reports/workspace_dispatch/windows_wsl2_5090_gpu_numeric_diagnostics_phase2_20260707_closeout.md`
+- GPU Phase 2 classification: ordinary research-only numeric diagnostics batch
+- External-audit trigger opened by GPU Phase 2 intake: `no`
+
+GPU Phase 2 dispatch state:
+
+- `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, assigned `GPU-P2-1` through `GPU-P2-9`, returned `BLOCKED_CUDA_PYTHON_UNAVAILABLE`.
+- `market_data`, `strategy_work`, and `US_Stock_Monitor` are not assigned in this batch.
+- GPU visible through WSL `nvidia-smi`: NVIDIA GeForce RTX 5090, driver `610.47`, reported memory `32607 MiB`.
+- Python CUDA numeric libraries unavailable in A_Share_Monitor `.venv`: `torch`, `cupy`, `numba`, `jax`, `jaxlib`, `tensorflow`, `pycuda`, and `triton` all absent per callback.
 
 R13C / WSL2 hard execution rule:
 
@@ -117,6 +130,6 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Commit and push R16 final result summary and closeout records.
-2. Wait for the user to paste the next task list, downstream callback, or GPT Pro / ChatGPT external-audit result.
-3. Do not create a controller external-audit packet for R16 unless the user explicitly requests one; R16 remained ordinary research-only work and `EXTERNAL_AUDIT_TRIGGER_OPEN: no`.
+1. Commit and push GPU Phase 2 intake/task/dispatch/result/closeout records.
+2. Await user instruction for an approved already-installed CUDA Python numeric environment path or separate environment/toolchain authorization.
+3. Do not resume GPU Phase 2 diagnostics until the Python CUDA smoke and CPU/GPU parity path is authorized and available.
