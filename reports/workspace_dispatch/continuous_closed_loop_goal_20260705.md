@@ -53,17 +53,17 @@ These rules are permanent. Do not delete them when updating the current task.
 
 ## Mutable Current Task
 
-Current task batch: WINDOWS_WSL2_5090_GPU_ML_SIGNAL_RESEARCH_PHASE3_20260707 blocked / awaiting user environment authorization
+Current task batch: WINDOWS_WSL2_AUTHORIZED_CONTROLLED_ADVANCEMENT_20260707 dispatching / awaiting downstream callbacks
 
 Objective:
 
-Continue as Quant-Dispatcher only. The user pasted a GPU ML signal research Phase 3 task list on 2026-07-07. The batch is ordinary research-only ML signal work if environment preconditions are met. It is blocked before downstream execution because Phase 2 closed as `BLOCKED_CUDA_PYTHON_UNAVAILABLE`, and a fresh non-mutating check confirms A_Share_Monitor `.venv` has no installed Python CUDA/ML stack for logistic, MLP, or XGBoost GPU baselines.
+Continue as Quant-Dispatcher only. The user granted all previously discussed authorizations on 2026-07-07, including required installation, while stating the available GPU hardware is RTX 5090 only. The dispatcher recorded broad Human-Gate authorization plus task-level records and is dispatching scoped controlled workstreams.
 
 - External-audit trigger opened: `no`.
 - Current dispatcher thread: `019f3830-4b44-7a83-944d-247a0d4dc169`.
 - GPT Pro / ChatGPT external-audit UI operation remains user-operated; Quant-Dispatcher receives pasted task lists, verdicts, and downstream acceptances.
 
-Do not create a controller/gate loop unless a real boundary trigger opens. Do not authorize local LLM deployment, recommendation, ticket, product route, production readiness, broker/order/paper/live/auto, provider/network fetch, DB/cache rebuild/write, schema/readiness/registry changes, raw-data migration, secrets, transformer/RL/complex ensemble start, test-performance model selection, or weak-result candidate promotion.
+Do not create a controller/gate loop unless a real boundary trigger opens. The new authorization permits bounded install/network/write/route-prep work only through task-level HG records. It still does not authorize local LLM/Qwen deployment, recommendation, production recommendation readiness, broker/order/paper/live/auto, secret access/output, raw-data migration into quant-proj, transformer/RL/complex ensemble start, test-performance model selection, or weak-result candidate promotion.
 
 Current intake and controller records:
 
@@ -120,6 +120,10 @@ Final R16 source states:
 - GPU Phase 3 closeout: `reports/workspace_dispatch/windows_wsl2_5090_gpu_ml_signal_research_phase3_20260707_closeout.md`
 - GPU Phase 3 classification: ordinary research-only ML signal research batch if environment preconditions are met
 - External-audit trigger opened by GPU Phase 3 intake: `no`
+- Broad Human-Gate authorization: `reports/human_gate/windows_wsl2_broad_authorization_20260707.md`
+- Broad controlled advancement task packet: `tasks/in_progress/windows-wsl2-authorized-controlled-advancement-20260707/spec.md`
+- Broad controlled advancement dispatch summary: `reports/workspace_dispatch/windows_wsl2_authorized_controlled_advancement_20260707_dispatch_summary.md`
+- Task-level HG records: `HG-EXEC-TASK-GPU-ENV-PHASE2-PHASE3-20260707`, `HG-EXEC-TASK-A-EAST-MONEY-COVERAGE-20260707`, `HG-EXEC-TASK-US-METADATA-REPAIR-20260707`, `HG-EXEC-TASK-MD-PRODUCT-ROUTE-PREP-20260707`
 
 GPU Phase 2 dispatch state:
 
@@ -134,6 +138,12 @@ GPU Phase 3 dispatch state:
 - Fresh non-mutating check confirms GPU visible through WSL `nvidia-smi`: NVIDIA GeForce RTX 5090, driver `610.47`, reported memory `32607 MiB`.
 - Python CUDA/ML libraries unavailable in A_Share_Monitor `.venv`: `torch`, `cupy`, `numba`, `jax`, `jaxlib`, `tensorflow`, `pycuda`, `triton`, `xgboost`, `sklearn`, and `cuml` absent.
 
+Authorized controlled advancement dispatch state:
+
+- `A_Share_Monitor`: thread `019f387b-617e-7273-b539-161216ae3002`, assigned GPU environment enablement plus Phase 2/3 resume and A-share East Money coverage expansion.
+- `US_Stock_Monitor`: thread `019f387b-a161-7ad0-8678-f03a099612ba`, assigned US metadata repair / bounded US 300-symbol ingest.
+- `market_data`: thread `019f387b-e763-7c01-ae3d-6be552cdb6dc`, assigned product-read route/readiness preparation and external-audit packet material.
+
 R13C / WSL2 hard execution rule:
 
 - Do not run 3068-symbol full-frame pandas strategy search.
@@ -143,6 +153,6 @@ R13C / WSL2 hard execution rule:
 
 Next dispatcher actions:
 
-1. Commit and push GPU Phase 3 intake/task/dispatch/result/closeout records.
-2. Await user instruction for an approved already-installed CUDA ML environment path or separate environment/toolchain authorization.
-3. Do not resume GPU Phase 3 execution until Python CUDA/ML smoke, strict split, leakage checks, and CPU/GPU parity path are authorized and available.
+1. Send prompt-only downstream dispatches for the authorized controlled advancement batch.
+2. Commit and push controller authorization/task/dispatch records.
+3. Await downstream callbacks and record result summaries/closeouts.
