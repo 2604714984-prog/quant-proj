@@ -13,7 +13,8 @@ R27 completed as an evidence-backed research-only hardening batch after R25/R26 
 | repo | branch | commit | tree | status |
 | --- | --- | --- | --- | --- |
 | A_Share_Monitor | `codex/r27-evidence-backed-strategy-probe-20260709` | `01e63bc532d1c1d75ab326fa607f953ed321b62d` | `24fd77a85b61570efd3e0b167b428c21ec089d96` | `COMPLETED_RESEARCH_ONLY_NO_PROBE_ELIGIBLE` |
-| strategy_work | `main` | `b0c64107e37327d34a8fb05d000a78781a4154a4` | `9971d60fb68351b67519f6d9e6ce54b0b56f5849` | `CODEX_ACCEPTANCE_SW_R27_FINAL_SYNC_RESEARCH_ONLY_NO_PROBE_ELIGIBLE` |
+| market_data | `codex/r27-evidence-backed-strategy-contract-20260709` | `bb215009e95fdfb69b397570f03258e168d5a4d8` | `708c7dacdf2a65377dbcb512bbe8c27ac5796070` | `ACCEPTED_RESEARCH_ONLY_CONTRACT_WITH_VALIDATION_PASS` |
+| strategy_work | `main` | `b36641db36ee20e42ceaf40f9c2d12de6da8f259` | `e903928a11f301af3b33357cbe4a6036d3780583` | `CODEX_ACCEPTANCE_SW_R27_FINAL_SYNC_RESEARCH_ONLY_NO_PROBE_ELIGIBLE` |
 
 ## SmallCap status
 
@@ -74,6 +75,10 @@ R27 reviewed the five fixed pass77 features and accepted no new direct public so
 - A_Share_Monitor `agent_safety_check.py` PASS.
 - A_Share_Monitor `git diff --check` PASS.
 - A_Share_Monitor branch push and remote verification PASS.
+- market_data focused pytest PASS: 3 passed.
+- market_data JSON parse PASS.
+- market_data `git diff --check` PASS.
+- market_data branch push and remote verification PASS.
 - strategy_work final sync `git diff --check` PASS.
 - strategy_work push PASS.
 

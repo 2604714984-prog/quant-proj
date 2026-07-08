@@ -8,6 +8,14 @@ Recorded: 2026-07-09 Asia/Shanghai
 
 R27 is closed as an ordinary research-only evidence-backed strategy hardening batch. It is not a recommendation, ticket, candidate-promotion, readiness, product-route, registry, daily-signal, or trading batch.
 
+## Final accepted commits
+
+| repo | commit | preserved |
+| --- | --- | --- |
+| A_Share_Monitor | `01e63bc532d1c1d75ab326fa607f953ed321b62d` | `origin/codex/r27-evidence-backed-strategy-probe-20260709` |
+| market_data | `bb215009e95fdfb69b397570f03258e168d5a4d8` | `origin/codex/r27-evidence-backed-strategy-contract-20260709` |
+| strategy_work | `b36641db36ee20e42ceaf40f9c2d12de6da8f259` | `origin/main` |
+
 ## Final result
 
 R27 produced no local or wide probe eligibility:
