@@ -6,6 +6,25 @@ Run an ordinary research-only feature materialization and strategy-delta batch a
 
 R21 must convert R20 source-review / manifest-only work into validated local research feature rows where public/no-secret sources pass source health. R21 must not run broad strategy searches unless new materialized feature rows or materially improved ETF fields justify a limited delta diagnostic.
 
+## Development-First Amendment
+
+The user amended R21 on 2026-07-08 to prioritize actual project progress and strategy research.
+
+Do not expand safety policy work. Do not ask for another architecture/gate review. Do not stop for ordinary warnings.
+
+Hard stop only for:
+
+1. Secret, credential, key, token, auth, or `.env` access or output.
+2. Broker/order/paper/live/auto execution or daily signal push.
+3. Product route, readiness, active registry, or production adapter activation.
+4. Actionable investment advice or ticket claim.
+5. Test-result parameter selection.
+6. Non-public, paywalled, auth-required, or anti-abuse-bypassing provider access.
+
+Everything else should be logged as a warning and research should continue.
+
+R21 must not accept source-review-only completion for materialization lanes. It must end with data rows or field-level unavailable evidence, strategy diagnostics where allowed, failure updates, and concrete next experiments.
+
 ## R20 Baseline
 
 - R20_V2 closeout: `CLOSED_ACCEPTED_RESEARCH_ONLY_WITH_WARNINGS`.
