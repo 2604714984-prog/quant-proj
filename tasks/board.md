@@ -1,5 +1,17 @@
 # Quant Workspace Task Board
 
+## Directory Reconciliation - 2026-07-10
+
+- Active controller paths have no remaining `/Users/rongyuxu/Desktop/...`
+  references under `registry/`, `prompts/`, `docs/`, `tasks/in_progress/`, or
+  `README.md`.
+- `tasks/done/` is populated and is no longer empty.
+- `windows-wsl2-smallcap-direct-marketcap-evidence-r29-20260709` has a
+  controller closeout/result summary and was moved from `tasks/in_progress/` to
+  `tasks/done/`.
+- Remaining `tasks/in_progress/` directories are retained only where a closeout
+  was not found or the batch was superseded/held instead of cleanly closed.
+
 ## Inbox
 
 - `WINDOWS_WSL2_PARALLEL_STRATEGY_SEARCH_BATCH_R19_20260707`: imported fastpath/R18 GitHub connector external-audit result and R19 next-task list; ordinary research-only parallel ETF + A-share equity strategy search batch; audit result recorded at `reports/agent_handoff/windows_wsl2_fastpath_and_r18_external_audit_result_20260708.md`.
