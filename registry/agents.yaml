@@ -1,5 +1,5 @@
 generated_at: "2026-07-04T00:00:00+08:00"
-workspace_root: "/Users/rongyuxu/Desktop/quant proj"
+workspace_root: "/home/rongyu/workspace/quant-proj"
 
 agents:
   dispatcher:
@@ -13,10 +13,10 @@ agents:
       - "prompts/"
       - "runbooks/"
     forbidden_write_scope:
-      - "/Users/rongyuxu/Desktop/A_Share_Monitor"
-      - "/Users/rongyuxu/Desktop/US_Stock_Monitor"
-      - "/Users/rongyuxu/Desktop/market_data"
-      - "/Users/rongyuxu/Desktop/strategy_work"
+      - "/home/rongyu/workspace/A_Share_Monitor"
+      - "/home/rongyu/workspace/US_Stock_Monitor"
+      - "/home/rongyu/workspace/market_data"
+      - "/home/rongyu/workspace/strategy_work"
     can_assign_to:
       - "codex_dev"
       - "reasonix_db_maintainer"

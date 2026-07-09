@@ -4,10 +4,10 @@ This folder is the controller workspace for the local quant system.
 
 It does not yet contain the source repos. The current source-of-truth project roots are:
 
-- `/Users/rongyuxu/Desktop/A_Share_Monitor`
-- `/Users/rongyuxu/Desktop/US_Stock_Monitor`
-- `/Users/rongyuxu/Desktop/market_data`
-- `/Users/rongyuxu/Desktop/strategy_work`
+- `/home/rongyu/workspace/A_Share_Monitor`
+- `/home/rongyu/workspace/US_Stock_Monitor`
+- `/home/rongyu/workspace/market_data`
+- `/home/rongyu/workspace/strategy_work`
 
 Start with:
 

@@ -25,7 +25,7 @@ Allowed:
 
 Forbidden:
 
-- Editing `/Users/rongyuxu/Desktop/A_Share_Monitor`.
+- Editing `/home/rongyu/workspace/A_Share_Monitor`.
 - Emitting buy/sell advice.
 - Creating recommendation tickets.
 - Claiming observation or recommendation readiness.

@@ -1,7 +1,7 @@
 # Quant Workspace: Codex CLI + Reasonix CLI Collaboration Plan
 
 Date: 2026-07-03
-Workspace root: `/Users/rongyuxu/Desktop/quant proj`
+Workspace root: `/home/rongyu/workspace/quant-proj`
 
 ## Executive Decision
 
@@ -9,10 +9,10 @@ Use this folder as a workspace controller first, not as a merged monorepo yet.
 
 The existing quant system is already split into separate source-of-truth repositories:
 
-- `/Users/rongyuxu/Desktop/A_Share_Monitor`
-- `/Users/rongyuxu/Desktop/US_Stock_Monitor`
-- `/Users/rongyuxu/Desktop/market_data`
-- `/Users/rongyuxu/Desktop/strategy_work`
+- `/home/rongyu/workspace/A_Share_Monitor`
+- `/home/rongyu/workspace/US_Stock_Monitor`
+- `/home/rongyu/workspace/market_data`
+- `/home/rongyu/workspace/strategy_work`
 
 Do not physically merge everything today. The repos contain dirty working trees, absolute-path manifests, Git tags/branches used for audits, and ignored local data files. A direct move into this folder would break audit references and some registry paths before the source-of-truth files are reconciled.
 
@@ -36,7 +36,7 @@ Installed local CLIs:
 
 A-share DuckDB:
 
-- Path: `/Users/rongyuxu/Desktop/A_Share_Monitor/data/local_market/a_share_market.duckdb`
+- Path: `/home/rongyu/workspace/A_Share_Monitor/data/local_market/a_share_market.duckdb`
 - Size: ~1.25GB
 - Tables: 15
 - Current `a_share_canonical_daily_bars`: 659,478 rows, 310 symbols, date range `20180102` to `20260701`
@@ -44,7 +44,7 @@ A-share DuckDB:
 
 US DuckDB:
 
-- Path: `/Users/rongyuxu/Desktop/US_Stock_Monitor/data/local_market/us_stock_market.duckdb`
+- Path: `/home/rongyu/workspace/US_Stock_Monitor/data/local_market/us_stock_market.duckdb`
 - Size: ~70MB
 - Tables: 13
 - Current `canonical_daily_bars`: 689,626 rows, 326 symbols, date range `2020-01-02` to `2026-07-02`
@@ -75,7 +75,7 @@ Important: older docs in `market_data/LLM_REFERENCE.md` and `market_data/catalog
 
 - A-share, US, and market_data have uncommitted files.
 - Many audit packets use immutable branch/tag/commit/tree references; moving without checkpointing makes review harder.
-- Several manifests and registry files contain absolute paths under `/Users/rongyuxu/Desktop/...`.
+- Historical manifests may still mention the retired macOS workspace path, but active registry, prompt, and runbook files use `/home/rongyu/workspace/...`.
 - `.gitignore` intentionally excludes real data and generated outputs. A naive copy could accidentally include files that should remain local-only.
 - `market_data/catalog/market_data_registry.yaml` explicitly says `physical_db_migration_allowed: false`.
 
@@ -236,15 +236,15 @@ The human remains the approval gate. ChatGPT external audit consumes immutable t
 Codex main development:
 
 ```bash
-codex -C /Users/rongyuxu/Desktop/US_Stock_Monitor
-codex -C /Users/rongyuxu/Desktop/A_Share_Monitor
-codex -C /Users/rongyuxu/Desktop/market_data
+codex -C /home/rongyu/workspace/US_Stock_Monitor
+codex -C /home/rongyu/workspace/A_Share_Monitor
+codex -C /home/rongyu/workspace/market_data
 ```
 
 Codex non-interactive review:
 
 ```bash
-codex review -C /Users/rongyuxu/Desktop/US_Stock_Monitor
+codex review -C /home/rongyu/workspace/US_Stock_Monitor
 ```
 
 Reasonix-DB draft:
@@ -268,7 +268,7 @@ reasonix run --effort high --budget 0.50 \
 Reasonix-Advisory interactive code review:
 
 ```bash
-reasonix code /Users/rongyuxu/Desktop/US_Stock_Monitor \
+reasonix code /home/rongyu/workspace/US_Stock_Monitor \
   --budget 1 \
   --transcript reports/deepseek_audit/reasonix_stage_review.jsonl
 ```
@@ -284,15 +284,15 @@ reasonix run --effort high --budget 0.50 \
 Reasonix semantic index:
 
 ```bash
-reasonix index --dir /Users/rongyuxu/Desktop/US_Stock_Monitor
-reasonix index --dir /Users/rongyuxu/Desktop/A_Share_Monitor
-reasonix index --dir /Users/rongyuxu/Desktop/market_data
+reasonix index --dir /home/rongyu/workspace/US_Stock_Monitor
+reasonix index --dir /home/rongyu/workspace/A_Share_Monitor
+reasonix index --dir /home/rongyu/workspace/market_data
 ```
 
 Dispatcher intake:
 
 ```bash
-codex -C "/Users/rongyuxu/Desktop/quant proj"
+codex -C "/home/rongyu/workspace/quant-proj"
 ```
 
 Then paste the ChatGPT task list and instruct the agent to use `prompts/task_dispatcher.md`.

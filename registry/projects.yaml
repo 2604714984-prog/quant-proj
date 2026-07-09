@@ -55,7 +55,7 @@ projects:
 
   a_share_monitor:
     path: "/home/rongyu/workspace/A_Share_Monitor"
-    legacy_path_symlink: "/Users/rongyuxu/Desktop/A_Share_Monitor"
+    legacy_path_symlink: "/home/rongyu/workspace/A_Share_Monitor"
     active_dispatch_worktree: null
     package: "qta"
     cli: "python -m qta"
@@ -109,7 +109,7 @@ projects:
 
   us_stock_monitor:
     path: "/home/rongyu/workspace/US_Stock_Monitor"
-    legacy_path_symlink: "/Users/rongyuxu/Desktop/US_Stock_Monitor"
+    legacy_path_symlink: "/home/rongyu/workspace/US_Stock_Monitor"
     active_dispatch_worktree: null
     package: "usq"
     cli: "python -m usq"
@@ -152,7 +152,7 @@ projects:
 
   market_data:
     path: "/home/rongyu/workspace/market_data"
-    legacy_path_symlink: "/Users/rongyuxu/Desktop/market_data"
+    legacy_path_symlink: "/home/rongyu/workspace/market_data"
     active_dispatch_worktree: null
     package: "market_data"
     cli: "python -m market_data or direct scripts"
@@ -196,7 +196,7 @@ projects:
 
   strategy_work:
     path: "/home/rongyu/workspace/strategy_work"
-    legacy_path_symlink: "/Users/rongyuxu/Desktop/strategy_work"
+    legacy_path_symlink: "/home/rongyu/workspace/strategy_work"
     active_dispatch_worktree: null
     package: "reports_and_configs"
     cli: "none"

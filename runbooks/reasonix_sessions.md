@@ -21,7 +21,7 @@ Old mixed sessions, especially `code-rongyuxu`, are reference-only unless the us
 Reasonix-DB:
 
 ```bash
-cd "/Users/rongyuxu/Desktop/quant proj"
+cd "/home/rongyu/workspace/quant-proj"
 reasonix chat \
   --session quant-reasonix-db \
   --resume \
@@ -35,7 +35,7 @@ reasonix chat \
 Reasonix-Strategy:
 
 ```bash
-cd "/Users/rongyuxu/Desktop/quant proj"
+cd "/home/rongyu/workspace/quant-proj"
 reasonix chat \
   --session quant-reasonix-strategy \
   --resume \
@@ -49,7 +49,7 @@ reasonix chat \
 Reasonix-Advisory:
 
 ```bash
-cd "/Users/rongyuxu/Desktop/quant proj"
+cd "/home/rongyu/workspace/quant-proj"
 reasonix chat \
   --session quant-reasonix-advisory \
   --resume \
