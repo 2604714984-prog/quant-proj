@@ -5,7 +5,7 @@ Send to `A_Share_Monitor` Codex-Dev thread `019f32bd-082d-73e2-b902-3d48b8d198ba
 Prompt-only. Do not pass model or thinking overrides.
 
 ```text
-You are Codex-Dev for /Users/rongyuxu/Desktop/A_Share_Monitor.
+You are Codex-Dev for /home/rongyu/workspace/A_Share_Monitor.
 
 Task batch: DATA_STRATEGY_BATCH_R13_CHUNKED_SEARCH_20260706
 
@@ -46,14 +46,14 @@ Tasks:
 
 5. A-R13C-5 / Wide3068 bare_minimum chunked dry run
    - Preconditions: A-R13C-1 through A-R13C-4 pass; features_daily exists and validation passes; chunked mode enabled; full-frame unsafe guard active.
-   - Run: python -m qta research discover --config /Users/rongyuxu/Desktop/strategy_work/configs/bare_minimum_r13_wide3068.yaml --chunked
+   - Run: python -m qta research discover --config /home/rongyu/workspace/strategy_work/configs/bare_minimum_r13_wide3068.yaml --chunked
    - If CLI lacks --chunked, implement an equivalent switch/command first.
    - Output run id, run dir, chunk plan, memory telemetry, leaderboard, candidate registry, metrics by split, rejection reasons, data_quality/survivor_bias/cost_stress/overfit statuses, and confirmation full features_daily was not loaded.
    - If unsafe, return BLOCKED_CHUNKED_BARE_MINIMUM_MEMORY_UNSAFE.
 
 6. A-R13C-6 / Conditional wide3068 low_vol_quality chunked rerun
    - Only if bare_minimum test Sharpe > 0, data quality not FAIL, and chunked equivalence is proven.
-   - Run: python -m qta research discover --config /Users/rongyuxu/Desktop/strategy_work/configs/lowvol_quality_focused_r13_wide3068.yaml --chunked
+   - Run: python -m qta research discover --config /home/rongyu/workspace/strategy_work/configs/lowvol_quality_focused_r13_wide3068.yaml --chunked
    - If preconditions fail, output SKIPPED_LOWVOL_QUALITY_WIDE_RERUN_PRECONDITION_NOT_MET.
 
 Required final output:

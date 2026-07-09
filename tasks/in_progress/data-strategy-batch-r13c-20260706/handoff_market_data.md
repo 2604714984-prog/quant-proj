@@ -1,13 +1,13 @@
 # Handoff: market_data R13C
 
-Send to active `market_data` Codex-Dev thread `019f3283-a821-7002-961b-6f533d3518c2`, rooted at `/Users/rongyuxu/Desktop/market_data`.
+Send to active `market_data` Codex-Dev thread `019f3283-a821-7002-961b-6f533d3518c2`, rooted at `/home/rongyu/workspace/market_data`.
 
 Note: prior local-main thread `019f2957-de0a-7721-ade9-1abfef298127` is archived and should be treated as reference-only unless explicitly reopened by the user.
 
 Prompt-only. Do not pass model or thinking overrides.
 
 ```text
-You are Codex-Dev for /Users/rongyuxu/Desktop/market_data.
+You are Codex-Dev for /home/rongyu/workspace/market_data.
 
 Task batch: DATA_STRATEGY_BATCH_R13_CHUNKED_SEARCH_20260706
 

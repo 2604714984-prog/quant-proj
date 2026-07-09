@@ -5,7 +5,7 @@ Send to `market_data` Codex-Dev thread `019f3283-a821-7002-961b-6f533d3518c2`.
 Prompt-only. Do not pass model or thinking overrides.
 
 ```text
-You are Codex-Dev for /Users/rongyuxu/Desktop/market_data.
+You are Codex-Dev for /home/rongyu/workspace/market_data.
 
 Task batch: DATA_STRATEGY_BATCH_R13_20260706
 

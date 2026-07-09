@@ -5,7 +5,7 @@ Send to `A_Share_Monitor` Codex-Dev thread `019f32bd-082d-73e2-b902-3d48b8d198ba
 Prompt-only. Do not pass model or thinking overrides.
 
 ```text
-You are Codex-Dev for /Users/rongyuxu/Desktop/A_Share_Monitor.
+You are Codex-Dev for /home/rongyu/workspace/A_Share_Monitor.
 
 Task batch: DATA_STRATEGY_BATCH_R13_20260706
 
@@ -21,7 +21,7 @@ Tasks:
 
 1. A-R13-1 / 3068-symbol cache preflight inventory
    - Work only read-only.
-   - Inspect /Users/rongyuxu/Desktop/A_Share_Monitor/data/cache.
+   - Inspect /home/rongyu/workspace/A_Share_Monitor/data/cache.
    - Report whether daily, daily_basic, adj_factor, stk_limit, suspend_d, index_daily, and features_daily exist.
    - For each table, report row count, symbol count, date range.
    - Check daily duplicate ts_code/trade_date rows.
@@ -32,7 +32,7 @@ Tasks:
 2. A-R13-2 / safe features_daily build via chunked path only
    - Run only after A-R13-1 passes.
    - Use:
-     cd /Users/rongyuxu/Desktop/A_Share_Monitor
+     cd /home/rongyu/workspace/A_Share_Monitor
      python -m qta features build
      or an equivalent FeatureStore.build_to_store() path.
    - Do not use full-cache returned-DataFrame FeatureStore.build().
@@ -54,16 +54,16 @@ Tasks:
 4. A-R13-4 / run bare_minimum on 3068-symbol cache
    - Only after A-R13-2/A-R13-3 pass and strategy_work R13 config exists.
    - Run:
-     cd /Users/rongyuxu/Desktop/A_Share_Monitor
-     python -m qta research discover --config /Users/rongyuxu/Desktop/strategy_work/configs/bare_minimum_r13_wide3068.yaml
+     cd /home/rongyu/workspace/A_Share_Monitor
+     python -m qta research discover --config /home/rongyu/workspace/strategy_work/configs/bare_minimum_r13_wide3068.yaml
    - Stop if features_daily is missing or empty. Do not let the strategy runner auto-build it in memory.
    - Output run id, run dir, data snapshot, manifest, leaderboard, candidate registry, train/validation/test metrics, data_quality/survivor_bias/cost_stress/overfit/fill_realism statuses, rejection/research-only reasons, and whether features_daily was read from store.
 
 5. A-R13-5 / conditional lowvol_quality_focused wide rerun
    - Only if A-R13-4 test Sharpe > 0 and data quality does not fail.
    - Run:
-     cd /Users/rongyuxu/Desktop/A_Share_Monitor
-     python -m qta research discover --config /Users/rongyuxu/Desktop/strategy_work/configs/lowvol_quality_focused_r13_wide3068.yaml
+     cd /home/rongyu/workspace/A_Share_Monitor
+     python -m qta research discover --config /home/rongyu/workspace/strategy_work/configs/lowvol_quality_focused_r13_wide3068.yaml
    - Output all candidate rows, leaderboard, candidate registry, trade-count weakness, parameter instability, cost-stress result, survivor-bias status, whether wider sample changes the 50/100/200-symbol conclusion, and whether apparent improvement is caused by gate relaxation rather than genuine strategy improvement.
 
 Required final output:

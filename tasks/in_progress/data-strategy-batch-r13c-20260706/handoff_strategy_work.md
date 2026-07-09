@@ -5,7 +5,7 @@ Send to `strategy_work` Codex-Dev thread `019f30c3-247e-7f43-af60-96164539a183`.
 Prompt-only. Do not pass model or thinking overrides.
 
 ```text
-You are Codex-Dev for /Users/rongyuxu/Desktop/strategy_work.
+You are Codex-Dev for /home/rongyu/workspace/strategy_work.
 
 Task batch: DATA_STRATEGY_BATCH_R13_CHUNKED_SEARCH_20260706
 
