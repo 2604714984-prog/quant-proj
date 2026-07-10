@@ -1,16 +1,24 @@
 import hashlib
 import json
 from pathlib import Path
+import shlex
 import subprocess
+import sys
 
 import pytest
 
-from scripts.validate_automated_gate_manifest import validate_file, validate_payload
+from scripts.validate_automated_gate_manifest import (
+    _validate_check_semantics,
+    validate_file,
+    validate_payload,
+)
 
 
 SHA1 = "0123456789abcdef0123456789abcdef01234567"
 SHA256 = "0123456789abcdef" * 4
 CALLBACK_ID = "019f4ca0-2054-77e3-9559-7005c0f9b565"
+PYTHON = shlex.quote(sys.executable)
+ROOT = Path(__file__).resolve().parents[1]
 
 
 def _digest(path: Path) -> str:
@@ -35,9 +43,20 @@ def _payload() -> dict:
         "result": {"commit": SHA1, "tree": SHA1},
         "code_changed": True,
         "checks": [
-            {"name": "focused_tests", "command": "pytest", "exit_code": 0, "test_count": 1},
+            {
+                "name": "focused_tests",
+                "command": f"{PYTHON} -I -m pytest -q -o pythonpath=. tests/test_target.py",
+                "exit_code": 0,
+                "test_count": 1,
+            },
             {"name": "git_diff_check", "command": "git diff --check", "exit_code": 0},
-            {"name": "boundary_scan", "command": "safety", "exit_code": 0},
+            {
+                "name": "boundary_scan",
+                "command": f"{PYTHON} scripts/boundary_scan.py",
+                "exit_code": 0,
+                "validator_path": "scripts/boundary_scan.py",
+                "validator_sha256": SHA256,
+            },
         ],
         "callback": {"path": "callback.json", "sha256": SHA256},
         "artifacts": [{"path": "artifact.bin", "sha256": SHA256}],
@@ -55,7 +74,14 @@ def _real_gate(tmp_path: Path) -> Path:
     subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
     tracked = repo / "tracked.txt"
     tracked.write_text("source\n", encoding="utf-8")
-    subprocess.run(["git", "add", "tracked.txt"], cwd=repo, check=True)
+    (repo / ".gitignore").write_text("__pycache__/\n.pytest_cache/\n", encoding="utf-8")
+    boundary = repo / "scripts" / "boundary_scan.py"
+    boundary.parent.mkdir()
+    boundary.write_text("print('boundary')\n", encoding="utf-8")
+    focused_test = repo / "tests" / "test_target.py"
+    focused_test.parent.mkdir()
+    focused_test.write_text("def test_target():\n    assert True\n", encoding="utf-8")
+    subprocess.run(["git", "add", ".gitignore", "tracked.txt", "scripts", "tests"], cwd=repo, check=True)
     subprocess.run(["git", "commit", "-qm", "source"], cwd=repo, check=True)
     source_commit = _run(repo, "git", "rev-parse", "HEAD")
     source_tree = _run(repo, "git", "rev-parse", "HEAD^{tree}")
@@ -71,7 +97,9 @@ def _real_gate(tmp_path: Path) -> Path:
     packet.mkdir()
     commands = packet / "gate_commands.txt"
     commands.write_text(
-        "python3 -c \"print('focused')\"\ngit diff --check\npython3 -c \"print('boundary')\"\n",
+        f"{PYTHON} -I -m pytest -q -o pythonpath=. tests/test_target.py\n"
+        "git diff --check\n"
+        f"{PYTHON} scripts/boundary_scan.py\n",
         encoding="utf-8",
     )
     delta = packet / "context_delta.md"
@@ -123,9 +151,20 @@ CONTEXT_DELTA_SHA256: {_digest(delta)}
         artifacts=[{"path": "artifact.bin", "sha256": _digest(artifact)}],
     )
     payload["checks"] = [
-        {"name": "focused_tests", "command": "python3 -c \"print('focused')\"", "exit_code": 0, "test_count": 1},
+        {
+            "name": "focused_tests",
+            "command": f"{PYTHON} -I -m pytest -q -o pythonpath=. tests/test_target.py",
+            "exit_code": 0,
+            "test_count": 1,
+        },
         {"name": "git_diff_check", "command": "git diff --check", "exit_code": 0},
-        {"name": "boundary_scan", "command": "python3 -c \"print('boundary')\"", "exit_code": 0},
+        {
+            "name": "boundary_scan",
+            "command": f"{PYTHON} scripts/boundary_scan.py",
+            "exit_code": 0,
+            "validator_path": "scripts/boundary_scan.py",
+            "validator_sha256": _digest(boundary),
+        },
     ]
     manifest = tmp_path / "gate.json"
     manifest.write_text(json.dumps(payload), encoding="utf-8")
@@ -208,6 +247,121 @@ def test_failed_or_missing_check_is_rejected():
         validate_payload(payload)
 
 
+@pytest.mark.parametrize(
+    ("name", "command", "error"),
+    (
+        ("focused_tests", "python -c \"print('1 passed')\"", "absolute trusted Python"),
+        ("git_diff_check", "python -c \"print('clean')\"", "validator-owned command"),
+        ("boundary_scan", "python -c \"print('safe')\"", "repository-controlled Python script"),
+    ),
+)
+def test_reserved_check_names_reject_semantic_noops(name, command, error):
+    payload = _payload()
+    check = next(item for item in payload["checks"] if item["name"] == name)
+    check["command"] = command
+    with pytest.raises(ValueError, match=error):
+        validate_payload(payload)
+
+
+def test_boundary_scan_requires_hash_bound_validator_metadata():
+    payload = _payload()
+    boundary = next(item for item in payload["checks"] if item["name"] == "boundary_scan")
+    boundary.pop("validator_path")
+    with pytest.raises(ValueError, match="validator_path"):
+        validate_payload(payload)
+
+
+def test_focused_tests_require_absolute_isolated_python():
+    payload = _payload()
+    focused = next(item for item in payload["checks"] if item["name"] == "focused_tests")
+    focused["command"] = "python -m pytest -q tests/test_target.py"
+    with pytest.raises(ValueError, match="absolute trusted Python"):
+        validate_payload(payload)
+
+
+def test_boundary_scan_rejects_additional_arguments():
+    payload = _payload()
+    boundary = next(item for item in payload["checks"] if item["name"] == "boundary_scan")
+    boundary["command"] += " --skip"
+    with pytest.raises(ValueError, match="without arguments"):
+        validate_payload(payload)
+
+
+def test_s1_packet_uses_hash_bound_repository_boundary_validator():
+    commands = [
+        line.strip()
+        for line in (
+            ROOT
+            / "tasks/backlog/AUTOMATED_RESEARCH_FACTORY_V1_S1_CONTRACT_20260711/gate_commands.txt"
+        ).read_text(encoding="utf-8").splitlines()
+        if line.strip()
+    ]
+    template = json.loads(
+        (
+            ROOT
+            / "reports/workspace_dispatch/templates/automated_gate_manifest_template.json"
+        ).read_text(encoding="utf-8")
+    )
+    boundary = next(check for check in template["checks"] if check["name"] == "boundary_scan")
+
+    assert commands[-2] == boundary["command"]
+    assert _digest(ROOT / boundary["validator_path"]) == boundary["validator_sha256"]
+    _validate_check_semantics(boundary)
+
+
+def test_result_worktree_cannot_shadow_installed_pytest(tmp_path):
+    manifest = _real_gate(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    repo = Path(payload["workspace_root"])
+    (repo / "pytest.py").write_text('print("1 passed")\n', encoding="utf-8")
+    subprocess.run(["git", "add", "pytest.py"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-qm", "shadow pytest"], cwd=repo, check=True)
+    payload["result"] = {
+        "commit": _run(repo, "git", "rev-parse", "HEAD"),
+        "tree": _run(repo, "git", "rev-parse", "HEAD^{tree}"),
+    }
+    callback = Path(payload["task_packet"]["dir"]) / payload["callback"]["path"]
+    callback_payload = json.loads(callback.read_text(encoding="utf-8"))
+    callback_payload["result"] = payload["result"]
+    callback.write_text(json.dumps(callback_payload), encoding="utf-8")
+    payload["callback"]["sha256"] = _digest(callback)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="pytest shadow module"):
+        validate_file(manifest)
+
+
+def test_claimed_test_count_must_match_executed_pytest_summary(tmp_path):
+    manifest = _real_gate(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    focused = next(item for item in payload["checks"] if item["name"] == "focused_tests")
+    focused["test_count"] = 2
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="claimed 2, observed 1"):
+        validate_file(manifest)
+
+
+def test_boundary_validator_must_be_source_tracked_and_unchanged(tmp_path):
+    manifest = _real_gate(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    repo = Path(payload["workspace_root"])
+    boundary = repo / "scripts" / "boundary_scan.py"
+    boundary.write_text("print('changed')\n", encoding="utf-8")
+    subprocess.run(["git", "add", "scripts/boundary_scan.py"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-qm", "tamper boundary"], cwd=repo, check=True)
+    result_commit = _run(repo, "git", "rev-parse", "HEAD")
+    result_tree = _run(repo, "git", "rev-parse", "HEAD^{tree}")
+    payload["result"] = {"commit": result_commit, "tree": result_tree}
+    callback = Path(payload["task_packet"]["dir"]) / payload["callback"]["path"]
+    callback_payload = json.loads(callback.read_text(encoding="utf-8"))
+    callback_payload["result"] = payload["result"]
+    callback.write_text(json.dumps(callback_payload), encoding="utf-8")
+    payload["callback"]["sha256"] = _digest(callback)
+    payload["checks"][2]["validator_sha256"] = _digest(boundary)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="unchanged from the source commit"):
+        validate_file(manifest)
+
+
 def test_gate_binds_packet_callback_artifacts_and_real_git(tmp_path):
     manifest = _real_gate(tmp_path)
     validate_file(manifest)
@@ -250,7 +404,9 @@ def test_full_gate_rejects_non_strategy_reserved_thread_claim(tmp_path, agent):
 def test_command_drift_is_rejected(tmp_path):
     manifest = _real_gate(tmp_path)
     payload = json.loads(manifest.read_text(encoding="utf-8"))
-    payload["checks"][0]["command"] = "pytest -k different"
+    payload["checks"][0]["command"] = (
+        f"{PYTHON} -I -m pytest -q -o pythonpath=. tests/different.py"
+    )
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="exactly match"):
         validate_file(manifest)

@@ -26,6 +26,13 @@ Dedicated strategy research packets additionally bind `EXECUTION_THREAD_ID:
 Work — Sol Research`, with manager callback target
 `019f4c70-cac3-7211-8e04-47b8b51c819e`.
 
+Codex-Audit packets bind an immutable target commit/tree and hashed context
+delta, set `MODEL_ROLE: audit`, `MODEL: gpt-5.6-luna`,
+`REASONING_EFFORT: high`, `SANDBOX_MODE: read-only`, and `APPROVAL_POLICY:
+never`. They require an absolute `TARGET_REPO`; validation resolves the commit
+inside that Git repository and verifies its exact tree. They carry no executor
+gate commands and cannot request approval escalation or filesystem writes.
+
 Optional context files are allowed, but task packets must not include raw databases, parquet caches, `.env` files, API keys, raw payloads, broker credentials, or generated runtime data.
 
 ## Permission Check
@@ -85,7 +92,14 @@ Before sending:
 - use a separate read-only `gpt-5.6-luna`/`high` context for final acceptance;
 - require an `AUTOMATED_GATE` JSON manifest before Luna acceptance and validate
   it with `python3 scripts/validate_automated_gate_manifest.py <manifest>`; the
-  gate role/model must exactly match the task packet;
+  gate role/model must exactly match the task packet; reserved check names are
+  semantic contracts, not labels: focused tests must be real pytest execution
+  through an absolute trusted interpreter in isolated mode with installed
+  pytest provenance and observed count evidence, git diff is validator-owned,
+  and boundary scan must execute a source-commit-tracked hash-bound validator
+  unchanged by the executor and without additional arguments;
+- require every `codex_audit` packet to use the read-only/no-approval agent
+  layer and an exact `CONTEXT_DELTA_SHA256`;
 - route deterministic failures, missing fields, formatting errors, and
   tool/environment failures back to the task's bound executor rather than to
   evidence escalation;

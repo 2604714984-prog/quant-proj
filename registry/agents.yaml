@@ -193,7 +193,10 @@ agents:
     primary_tool: "separate Codex thread initialized from repo audit protocol"
     fixed_model: "gpt-5.6-luna"
     fixed_effort: "high"
-    write_policy: "reports/codex_audit only in target repo, or workspace audit reports for workspace-only tasks"
+    sandbox_mode: "read-only"
+    approval_policy: "never"
+    context_policy: "task-local CONTEXT_DELTA with exact SHA-256"
+    write_policy: "read-only; return findings in the task callback without filesystem writes"
     must_not:
       - "edit implementation files"
       - "commit or push"

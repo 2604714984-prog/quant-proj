@@ -22,6 +22,7 @@ EXPECTED_ROLE_CONFIGS = {
         "high",
     ),
     "acceptance": ("agents/luna-acceptance.toml", "gpt-5.6-luna", "high"),
+    "audit": ("agents/luna-audit.toml", "gpt-5.6-luna", "high"),
 }
 EXPECTED_DEFAULT_PATH = (
     "SOL_MANAGER",
@@ -93,9 +94,9 @@ def validate(root: Path = ROOT) -> None:
         layer = _load_toml(config_path.parent / relative_path)
         if layer.get("model") != model or layer.get("model_reasoning_effort") != effort:
             raise ValueError(f"{role} model layer must be {model}/{effort}")
-        if role == "acceptance":
+        if role in {"acceptance", "audit"}:
             if layer.get("sandbox_mode") != "read-only" or layer.get("approval_policy") != "never":
-                raise ValueError("acceptance role must be enforced read-only with no approval escalation")
+                raise ValueError(f"{role} role must be enforced read-only with no approval escalation")
 
     routing_path = root / "registry" / "model_routing.yaml"
     routing = yaml.safe_load(routing_path.read_text(encoding="utf-8"))
@@ -108,6 +109,14 @@ def validate(root: Path = ROOT) -> None:
         facts = models.get(role, {})
         if facts.get("model") != model or facts.get("reasoning_effort") != effort:
             raise ValueError(f"registry {role} routing must be {model}/{effort}")
+    audit = models.get("audit", {})
+    if (
+        audit.get("write_policy") != "read-only"
+        or audit.get("sandbox_mode") != "read-only"
+        or audit.get("approval_policy") != "never"
+        or audit.get("context_policy") != "sha256-bound context delta required"
+    ):
+        raise ValueError("registry audit role must enforce read-only sandbox, no approvals, and hash-bound context")
     strategy = models.get("strategy_research_executor", {})
     if strategy.get("model_role") != "strategy_research_executor" or strategy.get("target_project") != "strategy_work":
         raise ValueError("strategy research executor must be bound to MODEL_ROLE strategy_research_executor and strategy_work")
@@ -122,6 +131,17 @@ def validate(root: Path = ROOT) -> None:
     }
     if sol_high_roles != {"coordinator", "strategy_research_executor"}:
         raise ValueError("only coordinator and strategy_research_executor may use gpt-5.6-sol/high")
+
+    agents_registry = yaml.safe_load((root / "registry" / "agents.yaml").read_text(encoding="utf-8"))
+    audit_agent = agents_registry.get("agents", {}).get("codex_audit", {})
+    if (
+        audit_agent.get("sandbox_mode") != "read-only"
+        or audit_agent.get("approval_policy") != "never"
+        or audit_agent.get("context_policy") != "task-local CONTEXT_DELTA with exact SHA-256"
+        or audit_agent.get("write_policy")
+        != "read-only; return findings in the task callback without filesystem writes"
+    ):
+        raise ValueError("Codex-Audit registry entry must be machine-enforced read-only and context-bound")
 
     workflow = routing.get("workflow", {})
     if tuple(workflow.get("path", ())) != EXPECTED_DEFAULT_PATH:
@@ -155,7 +175,13 @@ def validate(root: Path = ROOT) -> None:
     packet_rule = (root / "runbooks" / "task_packet_validation.md").read_text(encoding="utf-8")
     if "do not pass model or thinking overrides" in packet_rule:
         raise ValueError("legacy no-model-override dispatch rule is still active")
-    for required in ("gpt-5.6-sol", "gpt-5.6-luna", "strategy_research_executor", "AUTOMATED_GATE"):
+    for required in (
+        "gpt-5.6-sol",
+        "gpt-5.6-luna",
+        "strategy_research_executor",
+        "AUTOMATED_GATE",
+        "TARGET_REPO",
+    ):
         if required not in packet_rule:
             raise ValueError(f"task packet validation is missing {required}")
 

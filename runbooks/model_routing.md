@@ -14,6 +14,7 @@ does not turn that research thread into a dispatcher or final reviewer.
 | Executor | `gpt-5.6-luna` / medium | Implementation, batch work, tests, evidence |
 | Strategy Research Executor | `gpt-5.6-sol` / high | Dedicated `strategy_work` research execution, evidence, and prior-result continuity |
 | Acceptance | `gpt-5.6-luna` / high, read-only | Final evidence acceptance |
+| Codex-Audit | `gpt-5.6-luna` / high, read-only | Hash-bound process review with no filesystem writes or approval escalation |
 
 ## Default delivery path
 
@@ -79,6 +80,11 @@ The research task returns its execution callback and automated-gate evidence
 to the active Quant-Manager callback above. The manager then sends the green
 record to a separate Luna acceptance context; the strategy task does not
 self-accept and is never reclassified as Luna dispatcher.
+
+Codex-Audit uses the dedicated `agents/luna-audit.toml` layer. Every audit
+packet binds the reviewed commit/tree and `CONTEXT_DELTA_SHA256`; the sandbox
+is `read-only` and approval policy is `never`. Findings return in the task
+callback rather than being written into the reviewed repository.
 
 ## Two records
 

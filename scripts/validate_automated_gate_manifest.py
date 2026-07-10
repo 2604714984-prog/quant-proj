@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 from pathlib import Path
 import re
 import shlex
@@ -15,6 +16,7 @@ import subprocess
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 REQUIRED_CHECKS = {"git_diff_check", "boundary_scan"}
+PYTEST_SUMMARY_RE = re.compile(r"(?<!\d)(\d+)\s+passed\b")
 EXECUTION_ROLE_BINDINGS = {
     "executor": {
         "model": "gpt-5.6-luna",
@@ -73,13 +75,61 @@ def _git(root: Path, *args: str) -> str:
     return completed.stdout.strip()
 
 
-def _run_expected_command(root: Path, command: str) -> None:
+def _command_argv(command: str) -> list[str]:
     try:
         argv = shlex.split(command)
     except ValueError as exc:
         raise ValueError(f"invalid expected command: {command}") from exc
     if not argv:
         raise ValueError("expected command cannot be empty")
+    return argv
+
+
+def _is_python(argv0: str) -> bool:
+    return Path(argv0).name.lower().startswith("python")
+
+
+def _is_within(root: Path, candidate: Path) -> bool:
+    return candidate == root or root in candidate.parents
+
+
+def _validate_check_semantics(check: dict) -> None:
+    """Bind reserved check names to validator-owned or repository-owned semantics."""
+
+    name = check["name"]
+    argv = _command_argv(check["command"])
+    if name == "focused_tests":
+        if not (
+            Path(argv[0]).is_absolute()
+            and _is_python(argv[0])
+            and argv[1:4] == ["-I", "-m", "pytest"]
+        ):
+            raise ValueError(
+                "focused_tests must execute an absolute trusted Python with -I -m pytest"
+            )
+        forbidden = {"--collect-only", "--co"}
+        if forbidden.intersection(argv):
+            raise ValueError("focused_tests must execute tests, not collection only")
+    elif name == "git_diff_check":
+        if argv != ["git", "diff", "--check"]:
+            raise ValueError("git_diff_check uses the validator-owned command: git diff --check")
+    elif name == "boundary_scan":
+        if not (
+            Path(argv[0]).is_absolute()
+            and _is_python(argv[0])
+            and len(argv) == 2
+            and not argv[1].startswith("-")
+        ):
+            raise ValueError(
+                "boundary_scan must execute exactly one repository-controlled Python script without arguments"
+            )
+        if not isinstance(check.get("validator_path"), str) or not check["validator_path"].strip():
+            raise ValueError("boundary_scan requires validator_path")
+        _digest(check.get("validator_sha256"), "boundary_scan.validator_sha256", SHA256_RE)
+
+
+def _run_expected_command(root: Path, command: str) -> str:
+    argv = _command_argv(command)
     completed = subprocess.run(
         argv,
         cwd=root,
@@ -91,6 +141,77 @@ def _run_expected_command(root: Path, command: str) -> None:
     if completed.returncode:
         output = completed.stdout[-2000:].strip()
         raise ValueError(f"expected command failed ({command}): {output}")
+    return completed.stdout
+
+
+def _validate_focused_test_runtime(root: Path, check: dict) -> None:
+    """Require isolated pytest from the bound interpreter's installed site-packages."""
+
+    argv = _command_argv(check["command"])
+    interpreter = Path(argv[0])
+    if not interpreter.is_file() or not os.access(interpreter, os.X_OK):
+        raise ValueError("focused_tests interpreter is unavailable or not executable")
+    resolved_interpreter = interpreter.resolve()
+    if _is_within(root, resolved_interpreter):
+        raise ValueError("focused_tests interpreter must be outside the result worktree")
+
+    shadows = [candidate for candidate in (root / "pytest.py", root / "pytest") if candidate.exists()]
+    if shadows:
+        raise ValueError("focused_tests worktree contains a pytest shadow module")
+
+    probe = (
+        "import json,pathlib,pytest,sys,sysconfig;"
+        "p=sysconfig.get_paths();"
+        "print(json.dumps({'executable':sys.executable,'pytest_file':pytest.__file__,"
+        "'purelib':p.get('purelib'),'platlib':p.get('platlib')}))"
+    )
+    completed = subprocess.run(
+        [str(interpreter), "-I", "-c", probe],
+        cwd=root,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+    )
+    if completed.returncode:
+        raise ValueError(f"focused_tests pytest provenance probe failed: {completed.stdout[-1000:].strip()}")
+    try:
+        lines = [line for line in completed.stdout.splitlines() if line.strip()]
+        provenance = json.loads(lines[-1])
+        reported_interpreter = Path(provenance["executable"]).resolve()
+        pytest_file = Path(provenance["pytest_file"]).resolve()
+        install_roots = {
+            Path(provenance[name]).resolve()
+            for name in ("purelib", "platlib")
+            if provenance.get(name)
+        }
+    except (IndexError, KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+        raise ValueError("focused_tests pytest provenance output is invalid") from exc
+    if reported_interpreter != resolved_interpreter:
+        raise ValueError("focused_tests interpreter provenance does not match the bound command")
+    if not pytest_file.is_file() or _is_within(root, pytest_file):
+        raise ValueError("focused_tests pytest module must be installed outside the result worktree")
+    if not any(_is_within(install_root, pytest_file) for install_root in install_roots):
+        raise ValueError("focused_tests pytest module is not from the interpreter site-packages")
+
+
+def _validate_boundary_command(root: Path, source_commit: str, check: dict) -> None:
+    validator = _rooted(root, check["validator_path"], "boundary_scan.validator_path")
+    if _sha256(validator) != check["validator_sha256"]:
+        raise ValueError("boundary_scan validator hash does not match")
+    relative = validator.relative_to(root).as_posix()
+    if _git(root, "ls-tree", "-r", "--name-only", source_commit, "--", relative) != relative:
+        raise ValueError("boundary_scan validator must be tracked in the source commit")
+    if _git(root, "diff", "--name-only", source_commit, "HEAD", "--", relative):
+        raise ValueError("boundary_scan validator must be unchanged from the source commit")
+    argv = _command_argv(check["command"])
+    if len(argv) != 2:
+        raise ValueError("boundary_scan command must not include additional arguments")
+    target = Path(argv[1])
+    if not target.is_absolute():
+        target = root / target
+    if target.resolve() != validator:
+        raise ValueError("boundary_scan command must execute validator_path directly")
 
 
 def validate_payload(payload: dict) -> None:
@@ -135,11 +256,14 @@ def validate_payload(payload: dict) -> None:
             raise ValueError("each check requires an exact command")
         if check.get("exit_code") != 0:
             raise ValueError(f"check did not pass: {check['name']}")
+        _validate_check_semantics(check)
     if not REQUIRED_CHECKS.issubset(names):
         raise ValueError("git_diff_check and boundary_scan are required")
+    focused = next((check for check in checks if check["name"] == "focused_tests"), None)
+    if focused and (type(focused.get("test_count")) is not int or focused["test_count"] <= 0):
+        raise ValueError("focused_tests requires a positive observed test count")
     if payload["code_changed"]:
-        focused = next((check for check in checks if check["name"] == "focused_tests"), None)
-        if not focused or not isinstance(focused.get("test_count"), int) or focused["test_count"] <= 0:
+        if not focused:
             raise ValueError("code changes require a positive focused test count")
     elif source != result:
         raise ValueError("code_changed=false requires identical source and result refs")
@@ -242,9 +366,26 @@ def validate_file(path: Path, *, execute_commands: bool = True) -> None:
         raise ValueError("code_changed=false requires an empty source-to-result diff")
     _git(workspace, "diff", "--check", source["commit"], result["commit"])
 
+    boundary_check = next(check for check in payload["checks"] if check["name"] == "boundary_scan")
+    _validate_boundary_command(workspace, source["commit"], boundary_check)
+    focused_check = next(
+        (check for check in payload["checks"] if check["name"] == "focused_tests"),
+        None,
+    )
+    if focused_check:
+        _validate_focused_test_runtime(workspace, focused_check)
+
     if execute_commands:
         for check in payload["checks"]:
-            _run_expected_command(workspace, check["command"])
+            output = _run_expected_command(workspace, check["command"])
+            if check["name"] == "focused_tests":
+                counts = [int(value) for value in PYTEST_SUMMARY_RE.findall(output)]
+                actual_count = counts[-1] if counts else 0
+                if actual_count != check["test_count"]:
+                    raise ValueError(
+                        "focused_tests test_count differs from the executed pytest summary: "
+                        f"claimed {check['test_count']}, observed {actual_count}"
+                    )
         if _git(workspace, "status", "--porcelain"):
             raise ValueError("gate commands must leave the result worktree clean")
 
