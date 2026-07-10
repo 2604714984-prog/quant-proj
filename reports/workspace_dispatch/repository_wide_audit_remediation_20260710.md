@@ -12,12 +12,14 @@ is carried forward.
 - `US_Stock_Monitor`: `6078e9d6004bcb6d688e2a06f662ceb9aff92bec`
 - `A_Share_Monitor`: `9642e0b921bbdc654f59797b4a5e1aacefb0fa52`
 - `market_data`: `111cfed09955090fc3bd2fa0d7c7362aa3ba9a3b`
-- `strategy_work`: `a8a34ebe76bc71de6280a6160e6ea9a0d46148cb`
+- `strategy_work`: `372144ce1e6d5ecad7c17bc8bdd08ea68bc41fa4`
 
 ## Corrected defects
 
 - Strategy selection now uses train/validation only; holdout/forward results are
   diagnostic and forward labels are purged when they cross a split boundary.
+- Remaining factor, liquidity, PEG, negative-PE, rebalance, and path-audit status
+  calculations no longer use holdout/test outcomes to select or rank research lines.
 - DuckDB raw/basic/symbol joins include `snapshot_id`.
 - US explicit empty targets liquidate existing holdings on the next session; the
   backtest calendar uses the union of symbol dates.
@@ -47,7 +49,7 @@ is carried forward.
 - `US_Stock_Monitor`: full pytest PASS; full Ruff PASS.
 - `A_Share_Monitor`: full pytest PASS; full Ruff PASS.
 - `market_data`: `113 passed`; full Ruff PASS.
-- `strategy_work`: `10 passed`; tracked Python Ruff PASS.
+- `strategy_work`: `11 passed`; scoped tracked Python Ruff PASS.
 - `git diff --check`: required before each source commit and PASS.
 
 ## Research effect
