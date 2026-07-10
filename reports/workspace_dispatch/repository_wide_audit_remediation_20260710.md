@@ -12,7 +12,7 @@ is carried forward.
 - `US_Stock_Monitor`: `5a152ae465ec5d45f16b36099e591bf564219980`
 - `A_Share_Monitor`: `d40e5abfdbe95d6491e42f2f83231421d7b17057`
 - `market_data`: `39cb26a60839b2546f19a75bc9eb80cb331ca4c3`
-- `strategy_work`: `b21dd904f5874085aaf6fdbb69d3eaeb1b638506`
+- `strategy_work`: `d63b45cbec053d8f6ae352ffd9bb870e53ae446f`
 - `us_stock_30w`: `c50ea74fde8939cbedc79f274d15574f55e9aecf`
 
 ## Corrected defects

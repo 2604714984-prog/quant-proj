@@ -12,6 +12,8 @@
 
 `SUPPORT_REPO`: `/home/rongyu/workspace/US_Stock_Monitor`; final source-sync commit `5a152ae465ec5d45f16b36099e591bf564219980`, tree `97159838db293c84b4919a27c0f9fceaa80dc139`, pushed to `origin/main`.
 
+`STRATEGY_WORK_SYNC`: PR `https://github.com/2604714984-prog/strategy_work/pull/1` merged after required `static-validation` checks passed; `origin/main` resolves to `d63b45cbec053d8f6ae352ffd9bb870e53ae446f`.
+
 `STATUS`: `FINAL_BINARY_REJECT_BENCHMARK_ONLY`
 
 `DECISION`: `REJECT`
