@@ -10,7 +10,7 @@ is carried forward.
 ## Source preservation
 
 - `US_Stock_Monitor`: `548f351b7ea37df0350ceb0a6075541d8830fdf5`
-- `A_Share_Monitor`: `9642e0b921bbdc654f59797b4a5e1aacefb0fa52`
+- `A_Share_Monitor`: `3657c00cfece21ba750d3c74e6834d3cb69b5917`
 - `market_data`: `111cfed09955090fc3bd2fa0d7c7362aa3ba9a3b`
 - `strategy_work`: `372144ce1e6d5ecad7c17bc8bdd08ea68bc41fa4`
 
@@ -48,11 +48,13 @@ is carried forward.
 - Controller project registry was replaced with current source commits and a local
   Git-object validator.
 - CI now installs dependencies and runs pytest plus Ruff in the source repositories.
+- The obsolete standalone `qlib_train.py` path was removed; repository-wide Python
+  lint now covers tracked package, test, and utility-script code.
 
 ## Validation
 
 - `US_Stock_Monitor`: full pytest PASS; all tracked Python Ruff PASS; safety PASS.
-- `A_Share_Monitor`: full pytest PASS; full Ruff PASS.
+- `A_Share_Monitor`: full pytest PASS; all tracked Python Ruff PASS; safety PASS.
 - `market_data`: `113 passed`; full Ruff PASS.
 - `strategy_work`: `11 passed`; scoped tracked Python Ruff PASS.
 - `git diff --check`: required before each source commit and PASS.

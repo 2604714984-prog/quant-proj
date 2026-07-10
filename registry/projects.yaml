@@ -23,10 +23,10 @@ projects:
     path: "/home/rongyu/workspace/A_Share_Monitor"
     role: "A-share research source"
     branch: "codex/s2-feature-source-design-20260710"
-    commit: "9642e0b921bbdc654f59797b4a5e1aacefb0fa52"
+    commit: "3657c00cfece21ba750d3c74e6834d3cb69b5917"
     upstream_ref: "origin/codex/s2-feature-source-design-20260710"
-    main_ref_commit: "9642e0b921bbdc654f59797b4a5e1aacefb0fa52"
-    working_tree: "source commit preserved; unrelated local qlib/cache artifacts remain outside commit"
+    main_ref_commit: "3657c00cfece21ba750d3c74e6834d3cb69b5917"
+    working_tree: "source commit preserved; unrelated local cache artifacts remain outside commit"
     research_status: "no accepted strategy candidate"
 
   us_stock_monitor:
