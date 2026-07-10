@@ -22,9 +22,9 @@ projects:
   a_share_monitor:
     path: "/home/rongyu/workspace/A_Share_Monitor"
     role: "A-share research source"
-    branch: "codex/s2-feature-source-design-20260710"
+    branch: "main"
     commit: "d40e5abfdbe95d6491e42f2f83231421d7b17057"
-    upstream_ref: "origin/codex/s2-feature-source-design-20260710"
+    upstream_ref: "origin/main"
     main_ref_commit: "d40e5abfdbe95d6491e42f2f83231421d7b17057"
     working_tree: "source commit preserved; unrelated local cache artifacts remain outside commit"
     research_status: "no accepted strategy candidate"

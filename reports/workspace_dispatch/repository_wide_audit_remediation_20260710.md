@@ -61,6 +61,19 @@ is carried forward.
 - `market_data`: `113 passed`; full Ruff PASS.
 - `strategy_work`: `11 passed`; scoped tracked Python Ruff PASS.
 - `git diff --check`: required before each source commit and PASS.
+- GitHub Actions `research-validation` is green on the current source commits.
+
+## Remote repository governance
+
+- `A_Share_Monitor` now uses `main` as its default branch; the aligned historical
+  branches remain at the same source commit.
+- Public `strategy_work/main` has enforced branch protection: strict
+  `static-validation`, admin enforcement, linear history, conversation resolution,
+  and force-push/deletion denial.
+- GitHub returned HTTP 403 for branch protection and rulesets on the four private
+  repositories because the current account plan requires GitHub Pro or public
+  visibility for that feature. Their CI remains active and green; repository
+  visibility was not weakened to bypass the plan restriction.
 
 ## Research effect
 
