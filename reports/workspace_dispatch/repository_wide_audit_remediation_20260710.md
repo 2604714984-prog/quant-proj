@@ -10,7 +10,7 @@ is carried forward.
 ## Source preservation
 
 - `US_Stock_Monitor`: `548f351b7ea37df0350ceb0a6075541d8830fdf5`
-- `A_Share_Monitor`: `3657c00cfece21ba750d3c74e6834d3cb69b5917`
+- `A_Share_Monitor`: `d40e5abfdbe95d6491e42f2f83231421d7b17057`
 - `market_data`: `39cb26a60839b2546f19a75bc9eb80cb331ca4c3`
 - `strategy_work`: `b21dd904f5874085aaf6fdbb69d3eaeb1b638506`
 
@@ -51,6 +51,8 @@ is carried forward.
   Ruff/compile checks in the source repositories.
 - The obsolete standalone `qlib_train.py` path was removed; repository-wide Python
   lint now covers tracked package, test, and utility-script code.
+- GPU evidence tests validate recorded package versions without requiring generic
+  CPU-only CI runners to install the source workstation's CUDA environment.
 
 ## Validation
 
