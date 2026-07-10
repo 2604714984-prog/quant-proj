@@ -13,6 +13,7 @@ is carried forward.
 - `A_Share_Monitor`: `d40e5abfdbe95d6491e42f2f83231421d7b17057`
 - `market_data`: `39cb26a60839b2546f19a75bc9eb80cb331ca4c3`
 - `strategy_work`: `b21dd904f5874085aaf6fdbb69d3eaeb1b638506`
+- `us_stock_30w`: `5a07db5c5df2cff71fb5938a9431848461cf75d0`
 
 ## Corrected defects
 
@@ -53,6 +54,12 @@ is carried forward.
   lint now covers tracked package, test, and utility-script code.
 - GPU evidence tests validate recorded package versions without requiring generic
   CPU-only CI runners to install the source workstation's CUDA environment.
+- The US30W Adaptive+Quality survivorship check was recovered from a local compiled
+  artifact, reimplemented as tracked source, rerun against seven validated historical
+  names, and corrected. The prior zero-impact claim is superseded: full Sharpe changed
+  from `0.787952` to `0.771392`, full return changed by `-0.013551`, and one added name
+  generated two filled events. The test segment was unchanged, but complete
+  point-in-time membership remains unproven.
 
 ## Validation
 
@@ -81,3 +88,7 @@ All strategy-selection outputs produced before these fixes are historical eviden
 not current selection evidence. `strategy_candidate_available=false`. New strategy
 claims require rerunning the affected research from pinned snapshots with the corrected
 split, purge, execution, valuation, and snapshot rules.
+
+The post-fix US30W survivorship re-audit is current research evidence only. It keeps
+Adaptive+Quality as a research lead, not an active strategy. A complete historical
+membership reconstruction is still required before this specific risk can be closed.
