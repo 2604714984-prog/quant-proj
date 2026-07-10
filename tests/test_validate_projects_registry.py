@@ -1,0 +1,35 @@
+import importlib.util
+from pathlib import Path
+
+import pytest
+import yaml
+
+
+ROOT = Path(__file__).resolve().parents[1]
+SPEC = importlib.util.spec_from_file_location("registry_validator", ROOT / "scripts" / "validate_projects_registry.py")
+validator = importlib.util.module_from_spec(SPEC)
+assert SPEC and SPEC.loader
+SPEC.loader.exec_module(validator)
+
+
+def _write_registry(tmp_path, payload):
+    path = tmp_path / "projects.yaml"
+    path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+    return path
+
+
+def test_registry_requires_us_stock_30w(monkeypatch, tmp_path):
+    payload = validator.load_registry()
+    payload["projects"].pop("us_stock_30w")
+    monkeypatch.setattr(validator, "REGISTRY", _write_registry(tmp_path, payload))
+    with pytest.raises(ValueError, match="us_stock_30w"):
+        validator.validate(verify_local_git=False)
+
+
+def test_registry_rejects_unsafe_boundary_before_commit_check(monkeypatch, tmp_path):
+    payload = validator.load_registry()
+    payload["boundaries"]["daily_signal_push"] = True
+    payload["projects"]["us_stock_monitor"]["commit"] = "not-a-commit"
+    monkeypatch.setattr(validator, "REGISTRY", _write_registry(tmp_path, payload))
+    with pytest.raises(ValueError, match="daily_signal_push"):
+        validator.validate(verify_local_git=False)
