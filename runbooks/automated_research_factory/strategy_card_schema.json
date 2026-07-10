@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "quant-workspace://automated-research-factory/strategy-card-v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["strategy_card_id", "schema_version", "state", "hypothesis", "model_spec", "evidence", "boundary_flags"],
+  "properties": {
+    "strategy_card_id": {"type": "string", "minLength": 1},
+    "schema_version": {"const": "1.0"},
+    "state": {"enum": ["BLOCKED", "RESEARCH_EVIDENCE_ACCEPTED", "RESEARCH_EVIDENCE_REJECTED"]},
+    "hypothesis": {"type": "object", "required": ["question", "statement", "success_criteria", "failure_criteria"], "properties": {"question": {"type": "string"}, "statement": {"type": "string"}, "success_criteria": {"type": "array", "items": {"type": "string"}}, "failure_criteria": {"type": "array", "items": {"type": "string"}}}},
+"model_spec": {"type": "object", "additionalProperties": false, "required": ["features_ref", "label_ref", "horizon", "universe_ref", "split_ref", "whole_label_split_purge", "parameter_budget_ref", "cost_model_ref", "gate_spec_ref"], "properties": {"features_ref": {"$ref": "#/$defs/ref"}, "label_ref": {"$ref": "#/$defs/ref"}, "horizon": {"type": "string"}, "universe_ref": {"$ref": "#/$defs/ref"}, "split_ref": {"$ref": "#/$defs/ref"}, "whole_label_split_purge": {"const": true}, "parameter_budget_ref": {"$ref": "#/$defs/ref"}, "cost_model_ref": {"$ref": "#/$defs/ref"}, "gate_spec_ref": {"$ref": "#/$defs/ref"}}},
+"evidence": {"oneOf": [{"type": "object", "additionalProperties": false, "required": ["disposition", "review_ref", "reason"], "properties": {"disposition": {"const": "BLOCKED"}, "review_ref": {"$ref": "#/$defs/ref"}, "reason": {"type": "string", "minLength": 1}}}, {"type": "object", "additionalProperties": false, "required": ["disposition", "review_ref"], "properties": {"disposition": {"enum": ["RESEARCH_EVIDENCE_ACCEPTED", "RESEARCH_EVIDENCE_REJECTED"]}, "review_ref": {"$ref": "#/$defs/ref"}, "reason": {"type": "string"}}}]},
+"boundary_flags": {"type": "object", "additionalProperties": false, "required": ["strategy_candidate_available", "readiness_promoted", "product_route_activated", "recommendation_runtime_enabled", "broker_api_allowed", "paper_trading_allowed", "live_trading_allowed", "auto_execution_allowed"], "properties": {"strategy_candidate_available": {"const": false}, "readiness_promoted": {"const": false}, "product_route_activated": {"const": false}, "recommendation_runtime_enabled": {"const": false}, "broker_api_allowed": {"const": false}, "paper_trading_allowed": {"const": false}, "live_trading_allowed": {"const": false}, "auto_execution_allowed": {"const": false}}}
+  },
+  "oneOf": [{"properties": {"state": {"const": "BLOCKED"}, "evidence": {"properties": {"disposition": {"const": "BLOCKED"}}}}}, {"properties": {"state": {"const": "RESEARCH_EVIDENCE_ACCEPTED"}, "evidence": {"properties": {"disposition": {"const": "RESEARCH_EVIDENCE_ACCEPTED"}}}}}, {"properties": {"state": {"const": "RESEARCH_EVIDENCE_REJECTED"}, "evidence": {"properties": {"disposition": {"const": "RESEARCH_EVIDENCE_REJECTED"}}}}}],
+  "$defs": {"ref": {"type": "object", "required": ["kind", "id"], "properties": {"kind": {"type": "string"}, "id": {"type": "string", "minLength": 1}, "sha256": {"type": "string", "pattern": "^[A-Fa-f0-9]{64}$"}}}}
+}

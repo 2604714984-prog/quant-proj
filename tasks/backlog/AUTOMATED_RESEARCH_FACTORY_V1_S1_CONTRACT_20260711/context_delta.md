@@ -1,0 +1,1 @@
+S1 design-only contract. Preserve research-only boundaries, defer Family 66 plumbing pilot until S1 gate and separate Luna/high acceptance, and keep strategy_candidate_available=false. No provider/network, DB/cache/data writes, source-project changes, strategy runs, readiness/product/trading paths, or secret access.
