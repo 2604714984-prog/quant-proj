@@ -11,8 +11,8 @@ is carried forward.
 
 - `US_Stock_Monitor`: `548f351b7ea37df0350ceb0a6075541d8830fdf5`
 - `A_Share_Monitor`: `3657c00cfece21ba750d3c74e6834d3cb69b5917`
-- `market_data`: `111cfed09955090fc3bd2fa0d7c7362aa3ba9a3b`
-- `strategy_work`: `372144ce1e6d5ecad7c17bc8bdd08ea68bc41fa4`
+- `market_data`: `39cb26a60839b2546f19a75bc9eb80cb331ca4c3`
+- `strategy_work`: `b21dd904f5874085aaf6fdbb69d3eaeb1b638506`
 
 ## Corrected defects
 
@@ -47,7 +47,8 @@ is carried forward.
 - Schema dumps contain column metadata and row counts only, never sample data rows.
 - Controller project registry was replaced with current source commits and a local
   Git-object validator.
-- CI now installs dependencies and runs pytest plus Ruff in the source repositories.
+- CI now installs dependencies and runs pytest plus repository-wide tracked-Python
+  Ruff/compile checks in the source repositories.
 - The obsolete standalone `qlib_train.py` path was removed; repository-wide Python
   lint now covers tracked package, test, and utility-script code.
 
