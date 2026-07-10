@@ -14,6 +14,14 @@ Every dispatched task must include:
 - `handoff.md`
 - `human_gate.md`
 
+New task packets must also include the metadata block defined in
+`prompts/task_dispatcher.md`: model role, exact model/effort, immutable source
+commit/tree for Codex implementation, automated-gate commands, current callback
+target, acceptance role, and a hashed context delta. Codex implementation
+packets include concrete `context_delta.md` and automated-gate command files
+inside the task packet directory; placeholders fail closed. Acceptance packets
+also reference the green gate by path and hash and declare read-only mode.
+
 Optional context files are allowed, but task packets must not include raw databases, parquet caches, `.env` files, API keys, raw payloads, broker credentials, or generated runtime data.
 
 ## Permission Check
@@ -61,8 +69,21 @@ Before sending:
 - check for a unique `HG-EXEC-TASK-*` record when boundary-changing L1-L4 is requested;
 - confirm project and agent boundary;
 - confirm no broker/order/paper/live/auto, recommendation, trade plan, allocation, `.env`, or key-output scope is included;
-- send prompt-only to Codex threads; do not pass model or thinking overrides;
+- record `MODEL_ROLE`, exact model, and reasoning effort in every Codex handoff;
+- use `gpt-5.6-sol`/`high` only for coordination or allowed evidence escalation;
+- use `gpt-5.6-luna`/`medium` for execution and rework;
+- use a separate read-only `gpt-5.6-luna`/`high` context for final acceptance;
+- require an `AUTOMATED_GATE` JSON manifest before Luna acceptance and validate
+  it with `python3 scripts/validate_automated_gate_manifest.py <manifest>`;
+- route deterministic failures, missing fields, formatting errors, and tool/environment failures back to Luna rather than Sol;
+- send prompt-only callbacks to the currently resolved dispatcher task id;
 - for Reasonix, use the fixed role session policy in `runbooks/reasonix_sessions.md`.
+
+Run the machine validator before any new dispatch:
+
+```bash
+python3 scripts/validate_task_packet.py tasks/backlog/<task-id>
+```
 
 ## Non-Authorization
 

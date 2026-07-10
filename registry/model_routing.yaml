@@ -1,0 +1,73 @@
+generated_at: "2026-07-10T23:00:00+08:00"
+policy_id: "SOL_MANAGER_LUNA_DELIVERY_V1"
+scope: "Quant workspace handoff and collaboration"
+
+codex_models:
+  coordinator:
+    role: "Quant-Manager"
+    model: "gpt-5.6-sol"
+    reasoning_effort: "high"
+    owns:
+      - "hard decomposition and dependency decisions"
+      - "scope or priority decisions"
+      - "narrow evidence disputes allowed below"
+
+  dispatcher:
+    role: "Quant-Dispatcher"
+    model: "gpt-5.6-luna"
+    reasoning_effort: "medium"
+    owns:
+      - "queue and task-packet maintenance"
+      - "callback forwarding and stall detection"
+    must_not:
+      - "repeat Quant-Manager decomposition"
+      - "implement or accept source changes"
+
+  executor:
+    role: "Codex-Dev / batch worker"
+    model: "gpt-5.6-luna"
+    reasoning_effort: "medium"
+    result_statuses: ["LUNA_EXECUTION_COMPLETE", "BLOCKED"]
+
+  acceptance:
+    role: "Codex-Acceptance"
+    model: "gpt-5.6-luna"
+    reasoning_effort: "high"
+    write_policy: "read-only"
+    result_statuses: ["LUNA_ACCEPTANCE", "REWORK_REQUIRED", "SOL_ESCALATION_REQUEST"]
+
+workflow:
+  path:
+    - "SOL_MANAGER"
+    - "LUNA_DISPATCHER"
+    - "LUNA_EXECUTOR"
+    - "AUTOMATED_GATE"
+    - "LUNA_ACCEPTANCE"
+  deterministic_failure: "return to Luna; never use Sol"
+  context_rule: "reuse the task packet and send only the changed delta"
+  executor_record: "reports/workspace_dispatch/templates/automated_gate_manifest_template.json"
+  acceptance_record: "reports/workspace_dispatch/templates/luna_acceptance_template.json"
+
+sol_escalation:
+  allowed_reasons:
+    - "EVIDENCE_INSUFFICIENT_AFTER_ONE_BOUNDED_LUNA_REWORK"
+    - "EVIDENCE_CONFLICT_UNRESOLVED_BY_DETERMINISTIC_CHECKS"
+  forbidden_reasons:
+    - "ROUTINE_IMPLEMENTATION"
+    - "ROUTINE_FINAL_ACCEPTANCE"
+    - "DETERMINISTIC_TEST_FAILURE"
+    - "MISSING_CALLBACK_FIELD"
+    - "FORMATTING_OR_SCHEMA_ERROR"
+    - "TOOL_OR_ENVIRONMENT_FAILURE"
+  payload: "only the disputed evidence slice"
+  return_path: "Sol ruling returns to Luna; Luna issues the final acceptance result"
+
+validators:
+  routing: "scripts/validate_model_routing.py"
+  task_packet: "scripts/validate_task_packet.py"
+  automated_gate: "scripts/validate_automated_gate_manifest.py"
+  luna_acceptance: "scripts/validate_luna_acceptance.py"
+
+non_codex_roles:
+  reasonix_policy: "unchanged; advisory or independent research only"
+  external_audit_policy: "unchanged; boundary-triggered and separate from routine Luna acceptance"

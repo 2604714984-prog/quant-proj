@@ -1,11 +1,24 @@
-generated_at: "2026-07-04T00:00:00+08:00"
+generated_at: "2026-07-10T23:00:00+08:00"
 workspace_root: "/home/rongyu/workspace/quant-proj"
+model_routing_policy: "registry/model_routing.yaml"
 
 agents:
+  manager:
+    name: "Quant-Manager"
+    role: "hard decomposition, scope, dependencies, and exceptional evidence judgment"
+    primary_tool: "active Codex desktop manager task"
+    fixed_model: "gpt-5.6-sol"
+    fixed_effort: "high"
+    must_not:
+      - "repeat coherent Luna acceptance"
+      - "implement source-project changes"
+
   dispatcher:
     name: "Quant-Dispatcher"
-    role: "task intake, triage, dependency ordering, and assignment"
+    role: "queue maintenance, bounded packets, callbacks, and stall detection"
     primary_tool: "Codex CLI or Codex desktop thread rooted at quant proj"
+    fixed_model: "gpt-5.6-luna"
+    fixed_effort: "medium"
     allowed_write_scope:
       - "tasks/"
       - "reports/workspace_dispatch/"
@@ -22,10 +35,12 @@ agents:
       - "reasonix_db_maintainer"
       - "reasonix_strategy_researcher"
       - "reasonix_advisory"
+      - "codex_acceptance"
       - "codex_audit"
       - "chatgpt_external_audit"
       - "human_gate"
     must_not:
+      - "repeat Quant-Manager decomposition or Luna acceptance"
       - "implement code changes in source repos"
       - "read .env or secrets"
       - "copy raw data artifacts"
@@ -35,6 +50,8 @@ agents:
     name: "Codex-Dev"
     role: "implementation, integration, validation, delivery reports, fix responses"
     primary_tool: "Codex CLI"
+    fixed_model: "gpt-5.6-luna"
+    fixed_effort: "medium"
     allowed_projects:
       - "a_share_monitor"
       - "us_stock_monitor"
@@ -47,10 +64,36 @@ agents:
       - "scope boundaries"
       - "validation expectations"
     must_return:
+      - "LUNA_EXECUTION_COMPLETE or BLOCKED delivery status"
       - "changed files"
       - "validation results"
+      - "automated gate manifest"
       - "known limitations"
       - "handoff path"
+
+  codex_acceptance:
+    name: "Codex-Acceptance"
+    role: "routine read-only final acceptance after automated gates pass"
+    primary_tool: "separate Codex thread or subagent role"
+    fixed_model: "gpt-5.6-luna"
+    fixed_effort: "high"
+    write_policy: "read-only; never fix implementation"
+    requires:
+      - "automated gate manifest"
+      - "immutable source and result commit/tree"
+      - "artifact hashes and exact test summary"
+    may_return:
+      - "LUNA_ACCEPTANCE"
+      - "REWORK_REQUIRED"
+      - "SOL_ESCALATION_REQUEST"
+    sol_escalation_only_for:
+      - "evidence insufficient after one bounded Luna rework"
+      - "evidence conflict unresolved by deterministic checks"
+    must_not:
+      - "escalate deterministic test failures to Sol"
+      - "escalate missing callback fields or formatting errors to Sol"
+      - "escalate tool or environment failures to Sol"
+      - "claim external-audit verdict"
 
   reasonix_advisory:
     name: "Reasonix-Advisory"
@@ -148,6 +191,8 @@ agents:
     name: "Codex-Audit"
     role: "read-only process review and findings JSON"
     primary_tool: "separate Codex thread initialized from repo audit protocol"
+    fixed_model: "gpt-5.6-luna"
+    fixed_effort: "high"
     write_policy: "reports/codex_audit only in target repo, or workspace audit reports for workspace-only tasks"
     must_not:
       - "edit implementation files"

@@ -17,6 +17,31 @@ Codex-Dev is the primary implementation and integration agent. It may edit code,
 
 Codex-Audit must run in a separate read-only process-review context and must not modify files.
 
+## Codex Model Routing
+
+The durable routing policy is `runbooks/model_routing.md`, with machine-readable
+facts in `registry/model_routing.yaml` and project role layers under `.codex/`.
+
+- Quant-Manager uses `gpt-5.6-sol` to decompose hard work, order dependencies,
+  and resolve only evidence gaps or conflicts.
+- Quant-Dispatcher uses `gpt-5.6-luna` for queue maintenance, bounded task
+  packets, callbacks, and stall detection. It does not repeat Manager review.
+- Codex-Dev and batch executors use `gpt-5.6-luna` for implementation, routine
+  rework, deterministic tests, and evidence production.
+- Routine final acceptance uses a separate read-only `gpt-5.6-luna` acceptance
+  context after automated gates pass.
+- Executors return `LUNA_EXECUTION_COMPLETE` or `BLOCKED`; only the separate
+  acceptance role may emit `LUNA_ACCEPTANCE`.
+- Deterministic test failures, missing callback fields, formatting errors, and
+  tool/environment failures stay with Luna as rework, requeue, or `BLOCKED`.
+- Sol may review only evidence that remains insufficient after one bounded Luna
+  rework or evidence conflicts that deterministic checks cannot reconcile.
+- After a Sol evidence ruling, final acceptance returns to Luna. Sol is not the
+  default second reviewer.
+
+Dispatch and rework payloads must carry only task paths, immutable refs, exact
+gate results, and the new context delta. Do not replay full project history.
+
 ## Dispatcher Role
 
 Quant-Dispatcher is the intake and scheduling agent for task lists copied from ChatGPT.
@@ -29,6 +54,7 @@ Quant-Dispatcher must not edit source-project implementation files. It assigns w
 - `reasonix_db_maintainer` for DS-backed database diagnostics, schema/readiness review, manifest planning, and SQL drafts;
 - `reasonix_strategy_researcher` for DS-backed strategy hypotheses, config drafts, evidence-gap planning, and backtest diagnosis;
 - `reasonix_advisory` for read-only second review;
+- `codex_acceptance` for routine read-only final acceptance;
 - `codex_audit` for read-only process review;
 - `chatgpt_external_audit` for final packet review;
 - `human_gate` for migration, priority, or boundary decisions.

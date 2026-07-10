@@ -1,0 +1,29 @@
+{
+  "task_id": "A_SHARE_BAOSTOCK_FUNDAMENTAL_SMOKE_CODE_20260710",
+  "execution_id": "019f4ca0-2054-77e3-9559-7005c0f9b565-postcommit-rework-20260711",
+  "status": "LUNA_EXECUTION_COMPLETE",
+  "model": "gpt-5.6-luna",
+  "source": {
+    "commit": "f39c9bcf5fc05c0c9b89aa2c13db525e434de5b7",
+    "tree": "817aa52f834fd4328b937adb0fd151c9ea1bdb40"
+  },
+  "result": {
+    "commit": "6ea528568de57da85eec3b12aec37a7a444ae5a3",
+    "tree": "65cfae06f523fd624e49284cfa713cab4cb89579"
+  },
+  "branch": "codex/baostock-fundamental-smoke-code-20260710",
+  "focused_tests": 17,
+  "artifact_hashes": {
+    "scripts/materialize_baostock_fundamentals_research.py": "82544fb363634714ec84f496ae0d7dc441118067da84c473197691031c430715",
+    "tests/test_materialize_baostock_fundamentals_research.py": "2c774895f8c6cd4fd32ee4a9df51587fc8fb7bfb020a21b78f938156391dbaff",
+    "reports/runops/baostock_fundamental_smoke_schema_20260710.json": "87f5de8e8b7e0346c1d3b811398f3dcb69807b9be81c283dca35cf8e197b3ec9"
+  },
+  "strategy_candidate_available": false,
+  "boundary": "CODE_ONLY_RESEARCH_NO_PROVIDER_OR_CANONICAL_DATA_EXECUTION",
+  "remote": {
+    "name": "origin",
+    "ref": "refs/heads/codex/baostock-fundamental-smoke-code-20260710",
+    "commit": "6ea528568de57da85eec3b12aec37a7a444ae5a3"
+  },
+  "snapshots": 0
+}
