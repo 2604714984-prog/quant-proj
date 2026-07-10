@@ -2,19 +2,21 @@
 
 ## Closeout
 
-US-R is closed as `CLOSED_ACCEPTED_RESEARCH_ONLY_CONTINUE_RESEARCH_WITH_WARNINGS`.
+US-R is finally closed as `FINAL_BINARY_REJECT_BENCHMARK_ONLY`.
 
 ## Final Label
 
-`US-01 Adaptive+Quality`: `CONTINUE_RESEARCH`
+`US-01 Adaptive+Quality`: `BENCHMARK_ONLY`; decision `REJECT`
 
-This means the line is retained as a research lead. It does not mean active strategy, strategy candidate, readiness, product route, paper/live/manual execution path, daily signal, or recommendation.
+The source and evidence are retained as a historical benchmark. The strategy is not
+accepted as active, and the current configuration must not be retried.
 
-## Remaining Work
+## Decisive Failures
 
-- Prove or replace the ex-ante universe selection timestamp.
-- Expand public source crosscheck beyond the bounded five-symbol sample.
-- Repeat only fixed, pre-registered diagnostics after evidence changes.
+- Historical optimization explicitly used test Sharpe in variant scoring.
+- The original universe lacks a proven ex-ante selection date.
+- The 106-removal sensitivity audit materially reduced full and validation results.
+- Complete corporate-action and official point-in-time constituent evidence is absent.
 
 ## Boundary Result
 

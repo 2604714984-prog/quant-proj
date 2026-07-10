@@ -1,5 +1,7 @@
 # CALLBACK_ENVELOPE
 
+> Intermediate result superseded by the final binary adjudication: `REJECT` / `BENCHMARK_ONLY`.
+
 `BATCH`: `WINDOWS_WSL2_US_ADAPTIVE_QUALITY_MEMBERSHIP_SURVIVORSHIP_US_R2_20260710`
 
 `TARGET_REPO`: `/home/rongyu/workspace/us_stock_30w`

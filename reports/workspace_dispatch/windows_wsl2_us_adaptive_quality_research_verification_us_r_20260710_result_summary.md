@@ -2,14 +2,18 @@
 
 ## Status
 
-`CLOSED_ACCEPTED_RESEARCH_ONLY_CONTINUE_RESEARCH_WITH_WARNINGS`
+`SUPERSEDED_BY_FINAL_BINARY_REJECT`
 
 ## Results
 
 - US-01 Adaptive+Quality reproduced on the local real-data US30W pipeline.
-- Final US-01 label: `CONTINUE_RESEARCH`.
+- Final US-01 label: `BENCHMARK_ONLY`; binary decision `REJECT`.
 - `strategy_candidate_available=false`.
-- The strategy remains a research lead only, not an active strategy and not a daily-run item.
+- The strategy is not active and is not a daily-run item. The current configuration is `DO_NOT_RETRY_CURRENT_CONFIGURATION`.
+
+This summary's earlier `CONTINUE_RESEARCH` result was superseded after the broader
+106-removal survivorship audit and direct confirmation that historical optimization
+ranked variants with test Sharpe.
 
 ## Evidence
 

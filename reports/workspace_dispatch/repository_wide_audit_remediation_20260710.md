@@ -13,7 +13,7 @@ is carried forward.
 - `A_Share_Monitor`: `d40e5abfdbe95d6491e42f2f83231421d7b17057`
 - `market_data`: `39cb26a60839b2546f19a75bc9eb80cb331ca4c3`
 - `strategy_work`: `b21dd904f5874085aaf6fdbb69d3eaeb1b638506`
-- `us_stock_30w`: `88283741acdf486d35f29a3c35f4da4c5d889423`
+- `us_stock_30w`: `c50ea74fde8939cbedc79f274d15574f55e9aecf`
 
 ## Corrected defects
 
@@ -96,8 +96,9 @@ not current selection evidence. `strategy_candidate_available=false`. New strate
 claims require rerunning the affected research from pinned snapshots with the corrected
 split, purge, execution, valuation, and snapshot rules.
 
-The post-fix US30W survivorship audits are current research evidence only.
-Adaptive+Quality remains a research lead but is now classified `REPAIR_REQUIRED`, not
-an active strategy. A deterministic ex-ante universe rule or an official
-point-in-time constituent source is still required before this specific risk can be
-closed.
+The final binary adjudication rejects Adaptive+Quality for strategy use. Its current
+disposition is `BENCHMARK_ONLY` with `DO_NOT_RETRY_CURRENT_CONFIGURATION` and
+`strategy_candidate_available=false`. The decisive failures are historical
+test-result parameter selection, unproven ex-ante universe construction, material
+survivorship sensitivity, and incomplete corporate-action evidence. The source and
+reports remain preserved as historical benchmark and failure-memory evidence.
