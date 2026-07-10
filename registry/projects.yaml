@@ -33,7 +33,7 @@ projects:
     path: "/home/rongyu/workspace/US_Stock_Monitor"
     role: "US equity research source"
     branch: "main"
-    commit: "6078e9d6004bcb6d688e2a06f662ceb9aff92bec"
+    commit: "548f351b7ea37df0350ceb0a6075541d8830fdf5"
     upstream_ref: "origin/main"
     working_tree: "clean at refresh"
     research_status: "Adaptive+Quality remains CONTINUE_RESEARCH only"

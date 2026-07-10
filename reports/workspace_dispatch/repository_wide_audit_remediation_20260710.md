@@ -9,7 +9,7 @@ is carried forward.
 
 ## Source preservation
 
-- `US_Stock_Monitor`: `6078e9d6004bcb6d688e2a06f662ceb9aff92bec`
+- `US_Stock_Monitor`: `548f351b7ea37df0350ceb0a6075541d8830fdf5`
 - `A_Share_Monitor`: `9642e0b921bbdc654f59797b4a5e1aacefb0fa52`
 - `market_data`: `111cfed09955090fc3bd2fa0d7c7362aa3ba9a3b`
 - `strategy_work`: `372144ce1e6d5ecad7c17bc8bdd08ea68bc41fa4`
@@ -26,6 +26,11 @@ is carried forward.
 - US corporate actions are deduplicated and hashed into snapshot identity; orphan
   action rows no longer count as price-history coverage; imported source files carry
   hashes.
+- A US CSV import marked as real now requires a matching source-provenance sidecar;
+  the caller flag alone is rejected.
+- The optional vectorized scanner uses chronological train/validation/diagnostic-test
+  splits, shifts signals one bar, ranks by validation only, and fails visibly on engine
+  errors.
 - A-share missing held prices are valued conservatively instead of at purchase cost;
   all-in cost basis includes buy fees.
 - Invalid strategy expressions fail closed; named strategy families retain their
@@ -46,7 +51,7 @@ is carried forward.
 
 ## Validation
 
-- `US_Stock_Monitor`: full pytest PASS; full Ruff PASS.
+- `US_Stock_Monitor`: full pytest PASS; all tracked Python Ruff PASS; safety PASS.
 - `A_Share_Monitor`: full pytest PASS; full Ruff PASS.
 - `market_data`: `113 passed`; full Ruff PASS.
 - `strategy_work`: `11 passed`; scoped tracked Python Ruff PASS.
