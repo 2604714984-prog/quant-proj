@@ -86,6 +86,7 @@ Use `runbooks/model_routing.md` and `registry/model_routing.yaml`.
 TASK_ID: <task-id>
 STATUS: BACKLOG / HOLD / BLOCKED
 TARGET_PROJECT: <project>
+TARGET_REPO: <absolute Git worktree path; required for codex_audit, omit otherwise>
 RECOMMENDED_AGENT: <agent>
 MODEL_ROLE: coordinator / dispatcher / executor / strategy_research_executor / acceptance / audit / reasonix
 MODEL: <exact model>
@@ -102,8 +103,8 @@ CONTEXT_DELTA: context_delta.md
 CONTEXT_DELTA_SHA256: <full SHA-256 of context_delta.md>
 AUTOMATED_GATE_MANIFEST: <gate.json for acceptance packets; omit otherwise>
 AUTOMATED_GATE_MANIFEST_SHA256: <gate hash for acceptance packets; omit otherwise>
-SANDBOX_MODE: <read-only for acceptance packets; omit otherwise>
-APPROVAL_POLICY: <never for acceptance packets; omit otherwise>
+SANDBOX_MODE: <read-only for acceptance and codex_audit packets; omit otherwise>
+APPROVAL_POLICY: <never for acceptance and codex_audit packets; omit otherwise>
 
 ## Source
 ChatGPT task list: `<inbox path>`
@@ -155,7 +156,11 @@ python3 scripts/validate_task_packet.py tasks/backlog/<task-id>
 - Read-only test-gap, overclaim, or second review: assign to `reasonix_advisory`.
 - Routine final evidence acceptance: assign to `codex_acceptance` on Luna after
   automated gates pass.
-- Process review after delivery packet: assign to `codex_audit`.
+- Process review after delivery packet: assign to `codex_audit` with
+  `MODEL_ROLE: audit`, `gpt-5.6-luna`/`high`, `SANDBOX_MODE: read-only`,
+  `APPROVAL_POLICY: never`, immutable target commit/tree, and a hash-bound
+  `CONTEXT_DELTA`; require `TARGET_REPO` and verify the target Git objects; set
+  executor gate fields and `ACCEPTANCE_ROLE` to `N/A`.
 - Final external review packet: assign to `chatgpt_external_audit` and require human submission.
 - Migration or boundary-changing tasks: assign to `human_gate` first, then `codex_dev` only after approval.
 

@@ -17,6 +17,8 @@ def _copy_policy(tmp_path: Path) -> Path:
         ".codex/agents/luna-executor.toml",
         ".codex/agents/sol-strategy-research-executor.toml",
         ".codex/agents/luna-acceptance.toml",
+        ".codex/agents/luna-audit.toml",
+        "registry/agents.yaml",
         "registry/model_routing.yaml",
         "runbooks/model_routing.md",
         "runbooks/task_packet_validation.md",
@@ -164,6 +166,54 @@ def test_acceptance_role_cannot_enable_writes(tmp_path):
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="enforced read-only"):
+        validator.validate(root)
+
+
+def test_audit_role_cannot_enable_writes_or_approval_escalation(tmp_path):
+    root = _copy_policy(tmp_path)
+    audit = root / ".codex/agents/luna-audit.toml"
+    audit.write_text(
+        'model = "gpt-5.6-luna"\nmodel_reasoning_effort = "high"\n'
+        'sandbox_mode = "workspace-write"\napproval_policy = "on-request"\n',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="audit role must be enforced read-only"):
+        validator.validate(root)
+
+
+def test_audit_registry_cannot_claim_a_write_scope(tmp_path):
+    root = _copy_policy(tmp_path)
+    agents = root / "registry/agents.yaml"
+    payload = agents.read_text(encoding="utf-8").replace(
+        "write_policy: \"read-only; return findings in the task callback without filesystem writes\"",
+        "write_policy: \"reports/codex_audit\"",
+    )
+    assert payload != agents.read_text(encoding="utf-8")
+    agents.write_text(payload, encoding="utf-8")
+    with pytest.raises(ValueError, match="machine-enforced read-only"):
+        validator.validate(root)
+
+
+def test_audit_context_policy_cannot_be_removed(tmp_path):
+    root = _copy_policy(tmp_path)
+    policy = root / "registry/model_routing.yaml"
+    payload = policy.read_text(encoding="utf-8").replace(
+        '    context_policy: "sha256-bound context delta required"',
+        '    context_policy: "optional context"',
+    )
+    assert payload != policy.read_text(encoding="utf-8")
+    policy.write_text(payload, encoding="utf-8")
+    with pytest.raises(ValueError, match="hash-bound context"):
+        validator.validate(root)
+
+
+def test_audit_target_repo_binding_cannot_be_removed_from_packet_rule(tmp_path):
+    root = _copy_policy(tmp_path)
+    packet_rule = root / "runbooks/task_packet_validation.md"
+    payload = packet_rule.read_text(encoding="utf-8").replace("TARGET_REPO", "TARGET_PATH")
+    assert payload != packet_rule.read_text(encoding="utf-8")
+    packet_rule.write_text(payload, encoding="utf-8")
+    with pytest.raises(ValueError, match="TARGET_REPO"):
         validator.validate(root)
 
 

@@ -1,0 +1,40 @@
+{
+  "strategy_card_id": "family-66-blocked",
+  "schema_version": "1.0",
+  "state": "BLOCKED",
+  "hypothesis": {
+    "question": "Does the preregistered factor survive point-in-time validation?",
+    "statement": "The factor has positive out-of-sample excess return after costs.",
+    "success_criteria": ["All preregistered gates pass"],
+    "failure_criteria": ["Any leakage or point-in-time gate fails"]
+  },
+  "model_spec": {
+    "features_ref": {"kind": "features", "object_id": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef", "sha256": "fedcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210"},
+    "label_ref": {"kind": "label", "object_id": "123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0", "sha256": "edcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210f"},
+    "horizon": "20 trading days",
+    "universe_ref": {"kind": "universe", "object_id": "23456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01", "sha256": "dcba9876543210fedcba9876543210fedcba9876543210fedcba9876543210fe"},
+    "split_ref": {"kind": "split", "object_id": "3456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012", "sha256": "cba9876543210fedcba9876543210fedcba9876543210fedcba9876543210fed"},
+    "whole_label_split_purge": true,
+    "parameter_budget_ref": {"kind": "parameter_budget", "object_id": "456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123", "sha256": "ba9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedc"},
+    "cost_model_ref": {"kind": "cost_model", "object_id": "56789abcdef0123456789abcdef0123456789abcdef0123456789abcdef01234", "sha256": "a9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcb"},
+    "gate_spec_ref": {"kind": "gate_spec", "object_id": "6789abcdef0123456789abcdef0123456789abcdef0123456789abcdef012345", "sha256": "9876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba"}
+  },
+  "evidence": {
+    "disposition": "BLOCKED",
+    "review_ref": {"kind": "review", "object_id": "789abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456", "sha256": "876543210fedcba9876543210fedcba9876543210fedcba9876543210fedcba9"},
+    "prior_state": "MODEL_SPEC",
+    "actor": "controller",
+    "decided_at": "2026-07-11T03:00:00Z",
+    "reason": "Point-in-time source evidence is not materialized."
+  },
+  "boundary_flags": {
+    "strategy_candidate_available": false,
+    "readiness_promoted": false,
+    "product_route_activated": false,
+    "recommendation_runtime_enabled": false,
+    "broker_api_allowed": false,
+    "paper_trading_allowed": false,
+    "live_trading_allowed": false,
+    "auto_execution_allowed": false
+  }
+}
