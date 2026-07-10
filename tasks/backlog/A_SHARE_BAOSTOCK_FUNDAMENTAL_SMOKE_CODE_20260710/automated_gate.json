@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "task_id": "A_SHARE_BAOSTOCK_FUNDAMENTAL_SMOKE_CODE_20260710",
+  "execution_id": "019f4ca0-2054-77e3-9559-7005c0f9b565-postcommit-rework-20260711",
+  "model_role": "executor",
+  "model": "gpt-5.6-luna",
+  "status": "GREEN",
+  "workspace_root": "/home/rongyu/workspace/.wt-baostock-fundamental-smoke-20260710",
+  "task_packet": {
+    "dir": "/home/rongyu/workspace/quant-proj/tasks/backlog/A_SHARE_BAOSTOCK_FUNDAMENTAL_SMOKE_CODE_20260710",
+    "spec_sha256": "be9a9620c643bdea405c428eb10e71316c06eb98380efaad7863691fd280f3f1"
+  },
+  "source": {
+    "commit": "f39c9bcf5fc05c0c9b89aa2c13db525e434de5b7",
+    "tree": "817aa52f834fd4328b937adb0fd151c9ea1bdb40"
+  },
+  "result": {
+    "commit": "6ea528568de57da85eec3b12aec37a7a444ae5a3",
+    "tree": "65cfae06f523fd624e49284cfa713cab4cb89579"
+  },
+  "code_changed": true,
+  "checks": [
+    {
+      "name": "py_compile",
+      "command": "python3 -m py_compile scripts/materialize_baostock_fundamentals_research.py",
+      "exit_code": 0
+    },
+    {
+      "name": "focused_tests",
+      "command": "/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python -m pytest -q tests/test_materialize_baostock_fundamentals_research.py",
+      "exit_code": 0,
+      "test_count": 17
+    },
+    {
+      "name": "ruff",
+      "command": "/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python -m ruff check scripts/materialize_baostock_fundamentals_research.py tests/test_materialize_baostock_fundamentals_research.py",
+      "exit_code": 0
+    },
+    {
+      "name": "dry_run_no_network_no_write",
+      "command": "python3 scripts/materialize_baostock_fundamentals_research.py --dry-run-plan",
+      "exit_code": 0
+    },
+    {
+      "name": "boundary_scan",
+      "command": "python3 scripts/agent_safety_check.py",
+      "exit_code": 0
+    },
+    {
+      "name": "git_diff_check",
+      "command": "git diff --check",
+      "exit_code": 0
+    }
+  ],
+  "callback": {
+    "path": "execution_callback.json",
+    "sha256": "ac90f75c2b8b26ea9d1e894c93114f27d33f470f447c12b54964ec34f9b116b7"
+  },
+  "artifacts": [
+    {
+      "path": "scripts/materialize_baostock_fundamentals_research.py",
+      "sha256": "82544fb363634714ec84f496ae0d7dc441118067da84c473197691031c430715"
+    },
+    {
+      "path": "tests/test_materialize_baostock_fundamentals_research.py",
+      "sha256": "2c774895f8c6cd4fd32ee4a9df51587fc8fb7bfb020a21b78f938156391dbaff"
+    },
+    {
+      "path": "reports/runops/baostock_fundamental_smoke_schema_20260710.json",
+      "sha256": "87f5de8e8b7e0346c1d3b811398f3dcb69807b9be81c283dca35cf8e197b3ec9"
+    }
+  ],
+  "push": {
+    "required": true,
+    "remote": "origin",
+    "ref": "refs/heads/codex/baostock-fundamental-smoke-code-20260710",
+    "commit": "6ea528568de57da85eec3b12aec37a7a444ae5a3"
+  },
+  "missing_evidence": [],
+  "evidence_conflicts": []
+}

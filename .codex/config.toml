@@ -1,0 +1,22 @@
+model = "gpt-5.6-sol"
+model_reasoning_effort = "high"
+
+[agents]
+max_threads = 4
+max_depth = 1
+
+[agents.coordinator]
+description = "Use Sol as Quant-Manager to decompose hard problems and resolve only evidence gaps or conflicts."
+config_file = "agents/sol-coordinator.toml"
+
+[agents.dispatcher]
+description = "Use Luna as the operational dispatcher for queues, bounded packets, callbacks, and stall detection."
+config_file = "agents/luna-dispatcher.toml"
+
+[agents.executor]
+description = "Use Luna for scoped implementation, batch work, deterministic validation, and rework."
+config_file = "agents/luna-executor.toml"
+
+[agents.acceptance]
+description = "Use Luna for final evidence acceptance after automated gates pass. Escalate only the disputed evidence slice to Sol, then return final acceptance to Luna."
+config_file = "agents/luna-acceptance.toml"

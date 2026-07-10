@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "template_only": true,
+  "task_id": "TASK-ID",
+  "execution_id": "EXECUTION-ID",
+  "model_role": "executor",
+  "model": "gpt-5.6-luna",
+  "status": "GREEN",
+  "workspace_root": "/absolute/target/worktree",
+  "task_packet": {
+    "dir": "/absolute/controller/task-packet",
+    "spec_sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "source": {
+    "commit": "0000000000000000000000000000000000000000",
+    "tree": "0000000000000000000000000000000000000000"
+  },
+  "result": {
+    "commit": "0000000000000000000000000000000000000000",
+    "tree": "0000000000000000000000000000000000000000"
+  },
+  "code_changed": true,
+  "checks": [
+    {
+      "name": "focused_tests",
+      "command": "python -m pytest -q tests/test_target.py",
+      "exit_code": 0,
+      "test_count": 1
+    },
+    {
+      "name": "git_diff_check",
+      "command": "git diff --check",
+      "exit_code": 0
+    },
+    {
+      "name": "boundary_scan",
+      "command": "python scripts/agent_safety_check.py",
+      "exit_code": 0
+    }
+  ],
+  "callback": {
+    "path": "callback.json",
+    "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "artifacts": [
+    {
+      "path": "path/to/artifact",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "push": {
+    "required": true,
+    "remote": "origin",
+    "ref": "refs/heads/BRANCH",
+    "commit": "0000000000000000000000000000000000000000"
+  },
+  "missing_evidence": [],
+  "evidence_conflicts": []
+}
