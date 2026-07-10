@@ -24,3 +24,7 @@ config_file = "agents/sol-strategy-research-executor.toml"
 [agents.acceptance]
 description = "Use Luna for final evidence acceptance after automated gates pass. Escalate only the disputed evidence slice to Sol, then return final acceptance to Luna."
 config_file = "agents/luna-acceptance.toml"
+
+[agents.audit]
+description = "Use Luna in a machine-enforced read-only context for process review against a hash-bound context delta."
+config_file = "agents/luna-audit.toml"

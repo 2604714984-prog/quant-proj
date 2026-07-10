@@ -1,6 +1,8 @@
 import hashlib
 import json
 from pathlib import Path
+import re
+import subprocess
 
 import pytest
 
@@ -63,12 +65,122 @@ def _strategy_packet(tmp_path: Path) -> Path:
     return packet
 
 
+def _audit_packet(tmp_path: Path) -> Path:
+    packet = _packet(tmp_path)
+    target = tmp_path / "audit-target"
+    target.mkdir()
+    subprocess.run(["git", "init", "-q"], cwd=target, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=target, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=target, check=True)
+    (target / "tracked.txt").write_text("target\n", encoding="utf-8")
+    subprocess.run(["git", "add", "tracked.txt"], cwd=target, check=True)
+    subprocess.run(["git", "commit", "-qm", "target"], cwd=target, check=True)
+    commit = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=target, text=True).strip()
+    tree = subprocess.check_output(["git", "rev-parse", "HEAD^{tree}"], cwd=target, text=True).strip()
+    spec = packet / "spec.md"
+    payload = spec.read_text(encoding="utf-8")
+    payload = payload.replace("RECOMMENDED_AGENT: codex_dev", "RECOMMENDED_AGENT: codex_audit")
+    payload = payload.replace("MODEL_ROLE: executor", "MODEL_ROLE: audit")
+    payload = payload.replace("REASONING_EFFORT: medium", "REASONING_EFFORT: high")
+    payload = payload.replace("AUTOMATED_GATE_COMMANDS: gate_commands.txt", "AUTOMATED_GATE_COMMANDS: N/A")
+    payload = payload.replace(
+        f"AUTOMATED_GATE_COMMANDS_SHA256: {_digest(packet / 'gate_commands.txt')}",
+        "AUTOMATED_GATE_COMMANDS_SHA256: N/A",
+    )
+    payload = payload.replace("ACCEPTANCE_ROLE: codex_acceptance", "ACCEPTANCE_ROLE: N/A")
+    payload = payload.replace(f"SOURCE_COMMIT: {SHA}", f"SOURCE_COMMIT: {commit}")
+    payload = payload.replace(f"SOURCE_TREE: {SHA}", f"SOURCE_TREE: {tree}")
+    payload += f"SANDBOX_MODE: read-only\nAPPROVAL_POLICY: never\nTARGET_REPO: {target}\n"
+    spec.write_text(payload, encoding="utf-8")
+    return packet
+
+
 def test_valid_luna_executor_packet_passes(tmp_path):
     validate(_packet(tmp_path))
 
 
 def test_valid_sol_strategy_research_executor_packet_passes(tmp_path):
     validate(_strategy_packet(tmp_path))
+
+
+def test_valid_codex_audit_packet_is_read_only_and_context_bound(tmp_path):
+    validate(_audit_packet(tmp_path))
+
+
+@pytest.mark.parametrize(
+    ("old", "new"),
+    (
+        ("SANDBOX_MODE: read-only", "SANDBOX_MODE: workspace-write"),
+        ("APPROVAL_POLICY: never", "APPROVAL_POLICY: on-request"),
+    ),
+)
+def test_codex_audit_packet_rejects_write_or_approval_escalation(tmp_path, old, new):
+    packet = _audit_packet(tmp_path)
+    spec = packet / "spec.md"
+    spec.write_text(spec.read_text(encoding="utf-8").replace(old, new), encoding="utf-8")
+    with pytest.raises(ValueError, match="Codex-Audit routing"):
+        validate(packet)
+
+
+def test_codex_audit_packet_rejects_tampered_context_delta(tmp_path):
+    packet = _audit_packet(tmp_path)
+    (packet / "context_delta.md").write_text("unbound expanded scope", encoding="utf-8")
+    with pytest.raises(ValueError, match="does not match"):
+        validate(packet)
+
+
+def test_codex_audit_packet_rejects_executor_gate_commands(tmp_path):
+    packet = _audit_packet(tmp_path)
+    spec = packet / "spec.md"
+    payload = spec.read_text(encoding="utf-8")
+    payload = payload.replace("AUTOMATED_GATE_COMMANDS: N/A", "AUTOMATED_GATE_COMMANDS: gate_commands.txt")
+    payload = payload.replace(
+        "AUTOMATED_GATE_COMMANDS_SHA256: N/A",
+        f"AUTOMATED_GATE_COMMANDS_SHA256: {_digest(packet / 'gate_commands.txt')}",
+    )
+    spec.write_text(payload, encoding="utf-8")
+    with pytest.raises(ValueError, match="must not carry executor gate commands"):
+        validate(packet)
+
+
+def test_codex_audit_packet_rejects_commit_absent_from_target_repo(tmp_path):
+    packet = _audit_packet(tmp_path)
+    spec = packet / "spec.md"
+    payload = re.sub(
+        r"SOURCE_COMMIT: [0-9a-f]{40}",
+        "SOURCE_COMMIT: fedcba9876543210fedcba9876543210fedcba98",
+        spec.read_text(encoding="utf-8"),
+    )
+    spec.write_text(payload, encoding="utf-8")
+    with pytest.raises(ValueError, match="target commit is unavailable"):
+        validate(packet)
+
+
+def test_codex_audit_packet_rejects_tree_mismatch(tmp_path):
+    packet = _audit_packet(tmp_path)
+    spec = packet / "spec.md"
+    payload = re.sub(
+        r"SOURCE_TREE: [0-9a-f]{40}",
+        "SOURCE_TREE: abcdef0123456789abcdef0123456789abcdef01",
+        spec.read_text(encoding="utf-8"),
+    )
+    spec.write_text(payload, encoding="utf-8")
+    with pytest.raises(ValueError, match="commit/tree does not match"):
+        validate(packet)
+
+
+def test_codex_audit_packet_requires_target_repo(tmp_path):
+    packet = _audit_packet(tmp_path)
+    spec = packet / "spec.md"
+    payload = re.sub(
+        r"^TARGET_REPO:.*\n",
+        "",
+        spec.read_text(encoding="utf-8"),
+        flags=re.MULTILINE,
+    )
+    spec.write_text(payload, encoding="utf-8")
+    with pytest.raises(ValueError, match="missing audit packet metadata"):
+        validate(packet)
 
 
 def test_strategy_research_executor_requires_exact_role_model_and_thread(tmp_path):

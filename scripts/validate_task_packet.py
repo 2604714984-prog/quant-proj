@@ -8,6 +8,7 @@ import hashlib
 import json
 from pathlib import Path
 import re
+import subprocess
 
 
 REQUIRED_FILES = ("spec.md", "handoff.md", "human_gate.md")
@@ -58,6 +59,7 @@ ACCEPTANCE_FIELDS = (
     "SANDBOX_MODE",
     "APPROVAL_POLICY",
 )
+AUDIT_FIELDS = ("SANDBOX_MODE", "APPROVAL_POLICY", "TARGET_REPO")
 
 
 def _metadata(text: str) -> dict[str, str]:
@@ -113,6 +115,19 @@ def _validate_execution_refs_and_commands(packet_dir: Path, facts: dict[str, str
     )
 
 
+def _git(repo: Path, *args: str) -> str:
+    completed = subprocess.run(
+        ["git", "-C", str(repo), *args],
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+    )
+    if completed.returncode:
+        raise ValueError((completed.stderr or completed.stdout).strip() or "target Git lookup failed")
+    return completed.stdout.strip()
+
+
 def validate(packet_dir: Path) -> None:
     for name in REQUIRED_FILES:
         if not (packet_dir / name).is_file():
@@ -156,7 +171,7 @@ def validate(packet_dir: Path) -> None:
     elif facts["MODEL_ROLE"] in routed_roles:
         raise ValueError(f"Codex agent routing must be one of {CODEX_AGENT_ROLE_MODEL_BINDINGS}")
 
-    if agent in {"codex_dev", STRATEGY_EXECUTOR_AGENT, "codex_acceptance"}:
+    if agent in {"codex_dev", STRATEGY_EXECUTOR_AGENT, "codex_acceptance", "codex_audit"}:
         _verify_packet_file(packet_dir, facts, "CONTEXT_DELTA", "CONTEXT_DELTA_SHA256")
 
     if agent == "codex_dev":
@@ -236,6 +251,46 @@ def validate(packet_dir: Path) -> None:
         result = gate.get("result", {})
         if result.get("commit") != facts["SOURCE_COMMIT"] or result.get("tree") != facts["SOURCE_TREE"]:
             raise ValueError("acceptance source refs must match automated gate result refs")
+    elif agent == "codex_audit":
+        missing_audit = [field for field in AUDIT_FIELDS if not facts.get(field)]
+        if missing_audit:
+            raise ValueError(f"missing audit packet metadata: {missing_audit}")
+        expected = ("audit", "gpt-5.6-luna", "high", "N/A", "read-only", "never")
+        actual = (
+            facts["MODEL_ROLE"],
+            facts["MODEL"],
+            facts["REASONING_EFFORT"],
+            facts["ACCEPTANCE_ROLE"],
+            facts["SANDBOX_MODE"],
+            facts["APPROVAL_POLICY"],
+        )
+        if actual != expected:
+            raise ValueError(f"Codex-Audit routing must be {expected}")
+        if facts["AUTOMATED_GATE_COMMANDS"] != "N/A" or facts["AUTOMATED_GATE_COMMANDS_SHA256"] != "N/A":
+            raise ValueError("Codex-Audit must not carry executor gate commands")
+        if (
+            not SHA1_RE.fullmatch(facts["SOURCE_COMMIT"])
+            or not SHA1_RE.fullmatch(facts["SOURCE_TREE"])
+            or len(set(facts["SOURCE_COMMIT"])) == 1
+            or len(set(facts["SOURCE_TREE"])) == 1
+        ):
+            raise ValueError("Codex-Audit tasks require immutable target commit and tree")
+        target_repo_value = facts["TARGET_REPO"]
+        if any(token in target_repo_value for token in ("<", ">", "N/A", "path/to")):
+            raise ValueError("Codex-Audit TARGET_REPO contains a placeholder")
+        target_repo = Path(target_repo_value)
+        if not target_repo.is_absolute():
+            raise ValueError("Codex-Audit TARGET_REPO must be an absolute Git repository")
+        target_repo = target_repo.resolve()
+        if not target_repo.is_dir() or _git(target_repo, "rev-parse", "--is-inside-work-tree") != "true":
+            raise ValueError("Codex-Audit TARGET_REPO must be an existing Git worktree")
+        try:
+            object_type = _git(target_repo, "cat-file", "-t", facts["SOURCE_COMMIT"])
+            actual_tree = _git(target_repo, "show", "-s", "--format=%T", facts["SOURCE_COMMIT"])
+        except ValueError as exc:
+            raise ValueError("Codex-Audit target commit is unavailable in TARGET_REPO") from exc
+        if object_type != "commit" or actual_tree != facts["SOURCE_TREE"]:
+            raise ValueError("Codex-Audit target commit/tree does not match TARGET_REPO")
 
 
 def main() -> int:

@@ -50,6 +50,16 @@ codex_models:
     write_policy: "read-only"
     result_statuses: ["LUNA_ACCEPTANCE", "REWORK_REQUIRED", "SOL_ESCALATION_REQUEST"]
 
+  audit:
+    role: "Codex-Audit"
+    model: "gpt-5.6-luna"
+    reasoning_effort: "high"
+    write_policy: "read-only"
+    sandbox_mode: "read-only"
+    approval_policy: "never"
+    context_policy: "sha256-bound context delta required"
+    result_statuses: ["CODEX_AUDIT_COMPLETE", "BLOCKED"]
+
 workflow:
   path:
     - "SOL_MANAGER"
