@@ -59,7 +59,7 @@ projects:
     path: "/home/rongyu/workspace/strategy_work"
     role: "strategy research and evidence synthesis"
     branch: "main"
-    commit: "2516eecd1f8399968233a4bec208be32479e8863"
+    commit: "52962a54b4da2d25a73f5f26203b356d2be9edbf"
     upstream_ref: "origin/main"
     working_tree: "source commit preserved; unrelated local continuation artifacts remain outside commit"
     research_status: "no strictly validated strategy"
