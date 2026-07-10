@@ -22,10 +22,9 @@ projects:
   a_share_monitor:
     path: "/home/rongyu/workspace/A_Share_Monitor"
     role: "A-share research source"
-    branch: "main"
-    commit: "d40e5abfdbe95d6491e42f2f83231421d7b17057"
-    upstream_ref: "origin/main"
-    main_ref_commit: "d40e5abfdbe95d6491e42f2f83231421d7b17057"
+    branch: "codex/s2-feature-source-design-20260710"
+    commit: "52ddf456bebd6eef140ec2b0b364510f83b961d2"
+    upstream_ref: "origin/codex/s2-feature-source-design-20260710"
     working_tree: "source commit preserved; unrelated local cache artifacts remain outside commit"
     research_status: "no accepted strategy candidate"
 
@@ -33,18 +32,26 @@ projects:
     path: "/home/rongyu/workspace/US_Stock_Monitor"
     role: "US equity research source"
     branch: "main"
-    commit: "548f351b7ea37df0350ceb0a6075541d8830fdf5"
+    commit: "1a96f0de7a7be35978da3268556d362d624e6cff"
     upstream_ref: "origin/main"
     working_tree: "clean at refresh"
-    research_status: "Adaptive+Quality remains CONTINUE_RESEARCH only"
+    research_status: "Adaptive+Quality is rejected for strategy use; benchmark-only evidence"
+
+  us_stock_30w:
+    path: "/home/rongyu/workspace/us_stock_30w"
+    role: "US strategy reproduction evidence"
+    branch: "master"
+    commit: "c50ea74fde8939cbedc79f274d15574f55e9aecf"
+    upstream_ref: "origin/master"
+    working_tree: "clean at final binary rejection"
+    research_status: "Adaptive+Quality rejected; benchmark-only sensitivity evidence"
 
   market_data:
     path: "/home/rongyu/workspace/market_data"
     role: "registry and read-only access gate"
     branch: "codex/r28-smallcap-evidence-contract-20260709"
-    commit: "39cb26a60839b2546f19a75bc9eb80cb331ca4c3"
+    commit: "afb55105d86cd50f918ce72f66f715530b9b3178"
     upstream_ref: "origin/codex/r28-smallcap-evidence-contract-20260709"
-    main_ref_commit: "39cb26a60839b2546f19a75bc9eb80cb331ca4c3"
     working_tree: "clean at refresh"
     product_route_status: "A-share and US unified product reads blocked pending physical requalification"
 
@@ -52,7 +59,7 @@ projects:
     path: "/home/rongyu/workspace/strategy_work"
     role: "strategy research and evidence synthesis"
     branch: "main"
-    commit: "b21dd904f5874085aaf6fdbb69d3eaeb1b638506"
+    commit: "d63b45cbec053d8f6ae352ffd9bb870e53ae446f"
     upstream_ref: "origin/main"
     working_tree: "source commit preserved; unrelated local continuation artifacts remain outside commit"
     research_status: "no strictly validated strategy"
