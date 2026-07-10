@@ -9,7 +9,7 @@ is carried forward.
 
 ## Source preservation
 
-- `US_Stock_Monitor`: `548f351b7ea37df0350ceb0a6075541d8830fdf5`
+- `US_Stock_Monitor`: `5a152ae465ec5d45f16b36099e591bf564219980`
 - `A_Share_Monitor`: `d40e5abfdbe95d6491e42f2f83231421d7b17057`
 - `market_data`: `39cb26a60839b2546f19a75bc9eb80cb331ca4c3`
 - `strategy_work`: `b21dd904f5874085aaf6fdbb69d3eaeb1b638506`

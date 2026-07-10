@@ -10,6 +10,8 @@
 
 `TREE`: `ab07293d46ce903efb7497217c3f9d7fe50339fc`
 
+`SUPPORT_REPO`: `/home/rongyu/workspace/US_Stock_Monitor`; final source-sync commit `5a152ae465ec5d45f16b36099e591bf564219980`, tree `97159838db293c84b4919a27c0f9fceaa80dc139`, pushed to `origin/main`.
+
 `STATUS`: `FINAL_BINARY_REJECT_BENCHMARK_ONLY`
 
 `DECISION`: `REJECT`
