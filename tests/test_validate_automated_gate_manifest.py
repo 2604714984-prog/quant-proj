@@ -132,8 +132,69 @@ CONTEXT_DELTA_SHA256: {_digest(delta)}
     return manifest
 
 
+def _convert_to_strategy_gate(manifest: Path) -> None:
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    packet = Path(payload["task_packet"]["dir"])
+    spec = packet / "spec.md"
+    spec_payload = spec.read_text(encoding="utf-8")
+    spec_payload = spec_payload.replace("TARGET_PROJECT: test", "TARGET_PROJECT: strategy_work")
+    spec_payload = spec_payload.replace("RECOMMENDED_AGENT: codex_dev", "RECOMMENDED_AGENT: strategy_research_executor")
+    spec_payload = spec_payload.replace("MODEL_ROLE: executor", "MODEL_ROLE: strategy_research_executor")
+    spec_payload = spec_payload.replace("MODEL: gpt-5.6-luna", "MODEL: gpt-5.6-sol")
+    spec_payload = spec_payload.replace("REASONING_EFFORT: medium", "REASONING_EFFORT: high")
+    spec_payload = spec_payload.replace(
+        f"CALLBACK_TARGET: {CALLBACK_ID}",
+        "CALLBACK_TARGET: 019f4c70-cac3-7211-8e04-47b8b51c819e",
+    )
+    spec_payload = spec_payload.replace(
+        "CONTEXT_DELTA: context_delta.md",
+        "EXECUTION_THREAD_ID: 019f3881-5293-74a1-8535-814bd83c8681\n"
+        "EXECUTION_THREAD_TITLE: Strategy Work — Sol Research\n"
+        "CONTEXT_DELTA: context_delta.md",
+    )
+    spec.write_text(spec_payload, encoding="utf-8")
+    payload["task_packet"]["spec_sha256"] = _digest(spec)
+    payload["model_role"] = "strategy_research_executor"
+    payload["model"] = "gpt-5.6-sol"
+    callback = packet / payload["callback"]["path"]
+    callback_payload = json.loads(callback.read_text(encoding="utf-8"))
+    callback_payload["status"] = "SOL_STRATEGY_RESEARCH_COMPLETE"
+    callback_payload["model"] = "gpt-5.6-sol"
+    callback.write_text(json.dumps(callback_payload), encoding="utf-8")
+    payload["callback"]["sha256"] = _digest(callback)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+
+def _claim_reserved_strategy_thread(manifest: Path, agent: str) -> None:
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    spec = Path(payload["task_packet"]["dir"]) / "spec.md"
+    spec_payload = spec.read_text(encoding="utf-8")
+    if agent == "luna_dispatcher":
+        spec_payload = spec_payload.replace("RECOMMENDED_AGENT: codex_dev", "RECOMMENDED_AGENT: luna_dispatcher")
+        spec_payload = spec_payload.replace("MODEL_ROLE: executor", "MODEL_ROLE: dispatcher")
+    spec_payload = spec_payload.replace(
+        "CONTEXT_DELTA: context_delta.md",
+        "EXECUTION_THREAD_ID: 019f3881-5293-74a1-8535-814bd83c8681\n"
+        "EXECUTION_THREAD_TITLE: Strategy Work — Sol Research\n"
+        "CONTEXT_DELTA: context_delta.md",
+    )
+    spec.write_text(spec_payload, encoding="utf-8")
+    payload["task_packet"]["spec_sha256"] = _digest(spec)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+
+
 def test_green_payload_passes():
     validate_payload(_payload())
+
+
+def test_strategy_gate_requires_exact_sol_role_model_pair():
+    payload = _payload()
+    payload["model_role"] = "strategy_research_executor"
+    payload["model"] = "gpt-5.6-sol"
+    validate_payload(payload)
+    payload["model"] = "gpt-5.6-luna"
+    with pytest.raises(ValueError, match="exactly match its execution role"):
+        validate_payload(payload)
 
 
 def test_failed_or_missing_check_is_rejected():
@@ -159,6 +220,30 @@ def test_gate_binds_packet_callback_artifacts_and_real_git(tmp_path):
     payload["callback"]["sha256"] = _digest(callback)
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="result commit/tree mismatch"):
+        validate_file(manifest)
+
+
+def test_strategy_gate_binds_sol_role_to_strategy_packet(tmp_path):
+    manifest = _real_gate(tmp_path)
+    _convert_to_strategy_gate(manifest)
+    validate_file(manifest)
+
+
+def test_gate_role_cannot_differ_from_packet(tmp_path):
+    manifest = _real_gate(tmp_path)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    payload["model_role"] = "strategy_research_executor"
+    payload["model"] = "gpt-5.6-sol"
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="role/model differs from task packet"):
+        validate_file(manifest)
+
+
+@pytest.mark.parametrize("agent", ("codex_dev", "luna_dispatcher"))
+def test_full_gate_rejects_non_strategy_reserved_thread_claim(tmp_path, agent):
+    manifest = _real_gate(tmp_path)
+    _claim_reserved_strategy_thread(manifest, agent)
+    with pytest.raises(ValueError, match="strategy thread metadata is reserved"):
         validate_file(manifest)
 
 
