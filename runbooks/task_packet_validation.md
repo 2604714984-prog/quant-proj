@@ -21,6 +21,10 @@ target, acceptance role, and a hashed context delta. Codex implementation
 packets include concrete `context_delta.md` and automated-gate command files
 inside the task packet directory; placeholders fail closed. Acceptance packets
 also reference the green gate by path and hash and declare read-only mode.
+Dedicated strategy research packets additionally bind `EXECUTION_THREAD_ID:
+019f3881-5293-74a1-8535-814bd83c8681` and `EXECUTION_THREAD_TITLE: Strategy
+Work — Sol Research`, with manager callback target
+`019f4c70-cac3-7211-8e04-47b8b51c819e`.
 
 Optional context files are allowed, but task packets must not include raw databases, parquet caches, `.env` files, API keys, raw payloads, broker credentials, or generated runtime data.
 
@@ -70,13 +74,25 @@ Before sending:
 - confirm project and agent boundary;
 - confirm no broker/order/paper/live/auto, recommendation, trade plan, allocation, `.env`, or key-output scope is included;
 - record `MODEL_ROLE`, exact model, and reasoning effort in every Codex handoff;
-- use `gpt-5.6-sol`/`high` only for coordination or allowed evidence escalation;
-- use `gpt-5.6-luna`/`medium` for execution and rework;
+- use `gpt-5.6-sol`/`high` for coordination, allowed evidence escalation, or
+  the exact `strategy_research_executor` role scoped to `TARGET_PROJECT:
+  strategy_work`;
+- use `gpt-5.6-luna`/`medium` for normal execution and rework;
+- bind the dedicated strategy research thread with
+  `RECOMMENDED_AGENT: strategy_research_executor`, `MODEL_ROLE:
+  strategy_research_executor`, `MODEL: gpt-5.6-sol`, and
+  `REASONING_EFFORT: high`; never label that thread as `dispatcher`;
 - use a separate read-only `gpt-5.6-luna`/`high` context for final acceptance;
 - require an `AUTOMATED_GATE` JSON manifest before Luna acceptance and validate
-  it with `python3 scripts/validate_automated_gate_manifest.py <manifest>`;
-- route deterministic failures, missing fields, formatting errors, and tool/environment failures back to Luna rather than Sol;
-- send prompt-only callbacks to the currently resolved dispatcher task id;
+  it with `python3 scripts/validate_automated_gate_manifest.py <manifest>`; the
+  gate role/model must exactly match the task packet;
+- route deterministic failures, missing fields, formatting errors, and
+  tool/environment failures back to the task's bound executor rather than to
+  evidence escalation;
+- send normal Luna executor callbacks to the currently resolved dispatcher task
+  id; for the reserved `Strategy Work — Sol Research` binding only, send the
+  callback to Quant Manager `019f4c70-cac3-7211-8e04-47b8b51c819e` and then
+  route green evidence to independent Luna acceptance;
 - for Reasonix, use the fixed role session policy in `runbooks/reasonix_sessions.md`.
 
 Run the machine validator before any new dispatch:

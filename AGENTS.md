@@ -28,14 +28,23 @@ facts in `registry/model_routing.yaml` and project role layers under `.codex/`.
   packets, callbacks, and stall detection. It does not repeat Manager review.
 - Codex-Dev and batch executors use `gpt-5.6-luna` for implementation, routine
   rework, deterministic tests, and evidence production.
+- One narrow operational exception is bound to task
+  `019f3881-5293-74a1-8535-814bd83c8681`, `Strategy Work — Sol Research`:
+  `MODEL_ROLE=strategy_research_executor` uses `gpt-5.6-sol`/`high` for primary
+  `strategy_work` research execution and prior-result continuity. It is not
+  Quant-Dispatcher and cannot dispatch or accept work.
 - Routine final acceptance uses a separate read-only `gpt-5.6-luna` acceptance
   context after automated gates pass.
-- Executors return `LUNA_EXECUTION_COMPLETE` or `BLOCKED`; only the separate
-  acceptance role may emit `LUNA_ACCEPTANCE`.
+- Normal executors return `LUNA_EXECUTION_COMPLETE` or `BLOCKED`; the reserved
+  strategy research executor returns `SOL_STRATEGY_RESEARCH_COMPLETE` or
+  `BLOCKED`. Only the separate acceptance role may emit `LUNA_ACCEPTANCE`.
 - Deterministic test failures, missing callback fields, formatting errors, and
-  tool/environment failures stay with Luna as rework, requeue, or `BLOCKED`.
-- Sol may review only evidence that remains insufficient after one bounded Luna
-  rework or evidence conflicts that deterministic checks cannot reconcile.
+  tool/environment failures return to the task's bound executor or become
+  `BLOCKED`: Luna on the normal path, and the same Sol strategy executor only
+  for the reserved strategy path. They never become Sol evidence escalation.
+- Outside the reserved strategy research execution role, Sol may review only
+  evidence that remains insufficient after one bounded Luna rework or evidence
+  conflicts that deterministic checks cannot reconcile.
 - After a Sol evidence ruling, final acceptance returns to Luna. Sol is not the
   default second reviewer.
 
@@ -51,6 +60,9 @@ Quant-Dispatcher may create or update task packets under `tasks/`, dispatch summ
 Quant-Dispatcher must not edit source-project implementation files. It assigns work to downstream agents instead:
 
 - `codex_dev` for implementation and validation;
+- `strategy_research_executor` only for the reserved `strategy_work` research
+  task on `gpt-5.6-sol`/`high`, returning to Quant Manager and then independent
+  Luna acceptance;
 - `reasonix_db_maintainer` for DS-backed database diagnostics, schema/readiness review, manifest planning, and SQL drafts;
 - `reasonix_strategy_researcher` for DS-backed strategy hypotheses, config drafts, evidence-gap planning, and backtest diagnosis;
 - `reasonix_advisory` for read-only second review;

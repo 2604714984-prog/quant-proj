@@ -15,6 +15,16 @@ import subprocess
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 REQUIRED_CHECKS = {"git_diff_check", "boundary_scan"}
+EXECUTION_ROLE_BINDINGS = {
+    "executor": {
+        "model": "gpt-5.6-luna",
+        "callback_status": "LUNA_EXECUTION_COMPLETE",
+    },
+    "strategy_research_executor": {
+        "model": "gpt-5.6-sol",
+        "callback_status": "SOL_STRATEGY_RESEARCH_COMPLETE",
+    },
+}
 
 
 def _sha256(path: Path) -> str:
@@ -91,8 +101,10 @@ def validate_payload(payload: dict) -> None:
     for field in ("task_id", "execution_id", "workspace_root"):
         if not isinstance(payload.get(field), str) or not payload[field].strip():
             raise ValueError(f"{field} is required")
-    if payload.get("model_role") != "executor" or payload.get("model") != "gpt-5.6-luna":
-        raise ValueError("gate must be emitted by a Luna executor")
+    model_role = payload.get("model_role")
+    binding = EXECUTION_ROLE_BINDINGS.get(model_role)
+    if binding is None or payload.get("model") != binding["model"]:
+        raise ValueError("gate model must exactly match its execution role")
     if payload.get("status") != "GREEN":
         raise ValueError("gate status must be GREEN")
 
@@ -176,6 +188,8 @@ def validate_file(path: Path, *, execute_commands: bool = True) -> None:
     facts = _metadata(spec.read_text(encoding="utf-8"))
     if facts.get("TASK_ID") != payload["task_id"]:
         raise ValueError("task id differs from task packet")
+    if facts.get("MODEL_ROLE") != payload["model_role"] or facts.get("MODEL") != payload["model"]:
+        raise ValueError("gate execution role/model differs from task packet")
     if facts.get("SOURCE_COMMIT") != payload["source"]["commit"] or facts.get("SOURCE_TREE") != payload["source"]["tree"]:
         raise ValueError("source refs differ from task packet")
     commands = _rooted(packet_dir, facts.get("AUTOMATED_GATE_COMMANDS"), "AUTOMATED_GATE_COMMANDS")
@@ -189,11 +203,12 @@ def validate_file(path: Path, *, execute_commands: bool = True) -> None:
     if _sha256(callback_path) != payload["callback"]["sha256"]:
         raise ValueError("callback hash does not match")
     callback = json.loads(callback_path.read_text(encoding="utf-8"))
+    callback_status = EXECUTION_ROLE_BINDINGS[payload["model_role"]]["callback_status"]
     if (
         callback.get("task_id") != payload["task_id"]
         or callback.get("execution_id") != payload["execution_id"]
-        or callback.get("status") != "LUNA_EXECUTION_COMPLETE"
-        or callback.get("model") != "gpt-5.6-luna"
+        or callback.get("status") != callback_status
+        or callback.get("model") != payload["model"]
         or callback.get("source") != payload["source"]
         or callback.get("result") != payload["result"]
     ):

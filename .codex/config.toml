@@ -17,6 +17,10 @@ config_file = "agents/luna-dispatcher.toml"
 description = "Use Luna for scoped implementation, batch work, deterministic validation, and rework."
 config_file = "agents/luna-executor.toml"
 
+[agents.strategy_research_executor]
+description = "Use Sol/high as the dedicated strategy_work research executor. This role performs strategy research and is not the Luna dispatcher."
+config_file = "agents/sol-strategy-research-executor.toml"
+
 [agents.acceptance]
 description = "Use Luna for final evidence acceptance after automated gates pass. Escalate only the disputed evidence slice to Sol, then return final acceptance to Luna."
 config_file = "agents/luna-acceptance.toml"

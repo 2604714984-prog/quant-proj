@@ -32,6 +32,26 @@ SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 THREAD_ID_RE = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
 RETIRED_CALLBACK_TARGETS = {"019f3830-4b44-7a83-944d-247a0d4dc169"}
+STRATEGY_EXECUTOR_AGENT = "strategy_research_executor"
+STRATEGY_EXECUTOR_FIELDS = ("EXECUTION_THREAD_ID", "EXECUTION_THREAD_TITLE")
+STRATEGY_THREAD_ID = "019f3881-5293-74a1-8535-814bd83c8681"
+STRATEGY_THREAD_TITLE = "Strategy Work — Sol Research"
+STRATEGY_MANAGER_CALLBACK_TARGET = "019f4c70-cac3-7211-8e04-47b8b51c819e"
+CODEX_AGENT_ROLE_MODEL_BINDINGS = {
+    "codex_dev": ("executor", "gpt-5.6-luna", "medium"),
+    STRATEGY_EXECUTOR_AGENT: ("strategy_research_executor", "gpt-5.6-sol", "high"),
+    "codex_acceptance": ("acceptance", "gpt-5.6-luna", "high"),
+    "codex_audit": ("audit", "gpt-5.6-luna", "high"),
+}
+CODEX_MODELS = {"gpt-5.6-luna", "gpt-5.6-sol"}
+ALLOWED_RECOMMENDED_AGENTS = {
+    *CODEX_AGENT_ROLE_MODEL_BINDINGS,
+    "reasonix_db_maintainer",
+    "reasonix_strategy_researcher",
+    "reasonix_advisory",
+    "chatgpt_external_audit",
+    "human_gate",
+}
 ACCEPTANCE_FIELDS = (
     "AUTOMATED_GATE_MANIFEST",
     "AUTOMATED_GATE_MANIFEST_SHA256",
@@ -75,6 +95,24 @@ def _verify_packet_file(packet_dir: Path, facts: dict[str, str], path_field: str
     return path
 
 
+def _validate_execution_refs_and_commands(packet_dir: Path, facts: dict[str, str], label: str) -> None:
+    if (
+        not SHA1_RE.fullmatch(facts["SOURCE_COMMIT"])
+        or not SHA1_RE.fullmatch(facts["SOURCE_TREE"])
+        or len(set(facts["SOURCE_COMMIT"])) == 1
+        or len(set(facts["SOURCE_TREE"])) == 1
+    ):
+        raise ValueError(f"{label} tasks require full source commit and tree")
+    if facts["AUTOMATED_GATE_COMMANDS"] == "N/A":
+        raise ValueError(f"{label} tasks require automated gate commands")
+    _verify_packet_file(
+        packet_dir,
+        facts,
+        "AUTOMATED_GATE_COMMANDS",
+        "AUTOMATED_GATE_COMMANDS_SHA256",
+    )
+
+
 def validate(packet_dir: Path) -> None:
     for name in REQUIRED_FILES:
         if not (packet_dir / name).is_file():
@@ -93,7 +131,32 @@ def validate(packet_dir: Path) -> None:
         raise ValueError("callback target is a retired legacy dispatcher")
 
     agent = facts["RECOMMENDED_AGENT"]
-    if agent in {"codex_dev", "codex_acceptance"}:
+    thread_metadata_declared = any(
+        re.search(rf"^{field}:\s*", spec, re.MULTILINE) for field in STRATEGY_EXECUTOR_FIELDS
+    )
+    if thread_metadata_declared and agent != STRATEGY_EXECUTOR_AGENT:
+        raise ValueError("strategy thread metadata is reserved for RECOMMENDED_AGENT strategy_research_executor")
+    if agent not in ALLOWED_RECOMMENDED_AGENTS:
+        raise ValueError(f"RECOMMENDED_AGENT must be one of {sorted(ALLOWED_RECOMMENDED_AGENTS)}")
+    if facts["MODEL"] in CODEX_MODELS and agent not in CODEX_AGENT_ROLE_MODEL_BINDINGS:
+        raise ValueError("gpt-5.6 Codex models require a whitelisted Codex agent-role-model binding")
+
+    route = CODEX_AGENT_ROLE_MODEL_BINDINGS.get(agent)
+    routed_roles = {binding[0] for binding in CODEX_AGENT_ROLE_MODEL_BINDINGS.values()}
+    if route is not None:
+        actual_route = (facts["MODEL_ROLE"], facts["MODEL"], facts["REASONING_EFFORT"])
+        if actual_route != route:
+            label = {
+                "codex_dev": "Codex-Dev",
+                STRATEGY_EXECUTOR_AGENT: "Strategy research executor",
+                "codex_acceptance": "Codex-Acceptance",
+                "codex_audit": "Codex-Audit",
+            }[agent]
+            raise ValueError(f"{label} routing must begin with {route}")
+    elif facts["MODEL_ROLE"] in routed_roles:
+        raise ValueError(f"Codex agent routing must be one of {CODEX_AGENT_ROLE_MODEL_BINDINGS}")
+
+    if agent in {"codex_dev", STRATEGY_EXECUTOR_AGENT, "codex_acceptance"}:
         _verify_packet_file(packet_dir, facts, "CONTEXT_DELTA", "CONTEXT_DELTA_SHA256")
 
     if agent == "codex_dev":
@@ -106,21 +169,34 @@ def validate(packet_dir: Path) -> None:
         )
         if actual != expected:
             raise ValueError(f"Codex-Dev routing must be {expected}")
-        if (
-            not SHA1_RE.fullmatch(facts["SOURCE_COMMIT"])
-            or not SHA1_RE.fullmatch(facts["SOURCE_TREE"])
-            or len(set(facts["SOURCE_COMMIT"])) == 1
-            or len(set(facts["SOURCE_TREE"])) == 1
-        ):
-            raise ValueError("Codex-Dev tasks require full source commit and tree")
-        if facts["AUTOMATED_GATE_COMMANDS"] == "N/A":
-            raise ValueError("Codex-Dev tasks require automated gate commands")
-        _verify_packet_file(
-            packet_dir,
-            facts,
-            "AUTOMATED_GATE_COMMANDS",
-            "AUTOMATED_GATE_COMMANDS_SHA256",
+        _validate_execution_refs_and_commands(packet_dir, facts, "Codex-Dev")
+    elif agent == STRATEGY_EXECUTOR_AGENT:
+        missing_strategy = [field for field in STRATEGY_EXECUTOR_FIELDS if not facts.get(field)]
+        if missing_strategy:
+            raise ValueError(f"missing strategy executor metadata: {missing_strategy}")
+        expected = (
+            "strategy_work",
+            "strategy_research_executor",
+            "gpt-5.6-sol",
+            "high",
+            "codex_acceptance",
+            STRATEGY_THREAD_ID,
+            STRATEGY_THREAD_TITLE,
+            STRATEGY_MANAGER_CALLBACK_TARGET,
         )
+        actual = (
+            facts["TARGET_PROJECT"],
+            facts["MODEL_ROLE"],
+            facts["MODEL"],
+            facts["REASONING_EFFORT"],
+            facts["ACCEPTANCE_ROLE"],
+            facts["EXECUTION_THREAD_ID"],
+            facts["EXECUTION_THREAD_TITLE"],
+            facts["CALLBACK_TARGET"],
+        )
+        if actual != expected:
+            raise ValueError(f"Strategy research executor routing must be {expected}")
+        _validate_execution_refs_and_commands(packet_dir, facts, "Strategy research executor")
     elif agent == "codex_acceptance":
         missing_acceptance = [field for field in ACCEPTANCE_FIELDS if not facts.get(field)]
         if missing_acceptance:

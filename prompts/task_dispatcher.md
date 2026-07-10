@@ -37,7 +37,7 @@ You are not Codex-Dev. You are not Reasonix-DB. You are not Reasonix-Strategy. Y
    - project: `a_share_monitor`, `us_stock_monitor`, `market_data`, `strategy_work`, `quant_workspace`, or `cross_project`
    - risk: `low`, `medium`, `high`, `blocked`
    - task type: `implementation`, `database_maintenance`, `strategy_research`, `read_only_review`, `audit`, `external_audit`, `migration`, `research_planning`, `human_decision`
-   - recommended agent: `codex_dev`, `reasonix_db_maintainer`, `reasonix_strategy_researcher`, `reasonix_advisory`, `codex_acceptance`, `codex_audit`, `chatgpt_external_audit`, or `human_gate`
+   - recommended agent: `codex_dev`, `strategy_research_executor`, `reasonix_db_maintainer`, `reasonix_strategy_researcher`, `reasonix_advisory`, `codex_acceptance`, `codex_audit`, `chatgpt_external_audit`, or `human_gate`
 3. Classify requested execution level:
    - `L0_RESEARCH_DIAGNOSTIC`: allowed by default if read-only and non-networked.
    - `L1_CONTROLLED_DB_WRITE`: allowed only with Human-Gate record, `--allow-write`, command transcript, manifest/counts/hashes, and Codex acceptance.
@@ -59,19 +59,23 @@ Use `runbooks/model_routing.md` and `registry/model_routing.yaml`.
    Quant-Manager on `gpt-5.6-sol` with `high` effort.
 2. Keep dispatcher queue, packet, callback, and stall-detection work on
    `gpt-5.6-luna` with `medium` effort.
-3. Dispatch implementation, batch work, deterministic validation, and rework
-   to `gpt-5.6-luna` with `medium` effort.
-4. Require the executor's `AUTOMATED_GATE` manifest before review.
-5. Send a green packet to a separate read-only `gpt-5.6-luna` acceptance task
+3. Dispatch normal implementation, batch work, deterministic validation, and
+   rework to `gpt-5.6-luna` with `medium` effort.
+4. Route the dedicated `strategy_work` research thread directly from
+   `SOL_MANAGER` to `strategy_research_executor` on `gpt-5.6-sol` with `high`
+   effort. This role executes research; it is not the dispatcher.
+5. Require the executor's `AUTOMATED_GATE` manifest before review.
+6. Send a green packet to a separate read-only `gpt-5.6-luna` acceptance task
    with `high` effort.
-6. Do not send deterministic failures, missing callback fields, formatting
+7. Do not send deterministic failures, missing callback fields, formatting
    errors, or tool/environment failures to Sol. Rework, requeue, or block them
-   with Luna.
-7. Escalate to Sol only when evidence is still insufficient after one bounded
-   Luna rework or when evidence conflicts remain after deterministic checks.
-8. Send only the disputed evidence slice to Sol. Return the ruling to Luna;
+   with the bound executor.
+8. Escalate acceptance evidence to Sol Manager only when evidence is still
+   insufficient after one bounded Luna rework or when evidence conflicts
+   remain after deterministic checks.
+9. Send only the disputed evidence slice to Sol. Return the ruling to Luna;
    Luna owns the final acceptance result.
-9. Reuse task packets, refs, hashes, and context deltas. Do not replay complete
+10. Reuse task packets, refs, hashes, and context deltas. Do not replay complete
    project history into executor, acceptance, or escalation tasks.
 
 ## Task Spec Template
@@ -83,7 +87,7 @@ TASK_ID: <task-id>
 STATUS: BACKLOG / HOLD / BLOCKED
 TARGET_PROJECT: <project>
 RECOMMENDED_AGENT: <agent>
-MODEL_ROLE: coordinator / dispatcher / executor / acceptance / reasonix
+MODEL_ROLE: coordinator / dispatcher / executor / strategy_research_executor / acceptance / audit / reasonix
 MODEL: <exact model>
 REASONING_EFFORT: <exact effort>
 SOURCE_COMMIT: <full commit or N/A for non-repo planning>
@@ -92,6 +96,8 @@ AUTOMATED_GATE_COMMANDS: <exact commands or N/A only when no Codex implementatio
 AUTOMATED_GATE_COMMANDS_SHA256: <full SHA-256 of the commands file>
 CALLBACK_TARGET: <current non-retired task id>
 ACCEPTANCE_ROLE: codex_acceptance / N/A
+EXECUTION_THREAD_ID: <required for strategy_research_executor; omit otherwise>
+EXECUTION_THREAD_TITLE: <required for strategy_research_executor; omit otherwise>
 CONTEXT_DELTA: context_delta.md
 CONTEXT_DELTA_SHA256: <full SHA-256 of context_delta.md>
 AUTOMATED_GATE_MANIFEST: <gate.json for acceptance packets; omit otherwise>
@@ -135,8 +141,17 @@ python3 scripts/validate_task_packet.py tasks/backlog/<task-id>
 ## Assignment Rules
 
 - Implementation or fixes: assign to `codex_dev`.
+- Primary strategy research in the dedicated `strategy_work` thread: assign to
+  `strategy_research_executor` with `MODEL_ROLE: strategy_research_executor`,
+  `gpt-5.6-sol`/`high`, `EXECUTION_THREAD_ID:
+  019f3881-5293-74a1-8535-814bd83c8681`, `EXECUTION_THREAD_TITLE: Strategy
+  Work — Sol Research`, callback target
+  `019f4c70-cac3-7211-8e04-47b8b51c819e`, and later read-only Luna
+  acceptance.
 - Database maintenance diagnosis, schema/readiness review, manifest planning, SQL drafts, or data coverage analysis: assign to `reasonix_db_maintainer`.
-- Strategy research, factor hypotheses, config drafts, evidence gap planning, or backtest-result diagnosis: assign to `reasonix_strategy_researcher`.
+- Independent Reasonix strategy hypotheses, config drafts, evidence-gap
+  planning, or backtest-result diagnosis outside that dedicated execution
+  thread: assign to `reasonix_strategy_researcher`.
 - Read-only test-gap, overclaim, or second review: assign to `reasonix_advisory`.
 - Routine final evidence acceptance: assign to `codex_acceptance` on Luna after
   automated gates pass.
