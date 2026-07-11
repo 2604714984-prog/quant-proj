@@ -2,6 +2,8 @@ name: research-validation
 
 on:
   push:
+    branches:
+      - main
   pull_request:
 
 jobs:
