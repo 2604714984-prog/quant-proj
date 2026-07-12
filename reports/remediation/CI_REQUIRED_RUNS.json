@@ -61,11 +61,11 @@
     },
     {
       "name": "us_stock_30w",
-      "commit": "42e41f509d1d336714980d8fb37603ba090ec07d",
-      "run_id": 29188314531,
-      "url": "https://github.com/2604714984-prog/us_stock_30w/actions/runs/29188314531",
+      "commit": "73222d965f3785f457cecb73e9a2392554521e66",
+      "run_id": 29191481613,
+      "url": "https://github.com/2604714984-prog/us_stock_30w/actions/runs/29191481613",
       "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
-      "test_evidence": {"static_unit_passed": 117, "integration_passed": 97, "fixture_passed": 17, "unexpected_skips": 0}
+      "test_evidence": {"static_unit_passed": 180, "focused_local_passed": 175, "unexpected_skips": 0}
     }
   ],
   "conclusion": "ALL_REQUIRED_EXACT_HEAD_JOBS_SUCCESS_ZERO_UNEXPECTED_SKIPS"

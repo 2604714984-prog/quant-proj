@@ -4,6 +4,28 @@
     {
       "licenses": [
         {
+          "expression": "MIT"
+        }
+      ],
+      "name": "annotated-types",
+      "purl": "pkg:pypi/annotated-types@0.7.0",
+      "type": "library",
+      "version": "0.7.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "NCSA"
+        }
+      ],
+      "name": "arch",
+      "purl": "pkg:pypi/arch@8.0.0",
+      "type": "library",
+      "version": "8.0.0"
+    },
+    {
+      "licenses": [
+        {
           "expression": "Apache-2.0"
         }
       ],
@@ -125,13 +147,24 @@
     {
       "licenses": [
         {
+          "expression": "MIT"
+        }
+      ],
+      "name": "mypy-extensions",
+      "purl": "pkg:pypi/mypy-extensions@1.1.0",
+      "type": "library",
+      "version": "1.1.0"
+    },
+    {
+      "licenses": [
+        {
           "expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0"
         }
       ],
       "name": "numpy",
-      "purl": "pkg:pypi/numpy@2.4.6",
+      "purl": "pkg:pypi/numpy@2.5.1",
       "type": "library",
-      "version": "2.4.6"
+      "version": "2.5.1"
     },
     {
       "licenses": [
@@ -151,9 +184,31 @@
         }
       ],
       "name": "pandas",
-      "purl": "pkg:pypi/pandas@2.3.3",
+      "purl": "pkg:pypi/pandas@3.0.3",
       "type": "library",
-      "version": "2.3.3"
+      "version": "3.0.3"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pandera",
+      "purl": "pkg:pypi/pandera@0.32.1",
+      "type": "library",
+      "version": "0.32.1"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "patsy",
+      "purl": "pkg:pypi/patsy@1.0.2",
+      "type": "library",
+      "version": "1.0.2"
     },
     {
       "licenses": [
@@ -165,6 +220,28 @@
       "purl": "pkg:pypi/pluggy@1.6.0",
       "type": "library",
       "version": "1.6.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pydantic",
+      "purl": "pkg:pypi/pydantic@2.13.4",
+      "type": "library",
+      "version": "2.13.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pydantic-core",
+      "purl": "pkg:pypi/pydantic-core@2.46.4",
+      "type": "library",
+      "version": "2.46.4"
     },
     {
       "licenses": [
@@ -216,17 +293,6 @@
           "expression": "MIT"
         }
       ],
-      "name": "pytz",
-      "purl": "pkg:pypi/pytz@2026.2",
-      "type": "library",
-      "version": "2026.2"
-    },
-    {
-      "licenses": [
-        {
-          "expression": "MIT"
-        }
-      ],
       "name": "pyyaml",
       "purl": "pkg:pypi/pyyaml@6.0.3",
       "type": "library",
@@ -268,6 +334,17 @@
     {
       "licenses": [
         {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "scipy",
+      "purl": "pkg:pypi/scipy@1.18.0",
+      "type": "library",
+      "version": "1.18.0"
+    },
+    {
+      "licenses": [
+        {
           "expression": "MIT"
         }
       ],
@@ -286,6 +363,17 @@
       "purl": "pkg:pypi/soupsieve@2.8.4",
       "type": "library",
       "version": "2.8.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "statsmodels",
+      "purl": "pkg:pypi/statsmodels@0.14.6",
+      "type": "library",
+      "version": "0.14.6"
     },
     {
       "licenses": [
@@ -312,6 +400,17 @@
     {
       "licenses": [
         {
+          "expression": "MIT"
+        }
+      ],
+      "name": "typeguard",
+      "purl": "pkg:pypi/typeguard@4.5.2",
+      "type": "library",
+      "version": "4.5.2"
+    },
+    {
+      "licenses": [
+        {
           "expression": "PSF-2.0"
         }
       ],
@@ -319,6 +418,28 @@
       "purl": "pkg:pypi/typing-extensions@4.16.0",
       "type": "library",
       "version": "4.16.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "typing-inspect",
+      "purl": "pkg:pypi/typing-inspect@0.9.0",
+      "type": "library",
+      "version": "0.9.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "typing-inspection",
+      "purl": "pkg:pypi/typing-inspection@0.4.2",
+      "type": "library",
+      "version": "0.4.2"
     },
     {
       "licenses": [
@@ -349,22 +470,22 @@
       "properties": [
         {
           "name": "git.commit",
-          "value": "42e41f509d1d336714980d8fb37603ba090ec07d"
+          "value": "73222d965f3785f457cecb73e9a2392554521e66"
         },
         {
           "name": "git.tree",
-          "value": "863b3f2e06b105386efa32ede8d971209c0eb246"
+          "value": "bf192195114c9e8c2a51344aba871ce6a6025bbd"
         },
         {
           "name": "requirements.lock.sha256",
-          "value": "e937911ea0898598af5a45239f2004cf29d80d09e4f85e9d0a852276598a63c1"
+          "value": "80e930c7bf2d4dec11ffee1ab88d638fd5b013970d5e6fa39b248bb3fd7015d1"
         }
       ],
       "type": "application",
-      "version": "42e41f509d1d336714980d8fb37603ba090ec07d"
+      "version": "73222d965f3785f457cecb73e9a2392554521e66"
     }
   },
-  "serialNumber": "urn:uuid:41da1070-8650-60a9-b4dc-e55cd46d3da9",
+  "serialNumber": "urn:uuid:1a25f6a4-db48-66ba-47bd-954495472c82",
   "specVersion": "1.6",
   "version": 1
 }

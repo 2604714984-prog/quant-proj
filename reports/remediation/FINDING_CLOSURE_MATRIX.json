@@ -42,12 +42,12 @@
       "finding_id": "F-004", "severity": "High", "repository": "us_stock_30w", "audited_ref": "379f1123ea0373daf6eaad51a66fd4548fa3d468+8a9151acc473c8aebb75a08fbe46c7dbf797b653", "status": "CLOSED_ACCEPTED",
       "root_cause": "The strict loader required the available_at column name but not non-null, timezone, decision-time or revision safety.",
       "affected_paths": ["scripts/validate_four_etf_strategies.py", "reports/planning/us30w_pit_availability_contract_remediation_20260712.json"], "remediation_branch": "agent/remediation-r1-f004-us30w-pit-20260712",
-      "positive_tests": ["117 full tests and 97 PIT integration tests", "retrospective diagnostic classification preserved"],
+      "positive_tests": ["180 clean hash-locked full tests and 175 focused PIT/governance/runtime tests", "retrospective diagnostic classification preserved", "master integration conflict resolved without reopening outcomes"],
       "negative_tests": ["NULL available_at", "naive timestamp", "future timestamp", "future corporate-action revision", "unqualified strict claim"],
       "dynamic_reproduction": "Unknown or unsafe availability fails strict PIT and cannot change the frozen negative adjudication.",
       "superseded_artifacts": [], "remaining_limitations": ["US31/US36/US41/US46 remain rejected and cannot be rescued or rerun by infrastructure improvements."],
-      "fix_commit": "42e41f509d1d336714980d8fb37603ba090ec07d", "fix_tree": "863b3f2e06b105386efa32ede8d971209c0eb246",
-      "semantic_review": "ACCEPTED; available_at and revision safety independently reviewed.", "independent_acceptance": "ACCEPTED; CI 29188314531 exact head 3/3 success."
+      "fix_commit": "73222d965f3785f457cecb73e9a2392554521e66", "fix_tree": "bf192195114c9e8c2a51344aba871ce6a6025bbd",
+      "semantic_review": "ACCEPTED; available_at/revision safety and master integration independently reviewed.", "independent_acceptance": "ACCEPTED; CI 29191481613 exact head 3/3 success; PR CLEAN/MERGEABLE."
     },
     {
       "finding_id": "F-005", "severity": "High", "repository": "quant-proj/A_Share_Monitor", "audited_ref": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207+e81f50c19c8e6e71ae6585eeb6dbbb10db86fd95", "status": "CLOSED_ACCEPTED",

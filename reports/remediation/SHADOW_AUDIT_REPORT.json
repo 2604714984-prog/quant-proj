@@ -66,6 +66,21 @@
     "test_provenance_in_production_outputs": 0,
     "canonical_artifact_hash_drift_across_clean_runs": 0
   },
+  "post_shadow_integration_reconciliation": {
+    "repository": "us_stock_30w",
+    "status": "ACCEPTED",
+    "commit": "73222d965f3785f457cecb73e9a2392554521e66",
+    "tree": "bf192195114c9e8c2a51344aba871ce6a6025bbd",
+    "merge_parents": ["42e41f509d1d336714980d8fb37603ba090ec07d", "62abe5ba0213e9e7a8ade69db423fc71a3746357"],
+    "clean_hash_locked_full_passed": 180,
+    "focused_passed": 175,
+    "unexpected_skips": 0,
+    "independent_reviews": 2,
+    "exact_head_ci_run": 29191481613,
+    "required_ci_jobs_success": 3,
+    "pull_request_state": "CLEAN_MERGEABLE",
+    "strategy_outcomes_reopened": false
+  },
   "known_blockers": [
     {
       "id": "HISTORICAL_SECRET_ROTATION",
@@ -76,11 +91,6 @@
       "id": "A_SHARE_CANONICAL_PUBLICATION_GOVERNANCE",
       "status": "OPEN",
       "description": "Private deterministic engineering reproduction passed, but canonical/public row-level evidence publication remains deliberately disabled."
-    },
-    {
-      "id": "US30W_PR_INTEGRATION_REVALIDATION",
-      "status": "OPEN",
-      "description": "PR 7 exact head is accepted and CI-green but conflicts with master; any resolved head requires full revalidation."
     }
   ],
   "boundary": {

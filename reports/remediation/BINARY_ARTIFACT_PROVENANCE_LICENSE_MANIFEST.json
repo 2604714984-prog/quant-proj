@@ -8,8 +8,8 @@
   "final_remediation_scope": {
     "strategy_work_commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f",
     "strategy_work_tree": "685f8f4d5164f4d63c51f140d030d15c462e1b7c",
-    "us_stock_30w_commit": "42e41f509d1d336714980d8fb37603ba090ec07d",
-    "us_stock_30w_tree": "863b3f2e06b105386efa32ede8d971209c0eb246",
+    "us_stock_30w_commit": "73222d965f3785f457cecb73e9a2392554521e66",
+    "us_stock_30w_tree": "bf192195114c9e8c2a51344aba871ce6a6025bbd",
     "tracked_unclassified_binary_count": 0,
     "artifact_policy_validation": "PASS"
   },

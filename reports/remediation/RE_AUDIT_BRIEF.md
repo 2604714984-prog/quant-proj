@@ -60,12 +60,14 @@ The A-share repair was exercised twice in isolated private temporary roots again
 
 `FINAL_CONTROLLER_ROOT.json` is the only authoritative semantic root. `CHECKSUMS.sha256` binds it and every supporting artifact. The root binds executable controller code to immutable branch `agent/remediation-reaudit-code-root-r1-20260712` at commit `8247e619398a235911edeeaaaa3785dade4f9fe4`; the later package commit is only the transport that contains the root and checksum chain. This separation is deliberate because a file cannot truthfully contain the Git commit hash that contains that same file.
 
+## Post-shadow integration reconciliation
+
+`us_stock_30w` PR 7 was reconciled with `master` after the first shadow audit. The resulting head `73222d965f3785f457cecb73e9a2392554521e66` is `CLEAN / MERGEABLE`, passed 180 full and 175 focused tests with zero skips, two independent reviews, and exact-head CI `29191481613` with 3/3 jobs. It did not reopen any strategy outcome.
+
 ## Disclosed blockers before launching another external audit
 
 1. The one redacted QRL historical credential candidate must be revoked/rotated by its owner. Any optional history rewrite requires separate governance authority and a coordinated clone/PR invalidation plan.
 2. Canonical/public A-share row-level evidence remains disabled. The private deterministic engineering reproduction proves the repaired mechanics but does not itself authorize publication or create canonical strategy evidence.
-3. `us_stock_30w` PR 7 has an integration conflict with `master`. The exact audited head is independently accepted and CI-green, but any conflict resolution creates a new head that must be revalidated.
-
 The independent code/dynamic and package/governance shadow audits both finished with zero new Critical or High findings. The package audit first rejected two stale representation claims; those were repaired at `5f9bde1498f614890aecadb7dac6be07314194d5` and independently reaccepted.
 
-Until the three disclosed blockers are resolved, the correct state is not `REAUDIT_READY`; it is `REMEDIATION_IMPLEMENTED_BLOCKED`, and `FINAL_EXTERNAL_AUDIT_VERDICT=NOT_YET_PASSED`.
+Until the two remaining user/governance blockers are resolved, the correct state is not `REAUDIT_READY`; it is `REMEDIATION_IMPLEMENTED_BLOCKED`, and `FINAL_EXTERNAL_AUDIT_VERDICT=NOT_YET_PASSED`.
