@@ -2,7 +2,7 @@
   "schema_version": "remediation-final-controller-root-v1",
   "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
   "authoritative": true,
-  "status": "REMEDIATION_IMPLEMENTED_BLOCKED",
+  "status": "REAUDIT_READY",
   "final_external_audit_verdict": "NOT_YET_PASSED",
   "strategy_candidate_available": false,
   "research_boundary": {
@@ -49,7 +49,9 @@
     }
   ],
   "artifacts": [
-    {"path": "reports/remediation/RE_AUDIT_BRIEF.md", "sha256": "7aa5607b0f1e1cd838d5276903b7d97aa2b21303a7574e004f9be29f39135471"},
+    {"path": "reports/remediation/RE_AUDIT_BRIEF.md", "sha256": "6d43b3decbc4938984c590fe8da067df84ad10b3e954fcf04bcfb9e99e3ac832"},
+    {"path": "reports/remediation/CREDENTIAL_REVOCATION_ATTESTATION.json", "sha256": "5d7ae18647f720ae76790338d916757771a7cff8da68a99a66e2f7aa229b611e"},
+    {"path": "reports/remediation/A_SHARE_CANONICAL_EVIDENCE_PUBLICATION_INDEX.json", "sha256": "6011ed9eaad1e595367059e0d276836e94db9a0dde6751dbeec275e21a749d0e"},
     {"path": "reports/remediation/FINDING_CLOSURE_MATRIX.json", "sha256": "493a9dea32bda04805731732fd35f9515e010685951f06e70e3677b5f123edbc"},
     {"path": "reports/remediation/REMEDIATION_BASELINE_MANIFEST.json", "sha256": "9f68ac8291e28923fec0383709eeb1557ea2ad3582657f3f891517a3051de777"},
     {"path": "reports/remediation/ARTIFACT_INVALIDATION_AND_SUPERSESSION_LEDGER.json", "sha256": "6e9e09d566b7995d3fb61f3beca3ed9c9443a147fa32e51ba1746b97c2803121"},
@@ -81,18 +83,7 @@
     "new_shadow_critical": 0,
     "new_shadow_high": 0,
     "historical_secret_candidates": 1,
-    "rotated_or_revoked_secret_candidates": 0
+    "rotated_or_revoked_secret_candidates": 1
   },
-  "residual_blockers": [
-    {
-      "id": "HISTORICAL_SECRET_ROTATION", "severity": "Critical", "requires_user_action": true, "status": "OPEN",
-      "description": "The owner must revoke or rotate one redacted QRL historical credential candidate; history rewriting, if later chosen, requires separate governance authority.",
-      "evidence_refs": ["reports/remediation/SECRET_SCAN_INDEX.json", "reports/remediation/SHADOW_AUDIT_REPORT.json"]
-    },
-    {
-      "id": "A_SHARE_CANONICAL_PUBLICATION_GOVERNANCE", "severity": "High", "requires_user_action": true, "status": "OPEN",
-      "description": "The private two-run engineering reproduction passed, but canonical/public row-level A-share evidence publication remains disabled and is not authorized by this remediation package.",
-      "evidence_refs": ["reports/remediation/CROSS_REPO_REPRODUCTION_MANIFEST.json", "reports/remediation/RE_AUDIT_BRIEF.md"]
-    }
-  ]
+  "residual_blockers": []
 }

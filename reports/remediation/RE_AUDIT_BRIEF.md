@@ -2,7 +2,7 @@
 
 ## Status
 
-`REMEDIATION_IMPLEMENTED / SHADOW_AUDIT_ACCEPTED / FINAL_EXTERNAL_AUDIT_NOT_PASSED`
+`REAUDIT_READY / SHADOW_AUDIT_ACCEPTED / FINAL_EXTERNAL_AUDIT_NOT_YET_PASSED`
 
 This package does not claim that the external audit passed. It records the remediation of the 13 findings from the `REJECT_AS_FINAL_AUDIT_VERDICT / ACCEPT_AS_AUDIT_INPUT` review and keeps `strategy_candidate_available=false`.
 
@@ -28,7 +28,7 @@ The finding-by-finding evidence is in `FINDING_CLOSURE_MATRIX.json`. The princip
 
 `ARTIFACT_INVALIDATION_AND_SUPERSESSION_LEDGER.json` preserves old paths and SHA-256 identities as invalidated evidence. Old A-share R21 descendants, affected QRL factor-miner outputs, test-derived A10 tickets, unsafe market-data schema publications and the Family66 verification-ambiguous summary are not overwritten and cannot be used to reopen a strategy.
 
-The A-share repair was exercised twice in isolated private temporary roots against the same read-only local database: 136,767 rows, 77 symbols, 2,779 cross-boundary rows, zero non-null crossing labels, identical Parquet/report/normalized-manifest hashes, and zero retained temporary data. This is classified only as `ENGINEERING_SELF_CHECK`; canonical/public row-level evidence publication remains disabled.
+The A-share repair was exercised twice in isolated private temporary roots against the same read-only local database: 136,767 rows, 77 symbols, 2,779 cross-boundary rows, zero non-null crossing labels, identical Parquet/report/normalized-manifest hashes, and zero retained temporary data. The owner subsequently issued a single-use authorization for publication to a controlled data room. The resulting canonical engineering-evidence bundle is indexed by `A_SHARE_CANONICAL_EVIDENCE_PUBLICATION_INDEX.json`; row-level data remains outside public Git and does not constitute strategy evidence.
 
 ## Capability boundary
 
@@ -38,7 +38,7 @@ The A-share repair was exercised twice in isolated private temporary roots again
 
 - `BINARY_ARTIFACT_PROVENANCE_LICENSE_MANIFEST.json` records the 22 historical files, removal from current refs, and the explicit no-history-rewrite decision pending separate governance authority.
 - `DEPENDENCY_SBOM_INDEX.json` binds seven strict CycloneDX 1.6 SBOMs to exact repository commits and lockfiles.
-- `SECRET_SCAN_INDEX.json` is redacted by construction. It discloses one unresolved historical credential candidate in QRL without exposing its value.
+- `SECRET_SCAN_INDEX.json` is redacted by construction. It discloses one historical credential candidate in QRL without exposing its value. `CREDENTIAL_REVOCATION_ATTESTATION.json` records the account owner's official-console deletion; the revoked bytes remain in Git history and are not operationally usable.
 - `CI_REQUIRED_RUNS.json` binds 21 required job results to exact commits.
 
 ## Highest-value reproductions for the external reviewer
@@ -64,10 +64,10 @@ The A-share repair was exercised twice in isolated private temporary roots again
 
 `us_stock_30w` PR 7 was reconciled with `master` after the first shadow audit. The resulting head `73222d965f3785f457cecb73e9a2392554521e66` is `CLEAN / MERGEABLE`, passed 180 full and 175 focused tests with zero skips, two independent reviews, and exact-head CI `29191481613` with 3/3 jobs. It did not reopen any strategy outcome.
 
-## Disclosed blockers before launching another external audit
+## Readiness for the next external audit
 
-1. The one redacted QRL historical credential candidate must be revoked/rotated by its owner. Any optional history rewrite requires separate governance authority and a coordinated clone/PR invalidation plan.
-2. Canonical/public A-share row-level evidence remains disabled. The private deterministic engineering reproduction proves the repaired mechanics but does not itself authorize publication or create canonical strategy evidence.
-The independent code/dynamic and package/governance shadow audits both finished with zero new Critical or High findings. The package audit first rejected two stale representation claims; those were repaired at `5f9bde1498f614890aecadb7dac6be07314194d5` and independently reaccepted.
+The two previously disclosed blockers are closed: the account owner revoked the historical DeepSeek credential, and the authorized A-share canonical engineering-evidence bundle was published to the controlled data room. Optional Git-history rewriting remains a separate governance choice and is not required to restore the revoked credential's usability.
 
-Until the two remaining user/governance blockers are resolved, the correct state is not `REAUDIT_READY`; it is `REMEDIATION_IMPLEMENTED_BLOCKED`, and `FINAL_EXTERNAL_AUDIT_VERDICT=NOT_YET_PASSED`.
+The independent code/dynamic and package/governance shadow audits both finished with zero new Critical or High findings. The package audit first rejected two stale representation claims; those were repaired at `5f9bde1498f614890aecadb7dac6be07314194d5` and independently reaccepted. The external reviewer should independently verify the owner attestation and obtain out-of-band access to the controlled data-room bundle if row-level inspection is required.
+
+The correct controller state is now `REAUDIT_READY`. The project still does not self-issue an audit pass: `FINAL_EXTERNAL_AUDIT_VERDICT=NOT_YET_PASSED` remains in force until the external reviewer returns a verdict.
