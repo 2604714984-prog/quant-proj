@@ -6,6 +6,8 @@
   "model_role": "executor",
   "model": "gpt-5.6-luna",
   "status": "GREEN",
+  "evidence_state": "MANIFEST_VALID",
+  "execution_attestation": null,
   "workspace_root": "/absolute/target/worktree",
   "task_packet": {
     "dir": "/absolute/controller/task-packet",

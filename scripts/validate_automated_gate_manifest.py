@@ -7,14 +7,20 @@ import argparse
 import hashlib
 import json
 import os
+import platform
 from pathlib import Path
 import re
 import shlex
+import shutil
 import subprocess
+import sys
 
 
 SHA1_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+TASK_UUID_RE = re.compile(
+    r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+)
 REQUIRED_CHECKS = {"git_diff_check", "boundary_scan"}
 PYTEST_SUMMARY_RE = re.compile(r"(?<!\d)(\d+)\s+passed\b")
 EXECUTION_ROLE_BINDINGS = {
@@ -27,10 +33,100 @@ EXECUTION_ROLE_BINDINGS = {
         "callback_status": "SOL_STRATEGY_RESEARCH_COMPLETE",
     },
 }
+MANIFEST_VALID = "MANIFEST_VALID"
+EXECUTION_ATTESTED = "EXECUTION_ATTESTED"
 
 
 def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _sha256_bytes(value: bytes) -> str:
+    return hashlib.sha256(value).hexdigest()
+
+
+def _canonical_sha256(value: object) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return _sha256_bytes(encoded)
+
+
+def environment_identity() -> dict[str, str]:
+    payload = {
+        "implementation": platform.python_implementation(),
+        "machine": platform.machine(),
+        "platform": platform.platform(),
+        "python_executable": str(Path(sys.executable).resolve()),
+        "python_version": platform.python_version(),
+        "system": platform.system(),
+    }
+    return {"payload_sha256": _canonical_sha256(payload), **payload}
+
+
+def _executable_identity(argv0: str) -> dict[str, str]:
+    candidate = Path(argv0)
+    if candidate.is_absolute():
+        resolved = candidate.resolve()
+    else:
+        located = shutil.which(argv0)
+        if located is None:
+            raise ValueError(f"command executable is unavailable: {argv0}")
+        resolved = Path(located).resolve()
+    if not resolved.is_file() or not os.access(resolved, os.X_OK):
+        raise ValueError(f"command executable is not a file: {resolved}")
+    return {"path": str(resolved), "sha256": _sha256(resolved)}
+
+
+def _normalized_command_output(name: str, stdout: bytes, stderr: bytes) -> bytes:
+    combined = stdout.decode("utf-8", errors="replace") + "\n<STDERR>\n" + stderr.decode(
+        "utf-8", errors="replace"
+    )
+    combined = re.sub(r"\x1b\[[0-9;]*[A-Za-z]", "", combined)
+    if name == "focused_tests":
+        combined = re.sub(
+            r"(?m)(\b(?:passed|failed|skipped|error|errors|warnings?)\b.*?)"
+            r"\s+in\s+[0-9]+(?:\.[0-9]+)?s\b",
+            r"\1 in <DURATION>",
+            combined,
+        )
+    return combined.replace("\r\n", "\n").encode("utf-8")
+
+
+def execute_command_evidence(root: Path, check: dict) -> tuple[dict, bytes, bytes]:
+    argv = _command_argv(check["command"])
+    completed = subprocess.run(
+        argv,
+        cwd=root,
+        check=False,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+    )
+    stdout = completed.stdout
+    stderr = completed.stderr
+    observed_test_count = None
+    if check["name"] == "focused_tests":
+        decoded = stdout.decode("utf-8", errors="replace") + "\n" + stderr.decode(
+            "utf-8", errors="replace"
+        )
+        counts = [int(value) for value in PYTEST_SUMMARY_RE.findall(decoded)]
+        observed_test_count = counts[-1] if counts else 0
+    evidence = {
+        "command": check["command"],
+        "executable": _executable_identity(argv[0]),
+        "exit_code": completed.returncode,
+        "name": check["name"],
+        "normalized_output_sha256": _sha256_bytes(
+            _normalized_command_output(check["name"], stdout, stderr)
+        ),
+        "stderr_sha256": _sha256_bytes(stderr),
+        "stdout_sha256": _sha256_bytes(stdout),
+        "test_count": observed_test_count,
+    }
+    return evidence, stdout, stderr
 
 
 def _digest(value: object, field: str, pattern: re.Pattern[str]) -> str:
@@ -214,6 +310,107 @@ def _validate_boundary_command(root: Path, source_commit: str, check: dict) -> N
         raise ValueError("boundary_scan command must execute validator_path directly")
 
 
+def _validate_execution_attestation(
+    *,
+    packet_dir: Path,
+    workspace: Path,
+    payload: dict,
+    attestation: dict,
+) -> None:
+    if attestation.get("schema_version") != 1:
+        raise ValueError("execution attestation schema_version must be 1")
+    if attestation.get("status") != EXECUTION_ATTESTED:
+        raise ValueError("execution attestation status must be EXECUTION_ATTESTED")
+    if (
+        attestation.get("task_id") != payload["task_id"]
+        or attestation.get("execution_id") != payload["execution_id"]
+        or attestation.get("model_role") != payload["model_role"]
+        or attestation.get("model") != payload["model"]
+        or attestation.get("source") != payload["source"]
+        or attestation.get("result") != payload["result"]
+        or Path(str(attestation.get("workspace_root", ""))).resolve() != workspace
+    ):
+        raise ValueError("execution attestation identity differs from gate")
+    if TASK_UUID_RE.fullmatch(str(attestation.get("execution_task_id", ""))) is None:
+        raise ValueError("execution attestation requires an executor task UUID")
+    executor = attestation.get("executor_identity")
+    if not isinstance(executor, dict) or (
+        executor.get("role") != payload["model_role"]
+        or executor.get("model") != payload["model"]
+        or executor.get("task_id") != attestation["execution_task_id"]
+    ):
+        raise ValueError("execution attestation executor identity is invalid")
+    if executor.get("reasoning_effort") not in {"medium", "high"}:
+        raise ValueError("execution attestation reasoning effort is invalid")
+
+    environment = attestation.get("environment")
+    if environment != environment_identity():
+        raise ValueError("execution environment identity changed")
+
+    dependency = attestation.get("dependency_lock")
+    if not isinstance(dependency, dict) or not dependency.get("path"):
+        raise ValueError("execution attestation requires a dependency lock")
+    dependency_path = _rooted(workspace, dependency["path"], "dependency_lock.path")
+    if _sha256(dependency_path) != _digest(
+        dependency.get("sha256"), "dependency_lock.sha256", SHA256_RE
+    ):
+        raise ValueError("dependency lock hash changed")
+    relative_dependency = dependency_path.relative_to(workspace).as_posix()
+    if _git(
+        workspace,
+        "ls-tree",
+        "-r",
+        "--name-only",
+        payload["result"]["commit"],
+        "--",
+        relative_dependency,
+    ) != relative_dependency:
+        raise ValueError("dependency lock is not tracked by the result commit")
+
+    evidence = attestation.get("checks")
+    if not isinstance(evidence, list) or len(evidence) != len(payload["checks"]):
+        raise ValueError("execution attestation check evidence is incomplete")
+    for expected, observed in zip(payload["checks"], evidence, strict=True):
+        if not isinstance(observed, dict):
+            raise ValueError("execution attestation check must be an object")
+        if (
+            observed.get("name") != expected["name"]
+            or observed.get("command") != expected["command"]
+            or observed.get("exit_code") != expected["exit_code"]
+        ):
+            raise ValueError("execution attestation command evidence drifted")
+        expected_count = expected.get("test_count") if expected["name"] == "focused_tests" else None
+        if observed.get("test_count") != expected_count:
+            raise ValueError("execution attestation test count drifted")
+        _digest(
+            observed.get("normalized_output_sha256"),
+            "execution attestation normalized output sha256",
+            SHA256_RE,
+        )
+        executable = observed.get("executable")
+        argv = _command_argv(expected["command"])
+        if executable != _executable_identity(argv[0]):
+            raise ValueError("execution attestation executable identity changed")
+        for stream in ("stdout", "stderr"):
+            log_info = observed.get(f"{stream}_log")
+            if not isinstance(log_info, dict) or not log_info.get("path"):
+                raise ValueError(f"execution attestation {stream} log is missing")
+            log_path = _rooted(
+                packet_dir,
+                log_info["path"],
+                f"execution attestation {stream} log",
+            )
+            if (log_path.stat().st_mode & 0o777) != 0o600:
+                raise ValueError(f"execution attestation {stream} log mode changed")
+            digest = _digest(
+                log_info.get("sha256"),
+                f"execution attestation {stream} sha256",
+                SHA256_RE,
+            )
+            if _sha256(log_path) != digest or observed.get(f"{stream}_sha256") != digest:
+                raise ValueError(f"execution attestation {stream} log hash changed")
+
+
 def validate_payload(payload: dict) -> None:
     if payload.get("template_only") is True:
         raise ValueError("template-only gate cannot enter acceptance")
@@ -289,9 +486,29 @@ def validate_payload(payload: dict) -> None:
             raise ValueError("pushed commit must equal result commit")
     if payload.get("missing_evidence") or payload.get("evidence_conflicts"):
         raise ValueError("green gate cannot contain missing or conflicting evidence")
+    attestation = payload.get("execution_attestation")
+    evidence_state = payload.get("evidence_state", MANIFEST_VALID)
+    if attestation is None:
+        if evidence_state != MANIFEST_VALID:
+            raise ValueError("gate without attestation is only MANIFEST_VALID")
+    else:
+        if evidence_state != EXECUTION_ATTESTED:
+            raise ValueError("execution attestation requires EXECUTION_ATTESTED state")
+        if not isinstance(attestation, dict) or not attestation.get("path"):
+            raise ValueError("execution_attestation.path is required")
+        _digest(
+            attestation.get("sha256"),
+            "execution_attestation.sha256",
+            SHA256_RE,
+        )
 
 
-def validate_file(path: Path, *, execute_commands: bool = True) -> None:
+def validate_file(
+    path: Path,
+    *,
+    execute_commands: bool = True,
+    require_execution_attested: bool = False,
+) -> str:
     payload = json.loads(path.read_text(encoding="utf-8"))
     if not isinstance(payload, dict):
         raise ValueError("gate must be a JSON object")
@@ -322,6 +539,22 @@ def validate_file(path: Path, *, execute_commands: bool = True) -> None:
     expected = [line.strip() for line in commands.read_text(encoding="utf-8").splitlines() if line.strip() and not line.lstrip().startswith("#")]
     if [check["command"] for check in payload["checks"]] != expected:
         raise ValueError("checks must exactly match the task packet commands")
+
+    attestation_payload = None
+    attestation_ref = payload.get("execution_attestation")
+    if attestation_ref is not None:
+        attestation_path = _rooted(
+            packet_dir,
+            attestation_ref["path"],
+            "execution_attestation.path",
+        )
+        if (attestation_path.stat().st_mode & 0o777) != 0o600:
+            raise ValueError("execution attestation file mode must be 0600")
+        if _sha256(attestation_path) != attestation_ref["sha256"]:
+            raise ValueError("execution attestation file hash changed")
+        attestation_payload = json.loads(attestation_path.read_text(encoding="utf-8"))
+        if not isinstance(attestation_payload, dict):
+            raise ValueError("execution attestation must be a JSON object")
 
     callback_path = _rooted(packet_dir, payload["callback"]["path"], "callback.path")
     if _sha256(callback_path) != payload["callback"]["sha256"]:
@@ -375,16 +608,43 @@ def validate_file(path: Path, *, execute_commands: bool = True) -> None:
     if focused_check:
         _validate_focused_test_runtime(workspace, focused_check)
 
+    if attestation_payload is not None:
+        _validate_execution_attestation(
+            packet_dir=packet_dir,
+            workspace=workspace,
+            payload=payload,
+            attestation=attestation_payload,
+        )
+    elif require_execution_attested:
+        raise ValueError(
+            "final acceptance requires an independently replayed EXECUTION_ATTESTED gate"
+        )
+
     if execute_commands:
-        for check in payload["checks"]:
-            output = _run_expected_command(workspace, check["command"])
+        for index, check in enumerate(payload["checks"]):
+            replay, stdout, stderr = execute_command_evidence(workspace, check)
+            if replay["exit_code"] != 0:
+                output = (stdout + b"\n" + stderr).decode(
+                    "utf-8", errors="replace"
+                )[-2000:].strip()
+                raise ValueError(
+                    f"expected command failed ({check['command']}): {output}"
+                )
             if check["name"] == "focused_tests":
-                counts = [int(value) for value in PYTEST_SUMMARY_RE.findall(output)]
-                actual_count = counts[-1] if counts else 0
+                actual_count = replay["test_count"]
                 if actual_count != check["test_count"]:
                     raise ValueError(
                         "focused_tests test_count differs from the executed pytest summary: "
                         f"claimed {check['test_count']}, observed {actual_count}"
+                    )
+            if attestation_payload is not None:
+                attested = attestation_payload["checks"][index]
+                if (
+                    replay["normalized_output_sha256"]
+                    != attested["normalized_output_sha256"]
+                ):
+                    raise ValueError(
+                        f"replayed command output differs from attestation: {check['name']}"
                     )
         if _git(workspace, "status", "--porcelain"):
             raise ValueError("gate commands must leave the result worktree clean")
@@ -394,14 +654,17 @@ def validate_file(path: Path, *, execute_commands: bool = True) -> None:
         output = _git(workspace, "ls-remote", "--exit-code", push["remote"], push["ref"])
         if [row.split() for row in output.splitlines() if row.strip()] != [[push["commit"], push["ref"]]]:
             raise ValueError("live remote ref differs from the result commit")
+    if attestation_payload is not None and execute_commands:
+        return EXECUTION_ATTESTED
+    return MANIFEST_VALID
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("manifest", type=Path)
     args = parser.parse_args()
-    validate_file(args.manifest)
-    print("automated gate manifest: GREEN")
+    state = validate_file(args.manifest)
+    print(f"automated gate manifest: {state}")
     return 0
 
 

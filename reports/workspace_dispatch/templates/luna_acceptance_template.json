@@ -15,6 +15,7 @@
   "workspace_root": "/absolute/workspace/root",
   "gate_manifest_path": "gate.json",
   "gate_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "required_gate_state": "EXECUTION_ATTESTED",
   "evidence_rework_count": 0,
   "missing_evidence": [],
   "evidence_conflicts": [],
