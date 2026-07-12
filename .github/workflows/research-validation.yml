@@ -32,6 +32,8 @@ jobs:
             | while read -r file; do python -m json.tool "$file" >/dev/null; done
       - name: Ruff
         run: git ls-files -z '*.py' | xargs -0 python -m ruff check
+      - name: High-severity SAST
+        run: python -m bandit -r . -lll -iii -x ./.git,./data,./outputs,./reports
       - name: Unit and controller tests
         run: python -m pytest -q --junitxml=/tmp/pytest-unit.xml
       - name: Enforce exact skip budget
