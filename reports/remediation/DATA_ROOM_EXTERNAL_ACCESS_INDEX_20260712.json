@@ -1,0 +1,55 @@
+{
+  "schema_version": "controlled-data-room-external-access-index-v1",
+  "finding_id": "EA-001",
+  "status": "EA001_EXTERNAL_READONLY_PACKAGE_READY",
+  "external_verification_status": "PENDING_EXTERNAL_REVIEWER_BYTE_VERIFICATION",
+  "data_room_root": "/home/rongyu/workspace/.private_quant_inputs/a_share_canonical_evidence_bundle",
+  "access_model": "owner_granted_read_only_out_of_band",
+  "root_mode": "0700",
+  "file_mode": "0600",
+  "private_artifacts": {
+    "inventory": {
+      "path": "external_readonly_inventory_ea001_20260712.json",
+      "sha256": "138b421ae70d388051406814db13f31cf05df4249af16622f00a87c8dfc92179"
+    },
+    "validation_commands": {
+      "path": "external_readonly_validation_commands_ea001_20260712.md",
+      "sha256": "6b4df983ce52b4cdbf9703bbdb1eea1c17aaf7238ee6bb21a3b05f9eabfbb950"
+    },
+    "checksums": {
+      "path": "external_readonly_checksums_ea001_20260712.sha256",
+      "sha256": "83c6d6d2549e5295dfe0264e4ae62e838c0394e50737bba127c8c4faa5f21cac",
+      "entries_verified": 9
+    },
+    "publisher_git_bundle": {
+      "path": "publisher_source_3903977.bundle",
+      "sha256": "5dba6f48a62a49b0e2771adce21bfbd5a2722f01735f25c2a843e8f3c00598c2"
+    },
+    "publisher_source_archive": {
+      "path": "publisher_source_3903977.tar.gz",
+      "sha256": "a1316a8cc600a5dc86df43f94fee2c5cd422f8556988fa79ca30893bde79c8f9"
+    }
+  },
+  "publisher_commit": "3903977d2480a5ad9be67c4c267cd2a5c5a4bdb8",
+  "publisher_tree": "40de1564d87c71e3b7695b631fef13d668637ac2",
+  "publisher_script_sha256": "434f2a006daa4d39c72ea02f769b88c70a4b20d9743cc7a0b1db5109361400d9",
+  "git_bundle_verify": "PASS_COMPLETE_HISTORY",
+  "fresh_clone_head_tree_fsck": "PASS",
+  "parquet_recomputation": {
+    "status": "PASS",
+    "row_count": 136767,
+    "symbol_count": 77,
+    "date_start": "20180102",
+    "date_end": "20260703",
+    "duplicate_symbol_date_rows": 0,
+    "cross_boundary_horizon_rows": 2779,
+    "cross_boundary_non_null_label_rows": 0,
+    "purged_cross_boundary_rows": 2779,
+    "mismatch_rows": 0
+  },
+  "public_row_level_upload": false,
+  "canonical_database_written": false,
+  "strategy_rerun": false,
+  "strategy_candidate_available": false,
+  "closure_condition": "External reviewer obtains read-only access, reruns the supplied commands, and returns an independent verification receipt."
+}

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import json
 import re
+import subprocess
 from pathlib import Path
 from typing import Any
 
@@ -22,6 +23,7 @@ REPOSITORIES = {
     "us_stock_30w",
 }
 SHA256_RE = re.compile(r"[0-9a-f]{64}")
+GIT_BLOB_RE = re.compile(r"[0-9a-f]{40}")
 
 
 def _read_json(path: Path) -> dict[str, Any]:
@@ -109,6 +111,51 @@ def validate_root(root: Path) -> None:
         ):
             if field not in item:
                 raise ValueError(f"{item.get('finding_id')} is missing {field}")
+        if item.get("finding_id") in {"F-008", "F-009"}:
+            for field in (
+                "audited_path",
+                "audited_blob_sha",
+                "fixed_path",
+                "fixed_blob_sha",
+                "test_file_path",
+                "test_file_blob_sha",
+                "test_node_ids",
+                "runtime_factory_binding",
+                "external_reaudit_links",
+            ):
+                if field not in item:
+                    raise ValueError(f"{item.get('finding_id')} is missing {field}")
+            for field in ("audited_path", "fixed_path", "test_file_path"):
+                value = item[field]
+                path = Path(value)
+                if (
+                    not isinstance(value, str)
+                    or not value
+                    or path.is_absolute()
+                    or ".." in path.parts
+                ):
+                    raise ValueError(f"{item['finding_id']}.{field} is not a safe relative path")
+            for field in ("audited_blob_sha", "fixed_blob_sha", "test_file_blob_sha"):
+                if not GIT_BLOB_RE.fullmatch(str(item[field])):
+                    raise ValueError(f"{item['finding_id']}.{field} is not a Git blob id")
+            nodes = item["test_node_ids"]
+            if (
+                not isinstance(nodes, list)
+                or not nodes
+                or len(nodes) != len(set(nodes))
+                or any(
+                    not isinstance(node, str)
+                    or not node.startswith(f"{item['test_file_path']}::")
+                    for node in nodes
+                )
+            ):
+                raise ValueError(f"{item['finding_id']} test node ids are not exact or unique")
+            binding = item["runtime_factory_binding"]
+            if not isinstance(binding, dict) or binding.get("same_implementation") is not True:
+                raise ValueError(f"{item['finding_id']} runtime implementation remains split")
+            links = item["external_reaudit_links"]
+            if not isinstance(links, list) or not links or len(links) != len(set(links)):
+                raise ValueError(f"{item['finding_id']} external re-audit links are missing")
     if observed != SEVERITY_COUNTS:
         raise ValueError(f"severity counts differ: {observed}")
     _require_false(matrix, "strategy_candidate_available", "matrix")
@@ -164,11 +211,41 @@ def validate_root(root: Path) -> None:
         raise ValueError("capability ADR is missing a required decision")
 
 
+def validate_online_blob_bindings(root: Path) -> None:
+    matrix = _read_json(root.resolve() / "reports" / "remediation" / "FINDING_CLOSURE_MATRIX.json")
+    for item in matrix["findings"]:
+        if item.get("finding_id") not in {"F-008", "F-009"}:
+            continue
+        repository = item["repository"]
+        checks = (
+            (item["audited_ref"], item["audited_path"], item["audited_blob_sha"]),
+            (item["fix_commit"], item["fixed_path"], item["fixed_blob_sha"]),
+            (item["fix_commit"], item["test_file_path"], item["test_file_blob_sha"]),
+        )
+        for commit, path, expected_blob in checks:
+            output = subprocess.check_output(
+                [
+                    "gh",
+                    "api",
+                    f"repos/2604714984-prog/{repository}/contents/{path}?ref={commit}",
+                ],
+                text=True,
+            )
+            actual_blob = json.loads(output).get("sha")
+            if actual_blob != expected_blob:
+                raise ValueError(
+                    f"{item['finding_id']} remote blob differs for {commit}:{path}"
+                )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
+    parser.add_argument("--online", action="store_true")
     args = parser.parse_args()
     validate_root(args.root)
+    if args.online:
+        validate_online_blob_bindings(args.root)
     policy = _read_json(args.root / "reports" / "remediation" / "REMEDIATION_STAGE_POLICY.json")
     complete = policy["gate0"]["gate0_complete"]
     print(f"remediation Gate 0 control artifacts: VALID; gate0_complete={str(complete).lower()}")

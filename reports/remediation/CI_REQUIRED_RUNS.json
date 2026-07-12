@@ -13,11 +13,11 @@
   "repositories": [
     {
       "name": "quant-proj",
-      "commit": "8247e619398a235911edeeaaaa3785dade4f9fe4",
-      "run_id": 29187974994,
-      "url": "https://github.com/2604714984-prog/quant-proj/actions/runs/29187974994",
+      "commit": "4df14a054871dba2517bf9d4d426820d4cf3ea50",
+      "run_id": 29198065747,
+      "url": "https://github.com/2604714984-prog/quant-proj/actions/runs/29198065747",
       "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
-      "test_evidence": {"static_unit_passed": 137, "integration_passed": 39, "unexpected_skips": 0}
+      "test_evidence": {"targeted_controller_tests_passed": 18, "online_blob_validation": "PASS", "unexpected_skips": 0}
     },
     {
       "name": "A_Share_Monitor",
@@ -53,11 +53,11 @@
     },
     {
       "name": "US_Stock_Monitor",
-      "commit": "88ed912bc67b34214a139da799c6d456a5ac7c52",
-      "run_id": 29186400784,
-      "url": "https://github.com/2604714984-prog/US_Stock_Monitor/actions/runs/29186400784",
+      "commit": "44557c39001c90201a4ab51ce7dcff1595b10642",
+      "run_id": 29197919583,
+      "url": "https://github.com/2604714984-prog/US_Stock_Monitor/actions/runs/29197919583",
       "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
-      "test_evidence": {"unexpected_skips": 0}
+      "test_evidence": {"static_unit_passed": 656, "focused_contract_passed": 54, "unexpected_skips": 0}
     },
     {
       "name": "us_stock_30w",

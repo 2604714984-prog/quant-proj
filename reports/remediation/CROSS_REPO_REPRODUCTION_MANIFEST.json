@@ -66,8 +66,11 @@
   },
   "additional_cross_repository_scenarios": [
     {"scenario": "controller_gate_forged_test_count_or_stale_log", "result": "REJECTED", "evidence": "EXECUTION_ATTESTED independent replay"},
-    {"scenario": "csv_parent_absolute_or_symlink_escape", "result": "REJECTED", "evidence": "US_Stock_Monitor F-008 tests"},
-    {"scenario": "conflicting_duplicate_ohlcv", "result": "REJECTED", "evidence": "US_Stock_Monitor F-008 tests"},
+    {"scenario": "csv_parent_absolute_backslash_or_symlink_escape_through_active_factory", "result": "REJECTED", "evidence": "US_Stock_Monitor 44557c3 tests/test_us_csv_runtime_contract.py exact nodes; CI 29197919583"},
+    {"scenario": "conflicting_duplicate_ohlcv_through_active_factory", "result": "REJECTED", "evidence": "US_Stock_Monitor 44557c3::test_conflicting_duplicate_ohlcv_fails_runtime_and_readiness"},
+    {"scenario": "five_empty_csv_files_claim_research_ready", "result": "REJECTED", "evidence": "US_Stock_Monitor 44557c3::test_five_empty_csv_placeholders_are_not_research_ready"},
+    {"scenario": "qualification_runtime_factory_split", "result": "REJECTED", "evidence": "US_Stock_Monitor 44557c3::test_qualification_and_factory_use_the_same_verified_runtime"},
+    {"scenario": "caller_asserts_real_data_without_controller_pins", "result": "REJECTED", "evidence": "real_data argument and CLI flag removed; mapping/unpinned/drift tests fail closed"},
     {"scenario": "family66_canonical_verification_bypass", "result": "REJECTED", "evidence": "strategy_work F-009 tests"},
     {"scenario": "pbo_nondivisible_remainder", "result": "REJECTED", "evidence": "strategy_work F-013 tests"},
     {"scenario": "capability_documentation_drift", "result": "REJECTED", "evidence": "A_Share_Monitor capability matrix validation"},

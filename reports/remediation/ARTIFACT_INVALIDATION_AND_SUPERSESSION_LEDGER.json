@@ -205,6 +205,17 @@
       ]
     },
     {
+      "artifact_id": "PRE_EXTERNAL_REAUDIT_READY_CLAIM_7F7335D",
+      "repository": "quant-proj",
+      "state": "SUPERSEDED_BY_EXTERNAL_NOT_PASSED_VERDICT",
+      "reason": "The external re-audit reopened F-008 through RA-001/RA-002 and left EA-001 byte verification pending.",
+      "relation": "NAVIGATION_ONLY_NOT_AUTHORITATIVE",
+      "members": [
+        {"path": "reports/remediation/FINAL_CONTROLLER_ROOT.json@7f7335d6d061bc0d56a23e2f88f2df0449cd1b16", "sha256": "8b4d563cd3775ae68b432aa6befd34b302a738672cfec8b2102fc9afc0189979"},
+        {"path": "reports/remediation/RE_AUDIT_BRIEF.md@7f7335d6d061bc0d56a23e2f88f2df0449cd1b16", "sha256": "6d43b3decbc4938984c590fe8da067df84ad10b3e954fcf04bcfb9e99e3ac832"}
+      ]
+    },
+    {
       "artifact_id": "PRIOR_SHARED_AUDIT_ROOT_FILES",
       "repository": "quant-project-shared-reports",
       "state": "SUPERSEDED_PENDING_FINAL_CONTROLLER_ROOT",

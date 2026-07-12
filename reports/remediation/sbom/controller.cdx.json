@@ -206,11 +206,11 @@
       "properties": [
         {
           "name": "git.commit",
-          "value": "8247e619398a235911edeeaaaa3785dade4f9fe4"
+          "value": "4df14a054871dba2517bf9d4d426820d4cf3ea50"
         },
         {
           "name": "git.tree",
-          "value": "bdf17d1b22715c3ffe8296cfe976ab0f3fefdd54"
+          "value": "41d0a92adec695c1ca4f65400125f9e5ec35d5ee"
         },
         {
           "name": "requirements.lock.sha256",
@@ -218,7 +218,7 @@
         }
       ],
       "type": "application",
-      "version": "8247e619398a235911edeeaaaa3785dade4f9fe4"
+      "version": "4df14a054871dba2517bf9d4d426820d4cf3ea50"
     }
   },
   "serialNumber": "urn:uuid:0538ff93-5f61-5673-a6df-03c87a7b8982",

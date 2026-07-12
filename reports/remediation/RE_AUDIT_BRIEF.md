@@ -2,9 +2,9 @@
 
 ## Status
 
-`REAUDIT_READY / SHADOW_AUDIT_ACCEPTED / FINAL_EXTERNAL_AUDIT_NOT_YET_PASSED`
+`TARGETED_REAUDIT_PENDING / EXTERNAL_REAUDIT_NOT_PASSED / CHANGES_REQUESTED`
 
-This package does not claim that the external audit passed. It records the remediation of the 13 findings from the `REJECT_AS_FINAL_AUDIT_VERDICT / ACCEPT_AS_AUDIT_INPUT` review and keeps `strategy_candidate_available=false`.
+The external re-audit in `EXTERNAL_REAUDIT_VERDICT_20260712.md` returned `NOT_PASSED`, one new High (RA-001), one Medium (RA-002), and one external-evidence blocker (EA-001). This package records the targeted rework; it does not overwrite or self-upgrade that verdict. `strategy_candidate_available=false` remains fixed.
 
 No new strategy family, parameter search, LLM factor search, provider ingestion, frozen-outcome rerun, recommendation, candidate promotion, broker/order/paper/live/auto path, or strategy result was executed during remediation. US31/US36/US41/US46, Family66 and the old Family68 packet were not reopened.
 
@@ -19,7 +19,8 @@ The finding-by-finding evidence is in `FINDING_CLOSURE_MATRIX.json`. The princip
 - F-005: default research interfaces expose no actionable HITL/manual-fill command; retained disabled code is explicitly classified.
 - F-006: schema collectors reject hardlinks, symlinks and root-to-leaf races, and publish only through a validated atomic replacement.
 - F-007: `MANIFEST_VALID` and `EXECUTION_ATTESTED` are distinct; a separate acceptance task replayed 39 tests/commands and verified all logs and identities.
-- F-008/F-009/F-013: CSV traversal/conflicts, the Family66 canonical verification bypass, and silent PBO remainder loss now fail closed.
+- F-008/RA-001/RA-002: the active CSV factory, qualification and readiness paths now use one `CsvImporterProvider`; caller-controlled `real_data` state is removed; runtime config and provenance bytes are controller-pinned; empty, malformed, escaping and conflicting inputs fail closed. Exact paths, Git blobs, test node IDs and factory bindings are recorded in the closure matrix.
+- F-009: the closure path is corrected to `analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py` and bound to audited/fixed blobs and exact test nodes. F-013 still rejects silent PBO remainder loss.
 - F-010: all seven repositories pin Actions and hash-locked dependencies, expose three separate required jobs, and report zero unexpected skips at their exact commits.
 - F-012: all 22 unresolved historical binaries are enumerated and absent from the final remediation refs; licensed controlled fixtures are content-addressed.
 - F-011: the final step creates one checksum-bound controller root whose executable validator lives at a separate immutable controller code root, avoiding a false self-referential commit claim.
@@ -28,7 +29,7 @@ The finding-by-finding evidence is in `FINDING_CLOSURE_MATRIX.json`. The princip
 
 `ARTIFACT_INVALIDATION_AND_SUPERSESSION_LEDGER.json` preserves old paths and SHA-256 identities as invalidated evidence. Old A-share R21 descendants, affected QRL factor-miner outputs, test-derived A10 tickets, unsafe market-data schema publications and the Family66 verification-ambiguous summary are not overwritten and cannot be used to reopen a strategy.
 
-The A-share repair was exercised twice in isolated private temporary roots against the same read-only local database: 136,767 rows, 77 symbols, 2,779 cross-boundary rows, zero non-null crossing labels, identical Parquet/report/normalized-manifest hashes, and zero retained temporary data. The owner subsequently issued a single-use authorization for publication to a controlled data room. The resulting canonical engineering-evidence bundle is indexed by `A_SHARE_CANONICAL_EVIDENCE_PUBLICATION_INDEX.json`; row-level data remains outside public Git and does not constitute strategy evidence.
+The A-share repair was exercised twice in isolated private temporary roots against the same read-only local database: 136,767 rows, 77 symbols, 2,779 cross-boundary rows, zero non-null crossing labels, identical Parquet/report/normalized-manifest hashes, and zero retained temporary data. The owner subsequently issued a single-use authorization for publication to a controlled data room. `DATA_ROOM_EXTERNAL_ACCESS_INDEX_20260712.json` binds a read-only inventory, complete checksum chain, verification commands, publisher Git bundle and source archive. Row-level data remains outside public Git and does not constitute strategy evidence. EA-001 remains open until the external reviewer obtains access and returns an independent byte-verification receipt.
 
 ## Capability boundary
 
@@ -55,19 +56,21 @@ The A-share repair was exercised twice in isolated private temporary roots again
 10. Add an unregistered binary or remove a controlled-fixture license/hash; verify CI fails.
 11. Change capability documentation without code/matrix agreement; verify CI fails.
 12. Change any checksummed final artifact or immutable branch ref; verify the final-root/checksum validator fails.
+13. Reproduce the four RA-001 attacks through `usq.data.factory.get_provider("csv")`; verify all fail closed and readiness remains development-only without both config and provenance pins.
+14. Obtain read-only data-room access, run the supplied EA-001 commands, and compare the returned receipt with `DATA_ROOM_EXTERNAL_ACCESS_INDEX_20260712.json`.
 
 ## Authoritative entrypoint and transport model
 
-`FINAL_CONTROLLER_ROOT.json` is the only authoritative semantic root. `CHECKSUMS.sha256` binds it and every supporting artifact. The root binds executable controller code to immutable branch `agent/remediation-reaudit-code-root-r1-20260712` at commit `8247e619398a235911edeeaaaa3785dade4f9fe4`; the later package commit is only the transport that contains the root and checksum chain. This separation is deliberate because a file cannot truthfully contain the Git commit hash that contains that same file.
+`FINAL_CONTROLLER_ROOT.json` is the only authoritative semantic root. `CHECKSUMS.sha256` binds it and every supporting artifact. The root binds targeted-rework controller code to immutable branch `agent/remediation-targeted-reaudit-code-root-r2-20260712` at commit `4df14a054871dba2517bf9d4d426820d4cf3ea50`, PR 13, exact-head CI `29198065747` (3/3 success). The later package commit is only the transport that contains the root and checksum chain. This separation is deliberate because a file cannot truthfully contain the Git commit hash that contains that same file.
 
 ## Post-shadow integration reconciliation
 
 `us_stock_30w` PR 7 was reconciled with `master` after the first shadow audit. The resulting head `73222d965f3785f457cecb73e9a2392554521e66` is `CLEAN / MERGEABLE`, passed 180 full and 175 focused tests with zero skips, two independent reviews, and exact-head CI `29191481613` with 3/3 jobs. It did not reopen any strategy outcome.
 
-## Readiness for the next external audit
+## Targeted re-audit state
 
-The two previously disclosed blockers are closed: the account owner revoked the historical DeepSeek credential, and the authorized A-share canonical engineering-evidence bundle was published to the controlled data room. Optional Git-history rewriting remains a separate governance choice and is not required to restore the revoked credential's usability.
+The account owner revoked the historical DeepSeek credential; this remains an owner attestation, not provider-independent confirmation. Optional Git-history rewriting remains a separate governance choice.
 
-The independent code/dynamic and package/governance shadow audits both finished with zero new Critical or High findings. The package audit first rejected two stale representation claims; those were repaired at `5f9bde1498f614890aecadb7dac6be07314194d5` and independently reaccepted. The external reviewer should independently verify the owner attestation and obtain out-of-band access to the controlled data-room bundle if row-level inspection is required.
+RA-001 and RA-002 are internally closed by US Monitor commit `44557c39001c90201a4ab51ce7dcff1595b10642`, PR 6, full 656/656 and focused 54/54 tests, and exact-head CI `29197919583` (3/3 success). The previous shadow-audit F-008 conclusion is historical evidence and is superseded by the external finding plus targeted rework.
 
-The correct controller state is now `REAUDIT_READY`. The project still does not self-issue an audit pass: `FINAL_EXTERNAL_AUDIT_VERDICT=NOT_YET_PASSED` remains in force until the external reviewer returns a verdict.
+EA-001 is prepared but not closed: the external reviewer must receive the controlled bytes and return an independent verification receipt. The correct controller state is `TARGETED_REAUDIT_PENDING`, and `FINAL_EXTERNAL_AUDIT_VERDICT=NOT_PASSED` remains in force until the targeted reviewer returns a new verdict.

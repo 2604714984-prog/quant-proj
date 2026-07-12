@@ -1,5 +1,5 @@
 {
-  "schema_version": "finding-closure-matrix-v1",
+  "schema_version": "finding-closure-matrix-v2",
   "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
   "strategy_candidate_available": false,
   "findings": [
@@ -81,19 +81,31 @@
       "semantic_review": "EXECUTION_ATTESTED and independently replayed.", "independent_acceptance": "ACCEPTED; hashes indexed in EXECUTION_ATTESTATION_INDEX.json."
     },
     {
-      "finding_id": "F-008", "severity": "Medium", "repository": "US_Stock_Monitor", "audited_ref": "872f54211e56a162e713d987d904b49d2521bd25", "status": "CLOSED_ACCEPTED",
-      "root_cause": "Configuration-derived CSV names could escape data_dir and conflicting duplicates were silently keep-last.",
-      "affected_paths": ["usq/data/csv_provider.py"], "remediation_branch": "agent/remediation-r1-f008-us-csv-20260712",
-      "positive_tests": ["exact provenance file-set and identical-row deduplication"], "negative_tests": ["parent traversal", "absolute path", "symlink escape", "conflicting OHLCV duplicate", "missing/extra provenance"],
-      "dynamic_reproduction": "Explicit table enum, containment and alias checks reject escape before read; conflicting observations fail closed.",
-      "superseded_artifacts": [], "remaining_limitations": [],
-      "fix_commit": "88ed912bc67b34214a139da799c6d456a5ac7c52", "fix_tree": "89235c2d11303ba04fe8cd8e3562d2b64de234fa",
-      "semantic_review": "ACCEPTED by independent code and package shadow audits.", "independent_acceptance": "Exact-head CI 29186400784 3/3 success; final shadow verdict ACCEPTED."
+      "finding_id": "F-008", "severity": "Medium", "repository": "US_Stock_Monitor", "audited_ref": "872f54211e56a162e713d987d904b49d2521bd25", "status": "CLOSED_AFTER_TARGETED_REWORK",
+      "root_cause": "The importer was hardened but qualification and the active factory still used a separate per-symbol provider that allowed traversal, keep-last conflicts and caller-asserted real-data state.",
+      "affected_paths": ["usq/data/csv_importer.py", "usq/data/csv_provider.py", "usq/data/factory.py", "usq/data/provider_qualification.py", "usq/data/data_readiness_gate.py", "usq/research/pipeline.py"], "remediation_branch": "agent/external-reaudit-ra001-us-csv-runtime-20260712",
+      "audited_path": "usq/data/csv_importer.py", "audited_blob_sha": "d4d1b7b2aa443daa39118c3e1b4584a1db5a21c0",
+      "fixed_path": "usq/data/csv_importer.py", "fixed_blob_sha": "b3b75f25229fb3c48950f271a64e48319e418102",
+      "test_file_path": "tests/test_us_csv_runtime_contract.py", "test_file_blob_sha": "8ae1372769bba029854f2913bdc18926667dbe73",
+      "test_node_ids": ["tests/test_us_csv_runtime_contract.py::test_five_empty_csv_placeholders_are_not_research_ready", "tests/test_us_csv_runtime_contract.py::test_qualification_and_factory_use_the_same_verified_runtime", "tests/test_us_csv_runtime_contract.py::test_symbol_path_traversal_and_absolute_path_fail[../outside]", "tests/test_us_csv_runtime_contract.py::test_symbol_path_traversal_and_absolute_path_fail[/tmp/outside]", "tests/test_us_csv_runtime_contract.py::test_symbol_path_traversal_and_absolute_path_fail[..\\\\outside]", "tests/test_us_csv_runtime_contract.py::test_required_table_symlink_escape_fails", "tests/test_us_csv_runtime_contract.py::test_conflicting_duplicate_ohlcv_fails_runtime_and_readiness", "tests/test_us_csv_runtime_contract.py::test_self_authored_provenance_without_controller_pin_cannot_make_real_manifest", "tests/test_us_csv_runtime_contract.py::test_inline_runtime_mapping_and_unpinned_config_path_are_rejected"],
+      "runtime_factory_binding": {"qualification_entrypoint": "usq.data.provider_qualification.qualify_providers", "runtime_entrypoint": "usq.research.pipeline.run_discovery", "factory_symbol": "usq.data.factory.get_provider", "configured_provider": "csv", "qualification_implementation": "usq.data.csv_provider.CsvImporterProvider", "runtime_implementation": "usq.data.csv_provider.CsvImporterProvider", "implementation_path": "usq/data/csv_provider.py", "implementation_blob": "17ca5c9a823c7ad939cef5e9a1f8e811030a8b27", "factory_path": "usq/data/factory.py", "factory_blob": "e95904ee655d62747d3a67a127ec556963188f7a", "same_implementation": true, "controller_pinned_provenance_required": true, "caller_controlled_real_data": false},
+      "external_reaudit_links": ["RA-001", "RA-002"],
+      "positive_tests": ["factory and qualification resolve the same importer adapter", "656 full-suite tests", "42 independent focused contract tests"], "negative_tests": ["five empty CSV files", "parent traversal", "absolute path", "backslash traversal", "symlink escape", "conflicting OHLCV duplicate", "missing provenance pin", "mapping-supplied runtime", "config hash drift"],
+      "dynamic_reproduction": "The externally reported four attacks now fail closed through the exact factory-bound runtime; readiness remains DEVELOPMENT_ONLY unless both config and source provenance bytes match controller pins.",
+      "superseded_artifacts": [], "remaining_limitations": ["No external strategy result was rerun or promoted."],
+      "fix_commit": "44557c39001c90201a4ab51ce7dcff1595b10642", "fix_tree": "064b07a302039ce4296cddda16dc186725c85f2e",
+      "semantic_review": "TARGETED_REWORK_COMPLETE; importer-only closure mapping replaced by exact runtime/blob/node bindings.", "independent_acceptance": "US_Stock_Monitor full 656/656 and focused 54/54 passed; exact-head CI 29197919583 3/3 success."
     },
     {
       "finding_id": "F-009", "severity": "Medium", "repository": "strategy_work", "audited_ref": "379f1123ea0373daf6eaad51a66fd4548fa3d468", "status": "CLOSED_ACCEPTED",
       "root_cause": "Family66 canonical output could use a data-byte-verification bypass without a distinct result identity.",
-      "affected_paths": ["analysis/run_a_share_family66_methodology_recompute.py"], "remediation_branch": "agent/remediation-r1-f009-f013-strategy-methods-20260712",
+      "affected_paths": ["analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py"], "remediation_branch": "agent/remediation-r1-f009-f013-strategy-methods-20260712",
+      "audited_path": "analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "audited_blob_sha": "378d21af97222491115f8beb268ab208097bbc25",
+      "fixed_path": "analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "fixed_blob_sha": "f4f9cf9aa687ddc4c21ada9b5bf96bb08266584a",
+      "test_file_path": "tests/test_a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "test_file_blob_sha": "d4da15f7349a2a5943652c5f225403c7ea9b9b6a",
+      "test_node_ids": ["tests/test_a_share_breakout60_lowvol_volume_event_methodology_recompute.py::test_canonical_recompute_exposes_no_data_byte_verification_bypass", "tests/test_a_share_breakout60_lowvol_volume_event_methodology_recompute.py::test_baseline_manifest_and_methodology_are_pinned", "tests/test_a_share_breakout60_lowvol_volume_event_methodology_recompute.py::test_output_state_is_nonpromotional"],
+      "runtime_factory_binding": {"kind": "direct_entrypoint", "entrypoint": "analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "symbol": "main", "resolved_path": "analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "resolved_blob": "f4f9cf9aa687ddc4c21ada9b5bf96bb08266584a", "factory_path": null, "same_implementation": true},
+      "external_reaudit_links": ["RA-002"],
       "positive_tests": ["canonical verification metadata required before output directory creation"], "negative_tests": ["canonical bypass flag", "missing verification metadata", "same-shape bypass summary"],
       "dynamic_reproduction": "Canonical bypass is removed; diagnostic execution cannot impersonate canonical evidence.",
       "superseded_artifacts": ["FAMILY66_METHODOLOGY_RECOMPUTE_SUMMARY"], "remaining_limitations": ["Family66 remains rejected and was not rerun."],

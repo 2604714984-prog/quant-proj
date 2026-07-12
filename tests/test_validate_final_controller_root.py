@@ -22,6 +22,9 @@ REPOSITORIES = {
 def _payload(tmp_path: Path) -> dict:
     artifact = tmp_path / "evidence.json"
     artifact.write_text("{}\n", encoding="utf-8")
+    external_report = tmp_path / "reports" / "remediation" / "EXTERNAL_REAUDIT_VERDICT_20260712.md"
+    external_report.parent.mkdir(parents=True, exist_ok=True)
+    external_report.write_bytes(b"external verdict fixture\n")
     repositories = []
     for index, name in enumerate(sorted(REPOSITORIES), start=1):
         commit = f"{index:040x}"
@@ -56,12 +59,27 @@ def _payload(tmp_path: Path) -> dict:
             }
         )
     return {
-        "schema_version": "remediation-final-controller-root-v1",
+        "schema_version": "remediation-final-controller-root-v2",
         "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
         "authoritative": True,
-        "status": "REMEDIATION_COMPLETE_PENDING_EXTERNAL_REAUDIT",
-        "final_external_audit_verdict": "NOT_YET_PASSED",
+        "status": "TARGETED_REAUDIT_PENDING",
+        "final_external_audit_verdict": "NOT_PASSED",
         "strategy_candidate_available": False,
+        "external_reaudit": {
+            "review_target": "quant-proj#11",
+            "source_report_path": "reports/remediation/EXTERNAL_REAUDIT_VERDICT_20260712.md",
+            "source_report_sha256": hashlib.sha256(external_report.read_bytes()).hexdigest(),
+            "review": "CHANGES_REQUESTED",
+            "status": "REWORK_REQUIRED",
+            "new_critical": 0,
+            "new_high_total": 1,
+            "new_high_closed": 1,
+            "new_medium_total": 1,
+            "new_medium_closed": 1,
+            "evidence_blocker_total": 1,
+            "evidence_blocker_closed": 0,
+            "targeted_reaudit_allowed": True,
+        },
         "research_boundary": {
             "new_strategy_research_executed": False,
             "frozen_strategy_outcomes_reopened": False,
@@ -73,12 +91,19 @@ def _payload(tmp_path: Path) -> dict:
             {
                 "path": "evidence.json",
                 "sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
-            }
+            },
+            {
+                "path": "reports/remediation/EXTERNAL_REAUDIT_VERDICT_20260712.md",
+                "sha256": hashlib.sha256(external_report.read_bytes()).hexdigest(),
+            },
         ],
         "finding_summary": {
             "original_total": 13,
             "open_critical": 0,
             "open_high": 0,
+            "external_open_high": 0,
+            "external_open_medium": 0,
+            "external_evidence_blockers": 1,
             "strategy_candidate_available": False,
         },
         "gate_summary": {
@@ -90,7 +115,16 @@ def _payload(tmp_path: Path) -> dict:
             "historical_secret_candidates": 0,
             "rotated_or_revoked_secret_candidates": 0,
         },
-        "residual_blockers": [],
+        "residual_blockers": [
+            {
+                "id": "EA-001",
+                "severity": "Medium",
+                "requires_user_action": False,
+                "status": "OPEN",
+                "description": "External reviewer byte verification is pending.",
+                "evidence_refs": ["evidence.json"],
+            }
+        ],
     }
 
 
@@ -127,20 +161,14 @@ def test_controller_root_mutations_fail_closed(tmp_path: Path, mutation: str) ->
         validate(payload, repository_root=tmp_path)
 
 
-def test_blockers_forbid_reaudit_ready_status(tmp_path: Path) -> None:
+def test_ready_or_passed_external_claims_fail(tmp_path: Path) -> None:
     payload = _payload(tmp_path)
     payload["status"] = "REAUDIT_READY"
-    payload["residual_blockers"] = [
-        {
-            "id": "CANONICAL_REBUILD",
-            "severity": "High",
-            "requires_user_action": False,
-            "status": "OPEN",
-            "description": "Canonical rebuild remains deliberately disabled.",
-            "evidence_refs": [],
-        }
-    ]
-    with pytest.raises(FinalRootError, match="cannot claim REAUDIT_READY"):
+    with pytest.raises(FinalRootError, match="targeted re-audit pending"):
+        validate(payload, repository_root=tmp_path)
+    payload = _payload(tmp_path)
+    payload["final_external_audit_verdict"] = "PASSED"
+    with pytest.raises(FinalRootError, match="NOT_PASSED"):
         validate(payload, repository_root=tmp_path)
 
 
@@ -150,7 +178,7 @@ def test_unrotated_historical_secret_requires_explicit_blocker(tmp_path: Path) -
     with pytest.raises(FinalRootError, match="lacks a blocker"):
         validate(payload, repository_root=tmp_path)
 
-    payload["residual_blockers"] = [
+    payload["residual_blockers"].append(
         {
             "id": "HISTORICAL_SECRET_ROTATION",
             "severity": "High",
@@ -159,5 +187,6 @@ def test_unrotated_historical_secret_requires_explicit_blocker(tmp_path: Path) -
             "description": "The credential owner must revoke or rotate the candidate.",
             "evidence_refs": ["reports/remediation/SECRET_SCAN_INDEX.json"],
         }
-    ]
-    validate(payload, repository_root=tmp_path)
+    )
+    with pytest.raises(FinalRootError, match="only the independent"):
+        validate(payload, repository_root=tmp_path)

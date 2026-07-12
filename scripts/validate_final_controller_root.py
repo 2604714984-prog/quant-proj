@@ -12,7 +12,7 @@ import subprocess
 from typing import Any
 
 
-SCHEMA_VERSION = "remediation-final-controller-root-v1"
+SCHEMA_VERSION = "remediation-final-controller-root-v2"
 STAGE_ID = "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712"
 EXPECTED_REPOSITORIES = {
     "quant-proj",
@@ -84,6 +84,7 @@ def validate(payload: dict[str, Any], *, repository_root: Path) -> None:
         "status",
         "final_external_audit_verdict",
         "strategy_candidate_available",
+        "external_reaudit",
         "research_boundary",
         "repositories",
         "artifacts",
@@ -96,6 +97,50 @@ def validate(payload: dict[str, Any], *, repository_root: Path) -> None:
         raise FinalRootError("controller root identity differs")
     if payload["authoritative"] is not True or payload["strategy_candidate_available"] is not False:
         raise FinalRootError("authoritative or candidate boundary differs")
+    if payload["status"] != "TARGETED_REAUDIT_PENDING":
+        raise FinalRootError("controller root is not in the targeted re-audit pending state")
+    if payload["final_external_audit_verdict"] != "NOT_PASSED":
+        raise FinalRootError("remediation cannot alter the external NOT_PASSED verdict")
+    external = payload["external_reaudit"]
+    if not isinstance(external, dict):
+        raise FinalRootError("external re-audit record is not an object")
+    _require_keys(
+        external,
+        {
+            "review_target",
+            "source_report_path",
+            "source_report_sha256",
+            "review",
+            "status",
+            "new_critical",
+            "new_high_total",
+            "new_high_closed",
+            "new_medium_total",
+            "new_medium_closed",
+            "evidence_blocker_total",
+            "evidence_blocker_closed",
+            "targeted_reaudit_allowed",
+        },
+        "external_reaudit",
+    )
+    expected_external = {
+        "review_target": "quant-proj#11",
+        "source_report_path": "reports/remediation/EXTERNAL_REAUDIT_VERDICT_20260712.md",
+        "review": "CHANGES_REQUESTED",
+        "status": "REWORK_REQUIRED",
+        "new_critical": 0,
+        "new_high_total": 1,
+        "new_high_closed": 1,
+        "new_medium_total": 1,
+        "new_medium_closed": 1,
+        "evidence_blocker_total": 1,
+        "evidence_blocker_closed": 0,
+        "targeted_reaudit_allowed": True,
+    }
+    if any(external.get(key) != value for key, value in expected_external.items()):
+        raise FinalRootError("external re-audit tuple or closure counts differ")
+    if not HEX64.fullmatch(str(external["source_report_sha256"])):
+        raise FinalRootError("external re-audit report hash is invalid")
     boundary = payload["research_boundary"]
     if not isinstance(boundary, dict):
         raise FinalRootError("research boundary is not an object")
@@ -155,12 +200,22 @@ def validate(payload: dict[str, Any], *, repository_root: Path) -> None:
         artifact_paths.append(str(rel))
     if len(artifact_paths) != len(set(artifact_paths)):
         raise FinalRootError("artifact inventory contains duplicate paths")
+    if external["source_report_path"] not in artifact_paths:
+        raise FinalRootError("external re-audit report is absent from the artifact inventory")
+    external_record = next(
+        item for item in artifacts if item["path"] == external["source_report_path"]
+    )
+    if external_record["sha256"] != external["source_report_sha256"]:
+        raise FinalRootError("external re-audit report hash is not consistently bound")
 
     finding = payload["finding_summary"]
     if finding != {
         "original_total": 13,
         "open_critical": 0,
         "open_high": 0,
+        "external_open_high": 0,
+        "external_open_medium": 0,
+        "external_evidence_blockers": 1,
         "strategy_candidate_available": False,
     }:
         raise FinalRootError("finding summary is not fail-closed")
@@ -227,10 +282,10 @@ def validate(payload: dict[str, Any], *, repository_root: Path) -> None:
         raise FinalRootError("unremediated historical secret lacks a blocker record")
     if not unresolved_secrets and "HISTORICAL_SECRET_ROTATION" in blocker_ids:
         raise FinalRootError("resolved historical secret retains a stale blocker")
-    if blockers and payload["status"] == "REAUDIT_READY":
-        raise FinalRootError("a blocked root cannot claim REAUDIT_READY")
-    if payload["final_external_audit_verdict"] != "NOT_YET_PASSED":
-        raise FinalRootError("remediation cannot self-issue an external audit pass")
+    if {item["id"] for item in blockers} != {"EA-001"}:
+        raise FinalRootError("only the independent data-room verification blocker may remain")
+    if blockers[0]["severity"] != "Medium" or blockers[0]["requires_user_action"] is not False:
+        raise FinalRootError("EA-001 blocker classification differs")
 
 
 def validate_online(payload: dict[str, Any]) -> None:

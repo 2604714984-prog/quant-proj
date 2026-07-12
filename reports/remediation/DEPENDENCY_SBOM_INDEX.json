@@ -6,12 +6,12 @@
   "license_policy": "FAIL_ON_UNREPORTED_OR_DENIED_DISTRIBUTION_LICENSE",
   "sboms": [
     {"repository": "A_Share_Monitor", "commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556", "path": "reports/remediation/sbom/a_share.cdx.json", "sha256": "6f309381e1d777961ea1c537c8cf77db06e7a9de07f0fdaffd9164d84faff232", "components": 54},
-    {"repository": "quant-proj", "commit": "8247e619398a235911edeeaaaa3785dade4f9fe4", "path": "reports/remediation/sbom/controller.cdx.json", "sha256": "4e8547270e0a1df591998c606473bac1a1b9e825da00f36a996dcd0baafac9b2", "components": 18},
+    {"repository": "quant-proj", "commit": "4df14a054871dba2517bf9d4d426820d4cf3ea50", "path": "reports/remediation/sbom/controller.cdx.json", "sha256": "34371218f8165f4b8af0c529df5314c5a1214f46df4f936fa91c31804afd93d2", "components": 18},
     {"repository": "market_data", "commit": "17409f952209244862b92dd893ead88cd073b4d7", "path": "reports/remediation/sbom/market_data.cdx.json", "sha256": "95944b1eea53e5f5d903c9cbda7d12b2f4e593e1cf57c35b12ef61532619c4e9", "components": 14},
     {"repository": "quant_research_lab", "commit": "7362ce219dc4c426e1b58e42a82e90ce73d04d59", "path": "reports/remediation/sbom/qrl.cdx.json", "sha256": "7590d4442fe6e9f437c57c0febc3739773c514278a9ae87ce02f6a0385321c53", "components": 59},
     {"repository": "strategy_work", "commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f", "path": "reports/remediation/sbom/strategy.cdx.json", "sha256": "d8e97badc85331ecb0fd88ed2f1b43e6166087eb70a20a9e0b2411b49dac0ece", "components": 25},
     {"repository": "us_stock_30w", "commit": "73222d965f3785f457cecb73e9a2392554521e66", "path": "reports/remediation/sbom/us30w.cdx.json", "sha256": "6a030f3d208bd4b70f7c667e88d0f3566b6d26dd8984353a6c80b3126ecade27", "components": 42},
-    {"repository": "US_Stock_Monitor", "commit": "88ed912bc67b34214a139da799c6d456a5ac7c52", "path": "reports/remediation/sbom/us_monitor.cdx.json", "sha256": "b7122a1867bc3cea3c17dc2f38bd840525c9a8a06105ac29f4ae4f4bbba3dca0", "components": 17}
+    {"repository": "US_Stock_Monitor", "commit": "44557c39001c90201a4ab51ce7dcff1595b10642", "path": "reports/remediation/sbom/us_monitor.cdx.json", "sha256": "511534f58b018c18e08847d86b946ad9ea0ed52b831142dca10ac8148319f826", "components": 17}
   ],
   "conclusion": "VALID"
 }
