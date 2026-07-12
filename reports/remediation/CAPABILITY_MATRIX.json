@@ -1,0 +1,124 @@
+{
+  "schema_version": "capability-matrix-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "authoritative_for_capability_claims": true,
+  "strategy_candidate_available": false,
+  "capabilities": [
+    {
+      "repository": "A_Share_Monitor",
+      "capability": "research_and_backtest",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": true,
+      "write_capable": true,
+      "actionable": false,
+      "target_after_remediation": "RETAIN_RESEARCH_ONLY"
+    },
+    {
+      "repository": "A_Share_Monitor",
+      "capability": "a10_hitl_ticket",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": true,
+      "write_capable": true,
+      "actionable": true,
+      "gate0_state": "UNSAFE_DISABLED_BY_REMEDIATION_POLICY_PENDING_CODE_KILL_SWITCH",
+      "target_after_remediation": "SEPARATE_CONTROLLED_MODULE_NOT_DEFAULT_CLI_LEDGER_WRITE_DISABLED"
+    },
+    {
+      "repository": "A_Share_Monitor",
+      "capability": "manual_fill",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": true,
+      "write_capable": true,
+      "actionable": true,
+      "gate0_state": "DISCLOSED_NOT_RESEARCH_CORE_PENDING_CLI_REMOVAL",
+      "target_after_remediation": "USER_BOOKKEEPING_ONLY_SEPARATE_NOT_DEFAULT_CLI"
+    },
+    {
+      "repository": "A_Share_Monitor",
+      "capability": "broker_order_paper_live_auto",
+      "exists": false,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": false,
+      "actionable": true,
+      "target_after_remediation": "FORBIDDEN"
+    },
+    {
+      "repository": "US_Stock_Monitor",
+      "capability": "research_and_backtest",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": true,
+      "write_capable": true,
+      "actionable": false,
+      "target_after_remediation": "RETAIN_RESEARCH_ONLY"
+    },
+    {
+      "repository": "US_Stock_Monitor",
+      "capability": "recommendation_rfc_scaffolds",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": false,
+      "write_capable": true,
+      "actionable": false,
+      "target_after_remediation": "DESIGN_EVIDENCE_ONLY_NO_REAL_INPUT_OR_RUNTIME"
+    },
+    {
+      "repository": "US_Stock_Monitor",
+      "capability": "recommendation_manual_fill_broker_order_paper_live_auto_runtime",
+      "exists": false,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": false,
+      "actionable": true,
+      "target_after_remediation": "FORBIDDEN"
+    },
+    {
+      "repository": "us_stock_30w",
+      "capability": "archived_paper_or_live_style_scripts",
+      "exists": true,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": false,
+      "actionable": true,
+      "guard": "scripts/runtime_isolation.py",
+      "target_after_remediation": "ARCHIVED_AND_FAIL_CLOSED"
+    },
+    {
+      "repository": "quant_research_lab",
+      "capability": "llm_factor_mining",
+      "exists": true,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": true,
+      "actionable": false,
+      "gate0_state": "OUTPUTS_QUARANTINED_NO_NEW_ITERATIONS",
+      "target_after_remediation": "RESEARCH_SANDBOX_WITH_VALIDATED_PROVENANCE"
+    },
+    {
+      "repository": "market_data",
+      "capability": "metadata_and_schema_export",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": false,
+      "write_capable": true,
+      "actionable": false,
+      "gate0_state": "FORMAL_OUTPUTS_INVALIDATED_FOR_ATOMICITY_PENDING_FIX",
+      "target_after_remediation": "RACE_SAFE_ATOMIC_PUBLICATION"
+    },
+    {
+      "repository": "quant-proj",
+      "capability": "automated_gate_manifest_validation",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": true,
+      "write_capable": false,
+      "actionable": false,
+      "current_evidence_state": "MANIFEST_VALID_OR_EXECUTION_ATTESTED_DEPENDS_ON_EXECUTE_COMMANDS",
+      "target_after_remediation": "DISTINCT_MANIFEST_VALID_AND_EXECUTION_ATTESTED_STATES"
+    }
+  ]
+}

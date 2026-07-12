@@ -1,0 +1,242 @@
+{
+  "schema_version": "artifact-invalidation-ledger-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "inventory_complete": true,
+  "strategy_candidate_available": false,
+  "default_state": "PRESERVED_BUT_INVALIDATED",
+  "entries": [
+    {
+      "artifact_id": "QRL_FACTOR_MINING_RESULT_20260710",
+      "repository": "quant_research_lab",
+      "path": "outputs/factor_mining_results_20260710.md",
+      "sha256": "9fba984eed04ec5c467353e9c75bfc450a7359f34620e171949b8ca7668df4ab",
+      "state": "PRESERVED_BUT_INVALIDATED",
+      "reason": "F-003 positional alignment and final-test winner omission",
+      "relation": "DOES_NOT_REOPEN_STRATEGY"
+    },
+    {
+      "artifact_id": "QRL_REASONIX_REPORT_005",
+      "repository": "quant_research_lab",
+      "path": "reports/reasonix/quant_research_lab_report_20260710_005.md",
+      "sha256": "36d25b28c752e040e451f6a029ddf2b4a23a66bba2514eb105ab4d5b638d173e",
+      "state": "PRESERVED_BUT_INVALIDATED",
+      "reason": "F-003 report claims a methodology fix that the audited implementation does not provide",
+      "relation": "DOES_NOT_REOPEN_STRATEGY"
+    },
+    {
+      "artifact_id": "QRL_AGENTS_BEST_IC_CLAIM",
+      "repository": "quant_research_lab",
+      "path": "AGENTS.md",
+      "sha256": "87475227a32c2994aa2d9a36060a166d4e9c19ffcfa914d8230faedc0c662077",
+      "state": "PRESERVED_BUT_INVALIDATED_CLAIM",
+      "reason": "F-003 affected factor-miner output cannot support the Best IC claim",
+      "relation": "SUPERSEDED_BY_REMEDIATION_DOCUMENTATION"
+    },
+    {
+      "artifact_id": "MARKET_DATA_A_SHARE_SCHEMA",
+      "repository": "market_data",
+      "path": "a_share_market_schema.json",
+      "sha256": "44070e811aca220d7c931628c382d998211c8be1e9b4f27297fcffc813b6ed47",
+      "state": "PRESERVED_BUT_INVALIDATED_FOR_CANONICAL_ATOMICITY",
+      "reason": "F-006 publication process is unsafe; this does not independently prove content is false",
+      "relation": "REQUIRES_NEW_PATH_NEW_ID_NEW_SHA256"
+    },
+    {
+      "artifact_id": "MARKET_DATA_US_SCHEMA",
+      "repository": "market_data",
+      "path": "us_stock_market_schema.json",
+      "sha256": "d1833981dae176384942bbbfcb5904352102b23c0781c98f054c172557cb00b8",
+      "state": "PRESERVED_BUT_INVALIDATED_FOR_CANONICAL_ATOMICITY",
+      "reason": "F-006 publication process is unsafe; this does not independently prove content is false",
+      "relation": "REQUIRES_NEW_PATH_NEW_ID_NEW_SHA256"
+    },
+    {
+      "artifact_id": "FAMILY66_METHODOLOGY_RECOMPUTE_SUMMARY",
+      "repository": "strategy_work",
+      "path": "reports/planning/a_share_breakout60_lowvol_volume_event_methodology_recompute_20260710/summary.json",
+      "sha256": "2fabd1f7d8b32612405e636ecb761be7483d403974e51b05b25fe3d023c0862d",
+      "state": "PRESERVED_NEGATIVE_VERIFICATION_MODE_UNRECORDED",
+      "reason": "F-009 output does not disclose whether the data-byte verification bypass was used; negative conclusion remains frozen",
+      "relation": "DOES_NOT_REOPEN_STRATEGY"
+    },
+    {
+      "artifact_id": "WORKSPACE_EXTERNAL_REVIEW_BRIEF_20260712",
+      "repository": "quant-project-shared-reports",
+      "path": "reports/2026-07-12/quant_workspace_external_review_brief_20260712.md",
+      "sha256": "326e7a314694b3c2302c74eb55e0c9448924db726bb0a73f6e0d3adfb513d39c",
+      "state": "SUPERSEDED_PENDING_FINAL_CONTROLLER_ROOT",
+      "reason": "F-011 prior brief does not resolve through the future single remediation root",
+      "relation": "NAVIGATION_ONLY_NOT_AUTHORITATIVE"
+    },
+    {
+      "artifact_id": "A_SHARE_R21_INVALIDATION_ROOTS",
+      "repository": "A_Share_Monitor",
+      "state": "PRESERVED_BUT_INVALIDATED",
+      "reason": "F-001 R21 evidence roots were generated through a database-unbound and incompletely purged evidence path",
+      "relation": "INVALIDATES_RECURSIVE_DESCENDANTS_AND_DOES_NOT_REOPEN_STRATEGY",
+      "members": [
+        {"path": "reports/runops/r21_development_first_amendment_20260708/a_share_pass77_features_daily_v2_research_rows_20260708.csv", "sha256": "9178a32759f17d2cb47dbd7468e5f5569a9cc170895f84c4a343f7b1317ed37f"},
+        {"path": "reports/workspace_dispatch/a_share_r21_peg_feature_materialization_20260708.csv", "sha256": "a494e28808a9e6e07d6191781098748a0e8167374d9975a85e85fd6b8c6ff607"},
+        {"path": "reports/workspace_dispatch/a_share_r21_peg_feature_materialization_20260708.json", "sha256": "c09fd54dcc55c1f12d95e0bdc82abb80e65f6fa1631f57b6c0af3393f90255e7"},
+        {"path": "reports/workspace_dispatch/a_share_r21_peg_feature_materialization_20260708.md", "sha256": "3400974d2d4f2a189073aa9071d2e8559e6e18af755e70e37a254f54c75c3320"},
+        {"path": "reports/workspace_dispatch/a_share_r21_event_funds_hotmoney_materialization_20260708.csv", "sha256": "98e6cc0fcea487626ce42b6f65cfac08d357f4cf5d12e9514b4a5c2899ba4ec2"},
+        {"path": "reports/workspace_dispatch/a_share_r21_event_funds_hotmoney_materialization_20260708.json", "sha256": "a22c887a8ba9f0c6b8b82b876df422f48166f820f35bde594a99bb4cebce0695"},
+        {"path": "reports/workspace_dispatch/a_share_r21_event_funds_hotmoney_materialization_20260708.md", "sha256": "db57d154d3bd13d52a4665ececfd902bfdf1a484432561fab6ca7ae2033545aa"},
+        {"path": "reports/workspace_dispatch/a_share_r21_features_daily_v2_research_manifest_20260708.json", "sha256": "464810b1951d8ebb0e510b60eaa62306abb4759990a1d1b1a75e772bb6a5c885"},
+        {"path": "reports/workspace_dispatch/a_share_r21_features_daily_v2_research_manifest_20260708.md", "sha256": "2858d535c64a853de39e520fa4dc8652d9ada4bdb6d754670da4b453a4cc8837"},
+        {"path": "reports/workspace_dispatch/a_share_r21_new_feature_data_quality_audit_20260708.csv", "sha256": "cf64e707fd59b9601518677e8919167c969c32947891cf82c855407135baea84"},
+        {"path": "reports/workspace_dispatch/a_share_r21_new_feature_data_quality_audit_20260708.md", "sha256": "450899ba8576907bd83edf9183e43060dd00c92e330657cdd27d759e4373efea"},
+        {"path": "reports/workspace_dispatch/a_share_r21_new_feature_delta_diagnostic_or_skip_20260708.csv", "sha256": "b7ef4669649a3e0baf5965202f51f228fee3ca6727ace521ffae7a1f68ae9b0a"},
+        {"path": "reports/workspace_dispatch/a_share_r21_new_feature_delta_diagnostic_or_skip_20260708.md", "sha256": "d25d6b1e3bea8f92a1d833678763867047d02ac53b863c8127be0cf8aceb4f45"},
+        {"path": "reports/runops/r21_feature_materialization_experiment_store/r21_experiment_store.jsonl", "sha256": "be8cf3ae06f58cba28406fbcf54d86b6c9c7fc9788531408d07deca0323bbad4"},
+        {"path": "reports/runops/r21_feature_materialization_experiment_store/r21_experiments.sqlite", "sha256": "54194dd988222725c601140a310d97e60d677a01cc8879013b65b153ac8eef7d"},
+        {"path": "reports/workspace_dispatch/r21_development_first_amendment_summary_20260708.json", "sha256": "3131a56440c73f8b63481f50325e39d9ca8c56aad2e2478801df9c01886d3e45"},
+        {"path": "reports/workspace_dispatch/r21_development_first_amendment_summary_20260708.md", "sha256": "cbe44304cfa974c4f07fbb658007a3ec141b6a225a39328bc5802c4b5e2eea3a"},
+        {"path": "reports/workspace_dispatch/r21_unified_artifact_manifest_20260708.json", "sha256": "49d57b80361556b487dbe01791f51b5d2cb06503ce078a0d87860e144ccb3692"},
+        {"path": "reports/workspace_dispatch/r21_r20_evidence_freeze_20260708.json", "sha256": "c4ba26553b36a99dfb557821f1cb825528d966906bda882d4d5b144ef1bab89a"}
+      ]
+    },
+    {
+      "artifact_id": "A_SHARE_R21_DOWNSTREAM_INVALIDATION_ROOTS",
+      "repository": "A_Share_Monitor",
+      "state": "PRESERVED_BUT_INVALIDATED_BY_INPUT_LINEAGE",
+      "reason": "F-001 downstream artifacts bind the invalid R21/pass77 input root",
+      "relation": "INVALIDATES_RECURSIVE_DESCENDANTS_AND_DOES_NOT_REOPEN_STRATEGY",
+      "members": [
+        {"path": "reports/runops/r24_strategy_breakthrough_sprint_20260708/r24_input_manifest_20260708.json", "sha256": "8f94c9527cea7cd94afe1b865e8ea021adcaa3b8ab9f921533d7952d03049c26"},
+        {"path": "reports/runops/r25_targeted_strategy_repair_and_probe_20260708/r25_input_manifest_20260708.json", "sha256": "6681c6ffc8f37e32b3c3fb26ae6d0edd514933e0f5c70a21934e9006e76b39a9"},
+        {"path": "reports/workspace_dispatch/windows_wsl2_r24_strategy_breakthrough_sprint_summary_20260708.json", "sha256": "bb164c8b439ad624351042ea8e5a80aff665e6435e07dc8c45db1948325bfd05"},
+        {"path": "reports/workspace_dispatch/windows_wsl2_r25_targeted_strategy_repair_and_probe_summary_20260708.json", "sha256": "850b56685a2373d87e31c8fa2da4358eba5f0d3f81b50db126f57c8a2fa6fdad"},
+        {"path": "reports/workspace_dispatch/pass77_r27_direct_proxy_validation_smoke_20260709.md", "sha256": "012af417181c4c8291f5b77a309cf9a7cf9268014d51a850162ff931d681a93a"},
+        {"path": "reports/workspace_dispatch/r30_pass77_repaired_diagnostics_or_skip_20260709.csv", "sha256": "c96d2a759f3be83a514104805073ecffcb6b60708a2ee4cb11d7a9ed062c5a13"},
+        {"path": "reports/workspace_dispatch/r30_pass77_decision_board_20260709.csv", "sha256": "c96d2a759f3be83a514104805073ecffcb6b60708a2ee4cb11d7a9ed062c5a13"},
+        {"path": "reports/workspace_dispatch/r32_qlib_pass77_export_manifest_20260709.json", "sha256": "a28ebd1ed52992b58b301928dbd5d43fa2b72ab58e23bb6c7095f418aaa09626"}
+      ]
+    },
+    {
+      "artifact_id": "A10_TEST_FIXTURE_OUTPUTS",
+      "repository": "A_Share_Monitor",
+      "state": "PRESERVED_BUT_RECLASSIFIED_TEST_FIXTURE_INVALID_FOR_REAL_HITL",
+      "reason": "F-002 PENDING_HUMAN_REVIEW outputs were generated from test provenance; coverage reports dropped the provenance field",
+      "relation": "DOES_NOT_AUTHORIZE_TICKET_OR_LEDGER",
+      "members": [
+        {"path": "reports/recommendation/a10/a10_core_universe_summary.json", "sha256": "d5ea9dbe3f3ce3ccbdcc0a85ab043067d89bbf6c551f14839586e7caa7fb9583"},
+        {"path": "reports/recommendation/a10/a10_core_universe_report.md", "sha256": "f06d1d8bb6d73cb4dab2ac8f093adab3234ef813016bb2895c7c4d51b9d9b764"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_044059/a10_run_result_summary.json", "sha256": "4a71184c04dff5dfec331b7c539feb056dcbef79a96df5fcff328f05c0862223"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_044059/a10_ticket_summary.json", "sha256": "d45a178be65be5b41b0f5275b3e42171f935762f3aac4edffc99dbc220859f46"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_044309/a10_run_result_summary.json", "sha256": "9dcd7919d98f7e0f65966a8594c50f167d1a3f183d48556e1f8d0abc73594d9a"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_044309/a10_ticket_summary.json", "sha256": "d45a178be65be5b41b0f5275b3e42171f935762f3aac4edffc99dbc220859f46"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_045559/a10_run_result_summary.json", "sha256": "496b73350631ea29635862f17dd4a4c4b9473529106933dca32657c11aa8d425"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_045559/a10_ticket_summary.json", "sha256": "d45a178be65be5b41b0f5275b3e42171f935762f3aac4edffc99dbc220859f46"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_045600/a10_run_result_summary.json", "sha256": "c7d441187f2e3ac59798bdd1bc05200c3a5d85c5b2211842bd60b067c5b13fa0"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_045600/a10_ticket_summary.json", "sha256": "d45a178be65be5b41b0f5275b3e42171f935762f3aac4edffc99dbc220859f46"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_052409/a10_run_result_summary.json", "sha256": "db957b1d6cee56833776d7070d42cfa00697dcdf136752f9cd862427f0fa4aac"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_052409/a10_ticket_summary.json", "sha256": "d45a178be65be5b41b0f5275b3e42171f935762f3aac4edffc99dbc220859f46"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_142726/a10_run_result_summary.json", "sha256": "acdc8832a82fd5d9b5551dca4b86b5f3fe524ef101212ba45dda043d538b2810"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_142726/a10_ticket_summary.json", "sha256": "d45a178be65be5b41b0f5275b3e42171f935762f3aac4edffc99dbc220859f46"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_142805/a10_run_result_summary.json", "sha256": "ef5342cc785b588b44b454b36a9eb8a8f22d6ba2985d26da2eb0cf0d79e737b4"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_142805/a10_ticket_summary.json", "sha256": "d45a178be65be5b41b0f5275b3e42171f935762f3aac4edffc99dbc220859f46"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_143022/a10_run_result_summary.json", "sha256": "517929aeac44545f4e8141e099986aa13876912871da9b5491ccfc2372eb4719"},
+        {"path": "outputs/a10_core_universe/a10_core_universe_20260710_143022/a10_ticket_summary.json", "sha256": "d45a178be65be5b41b0f5275b3e42171f935762f3aac4edffc99dbc220859f46"}
+      ]
+    },
+    {
+      "artifact_id": "US30W_STRICT_PIT_PREREGISTRATION_R1",
+      "repository": "us_stock_30w",
+      "path": "reports/planning/us30w_four_etf_strict_validation_preregistration_20260712.json",
+      "sha256": "2712075e7ff37873363011e9465b36d5cf6a45a166fb39d094cee773e19dce8e",
+      "state": "PRESERVED_BUT_INVALIDATED_FOR_STRICT_PIT_EXECUTION",
+      "reason": "F-004 preregistration permits null available_at and cannot authorize strict PIT execution",
+      "relation": "DOES_NOT_REOPEN_US31_US36_US41_US46"
+    },
+    {
+      "artifact_id": "BAOSTOCK_LUNA_ACCEPTANCE_WITHOUT_EXECUTION_REPLAY",
+      "repository": "quant-proj",
+      "state": "MANIFEST_VALID_NOT_EXECUTION_ATTESTED",
+      "reason": "F-007 acceptance invokes automated-gate validation with execute_commands=false",
+      "relation": "SUPERSEDED_BY_NEW_EXECUTION_ATTESTATION_CONTRACT",
+      "members": [
+        {"path": "tasks/backlog/A_SHARE_BAOSTOCK_FUNDAMENTAL_SMOKE_CODE_20260710/luna_acceptance.json", "sha256": "6064361d778cae7459146646a60e3b6738c595af624cf3a08f57ea1ba98480c2"},
+        {"path": "tasks/backlog/A_SHARE_BAOSTOCK_FUNDAMENTAL_SMOKE_CODE_20260710/automated_gate.json", "sha256": "9ae2a02b0a21a9dfd9544211f3890207a1ea37ac4fdd51c115001865dc63fef4"}
+      ]
+    },
+    {
+      "artifact_id": "US_CSV_IMPORTER_NO_TRACKED_CANONICAL_OUTPUT_FOUND",
+      "repository": "US_Stock_Monitor",
+      "path": "usq/data/csv_importer.py",
+      "sha256": "7d5989230819cc6353b602d0bbb4db7edc12cc4d7eb512d827286f0437424536",
+      "state": "CAPABILITY_DISABLED_PENDING_REMEDIATION_NO_TRACKED_OUTPUT_IDENTIFIED",
+      "reason": "F-008 path traversal and conflicting-duplicate behavior is open; no tracked canonical provider=csv output was located",
+      "relation": "NEW_IMPORTS_FORBIDDEN_UNTIL_FIX"
+    },
+    {
+      "artifact_id": "FAMILY66_BYTE_IDENTITY_BUNDLE",
+      "repository": "strategy_work",
+      "state": "PRESERVED_BUT_INVALIDATED_FOR_CANONICAL_BYTE_IDENTITY",
+      "reason": "F-009 no transcript proves whether byte verification was bypassed; negative conclusion remains frozen",
+      "relation": "DOES_NOT_REOPEN_FAMILY66",
+      "members": [
+        {"path": "reports/planning/a_share_breakout60_lowvol_volume_event_methodology_recompute_20260710/holdout_dependent_inference.csv", "sha256": "3bd15a0f415fdaf789a721a1f323858cb3bec14fb20a97f61118a21f9122f77e"},
+        {"path": "reports/planning/a_share_breakout60_lowvol_volume_event_methodology_recompute_20260710/purge_audit.json", "sha256": "5341b69d9a9c31a68dbf78f7cf8adf483068d6cc49cfc33d1b44e0e9c39be5f4"},
+        {"path": "reports/planning/a_share_breakout60_lowvol_volume_event_methodology_recompute_20260710/gate_checks.csv", "sha256": "59758dc53d0bf08e2c0c1ae4456f01f873ea280f38ba72797aee77dbe207867c"},
+        {"path": "reports/planning/a_share_breakout60_lowvol_volume_event_methodology_recompute_20260710/purged_signal_date_cohorts.csv", "sha256": "8460f74b072a6f5a658c79ff3dc900e7a5de305948199668e027dd77f4716f45"},
+        {"path": "reports/planning/a_share_breakout60_lowvol_volume_event_methodology_recompute_20260710/split_summary.csv", "sha256": "bae396b3ddf71738d94ab25af21950ad23597f3c17e7a7d303e8859c182f58ca"},
+        {"path": "reports/planning/a_share_breakout60_lowvol_volume_event_methodology_recompute_result_20260710.md", "sha256": "6f2dd8359d5b49c4a2bb10816f5cc79a095b5917875d9cced3b264a4580368c4"}
+      ]
+    },
+    {
+      "artifact_id": "PRIOR_EXTERNAL_AUDIT_BOUNDARY_CLAIMS",
+      "repository": "quant-proj",
+      "state": "SUPERSEDED_FOR_REMEDIATION",
+      "reason": "F-005 and F-011 require honest retained-capability disclosure and one final controller root",
+      "relation": "NAVIGATION_ONLY_NOT_AUTHORITATIVE",
+      "members": [
+        {"path": "reports/external_audit/workspace_external_audit_packet_20260712.md", "sha256": "2d5f067b41994c9862ee28cb051682ddf4389d1c215ca835814cc0661e32fa00"},
+        {"path": "reports/external_audit/workspace_external_audit_delivery_report_20260712.md", "sha256": "72fb96636aa17fc2a6df079e1e8b7f700c8c00d6c3a21245b551c67ba01d29a2"}
+      ]
+    },
+    {
+      "artifact_id": "PRIOR_SHARED_AUDIT_ROOT_FILES",
+      "repository": "quant-project-shared-reports",
+      "state": "SUPERSEDED_PENDING_FINAL_CONTROLLER_ROOT",
+      "reason": "F-011 shared brief root predates final controller package commits",
+      "relation": "NAVIGATION_ONLY_NOT_AUTHORITATIVE",
+      "members": [
+        {"path": "reports/2026-07-12/MANIFEST.md", "sha256": "5045ccfd902e959860450f9d931ce80f1be08662cd6ffcdefe244828f8aff818"},
+        {"path": "reports/2026-07-12/CHECKSUMS.sha256", "sha256": "8e34bde3d51fed49a72599c03f4e2a206553cd11f26d77e7c8d24ee86ef99f7b"}
+      ]
+    },
+    {
+      "artifact_id": "PUBLIC_UNCLASSIFIED_BINARY_ARTIFACTS",
+      "repository": "strategy_work+us_stock_30w",
+      "state": "PRESERVED_PENDING_LICENSE_AND_REDISTRIBUTION_DECISION",
+      "reason": "F-012 audited public refs contain 22 row-level/binary artifacts without a provenance-license manifest",
+      "relation": "REMOVE_FROM_CURRENT_PUBLIC_BRANCH_OR_CLASSIFY_BEFORE_REAUDIT_NO_HISTORY_REWRITE_WITHOUT_APPROVAL",
+      "members": [
+        {"path": "strategy_work:reports/planning/a_share_behavioral_max_skew_validation_20260710/daily_research_rows.parquet", "sha256": "c4d8fa8c34a618d84877b2fcdb1047c59cc341efaedd284a77581b8204078572"},
+        {"path": "strategy_work:reports/planning/a_share_capacity_multifactor_validation_20260710/daily_research_rows.parquet", "sha256": "cbee404f0495a397148fa1643407885f64900f3c58f03c156de39e878b8d7fa1"},
+        {"path": "strategy_work:reports/planning/a_share_csi300_pit_dividend_validation_20260710/daily_research_rows.parquet", "sha256": "fe9b04f16c7abe293387e1b167971bf0d3b1e0c97156434917c22377c48f0d67"},
+        {"path": "strategy_work:reports/planning/a_share_csi300_pit_factor_validation_20260710/daily_research_rows.parquet", "sha256": "9134c870b3a6ece5fb39a437f0b80708ab71065591e86f324ea930380a78b6e5"},
+        {"path": "strategy_work:reports/planning/a_share_csi300_pit_lowbeta_validation_20260710/daily_research_rows.parquet", "sha256": "c101f67d4099b07dccc2bf0aedf0ad9f894ea9892c62f58e5b98338225028ee6"},
+        {"path": "strategy_work:reports/planning/a_share_implied_float_smallcap_lowturn_validation_20260710/daily_research_rows.parquet", "sha256": "45c0c18a3e79ffcb3c127601facfaa8ef0b57c1b776ae4f02620b2413b1a83a6"},
+        {"path": "strategy_work:reports/planning/a_share_industry_neutral_multifactor_validation_20260710/daily_research_rows.parquet", "sha256": "8e32bc7217909f73d4d675139a54d677e450df4a1695a3273affe5f7a1881bbb"},
+        {"path": "strategy_work:reports/planning/a_share_largecap_breadth_timing_validation_20260710/daily_research_rows.parquet", "sha256": "d1a056af8822db40cae7c42cadf5b04ecfa244eab33da23623363585ca649598"},
+        {"path": "strategy_work:reports/planning/a_share_limit_event_overlay_validation_20260710/daily_event_rows.parquet", "sha256": "02c4b8636482c26c0c61135fccae06d3c1b0277f1d3fe12c9cde5457c91c30c1"},
+        {"path": "strategy_work:reports/planning/a_share_modern_largecap_lowbeta_reproduction_20260710/daily_research_rows.parquet", "sha256": "a74a40e25a0f9d4ef61307a366d75a1601366d07099efe81af7502cd590a2a7b"},
+        {"path": "strategy_work:reports/planning/a_share_overnight_intraday_validation_20260710/daily_research_rows.parquet", "sha256": "a321dd2259763e680e935d916271093ef81420ba295ad6f671b7b2f44ef9da72"},
+        {"path": "strategy_work:reports/planning/a_share_permanent_portfolio_validation_20260710/daily_paths.csv.gz", "sha256": "cedd9db8f4981301c7cab538fef3e141ab8d472d3d00e6a50187b17f8df9cd7c"},
+        {"path": "strategy_work:reports/planning/a_share_smallcap_buffered_selector_validation_20260710/candidate_rank_rows.parquet", "sha256": "9d078e7df7b3488b7709dbc6ff37db99b1ba7ff6048bd414d76f257693ecc90c"},
+        {"path": "strategy_work:reports/planning/a_share_smallcap_capacity_buffer_60d_validation_20260710/candidate_rank_rows.parquet", "sha256": "d26b626ea063d9aa971e44e046068b6e3590664d9f883b8895b4790a24e004ac"},
+        {"path": "strategy_work:reports/planning/a_share_smallcap_capacity_buffer_validation_20260710/candidate_rank_rows.parquet", "sha256": "24ac261aded036eecc0573452d708df9cdcdaac6b756dd18fc34fa16fe974805"},
+        {"path": "strategy_work:reports/planning/a_share_walkforward_ml_largecap_validation_20260710/daily_prediction_rows.parquet", "sha256": "bf09e88da94c2cd091e1b169211463be3a69d76d755c7ac730c026a7c966b953"},
+        {"path": "strategy_work:reports/planning/chan_cf_h1_pit_csi300_replication_20260710/event_outcomes.parquet", "sha256": "8e9fb0ab232bb8c0516651e2d7a96d8a9b47aebaff5f6e06b59469f7c0dc0741"},
+        {"path": "strategy_work:reports/planning/chan_structure_feature_engineering_diagnostic_20260710/confirmed_fractal_events.csv.gz", "sha256": "4a5548b8ec1291c6cd5b90cf19fc2dc7b2f3d763e894a90b63cc6454c0f39ff2"},
+        {"path": "strategy_work:reports/planning/chan_tier2_center_nonreentry_structure_20260710/confirmed_center_nonreentry_events.csv.gz", "sha256": "d4daccec335aca2e229f2731f6dbfb0a35dc6e4c40a102667226f1e0c5fa4c53"},
+        {"path": "strategy_work:reports/planning/chan_tier2_pit_csi300_replication_20260710/event_outcomes.parquet", "sha256": "e5cc6cfc359d658bf26a87851f511197470d6ea1ffb0c2df8c4d22838625220e"},
+        {"path": "us_stock_30w:data/sp500_removals_sina_data.pkl", "sha256": "a76b4004a45ea2f7377cae35e93768bce02fc4dd5b044d44817f33daebbc786b"},
+        {"path": "us_stock_30w:data/us_panel.pkl", "sha256": "5ef2171e6ab3a8e4d790badd0e77fca8c37c08cc4fa9f46a192ab698027c9680"}
+      ]
+    }
+  ],
+  "pending_inventory": []
+}

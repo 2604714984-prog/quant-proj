@@ -1,0 +1,55 @@
+{
+  "$schema": "../../schemas/remediation/evidence_status.schema.json",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "stage_status": "REMEDIATION_IN_PROGRESS",
+  "external_audit_status": "FAIL_REMEDIATION_REQUIRED",
+  "external_audit_inputs": [
+    {
+      "description": "repository-wide external audit verdict supplied by the user",
+      "sha256": "326d2455b51ab506dfa5cc4e560910eaef0df91c239f300ccc0631000a02eb76"
+    },
+    {
+      "description": "remediation and re-audit readiness plan supplied by the user",
+      "sha256": "8ec1a046eccb2c69927338b28c5a326b4dda1a8688cfc5c436ed4846a9729721"
+    }
+  ],
+  "frozen_conclusions": [
+    "NO_CURRENT_STRICTLY_VALIDATED_A_SHARE_STRATEGY_EVIDENCE",
+    "NO_CURRENT_STRICTLY_VALIDATED_US30W_FOUR_ETF_STRATEGY_EVIDENCE"
+  ],
+  "strategy_candidate_available": false,
+  "freeze": {
+    "new_strategy_families": true,
+    "new_parameter_search": true,
+    "new_llm_factor_iterations": true,
+    "rerun_us31_us36_us41_us46": true,
+    "reuse_family68_original_packet": true,
+    "candidate_promotion": true,
+    "a10_real_ticket_emission": true,
+    "public_row_level_data_publication": true,
+    "provider_network_ingestion": true,
+    "database_or_cache_write": true
+  },
+  "allowed_actions": [
+    "source_code_remediation",
+    "automated_negative_tests",
+    "tmp_only_dynamic_reproduction",
+    "documentation_and_machine_readable_governance",
+    "git_branch_commit_push_and_ci",
+    "read_only_repository_and_database_inspection"
+  ],
+  "forbidden_actions": [
+    "strategy_execution_or_outcome_reopening",
+    "recommendation_or_actionable_ranking",
+    "candidate_readiness_or_product_route_activation",
+    "broker_order_paper_live_or_auto_execution",
+    "secret_or_credential_access_or_output",
+    "provider_network_ingestion",
+    "database_cache_schema_or_raw_data_mutation"
+  ],
+  "artifact_policy": {
+    "affected_existing_artifacts": "PRESERVED_BUT_INVALIDATED",
+    "replacement_artifacts": "NEW_PATH_NEW_ID_NEW_SHA256",
+    "required_relation": "SUPERSEDES_OR_INVALIDATES_AND_DOES_NOT_REOPEN_STRATEGY"
+  }
+}

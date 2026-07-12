@@ -1,0 +1,44 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/2604714984-prog/quant-proj/schemas/remediation/evidence_status.schema.json",
+  "title": "Remediation evidence status vocabulary",
+  "type": "object",
+  "additionalProperties": true,
+  "properties": {
+    "stage_status": {
+      "enum": [
+        "REMEDIATION_IN_PROGRESS",
+        "GATE_0_FROZEN",
+        "PARTIAL_REPRODUCTION",
+        "SHADOW_AUDIT_IN_PROGRESS",
+        "RE_AUDIT_INPUT_READY"
+      ]
+    },
+    "external_audit_status": {
+      "enum": [
+        "FAIL_REMEDIATION_REQUIRED",
+        "NOT_REAUDITED",
+        "RE_AUDIT_PENDING"
+      ]
+    },
+    "evidence_tier": {
+      "enum": [
+        "ENGINEERING_SELF_CHECK",
+        "MANIFEST_VALID",
+        "EXECUTION_ATTESTED",
+        "PARTIAL_REPRODUCTION",
+        "RETROSPECTIVE_DIAGNOSTIC",
+        "STRICT_PIT",
+        "CANONICAL_EVIDENCE"
+      ]
+    },
+    "strategy_candidate_available": {
+      "const": false
+    }
+  },
+  "required": [
+    "stage_status",
+    "external_audit_status",
+    "strategy_candidate_available"
+  ]
+}
