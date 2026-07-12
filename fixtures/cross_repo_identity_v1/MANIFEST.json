@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "fixture_id": "CROSS_REPO_IDENTITY_V1",
+  "license_spdx": "CC0-1.0",
+  "synthetic_data": true,
+  "strategy_evidence": false,
+  "files": {
+    "LICENSE.txt": {
+      "bytes": 306,
+      "sha256": "7f1719d2eaaa4e29be44883c3c219a267e9247fe8ed348adc3a90b9aa7302472"
+    },
+    "corporate_actions.csv": {
+      "bytes": 245,
+      "sha256": "75e9e919389fe0dc4169413e1810101aaf12bc33cb69527ca6a953702b67de11"
+    },
+    "daily_ohlcv.csv": {
+      "bytes": 264,
+      "sha256": "143e78a1093793859e41bf3b3944a0fae4bb448428ae726b1603fcbc22c76ac2"
+    }
+  }
+}
