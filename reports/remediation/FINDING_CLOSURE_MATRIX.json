@@ -94,7 +94,7 @@
       "dynamic_reproduction": "The externally reported four attacks now fail closed through the exact factory-bound runtime; readiness remains DEVELOPMENT_ONLY unless both config and source provenance bytes match controller pins.",
       "superseded_artifacts": [], "remaining_limitations": ["No external strategy result was rerun or promoted."],
       "fix_commit": "44557c39001c90201a4ab51ce7dcff1595b10642", "fix_tree": "064b07a302039ce4296cddda16dc186725c85f2e",
-      "semantic_review": "TARGETED_REWORK_COMPLETE; importer-only closure mapping replaced by exact runtime/blob/node bindings.", "independent_acceptance": "Local implementation and independent focused suites passed; exact-head CI pending controller refresh."
+      "semantic_review": "TARGETED_REWORK_COMPLETE; importer-only closure mapping replaced by exact runtime/blob/node bindings.", "independent_acceptance": "US_Stock_Monitor full 656/656 and focused 54/54 passed; exact-head CI 29197919583 3/3 success."
     },
     {
       "finding_id": "F-009", "severity": "Medium", "repository": "strategy_work", "audited_ref": "379f1123ea0373daf6eaad51a66fd4548fa3d468", "status": "CLOSED_ACCEPTED",
