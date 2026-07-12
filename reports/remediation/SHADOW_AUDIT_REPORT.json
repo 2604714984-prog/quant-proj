@@ -1,0 +1,95 @@
+{
+  "schema_version": "internal-shadow-audit-report-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "status": "ACCEPTED_WITH_DISCLOSED_BLOCKERS",
+  "strategy_candidate_available": false,
+  "inputs": {
+    "code_dynamic_transport_commit": "a1b6bab27f6380c621e571c4202ee91bbf4a5b9f",
+    "code_dynamic_transport_tree": "927fad6a15eec7632c092d887b28824fc6d17220",
+    "code_dynamic_input_root_sha256": "1c661b7f12b08e5241189ba31f25e09df74480457c1cfcda11ea63c505be6799",
+    "package_final_reaudit_transport_commit": "5f9bde1498f614890aecadb7dac6be07314194d5",
+    "package_final_reaudit_transport_tree": "5574506d7b2cf2b76ffe44162d3543dea0d34218",
+    "package_final_input_root_sha256": "35e3c8e9fb9f6c5a3c9d19e1ba39507f3abe5082775d8cd08cc5f12fb8982ac5"
+  },
+  "audits": [
+    {
+      "role": "independent_code_dynamic_shadow",
+      "verdict": "ACCEPTED",
+      "fresh_environment": true,
+      "direct_replays": ["F-001", "F-002", "F-003", "F-005"],
+      "exact_head_ci_replays": ["F-004", "F-006", "F-007", "F-008", "F-009", "F-010", "F-012", "F-013"],
+      "results": {
+        "qrl_full_passed": 79,
+        "qrl_skipped": 0,
+        "a_share_integration_passed": 32,
+        "a_share_directed_attacks_passed": 6,
+        "a_share_skipped": 0,
+        "high_severity_sast_findings": 0,
+        "test_provenance_leaks": 0,
+        "canonical_hash_drift": 0
+      },
+      "cleanup": "PASS_TMP_ROOT_REMOVED"
+    },
+    {
+      "role": "independent_package_governance_shadow",
+      "initial_verdict": "REWORK_REQUIRED",
+      "initial_findings": [
+        "F-005 capability matrix retained pre-remediation default-enabled claims",
+        "controller secret-scan branch ref was stale after transport branch advanced"
+      ],
+      "bounded_rework_commit": "5f9bde1498f614890aecadb7dac6be07314194d5",
+      "final_verdict": "ACCEPTED",
+      "final_results": {
+        "supporting_artifact_hashes_verified": 21,
+        "json_documents_parsed": 19,
+        "repository_refs_trees_pr_heads_verified": 7,
+        "required_ci_jobs_success": 21,
+        "unexpected_skips": 0,
+        "strict_cyclonedx_1_6_sboms": 7,
+        "unclassified_current_branch_binaries": 0,
+        "stale_authoritative_refs": 0,
+        "new_critical": 0,
+        "new_high": 0
+      }
+    }
+  ],
+  "gate_counts": {
+    "new_critical": 0,
+    "new_high": 0,
+    "new_medium": 0,
+    "new_low": 0,
+    "open_original_critical": 0,
+    "open_original_high": 0,
+    "unexpected_test_skips": 0,
+    "unclassified_current_branch_binaries": 0,
+    "stale_authoritative_refs": 0,
+    "test_provenance_in_production_outputs": 0,
+    "canonical_artifact_hash_drift_across_clean_runs": 0
+  },
+  "known_blockers": [
+    {
+      "id": "HISTORICAL_SECRET_ROTATION",
+      "status": "OPEN",
+      "description": "One redacted QRL historical credential candidate requires owner revocation/rotation and separate history-governance decision."
+    },
+    {
+      "id": "A_SHARE_CANONICAL_PUBLICATION_GOVERNANCE",
+      "status": "OPEN",
+      "description": "Private deterministic engineering reproduction passed, but canonical/public row-level evidence publication remains deliberately disabled."
+    },
+    {
+      "id": "US30W_PR_INTEGRATION_REVALIDATION",
+      "status": "OPEN",
+      "description": "PR 7 exact head is accepted and CI-green but conflicts with master; any resolved head requires full revalidation."
+    }
+  ],
+  "boundary": {
+    "provider_or_network_ingestion_executed": false,
+    "strategy_or_outcome_execution": false,
+    "canonical_database_or_data_write": false,
+    "recommendation_or_candidate_promotion": false,
+    "broker_order_paper_live_auto_enabled": false,
+    "secret_value_accessed_or_output": false
+  },
+  "conclusion": "SHADOW_AUDIT_ACCEPTED_CODE_AND_PACKAGE_NO_NEW_CRITICAL_OR_HIGH_REAUDIT_STILL_BLOCKED"
+}

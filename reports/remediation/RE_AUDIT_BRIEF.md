@@ -2,7 +2,7 @@
 
 ## Status
 
-`REMEDIATION_IMPLEMENTED / SHADOW_AUDIT_PENDING / FINAL_EXTERNAL_AUDIT_NOT_PASSED`
+`REMEDIATION_IMPLEMENTED / SHADOW_AUDIT_ACCEPTED / FINAL_EXTERNAL_AUDIT_NOT_PASSED`
 
 This package does not claim that the external audit passed. It records the remediation of the 13 findings from the `REJECT_AS_FINAL_AUDIT_VERDICT / ACCEPT_AS_AUDIT_INPUT` review and keeps `strategy_candidate_available=false`.
 
@@ -66,4 +66,6 @@ The A-share repair was exercised twice in isolated private temporary roots again
 2. Canonical/public A-share row-level evidence remains disabled. The private deterministic engineering reproduction proves the repaired mechanics but does not itself authorize publication or create canonical strategy evidence.
 3. `us_stock_30w` PR 7 has an integration conflict with `master`. The exact audited head is independently accepted and CI-green, but any conflict resolution creates a new head that must be revalidated.
 
-Until these are resolved, the correct state is not `REAUDIT_READY`; it is `REMEDIATION_IMPLEMENTED_BLOCKED`, and `FINAL_EXTERNAL_AUDIT_VERDICT=NOT_YET_PASSED`.
+The independent code/dynamic and package/governance shadow audits both finished with zero new Critical or High findings. The package audit first rejected two stale representation claims; those were repaired at `5f9bde1498f614890aecadb7dac6be07314194d5` and independently reaccepted.
+
+Until the three disclosed blockers are resolved, the correct state is not `REAUDIT_READY`; it is `REMEDIATION_IMPLEMENTED_BLOCKED`, and `FINAL_EXTERNAL_AUDIT_VERDICT=NOT_YET_PASSED`.

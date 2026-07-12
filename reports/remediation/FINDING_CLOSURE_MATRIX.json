@@ -88,7 +88,7 @@
       "dynamic_reproduction": "Explicit table enum, containment and alias checks reject escape before read; conflicting observations fail closed.",
       "superseded_artifacts": [], "remaining_limitations": [],
       "fix_commit": "88ed912bc67b34214a139da799c6d456a5ac7c52", "fix_tree": "89235c2d11303ba04fe8cd8e3562d2b64de234fa",
-      "semantic_review": "Reviewed under final shadow-audit scope.", "independent_acceptance": "Exact-head CI 29186400784 3/3 success; final shadow verdict pending."
+      "semantic_review": "ACCEPTED by independent code and package shadow audits.", "independent_acceptance": "Exact-head CI 29186400784 3/3 success; final shadow verdict ACCEPTED."
     },
     {
       "finding_id": "F-009", "severity": "Medium", "repository": "strategy_work", "audited_ref": "379f1123ea0373daf6eaad51a66fd4548fa3d468", "status": "CLOSED_ACCEPTED",
@@ -98,7 +98,7 @@
       "dynamic_reproduction": "Canonical bypass is removed; diagnostic execution cannot impersonate canonical evidence.",
       "superseded_artifacts": ["FAMILY66_METHODOLOGY_RECOMPUTE_SUMMARY"], "remaining_limitations": ["Family66 remains rejected and was not rerun."],
       "fix_commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f", "fix_tree": "685f8f4d5164f4d63c51f140d030d15c462e1b7c",
-      "semantic_review": "Reviewed under final shadow-audit scope.", "independent_acceptance": "CI 29186401179 exact head 3/3 success; final shadow verdict pending."
+      "semantic_review": "ACCEPTED by independent code and package shadow audits.", "independent_acceptance": "CI 29186401179 exact head 3/3 success; final shadow verdict ACCEPTED."
     },
     {
       "finding_id": "F-010", "severity": "Medium", "repository": "cross-repository CI", "audited_ref": "workspace_external_audit_repository_manifest_20260712", "status": "CLOSED_ACCEPTED",
@@ -110,14 +110,14 @@
       "semantic_review": "Required-run and SBOM indices are machine-readable and checksum-bound.", "independent_acceptance": "Remote Actions metadata revalidated."
     },
     {
-      "finding_id": "F-011", "severity": "Medium", "repository": "quant-proj", "audited_ref": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207", "status": "IMPLEMENTED_AWAITING_FINAL_ROOT",
+      "finding_id": "F-011", "severity": "Medium", "repository": "quant-proj", "audited_ref": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207", "status": "CLOSED_ACCEPTED",
       "root_cause": "Shared briefs and manifests did not resolve through one immutable authoritative controller root.",
       "affected_paths": ["reports/remediation/FINAL_CONTROLLER_ROOT.json", "reports/remediation/CHECKSUMS.sha256", "scripts/validate_final_controller_root.py", "scripts/validate_remediation_checksums.py"], "remediation_branch": "agent/remediation-reaudit-readiness-r1-20260712",
       "positive_tests": ["offline and online immutable-ref validator", "detached checksum-chain validator"], "negative_tests": ["mutable branch drift", "stale CI", "broken artifact hash", "checksum self-reference"],
       "dynamic_reproduction": "A pinned controller code-root branch separates executable validator identity from the later transport commit, avoiding self-referential commit claims.",
-      "superseded_artifacts": ["WORKSPACE_EXTERNAL_REVIEW_BRIEF_20260712"], "remaining_limitations": ["This entry closes only when FINAL_CONTROLLER_ROOT.json and shadow report are committed, pushed and independently validated."],
+      "superseded_artifacts": ["WORKSPACE_EXTERNAL_REVIEW_BRIEF_20260712"], "remaining_limitations": ["The package transport commit is reported separately because a file cannot self-contain its own Git commit hash."],
       "fix_commit": "8247e619398a235911edeeaaaa3785dade4f9fe4", "fix_tree": "bdf17d1b22715c3ffe8296cfe976ab0f3fefdd54",
-      "semantic_review": "Controller validators accepted; final package assembly pending.", "independent_acceptance": "Pending final shadow/root acceptance."
+      "semantic_review": "Controller validators and detached transport model accepted by package shadow audit.", "independent_acceptance": "Final root and checksum chain are subject to a separate post-commit acceptance."
     },
     {
       "finding_id": "F-012", "severity": "Medium", "repository": "cross-repository data governance", "audited_ref": "workspace_external_audit_repository_manifest_20260712", "status": "CLOSED_ACCEPTED",
@@ -137,7 +137,7 @@
       "dynamic_reproduction": "Non-divisible samples reject; no observation is silently dropped.",
       "superseded_artifacts": [], "remaining_limitations": [],
       "fix_commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f", "fix_tree": "685f8f4d5164f4d63c51f140d030d15c462e1b7c",
-      "semantic_review": "Reviewed under final shadow-audit scope.", "independent_acceptance": "CI 29186401179 exact head 3/3 success; final shadow verdict pending."
+      "semantic_review": "ACCEPTED by independent code and package shadow audits.", "independent_acceptance": "CI 29186401179 exact head 3/3 success; final shadow verdict ACCEPTED."
     }
   ]
 }
