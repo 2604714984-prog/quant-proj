@@ -79,6 +79,40 @@ def test_candidate_promotion_fails(tmp_path: Path) -> None:
         validate_root(root)
 
 
+@pytest.mark.parametrize("finding_id", ["F-008", "F-009"])
+def test_load_bearing_closure_requires_exact_blob_and_runtime_binding(
+    tmp_path: Path, finding_id: str
+) -> None:
+    root = _copy_gate(tmp_path)
+    path = root / "reports" / "remediation" / "FINDING_CLOSURE_MATRIX.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    finding = next(item for item in payload["findings"] if item["finding_id"] == finding_id)
+    finding["fixed_blob_sha"] = "descriptive-not-a-blob"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="not a Git blob id"):
+        validate_root(root)
+
+    root = _copy_gate(tmp_path / "split")
+    path = root / "reports" / "remediation" / "FINDING_CLOSURE_MATRIX.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    finding = next(item for item in payload["findings"] if item["finding_id"] == finding_id)
+    finding["runtime_factory_binding"]["same_implementation"] = False
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="implementation remains split"):
+        validate_root(root)
+
+
+def test_descriptive_test_names_cannot_replace_exact_node_ids(tmp_path: Path) -> None:
+    root = _copy_gate(tmp_path)
+    path = root / "reports" / "remediation" / "FINDING_CLOSURE_MATRIX.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    finding = next(item for item in payload["findings"] if item["finding_id"] == "F-008")
+    finding["test_node_ids"] = ["CSV boundary tests pass"]
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="not exact or unique"):
+        validate_root(root)
+
+
 def test_gate0_cannot_complete_before_code_kill_switches(tmp_path: Path) -> None:
     root = _copy_gate(tmp_path)
     path = root / "reports" / "remediation" / "REMEDIATION_STAGE_POLICY.json"
