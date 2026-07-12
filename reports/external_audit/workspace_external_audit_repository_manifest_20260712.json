@@ -219,6 +219,10 @@
     "strategy_work_sha256_sidecars_verified": 43,
     "a_share_monitor_focused_tests": 2,
     "a_share_monitor_focused_tests_passed": true,
+    "strategy_work_live_reviewable_paths_present_in_snapshot": 572,
+    "strategy_work_local_tmp_paths_excluded": 24,
+    "a_share_monitor_live_reviewable_paths_present_in_snapshot": 2,
+    "a_share_monitor_local_runtime_paths_excluded": 52,
     "remote_refs_verified": true,
     "final_ci_recheck": "PASS",
     "strategy_work_ci": {
@@ -233,7 +237,8 @@
     },
     "quant_proj_audit_package_ci": {
       "status": "success",
-      "run_url": "https://github.com/2604714984-prog/quant-proj/actions/runs/29177863504"
+      "checks_url": "https://github.com/2604714984-prog/quant-proj/pull/10/checks",
+      "last_verified_run_url_before_manifest_finalization": "https://github.com/2604714984-prog/quant-proj/actions/runs/29177978580"
     }
   },
   "boundary": {
