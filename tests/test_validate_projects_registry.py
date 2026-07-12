@@ -33,3 +33,19 @@ def test_registry_rejects_unsafe_boundary_before_commit_check(monkeypatch, tmp_p
     monkeypatch.setattr(validator, "REGISTRY", _write_registry(tmp_path, payload))
     with pytest.raises(ValueError, match="daily_signal_push"):
         validator.validate(verify_local_git=False)
+
+
+def test_remote_authoritative_tree_is_verified(monkeypatch, tmp_path):
+    payload = validator.load_registry()
+    payload["projects"]["quant_research_lab"]["tree"] = "0" * 40
+    monkeypatch.setattr(validator, "REGISTRY", _write_registry(tmp_path, payload))
+    with pytest.raises(ValueError, match="pinned tree mismatch"):
+        validator.validate(verify_local_git=True)
+
+
+def test_remote_authoritative_local_tracking_ref_is_verified(monkeypatch, tmp_path):
+    payload = validator.load_registry()
+    payload["projects"]["quant_research_lab"]["upstream_ref"] = "origin/master~1"
+    monkeypatch.setattr(validator, "REGISTRY", _write_registry(tmp_path, payload))
+    with pytest.raises(ValueError, match="remote-tracking ref mismatch"):
+        validator.validate(verify_local_git=True)

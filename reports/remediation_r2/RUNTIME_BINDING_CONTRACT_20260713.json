@@ -1,0 +1,71 @@
+{
+  "schema_version": "runtime-binding-contract-v1",
+  "repository": "US_Stock_Monitor",
+  "commit": "b0e956ebfcdf29f2aedcd43e4ace610aea887ab3",
+  "sensitive_modules": [
+    "usq.data.csv_importer",
+    "usq.data.csv_provider",
+    "usq.data.data_readiness_gate",
+    "usq.data.factory",
+    "usq.data.provider_qualification",
+    "usq.research.phase_us2_candidate_gate",
+    "usq.research.phase_us2_evidence_gate"
+  ],
+  "expected_cli_functions": [
+    "cmd_data_import_csv",
+    "cmd_data_provider_qualification",
+    "cmd_data_readiness",
+    "cmd_research_phase_us2"
+  ],
+  "required_module_edges": [
+    ["usq.cli", "usq.data.csv_importer"],
+    ["usq.cli", "usq.data.provider_qualification"],
+    ["usq.cli", "usq.data.data_readiness_gate"],
+    ["usq.cli", "usq.research.phase_us2_candidate_gate"],
+    ["usq.data.csv_provider", "usq.data.csv_importer"],
+    ["usq.data.data_readiness_gate", "usq.data.provider_qualification"],
+    ["usq.data.factory", "usq.data.csv_provider"],
+    ["usq.data.provider_qualification", "usq.data.csv_importer"],
+    ["usq.data.provider_qualification", "usq.data.csv_provider"],
+    ["usq.data.provider_qualification", "usq.data.factory"],
+    ["usq.observation.runner", "usq.research.phase_us2_candidate_gate"],
+    ["usq.observation.runner", "usq.research.phase_us2_evidence_gate"],
+    ["usq.research.phase_us2_candidate_gate", "usq.data.csv_provider"],
+    ["usq.research.phase_us2_candidate_gate", "usq.data.factory"],
+    ["usq.research.phase_us2_candidate_gate", "usq.research.phase_us2_evidence_gate"],
+    ["usq.research.pipeline", "usq.data.factory"]
+  ],
+  "required_definitions": [
+    ["usq.data.factory", "get_provider"],
+    ["usq.data.provider_qualification", "qualify_providers"],
+    ["usq.research.phase_us2_candidate_gate", "run_phase_us2_evidence"],
+    ["usq.research.phase_us2_evidence_gate", "apply_evidence_gate"]
+  ],
+  "required_function_calls": [
+    ["usq.cli", "cmd_data_import_csv", "CsvImporter"],
+    ["usq.cli", "cmd_data_import_csv", "from_config"],
+    ["usq.cli", "cmd_data_provider_qualification", "qualify_providers"],
+    ["usq.cli", "cmd_data_provider_qualification", "run_data_readiness"],
+    ["usq.cli", "cmd_data_readiness", "run_data_readiness"],
+    ["usq.cli", "cmd_research_phase_us2", "run_phase_us2_evidence"],
+    ["usq.data.factory", "_csv_runtime", "read_bound_file"],
+    ["usq.data.factory", "_csv_runtime", "load_controller_authorization"],
+    ["usq.data.factory", "_csv_runtime", "CsvImporterProvider"],
+    ["usq.data.factory", "get_provider", "_csv_runtime"],
+    ["usq.data.provider_qualification", "_qualify", "get_provider"],
+    ["usq.data.provider_qualification", "_qualify", "validate_runtime"],
+    ["usq.research.phase_us2_candidate_gate", "_load_panel", "get_provider"],
+    ["usq.research.phase_us2_candidate_gate", "_load_panel", "validate_runtime"],
+    ["usq.research.phase_us2_candidate_gate", "_load_panel", "subset_panel"],
+    ["usq.research.phase_us2_candidate_gate", "run_phase_us2_evidence", "_load_panel"],
+    ["usq.research.phase_us2_candidate_gate", "run_phase_us2_evidence", "apply_evidence_gate"],
+    ["usq.research.phase_us2_evidence_gate", "apply_evidence_gate", "validate"]
+  ],
+  "required_return_calls": [
+    ["usq.data.factory", "_csv_runtime", "CsvImporterProvider"]
+  ],
+  "required_conditional_return_calls": [
+    ["usq.data.factory", "get_provider", "name", "csv", "_csv_runtime"]
+  ],
+  "strategy_candidate_available": false
+}

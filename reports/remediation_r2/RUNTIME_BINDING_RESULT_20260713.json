@@ -1,0 +1,148 @@
+{
+  "contract_sha256": "c3139235bbd7d8350276403257d9ee5ba470afd70cd9522956de928e4da5ed57",
+  "derived": {
+    "cli_sensitive_functions": [
+      "cmd_data_import_csv",
+      "cmd_data_provider_qualification",
+      "cmd_data_readiness",
+      "cmd_research_phase_us2"
+    ],
+    "conditional_return_calls": {
+      "usq.data.factory.get_provider": [
+        [
+          "name",
+          "csv",
+          "_csv_runtime"
+        ]
+      ]
+    },
+    "definitions": {
+      "usq.data.factory": [
+        "get_provider"
+      ],
+      "usq.data.provider_qualification": [
+        "qualify_providers"
+      ],
+      "usq.research.phase_us2_candidate_gate": [
+        "run_phase_us2_evidence"
+      ],
+      "usq.research.phase_us2_evidence_gate": [
+        "apply_evidence_gate"
+      ]
+    },
+    "function_calls": {
+      "usq.cli.cmd_data_import_csv": [
+        "CsvImporter",
+        "from_config"
+      ],
+      "usq.cli.cmd_data_provider_qualification": [
+        "qualify_providers",
+        "run_data_readiness"
+      ],
+      "usq.cli.cmd_data_readiness": [
+        "run_data_readiness"
+      ],
+      "usq.cli.cmd_research_phase_us2": [
+        "run_phase_us2_evidence"
+      ],
+      "usq.data.factory._csv_runtime": [
+        "CsvImporterProvider",
+        "load_controller_authorization",
+        "read_bound_file"
+      ],
+      "usq.data.factory.get_provider": [
+        "_csv_runtime"
+      ],
+      "usq.data.provider_qualification._qualify": [
+        "get_provider",
+        "validate_runtime"
+      ],
+      "usq.research.phase_us2_candidate_gate._load_panel": [
+        "get_provider",
+        "subset_panel",
+        "validate_runtime"
+      ],
+      "usq.research.phase_us2_candidate_gate.run_phase_us2_evidence": [
+        "_load_panel",
+        "apply_evidence_gate"
+      ],
+      "usq.research.phase_us2_evidence_gate.apply_evidence_gate": [
+        "validate"
+      ]
+    },
+    "return_calls": {
+      "usq.data.factory._csv_runtime": [
+        "CsvImporterProvider"
+      ]
+    },
+    "sensitive_module_edges": [
+      [
+        "usq.cli",
+        "usq.data.csv_importer"
+      ],
+      [
+        "usq.cli",
+        "usq.data.data_readiness_gate"
+      ],
+      [
+        "usq.cli",
+        "usq.data.provider_qualification"
+      ],
+      [
+        "usq.cli",
+        "usq.research.phase_us2_candidate_gate"
+      ],
+      [
+        "usq.data.csv_provider",
+        "usq.data.csv_importer"
+      ],
+      [
+        "usq.data.data_readiness_gate",
+        "usq.data.provider_qualification"
+      ],
+      [
+        "usq.data.factory",
+        "usq.data.csv_provider"
+      ],
+      [
+        "usq.data.provider_qualification",
+        "usq.data.csv_importer"
+      ],
+      [
+        "usq.data.provider_qualification",
+        "usq.data.csv_provider"
+      ],
+      [
+        "usq.data.provider_qualification",
+        "usq.data.factory"
+      ],
+      [
+        "usq.observation.runner",
+        "usq.research.phase_us2_candidate_gate"
+      ],
+      [
+        "usq.observation.runner",
+        "usq.research.phase_us2_evidence_gate"
+      ],
+      [
+        "usq.research.phase_us2_candidate_gate",
+        "usq.data.csv_provider"
+      ],
+      [
+        "usq.research.phase_us2_candidate_gate",
+        "usq.data.factory"
+      ],
+      [
+        "usq.research.phase_us2_candidate_gate",
+        "usq.research.phase_us2_evidence_gate"
+      ],
+      [
+        "usq.research.pipeline",
+        "usq.data.factory"
+      ]
+    ]
+  },
+  "schema_version": "runtime-binding-result-v1",
+  "source_commit": "b0e956ebfcdf29f2aedcd43e4ace610aea887ab3",
+  "strategy_candidate_available": false
+}

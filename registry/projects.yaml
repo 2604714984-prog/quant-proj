@@ -1,4 +1,4 @@
-generated_at: "2026-07-13T01:18:39+08:00"
+generated_at: "2026-07-13T03:05:52+08:00"
 workspace_root: "/home/rongyu/workspace"
 registry_kind: "live_source_commit_registry"
 decision: "source repositories are authoritative; R2 audit refs are frozen separately in reports/remediation_r2/R2_BASELINE_FREEZE_20260713.json"
@@ -31,12 +31,12 @@ projects:
     research_status: "no accepted strategy candidate"
 
   us_stock_monitor:
-    path: "/home/rongyu/workspace/US_Stock_Monitor"
+    path: "/home/rongyu/workspace/.wt-remediation-r2-usm-authority-lineage-20260713"
     role: "US equity research source and read-only central-data consumer"
-    branch: "main"
-    commit: "681d3a54662c79162e0477fda2a2aa8efeff0c47"
-    tree: "511b44ba513267ad6661e47e1fa5e3859e3af487"
-    upstream_ref: "origin/main"
+    branch: "agent/remediation-r2-usm-authority-lineage-20260713"
+    commit: "b0e956ebfcdf29f2aedcd43e4ace610aea887ab3"
+    tree: "35615365f9540b5cd27403dcc1c4dedded97b0c1"
+    upstream_ref: "origin/agent/remediation-r2-usm-authority-lineage-20260713"
     working_tree: "clean at refresh"
     research_status: "no strictly validated US strategy"
 
@@ -52,37 +52,48 @@ projects:
 
   market_data:
     path: "/home/rongyu/workspace/market_data"
-    role: "registry/read-only access gate and designated isolated central writer implementation repository"
+    role: "registry and read-only central-data access gate"
     branch: "codex/r28-smallcap-evidence-contract-20260709"
     commit: "398c84440621db531c5801326acc417751e88665"
     tree: "d87c6738d0fa4a388aadf1522d2834039c5293f4"
     upstream_ref: "origin/codex/r28-smallcap-evidence-contract-20260709"
     working_tree: "clean at refresh"
-    central_writer_status: "implementation boundary selected; publisher disabled pending Gate B"
+    central_writer_status: "not a writer; publisher implementation moved to central-data-ingestion"
+
+  central_data_ingestion:
+    path: "/home/rongyu/workspace/central-data-ingestion"
+    role: "private bounded staging collector and sole future central publisher implementation boundary"
+    branch: "main"
+    commit: "287416f79cd1fcb1c066f25fa7bbaedc574b0ce9"
+    tree: "c2a62d079bcb08b04b2425c7160bf9ca8344038a"
+    upstream_ref: "origin/main"
+    working_tree: "clean at refresh"
+    central_writer_status: "Wave 1 staging accepted; publisher absent and disabled pending Gate B"
 
   quant_research_lab:
     path: "/home/rongyu/workspace/quant_research_lab"
     role: "research laboratory and read-only central-data consumer"
     branch: "master"
-    commit: "e95d21e585513b91237b696fdf305b0239f73c23"
-    tree: "4ac13db6d8b8dc4f9f4ad36f2b2b39d11c83ab6d"
+    commit: "2a873848ef67a8b7f7509826a22818ce86cbae13"
+    tree: "b6fd417292a658c77b95aa6769fb0ead9f654595"
     upstream_ref: "origin/master"
-    working_tree: "clean at refresh"
+    working_tree: "authoritative remote ref; local checkout may lag and is not dispatch evidence"
+    identity_kind: "remote_ref_authoritative"
     research_status: "research-only"
 
   strategy_work:
-    path: "/home/rongyu/workspace/strategy_work"
+    path: "/home/rongyu/workspace/.wt-remediation-r2-strategy-data-governance-20260713"
     role: "strategy research/evidence synthesis and read-only central-data consumer"
-    branch: "agent/live-strategy-research-preservation-20260712"
-    commit: "a27e35b59ef8b59d0771bcf019534ca93748bbcc"
-    tree: "1439e27f10bce9d24d091ecada28116092f145a5"
-    upstream_ref: "origin/agent/live-strategy-research-preservation-20260712"
+    branch: "agent/remediation-r2-strategy-data-governance-20260713"
+    commit: "4ded0eb006908f4ba6692b146bcfed10a0bf3133"
+    tree: "d2547fefdbbbda99a1104bec4a9fa1821a6fb169"
+    upstream_ref: "origin/agent/remediation-r2-strategy-data-governance-20260713"
     working_tree: "clean at refresh"
     research_status: "no strictly validated strategy"
 
 central_database:
   path: "/home/rongyu/workspace/quant_data/quant_research.duckdb"
-  access: "single-writer market_data; all research repositories read-only"
+  access: "single future writer central-data-ingestion; publisher absent/disabled; all other repositories read-only"
   sha256: "65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5"
   bytes: 1001926656
   publisher_enabled: false
