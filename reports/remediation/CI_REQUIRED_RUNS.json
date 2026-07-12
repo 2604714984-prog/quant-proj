@@ -1,0 +1,72 @@
+{
+  "schema_version": "remediation-required-ci-runs-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "required_jobs": [
+    "static-unit",
+    "integration-identity",
+    "controlled-fixture-reproduction"
+  ],
+  "action_pins": {
+    "actions/checkout": "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+    "actions/setup-python": "ece7cb06caefa5fff74198d8649806c4678c61a1"
+  },
+  "repositories": [
+    {
+      "name": "quant-proj",
+      "commit": "8247e619398a235911edeeaaaa3785dade4f9fe4",
+      "run_id": 29187974994,
+      "url": "https://github.com/2604714984-prog/quant-proj/actions/runs/29187974994",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 137, "integration_passed": 39, "unexpected_skips": 0}
+    },
+    {
+      "name": "A_Share_Monitor",
+      "commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556",
+      "run_id": 29187211346,
+      "url": "https://github.com/2604714984-prog/A_Share_Monitor/actions/runs/29187211346",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"independent_full_suite_passed": 616, "integration_passed": 32, "fixture_passed": 6, "unexpected_skips": 0}
+    },
+    {
+      "name": "market_data",
+      "commit": "17409f952209244862b92dd893ead88cd073b4d7",
+      "run_id": 29187805453,
+      "url": "https://github.com/2604714984-prog/market_data/actions/runs/29187805453",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 202, "integration_passed": 33, "fixture_passed": 58, "unexpected_skips": 0}
+    },
+    {
+      "name": "quant_research_lab",
+      "commit": "7362ce219dc4c426e1b58e42a82e90ce73d04d59",
+      "run_id": 29188946281,
+      "url": "https://github.com/2604714984-prog/quant_research_lab/actions/runs/29188946281",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 79, "integration_passed": 56, "fixture_passed": 11, "unexpected_skips": 0}
+    },
+    {
+      "name": "strategy_work",
+      "commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f",
+      "run_id": 29186401179,
+      "url": "https://github.com/2604714984-prog/strategy_work/actions/runs/29186401179",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 345, "integration_passed": 18, "fixture_passed": 2, "unexpected_skips": 0}
+    },
+    {
+      "name": "US_Stock_Monitor",
+      "commit": "88ed912bc67b34214a139da799c6d456a5ac7c52",
+      "run_id": 29186400784,
+      "url": "https://github.com/2604714984-prog/US_Stock_Monitor/actions/runs/29186400784",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"unexpected_skips": 0}
+    },
+    {
+      "name": "us_stock_30w",
+      "commit": "42e41f509d1d336714980d8fb37603ba090ec07d",
+      "run_id": 29188314531,
+      "url": "https://github.com/2604714984-prog/us_stock_30w/actions/runs/29188314531",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 117, "integration_passed": 97, "fixture_passed": 17, "unexpected_skips": 0}
+    }
+  ],
+  "conclusion": "ALL_REQUIRED_EXACT_HEAD_JOBS_SUCCESS_ZERO_UNEXPECTED_SKIPS"
+}

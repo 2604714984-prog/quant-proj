@@ -4,6 +4,15 @@
   "inventory_complete": true,
   "strategy_candidate_available": false,
   "default_state": "PRESERVED_BUT_INVALIDATED",
+  "remediation_closure": {
+    "a_share_code_commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556",
+    "quant_research_lab_code_commit": "7362ce219dc4c426e1b58e42a82e90ce73d04d59",
+    "market_data_code_commit": "17409f952209244862b92dd893ead88cd073b4d7",
+    "family66_method_code_commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f",
+    "private_a_share_reproduction_classification": "ENGINEERING_SELF_CHECK_DOES_NOT_REOPEN_STRATEGY",
+    "old_artifacts_restored_or_overwritten": false,
+    "frozen_strategy_outcomes_reopened": false
+  },
   "entries": [
     {
       "artifact_id": "QRL_FACTOR_MINING_RESULT_20260710",
