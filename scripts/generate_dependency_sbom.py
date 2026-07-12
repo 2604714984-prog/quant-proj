@@ -9,6 +9,7 @@ from importlib import metadata
 import json
 from pathlib import Path
 import re
+import uuid
 
 
 LOCK_LINE = re.compile(r"^([A-Za-z0-9_.-]+)==([^\\\s]+)\s*(?:\\)?$")
@@ -117,11 +118,13 @@ def build_sbom(
     return {
         "bomFormat": "CycloneDX",
         "specVersion": "1.6",
-        "serialNumber": (
-            "urn:uuid:"
-            + hashlib.sha256(
-                f"{repository}|{commit}|{tree}|{sha256_file(lock_path)}".encode()
-            ).hexdigest()[:32]
+        "serialNumber": "urn:uuid:"
+        + str(
+            uuid.UUID(
+                hex=hashlib.sha256(
+                    f"{repository}|{commit}|{tree}|{sha256_file(lock_path)}".encode()
+                ).hexdigest()[:32]
+            )
         ),
         "version": 1,
         "metadata": {
