@@ -64,10 +64,10 @@
     }
   ],
   "artifacts": [
-    {"path": "reports/remediation/RE_AUDIT_BRIEF.md", "sha256": "9fb223bb735f34cfe6c852d980a182574b434bfdc885f708f5e4e0cf7473f14b"},
+    {"path": "reports/remediation/RE_AUDIT_BRIEF.md", "sha256": "5b1c529d6eddcd37bdb6c6f569df67a81b15a6ce0faab12186564c321150a99e"},
     {"path": "reports/remediation/EXTERNAL_REAUDIT_VERDICT_20260712.md", "sha256": "744b09c877bf437e6efd49c434566d1a8e0ee49377283afa5683570ea484da9a"},
-    {"path": "reports/remediation/EXTERNAL_REAUDIT_FINDINGS_20260712.json", "sha256": "fc205674243c9fc448dfc5de4eb4e62a585254a481601403de8f133d07c92659"},
-    {"path": "reports/remediation/DATA_ROOM_EXTERNAL_ACCESS_INDEX_20260712.json", "sha256": "65c1a800919cffb1ba38a4ba91e7b0264776a8d6703cfddae68e01eb42e43a59"},
+    {"path": "reports/remediation/EXTERNAL_REAUDIT_FINDINGS_20260712.json", "sha256": "9ef9ad51241d815421258c4c72e177ccbe040929cedac9058aa29fa5d900489c"},
+    {"path": "reports/remediation/DATA_ROOM_EXTERNAL_ACCESS_INDEX_20260712.json", "sha256": "8cc67819a333ab530c9d1f0bd5863db83dd65b2e4be65a0e1dbadc9f71ff9a80"},
     {"path": "reports/remediation/CREDENTIAL_REVOCATION_ATTESTATION.json", "sha256": "5d7ae18647f720ae76790338d916757771a7cff8da68a99a66e2f7aa229b611e"},
     {"path": "reports/remediation/A_SHARE_CANONICAL_EVIDENCE_PUBLICATION_INDEX.json", "sha256": "6011ed9eaad1e595367059e0d276836e94db9a0dde6751dbeec275e21a749d0e"},
     {"path": "reports/remediation/FINDING_CLOSURE_MATRIX.json", "sha256": "be6e0100a16cd6ab424aea5acf48cd7593c7255d3f04ad6b7e1a7b0d7e786510"},

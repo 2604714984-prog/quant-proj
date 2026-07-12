@@ -56,7 +56,7 @@
     {
       "id": "EA-001",
       "severity": "ExternalEvidenceBlocker",
-      "status": "EXTERNAL_READONLY_PACKAGE_READY_VERIFICATION_PENDING",
+      "status": "PRIVATE_GITHUB_RELEASE_PUBLISHED_VERIFICATION_PENDING",
       "repository": "A_Share_Monitor",
       "title": "Controlled data-room bytes and publisher source object not independently verified",
       "linked_original_findings": ["F-001"],

@@ -1,10 +1,23 @@
 {
   "schema_version": "controlled-data-room-external-access-index-v1",
   "finding_id": "EA-001",
-  "status": "EA001_EXTERNAL_READONLY_PACKAGE_READY",
+  "status": "EA001_PRIVATE_GITHUB_RELEASE_PUBLISHED",
   "external_verification_status": "PENDING_EXTERNAL_REVIEWER_BYTE_VERIFICATION",
   "data_room_root": "/home/rongyu/workspace/.private_quant_inputs/a_share_canonical_evidence_bundle",
   "access_model": "owner_granted_read_only_out_of_band",
+  "private_github_distribution": {
+    "repository": "2604714984-prog/a-share-canonical-evidence-data-room",
+    "repository_url": "https://github.com/2604714984-prog/a-share-canonical-evidence-data-room",
+    "visibility": "PRIVATE",
+    "main_commit": "a7502f648f790b392cec2a394921511d17c76878",
+    "main_tree": "0a19f50cb0afb32efba194190b05bfc5d4d6c2de",
+    "release_tag": "a-share-canonical-evidence-20260712",
+    "release_id": 352786445,
+    "release_url": "https://github.com/2604714984-prog/a-share-canonical-evidence-data-room/releases/tag/a-share-canonical-evidence-20260712",
+    "asset_count": 10,
+    "asset_states": "ALL_UPLOADED",
+    "github_reported_sha256_digests_match_local_manifest": true
+  },
   "root_mode": "0700",
   "file_mode": "0600",
   "private_artifacts": {
