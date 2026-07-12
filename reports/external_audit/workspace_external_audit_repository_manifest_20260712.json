@@ -1,0 +1,230 @@
+{
+  "schema_version": "workspace-external-audit-manifest-v1",
+  "generated_at": "2026-07-12T11:06:15+08:00",
+  "owner": "2604714984-prog",
+  "audit_mode": "github_file_and_history_review",
+  "research_only": true,
+  "strategy_candidate_available": false,
+  "canonical_conclusions": [
+    "NO_CURRENT_STRICTLY_VALIDATED_A_SHARE_STRATEGY_EVIDENCE",
+    "NO_CURRENT_STRICTLY_VALIDATED_US30W_FOUR_ETF_STRATEGY_EVIDENCE"
+  ],
+  "repositories": [
+    {
+      "name": "quant-proj",
+      "url": "https://github.com/2604714984-prog/quant-proj",
+      "visibility": "PRIVATE",
+      "default_branch": "main",
+      "default_head": "56b799643b522e5a3e3dcb30c7a634e290344e9c",
+      "audit_refs": {
+        "codex/controller-integrity-fixes-20260711": "f8507992a429cecbe49108e09344cdf3b4bcdf99",
+        "codex/sol-luna-collaboration-routing-20260710": "13b13a3757f446f97b2b9e3d8e39c98ca247a4b5",
+        "codex/us30w-a1-executor-20260712": "61dcb1ebd7aa59b51f9c1e1f231c0eb0a66c852a"
+      },
+      "role": "controller_and_audit_entrypoint"
+    },
+    {
+      "name": "strategy_work",
+      "url": "https://github.com/2604714984-prog/strategy_work",
+      "visibility": "PUBLIC",
+      "default_branch": "main",
+      "default_head": "a050e20ba50ada3f8bb052585c667770dac2c2c4",
+      "audit_refs": {
+        "agent/external-audit-evidence-20260712": "379f1123ea0373daf6eaad51a66fd4548fa3d468",
+        "codex/strategy-lineage-final-evidence-20260712": "b95323d428ddcf275334b1b7d6d8b415d66818f9",
+        "codex/family68-v21-method-amendment-20260711": "2d1d1f102019de8e858ae8444013cc0ad91526a5",
+        "codex/qts-stats-salvage-r1-20260711": "85a2b3fe75b77b059c6a3e1d6ae19981fe08eaa5",
+        "codex/tushare-15000-plan-20260712": "e0af738a0b744bc21ef308a77ce822258c1d14ee"
+      },
+      "draft_pr": "https://github.com/2604714984-prog/strategy_work/pull/10",
+      "role": "canonical_strategy_evidence"
+    },
+    {
+      "name": "A_Share_Monitor",
+      "url": "https://github.com/2604714984-prog/A_Share_Monitor",
+      "visibility": "PRIVATE",
+      "default_branch": "main",
+      "default_head": "ab12cf99331a39a1396c7c7f885072a9f0f68c08",
+      "audit_refs": {
+        "agent/external-audit-evidence-20260712": "e81f50c19c8e6e71ae6585eeb6dbbb10db86fd95",
+        "codex/fix-security-audit-20260711": "8489ca0523b909a379a2187b90033ce170ab7060",
+        "codex/baostock-fundamental-smoke-code-20260710": "b995d04faf700bbce2f61e46f032b1e7bf13063a"
+      },
+      "draft_pr": "https://github.com/2604714984-prog/A_Share_Monitor/pull/6",
+      "role": "a_share_data_and_research_implementation"
+    },
+    {
+      "name": "US_Stock_Monitor",
+      "url": "https://github.com/2604714984-prog/US_Stock_Monitor",
+      "visibility": "PRIVATE",
+      "default_branch": "main",
+      "default_head": "872f54211e56a162e713d987d904b49d2521bd25",
+      "audit_refs": {
+        "codex/qts-us-edgar-salvage-r1-20260711": "e396e09882afc942f4a4b2cf5884849b77b2dea7",
+        "codex/us-monitor-security-fixes-20260711": "a9205204f741a8b6707489a3b749beb79255544d"
+      },
+      "role": "us_data_and_pit_implementation"
+    },
+    {
+      "name": "us_stock_30w",
+      "url": "https://github.com/2604714984-prog/us_stock_30w",
+      "visibility": "PUBLIC",
+      "default_branch": "master",
+      "default_head": "62abe5ba0213e9e7a8ade69db423fc71a3746357",
+      "audit_refs": {
+        "agent/external-audit-reasonix-ds-snapshot-20260712": "8a9151acc473c8aebb75a08fbe46c7dbf797b653",
+        "codex/us30w-boundary-fixes-20260711": "13722c4e70eb31463d55c47655a50c8100da18e2",
+        "codex/us30w-runtime-boundary-20260711": "1469ae90fda929e3534e6ed768448e989551b0c8",
+        "codex/us30w-default-runtime-boundary-20260711": "c6b91af75fba9fc22a41c82d750ddfbac9482db2"
+      },
+      "role": "us30w_strategy_specification_and_negative_evidence"
+    },
+    {
+      "name": "market_data",
+      "url": "https://github.com/2604714984-prog/market_data",
+      "visibility": "PRIVATE",
+      "default_branch": "main",
+      "default_head": "300d4cf902cafc7f8462991e761e658febdc1424",
+      "audit_refs": {
+        "codex/market-data-security-fixes-20260711": "3a1cce0ed09b9b57d46c4a1621a9f0d4afcc9df6",
+        "codex/r28-smallcap-evidence-contract-20260709": "398c84440621db531c5801326acc417751e88665"
+      },
+      "role": "source_registry_and_central_warehouse_tooling"
+    },
+    {
+      "name": "quant_research_lab",
+      "url": "https://github.com/2604714984-prog/quant_research_lab",
+      "visibility": "PUBLIC",
+      "default_branch": "master",
+      "default_head": "2a873848ef67a8b7f7509826a22818ce86cbae13",
+      "audit_refs": {
+        "codex/security-pit-fixes-20260711": "1cd6b74ab2e64930939d409fb3ffafa6e570c84b"
+      },
+      "role": "isolated_research_sandbox"
+    },
+    {
+      "name": "STRATEGY_VAULT",
+      "url": "https://github.com/2604714984-prog/STRATEGY_VAULT",
+      "visibility": "PRIVATE",
+      "default_branch": "main",
+      "default_head": "f0c9d4cb4d94d89054063d6a127bb54e39c62a59",
+      "default_tree": "d9a1feba7ece49a68bf2a9e52589df351f26ef02",
+      "audit_refs": {
+        "legacy/pre-external-audit": "d5698a457dfbe08513a08d75715f647eff802194"
+      },
+      "role": "boundary_hardened_private_archive"
+    },
+    {
+      "name": "qts",
+      "url": "https://github.com/2604714984-prog/qts",
+      "visibility": "PRIVATE",
+      "archived": true,
+      "default_branch": "main",
+      "default_head": "3565b0b927e75625c77480f619b3f4700530965f",
+      "audit_refs": {
+        "codex/archive-qts-prototype-20260711": "954d2ae93f572cc027ccabc2b54bca51e495d4b3"
+      },
+      "role": "archived_prototype_reference"
+    },
+    {
+      "name": "quant",
+      "url": "https://github.com/2604714984-prog/quant",
+      "visibility": "PRIVATE",
+      "archived": true,
+      "default_branch": "main",
+      "default_head": "0fc63bf9e6450aff0e635b48792fb18ec5935dfb",
+      "audit_refs": {
+        "codex/legacy-quant-archive-r1-20260711": "217444189674367cee06c1370a6cab79d509bf7b"
+      },
+      "role": "archived_legacy_reference"
+    },
+    {
+      "name": "RD-Agent",
+      "url": "https://github.com/2604714984-prog/RD-Agent",
+      "visibility": "PUBLIC",
+      "fork": true,
+      "default_branch": "main",
+      "audit_refs": {
+        "codex/rdagent-security-recovery-20260711": "1aa1857af7bdb406a147a456871be37b41e671ff",
+        "codex/rdagent-audit-closeout-20260711": "e927d873c4280ea5b001f0bb2d0592a61636a570",
+        "agent/external-audit-security-draft-20260712": "aa39c94a550b1bbb7e9ce0dc906b3fa874283c29",
+        "agent/external-audit-local-compat-draft-20260712": "92aa18336f943c4f83fdea49843151dabd254bbb"
+      },
+      "role": "noncanonical_reference_fork",
+      "status": "PRESERVED_WITH_DRAFTS_EXPLICITLY_UNACCEPTED"
+    },
+    {
+      "name": "FinGPT",
+      "url": "https://github.com/2604714984-prog/FinGPT",
+      "visibility": "PUBLIC",
+      "fork": true,
+      "default_branch": "master",
+      "audit_refs": {
+        "codex/fingpt-security-fixes-20260711": "c817bd48e2ee52430d0a3e35cc4f782930222c09",
+        "codex/fingpt-audit-closeout-20260711": "218690148ad924f068605762b6f4bdcb67f2505a",
+        "agent/external-audit-token-placeholder-removal-20260712": "aef3ee8236f8b813009340b1a55f49c3d511baef"
+      },
+      "role": "noncanonical_reference_fork",
+      "status": "PRESERVED_IN_OWNER_CONTROLLED_FORK"
+    },
+    {
+      "name": "global-stock-data",
+      "url": "https://github.com/simonlin1212/global-stock-data",
+      "external_upstream": true,
+      "local_changes": false,
+      "role": "unmodified_external_reference"
+    },
+    {
+      "name": "quant-project-shared-reports",
+      "url": "https://github.com/2604714984-prog/quant-project-shared-reports",
+      "visibility": "PRIVATE",
+      "default_branch": "main",
+      "role": "human_readable_cross_project_reports",
+      "status": "PENDING_FINAL_REPORT_REF_INSERTION"
+    }
+  ],
+  "publication_exclusions": [
+    "credentials_and_tokens",
+    "environment_secret_files",
+    "private_hg_and_authorization_records",
+    "private_identifier_manifests",
+    "duckdb_sqlite_and_raw_databases",
+    "parquet_and_provider_payload_caches",
+    "licensed_or_redistribution_restricted_data",
+    "virtual_environments",
+    "logs_and_browser_session_state",
+    "duckdb_temporary_spill_files",
+    "build_and_test_caches",
+    "files_over_github_practical_limits"
+  ],
+  "validation": {
+    "strategy_work_local_tests": 341,
+    "strategy_work_local_tests_passed": true,
+    "strategy_work_ruff_passed": true,
+    "strategy_work_json_files_parsed": 119,
+    "strategy_work_sha256_sidecars_verified": 43,
+    "a_share_monitor_focused_tests": 2,
+    "a_share_monitor_focused_tests_passed": true,
+    "remote_refs_verified": true,
+    "final_ci_recheck": "PASS",
+    "strategy_work_ci": {
+      "status": "success",
+      "run_url": "https://github.com/2604714984-prog/strategy_work/actions/runs/29177722077",
+      "tests_passed": 338,
+      "tests_skipped_missing_external_fixtures": 3
+    },
+    "a_share_monitor_ci": {
+      "status": "success",
+      "run_url": "https://github.com/2604714984-prog/A_Share_Monitor/actions/runs/29177533987"
+    }
+  },
+  "boundary": {
+    "provider_execution": false,
+    "database_write": false,
+    "strategy_execution": false,
+    "recommendation": false,
+    "candidate_promotion": false,
+    "readiness_activation": false,
+    "broker_order_paper_live_auto": false
+  }
+}
