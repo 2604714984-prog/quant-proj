@@ -41,9 +41,17 @@
   "zero_row_tables_omitted_from_compact_counts": 9,
   "backup": {
     "path": "/home/rongyu/workspace/quant_data/backups/quant_research_before_remediation_r2_20260713_65e2c1354380.duckdb",
-    "status": "PENDING_RECORDED_EXECUTION",
+    "status": "PASS_BYTE_IDENTICAL",
     "expected_sha256": "65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5",
-    "expected_bytes": 1001926656
+    "expected_bytes": 1001926656,
+    "actual_sha256": "65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5",
+    "actual_bytes": 1001926656,
+    "actual_mode": "0600",
+    "writer_lock_acquired": true,
+    "source_unchanged": true,
+    "partial_residue_count": 0,
+    "transcript_path": "reports/remediation_r2/central_db_baseline_backup_transcript_20260713.txt",
+    "transcript_sha256": "5bb023ca357aacb924de58c951c0beb08c76a66f064612fb9088a0fd8dbe1da8"
   },
   "consumer_compatibility": "NOT_CHANGED_WAVE0",
   "network_calls": 0,
