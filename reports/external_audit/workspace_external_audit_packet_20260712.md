@@ -107,6 +107,7 @@ Bounded route studies were single-use and fail-closed. Official source surfaces 
 - Controller factory contracts: `quant-proj` branch `codex/sol-luna-collaboration-routing-20260710`, commit `13b13a3757f446f97b2b9e3d8e39c98ca247a4b5`.
 - Repository-wide manifest: `workspace_external_audit_repository_manifest_20260712.json` beside this packet.
 - Human-readable cross-project brief: `quant-project-shared-reports` Draft PR #1, commit `9909010902f84aa5f454932d9a97fc8f7f32dd4c`.
+- Post-publication local cleanup evidence: `workspace_untracked_cleanup_20260712.md`; zero Git-visible untracked files across 70 worktrees and approximately 103.48 GiB reclaimed.
 
 ## Reproduction and validation expectations
 

@@ -1,6 +1,6 @@
 {
   "schema_version": "workspace-external-audit-manifest-v1",
-  "generated_at": "2026-07-12T11:13:56+08:00",
+  "generated_at": "2026-07-12T11:38:13+08:00",
   "owner": "2604714984-prog",
   "audit_mode": "github_file_and_history_review",
   "research_only": true,
@@ -239,6 +239,28 @@
       "status": "success",
       "checks_url": "https://github.com/2604714984-prog/quant-proj/pull/10/checks",
       "last_verified_run_url_before_manifest_finalization": "https://github.com/2604714984-prog/quant-proj/actions/runs/29177978580"
+    }
+  },
+  "post_publication_cleanup": {
+    "status": "COMPLETE_WITH_ZERO_GIT_VISIBLE_UNTRACKED",
+    "audited_repository_roots": 14,
+    "audited_valid_worktrees": 70,
+    "final_git_visible_untracked": 0,
+    "status_errors": 0,
+    "bytes_reclaimed": 111110208530,
+    "approximate_gib_reclaimed": 103.48,
+    "stale_worktree_records_pruned": 3,
+    "remaining_tracked_changes": {
+      "repository": "RD-Agent",
+      "count": 5,
+      "pre_existing": true,
+      "preserved_ref": "agent/external-audit-local-compat-draft-20260712",
+      "preserved_commit": "92aa18336f943c4f83fdea49843151dabd254bbb"
+    },
+    "preservation_refs": {
+      "strategy_work": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "A_Share_Monitor": "1a64e70873fc8a3c3d998e509cbcf690010ffef0",
+      "us_stock_30w": "7d72ff9d17c05d88390d5d8df4cae300b4b0a758"
     }
   },
   "boundary": {
