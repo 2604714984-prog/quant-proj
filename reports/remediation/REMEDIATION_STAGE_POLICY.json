@@ -18,6 +18,14 @@
     "NO_CURRENT_STRICTLY_VALIDATED_US30W_FOUR_ETF_STRATEGY_EVIDENCE"
   ],
   "strategy_candidate_available": false,
+  "gate0": {
+    "baseline_manifest_valid": true,
+    "artifact_invalidation_inventory_complete": true,
+    "boundary_adr_accepted": true,
+    "finding_tracker_complete": true,
+    "code_kill_switches_complete": false,
+    "gate0_complete": false
+  },
   "freeze": {
     "new_strategy_families": true,
     "new_parameter_search": true,

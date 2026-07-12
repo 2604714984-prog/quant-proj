@@ -77,3 +77,14 @@ def test_candidate_promotion_fails(tmp_path: Path) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="must be false"):
         validate_root(root)
+
+
+def test_gate0_cannot_complete_before_code_kill_switches(tmp_path: Path) -> None:
+    root = _copy_gate(tmp_path)
+    path = root / "reports" / "remediation" / "REMEDIATION_STAGE_POLICY.json"
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    payload["gate0"]["gate0_complete"] = True
+    payload["gate0"]["code_kill_switches_complete"] = False
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="code kill-switches"):
+        validate_root(root)

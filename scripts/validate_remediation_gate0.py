@@ -62,6 +62,19 @@ def validate_root(root: Path) -> None:
         raise ValueError("exactly two user-supplied audit inputs are required")
     if any(not SHA256_RE.fullmatch(str(item.get("sha256", ""))) for item in inputs):
         raise ValueError("audit input hashes must be lowercase SHA-256")
+    gate0 = policy.get("gate0")
+    if not isinstance(gate0, dict):
+        raise ValueError("policy.gate0 is required")
+    control_fields = {
+        "baseline_manifest_valid",
+        "artifact_invalidation_inventory_complete",
+        "boundary_adr_accepted",
+        "finding_tracker_complete",
+    }
+    if any(gate0.get(field) is not True for field in control_fields):
+        raise ValueError("Gate 0 control artifacts are incomplete")
+    if gate0.get("gate0_complete") is True and gate0.get("code_kill_switches_complete") is not True:
+        raise ValueError("Gate 0 cannot complete before code kill-switches")
 
     repositories = baseline.get("repositories")
     if not isinstance(repositories, list):
@@ -156,7 +169,9 @@ def main() -> int:
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parents[1])
     args = parser.parse_args()
     validate_root(args.root)
-    print("remediation Gate 0: VALID")
+    policy = _read_json(args.root / "reports" / "remediation" / "REMEDIATION_STAGE_POLICY.json")
+    complete = policy["gate0"]["gate0_complete"]
+    print(f"remediation Gate 0 control artifacts: VALID; gate0_complete={str(complete).lower()}")
     return 0
 
 
