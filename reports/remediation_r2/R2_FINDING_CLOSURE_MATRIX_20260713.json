@@ -1,0 +1,25 @@
+{
+  "schema_version": "repository-wide-remediation-r2-closure-matrix-v1",
+  "stage_id": "REPOSITORY_WIDE_REMEDIATION_R2_AND_TUSHARE_BACKFILL",
+  "generated_at": "2026-07-13T01:18:39+08:00",
+  "strategy_candidate_available": false,
+  "findings": [
+    {"id":"RW-001","severity":"High","title":"real-data authority and file identity","repository":"US_Stock_Monitor","status":"OPEN_IMPLEMENTATION_REQUIRED","required_tasks":["USM-101","USM-102","USM-103","USM-104"],"required_dynamic_attacks":["self_authored_provenance_and_pin","config_hash_then_path_swap","csv_parse_then_path_swap","sidecar_swap","symlink_leaf","symlink_parent","hardlink_alias","file_size_or_ctime_change","multiple_link_regular_file","authorization_expired","authorization_scope_mismatch"],"acceptance":"independent_read_only_acceptance_required"},
+    {"id":"RW-002","severity":"High","title":"Phase US-2 gate semantics","repository":"US_Stock_Monitor","status":"OPEN_IMPLEMENTATION_REQUIRED","required_tasks":["USM-201","USM-202","USM-205"],"required_dynamic_attacks":["synthetic_result_plus_caller_real_claim","disabled_mandatory_gate","negative_or_boolean_trade_threshold","manifest_snapshot_mismatch"],"acceptance":"independent_read_only_acceptance_required"},
+    {"id":"RW-003","severity":"High","title":"pilot subset snapshot lineage","repository":"US_Stock_Monitor","status":"OPEN_IMPLEMENTATION_REQUIRED","required_tasks":["USM-203","USM-204","USM-206"],"required_dynamic_attacks":["in_place_panel_subset","stale_parent_snapshot_id","subset_row_checksum_drift","subset_symbol_manifest_drift"],"acceptance":"independent_read_only_acceptance_required"},
+    {"id":"RW-004","severity":"High","title":"public row-level data governance","repository":"strategy_work","status":"OPEN_INVENTORY_REQUIRED","required_tasks":["STG-301","STG-302","STG-303","STG-304"],"required_dynamic_attacks":["rename_parquet_to_csv","rename_gzip_to_json","unknown_data_file_under_governed_root"],"acceptance":"independent_read_only_acceptance_required"},
+    {"id":"RW-005","severity":"High","title":"active runtime binding must be derived","repository":"quant-proj","status":"OPEN_IMPLEMENTATION_REQUIRED","required_tasks":["CTL-401","CTL-403"],"required_dynamic_attacks":["closure_claim_without_executable_binding","adjacent_active_path_omitted"],"acceptance":"independent_read_only_acceptance_required"},
+    {"id":"RW-006","severity":"Medium","title":"head CI and merge-ref CI separation","repository":"quant-proj","status":"OPEN_IMPLEMENTATION_REQUIRED","required_tasks":["CTL-402"],"required_dynamic_attacks":["head_sha_differs_from_tested_sha","merge_sha_missing","base_sha_missing"],"acceptance":"independent_read_only_acceptance_required"},
+    {"id":"EA-001","severity":"ExternalEvidenceBlocker","title":"external byte verification of A-share data room","repository":"A_Share_Monitor","status":"PENDING_EXTERNAL_RECEIPT","required_tasks":["EA-501","EA-502","EA-503","EA-504"],"evidence_release":"https://github.com/2604714984-prog/a-share-canonical-evidence-data-room/releases/tag/a-share-canonical-evidence-20260712","acceptance":"external_reviewer_receipt_required"}
+  ],
+  "global_close_conditions": {
+    "open_critical": 0,
+    "open_high": 0,
+    "new_shadow_critical": 0,
+    "new_shadow_high": 0,
+    "tushare_token_leaks": 0,
+    "central_db_writer_count": 1,
+    "strategy_process_invocations": 0,
+    "strategy_candidate_available": false
+  }
+}

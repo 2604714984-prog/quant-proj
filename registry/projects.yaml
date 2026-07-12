@@ -1,7 +1,7 @@
-generated_at: "2026-07-10T23:59:00+08:00"
+generated_at: "2026-07-13T01:18:39+08:00"
 workspace_root: "/home/rongyu/workspace"
 registry_kind: "live_source_commit_registry"
-decision: "source repositories are authoritative; resolve and verify their Git objects before dispatch"
+decision: "source repositories are authoritative; R2 audit refs are frozen separately in reports/remediation_r2/R2_BASELINE_FREEZE_20260713.json"
 stale_registry_rule: "A commit mismatch blocks use of this file as current dispatch evidence until refreshed."
 source_of_truth_precedence:
   - "verified remote Git commit in the source repository"
@@ -14,55 +14,78 @@ projects:
   quant_proj:
     path: "/home/rongyu/workspace/quant-proj"
     role: "controller"
-    branch: "codex/task-packet-r29-direct-marketcap-membership-20260709"
-    commit_policy: "resolve HEAD dynamically because the registry update changes this repository commit"
-    upstream: "origin/codex/task-packet-r29-direct-marketcap-membership-20260709"
-    remote_main_alignment_required: true
+    branch: "codex/sol-luna-collaboration-routing-20260710"
+    commit: "13b13a3757f446f97b2b9e3d8e39c98ca247a4b5"
+    tree: "61f5ec374eb919a993fe0ea57c5ef8150e5501ed"
+    upstream_ref: "origin/codex/sol-luna-collaboration-routing-20260710"
+    working_tree: "clean at refresh"
 
   a_share_monitor:
     path: "/home/rongyu/workspace/A_Share_Monitor"
-    role: "A-share research source"
-    branch: "codex/s2-feature-source-design-20260710"
-    commit: "52ddf456bebd6eef140ec2b0b364510f83b961d2"
-    upstream_ref: "origin/codex/s2-feature-source-design-20260710"
-    working_tree: "source commit preserved; unrelated local cache artifacts remain outside commit"
+    role: "A-share research source and read-only central-data consumer"
+    branch: "agent/live-a-share-research-preservation-20260712"
+    commit: "1a64e70873fc8a3c3d998e509cbcf690010ffef0"
+    tree: "fd280413f18443d1a341d5e142db03180aa85f8f"
+    upstream_ref: "origin/agent/live-a-share-research-preservation-20260712"
+    working_tree: "clean at refresh"
     research_status: "no accepted strategy candidate"
 
   us_stock_monitor:
     path: "/home/rongyu/workspace/US_Stock_Monitor"
-    role: "US equity research source"
+    role: "US equity research source and read-only central-data consumer"
     branch: "main"
-    commit: "1a96f0de7a7be35978da3268556d362d624e6cff"
+    commit: "681d3a54662c79162e0477fda2a2aa8efeff0c47"
+    tree: "511b44ba513267ad6661e47e1fa5e3859e3af487"
     upstream_ref: "origin/main"
     working_tree: "clean at refresh"
-    research_status: "Adaptive+Quality is rejected for strategy use; benchmark-only evidence"
+    research_status: "no strictly validated US strategy"
 
   us_stock_30w:
     path: "/home/rongyu/workspace/us_stock_30w"
-    role: "US strategy reproduction evidence"
-    branch: "master"
-    commit: "d7862eda70c95f7cf56611c4dedc72bcd9822cfd"
-    upstream_ref: "origin/master"
-    working_tree: "clean at final binary rejection"
-    research_status: "Adaptive+Quality rejected; benchmark-only sensitivity evidence"
+    role: "US strategy reproduction evidence and read-only central-data consumer"
+    branch: "research/reasonix-ds"
+    commit: "8a9151acc473c8aebb75a08fbe46c7dbf797b653"
+    tree: "1bf40762db3b10ef828885085eed9fd931d8ca31"
+    upstream_ref: null
+    working_tree: "clean at refresh"
+    research_status: "US31/US36/US41/US46 rejected; no current validated candidate"
 
   market_data:
     path: "/home/rongyu/workspace/market_data"
-    role: "registry and read-only access gate"
+    role: "registry/read-only access gate and designated isolated central writer implementation repository"
     branch: "codex/r28-smallcap-evidence-contract-20260709"
-    commit: "afb55105d86cd50f918ce72f66f715530b9b3178"
+    commit: "398c84440621db531c5801326acc417751e88665"
+    tree: "d87c6738d0fa4a388aadf1522d2834039c5293f4"
     upstream_ref: "origin/codex/r28-smallcap-evidence-contract-20260709"
     working_tree: "clean at refresh"
-    product_route_status: "A-share and US unified product reads blocked pending physical requalification"
+    central_writer_status: "implementation boundary selected; publisher disabled pending Gate B"
+
+  quant_research_lab:
+    path: "/home/rongyu/workspace/quant_research_lab"
+    role: "research laboratory and read-only central-data consumer"
+    branch: "master"
+    commit: "e95d21e585513b91237b696fdf305b0239f73c23"
+    tree: "4ac13db6d8b8dc4f9f4ad36f2b2b39d11c83ab6d"
+    upstream_ref: "origin/master"
+    working_tree: "clean at refresh"
+    research_status: "research-only"
 
   strategy_work:
     path: "/home/rongyu/workspace/strategy_work"
-    role: "strategy research and evidence synthesis"
-    branch: "main"
-    commit: "52962a54b4da2d25a73f5f26203b356d2be9edbf"
-    upstream_ref: "origin/main"
-    working_tree: "source commit preserved; unrelated local continuation artifacts remain outside commit"
+    role: "strategy research/evidence synthesis and read-only central-data consumer"
+    branch: "agent/live-strategy-research-preservation-20260712"
+    commit: "a27e35b59ef8b59d0771bcf019534ca93748bbcc"
+    tree: "1439e27f10bce9d24d091ecada28116092f145a5"
+    upstream_ref: "origin/agent/live-strategy-research-preservation-20260712"
+    working_tree: "clean at refresh"
     research_status: "no strictly validated strategy"
+
+central_database:
+  path: "/home/rongyu/workspace/quant_data/quant_research.duckdb"
+  access: "single-writer market_data; all research repositories read-only"
+  sha256: "65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5"
+  bytes: 1001926656
+  publisher_enabled: false
 
 boundaries:
   research_only: true
@@ -72,3 +95,5 @@ boundaries:
   daily_signal_push: false
   product_route_or_readiness_activation: false
   secret_access_or_output: false
+  provider_network_calls_wave0: false
+  central_database_writes_wave0: false
