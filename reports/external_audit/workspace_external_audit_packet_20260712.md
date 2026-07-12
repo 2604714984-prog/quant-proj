@@ -106,6 +106,7 @@ Bounded route studies were single-use and fail-closed. Official source surfaces 
 - A-share external-audit implementation snapshot: `A_Share_Monitor` Draft PR #6.
 - Controller factory contracts: `quant-proj` branch `codex/sol-luna-collaboration-routing-20260710`, commit `13b13a3757f446f97b2b9e3d8e39c98ca247a4b5`.
 - Repository-wide manifest: `workspace_external_audit_repository_manifest_20260712.json` beside this packet.
+- Human-readable cross-project brief: `quant-project-shared-reports` Draft PR #1, commit `9909010902f84aa5f454932d9a97fc8f7f32dd4c`.
 
 ## Reproduction and validation expectations
 
