@@ -1,4 +1,4 @@
-generated_at: "2026-07-13T03:05:52+08:00"
+generated_at: "2026-07-13T21:44:54+08:00"
 workspace_root: "/home/rongyu/workspace"
 registry_kind: "live_source_commit_registry"
 decision: "source repositories are authoritative; R2 audit refs are frozen separately in reports/remediation_r2/R2_BASELINE_FREEZE_20260713.json"
@@ -43,9 +43,9 @@ projects:
   us_stock_30w:
     path: "/home/rongyu/workspace/us_stock_30w"
     role: "US strategy reproduction evidence and read-only central-data consumer"
-    branch: "research/reasonix-ds"
-    commit: "8a9151acc473c8aebb75a08fbe46c7dbf797b653"
-    tree: "1bf40762db3b10ef828885085eed9fd931d8ca31"
+    branch: "research/c2-remediation-r2-20260713"
+    commit: "e47d4155d4e2bace2c15ae22e53f66556d19d832"
+    tree: "0029859c454a1a94dc8024a5c2a4ea91c898ce0b"
     upstream_ref: null
     working_tree: "clean at refresh"
     research_status: "US31/US36/US41/US46 rejected; no current validated candidate"
@@ -69,13 +69,17 @@ projects:
     upstream_ref: "origin/main"
     working_tree: "clean at refresh"
     central_writer_status: "Wave 1 staging accepted; publisher absent and disabled pending Gate B"
+    unaccepted_candidate_branch: "origin/codex/central-ingestion-gate-b-20260713"
+    unaccepted_candidate_commit: "0bc1007235a96ab2e4c0e92700a999930761e73a"
+    unaccepted_candidate_tree: "d14939354fda31adfedec22febd29b37cb360285"
+    unaccepted_candidate_status: "UNACCEPTED_SUPERSEDED_DESIGN_INPUT; architecture and negative tests only; Replay HG/canary observations are non-authorizing blocked evidence"
 
   quant_research_lab:
     path: "/home/rongyu/workspace/quant_research_lab"
     role: "research laboratory and read-only central-data consumer"
     branch: "master"
-    commit: "2a873848ef67a8b7f7509826a22818ce86cbae13"
-    tree: "b6fd417292a658c77b95aa6769fb0ead9f654595"
+    commit: "6b98b94d0cdd674d6e07cce93726f204ab3a6594"
+    tree: "3207d3a834d1d52785c4cb7c2978c285a19540d2"
     upstream_ref: "origin/master"
     working_tree: "authoritative remote ref; local checkout may lag and is not dispatch evidence"
     identity_kind: "remote_ref_authoritative"
@@ -96,6 +100,11 @@ central_database:
   access: "single future writer central-data-ingestion; publisher absent/disabled; all other repositories read-only"
   sha256: "65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5"
   bytes: 1001926656
+  identity_semantics: "frozen R2 Wave 0 baseline retained for immutable validator compatibility; do not treat as current bytes"
+  current_observed_sha256: "e1826d04191e5014ddcbb12f9d96acdded0ff54b58c90068c9c4001160e074b9"
+  current_observed_bytes: 1001664512
+  current_observed_mode: "0600"
+  baseline_drift_status: "current bytes differ from the consumed Wave 0 baseline and backup; a fresh baseline, backup and exact HG are required before any real publish canary"
   publisher_enabled: false
 
 boundaries:
