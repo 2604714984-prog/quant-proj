@@ -1,0 +1,17 @@
+lane_id,priority,status,callback_path,snapshot_id,blocking_reason,next_action
+A0,P0,NOT_DISPATCHED,reports/central_database/callbacks/A_SHARE_DB_CALLBACK_P0_CORE.json,,,dispatch when dependencies are accepted
+A1,P0,NOT_DISPATCHED,reports/central_database/callbacks/A_SHARE_DB_CALLBACK_P0_CIRC_MV.json,,,dispatch when dependencies are accepted
+A2,P1,NOT_DISPATCHED,reports/central_database/callbacks/A_SHARE_DB_CALLBACK_P1_ADJUSTMENT.json,,,dispatch when dependencies are accepted
+A3,P1,NOT_DISPATCHED,reports/central_database/callbacks/A_SHARE_DB_CALLBACK_P1_TRADABILITY.json,,,dispatch when dependencies are accepted
+U0,P0,NOT_DISPATCHED,reports/central_database/callbacks/US_DB_CALLBACK_P0_CALENDAR.json,,,dispatch when dependencies are accepted
+U1,P0,NOT_DISPATCHED,reports/central_database/callbacks/US_DB_CALLBACK_P0A.json,,,dispatch when dependencies are accepted
+U2,P1,NOT_DISPATCHED,reports/central_database/callbacks/US_DB_CALLBACK_P0B.json,,,dispatch when dependencies are accepted
+U3,P1,NOT_DISPATCHED,reports/central_database/callbacks/US_DB_CALLBACK_P1.json,,,dispatch when dependencies are accepted
+A4,P2,NOT_DISPATCHED,reports/central_database/callbacks/A_SHARE_INDUSTRY_HISTORY_READY.json,,,dispatch when dependencies are accepted
+A5,P1,NOT_DISPATCHED,reports/central_database/callbacks/A_SHARE_PIT_FUNDAMENTALS_READY.json,,,dispatch when dependencies are accepted
+A6,P2,NOT_DISPATCHED,reports/central_database/callbacks/A_SHARE_EVENT_FUND_FLOW_CALLBACK.json,,,dispatch when dependencies are accepted
+U4,P2,NOT_DISPATCHED,reports/central_database/callbacks/US_CONTEXT_PIT_READY.json,,,dispatch when dependencies are accepted
+U5,P2,NOT_DISPATCHED,reports/central_database/callbacks/US_EQUITY_SURVIVORSHIP_CALLBACK.json,,,dispatch when dependencies are accepted
+U6,P2,NOT_DISPATCHED,reports/central_database/callbacks/US_PIT_FUNDAMENTALS_EARNINGS_CALLBACK.json,,,dispatch when dependencies are accepted
+X1,P3,NOT_DISPATCHED,reports/central_database/callbacks/DERIVED_FEATURE_STORE_READY.json,,,dispatch when dependencies are accepted
+X2,P3,NOT_DISPATCHED,reports/central_database/callbacks/CENTRAL_DB_FULL_DATA_CALLBACK.json,,,dispatch when dependencies are accepted

@@ -1,0 +1,130 @@
+{
+  "files": [
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_a0_dispatch_20260713.md",
+      "sha256": "972e0ea4aa05870ee6eae7dda9b6368fe64eb8f9970b549022cc0742d8eef10c"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_a1_dispatch_20260713.md",
+      "sha256": "23a110380d67cccf1b8603eddc0a706981e5893d5d04c42583705ee58537e5ac"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_a2_dispatch_20260713.md",
+      "sha256": "83af6088667b81ec88b4e78c03761eb6e3a4ad575e4366b4fe6b4dc38e9550a1"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_a3_dispatch_20260713.md",
+      "sha256": "8e8488003ac3e1351239905813c885eeb11c628fe08ff3b56f891f884267197e"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_a4_dispatch_20260713.md",
+      "sha256": "83234bd65b02c463329f3517c33913bfc13fb25e6a8659d1bd6289ac59d4457a"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_a5_dispatch_20260713.md",
+      "sha256": "03f9b84d65a52187337a6d9a412069925e82b3de31ef4e43f9280ac91910539a"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_a6_dispatch_20260713.md",
+      "sha256": "34e3fee497cfe415c294326aad788aca56cf488fff91c9c26d3d541227a782ea"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_u0_dispatch_20260713.md",
+      "sha256": "f406b9295669dbf348374c5cf8cef8972eda98ae4d4d96bf694f5ff03acc6fb5"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_u1_dispatch_20260713.md",
+      "sha256": "5c7a2cc18bdb87f30cfefadfc954c982efcb47f58bf3bd790b788580796699eb"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_u2_dispatch_20260713.md",
+      "sha256": "5c38b4aabc15d89da8719b1013b1f43b02953f11fe2a5848a4578d0355b5b63d"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_u3_dispatch_20260713.md",
+      "sha256": "92299e38d0c05e7e056dfc6471ff006eb0ba493206129d8b46cb627e605aca4a"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_u4_dispatch_20260713.md",
+      "sha256": "ab52db808a346986c744ddbb1fdb43ba924b2a3cd3ae714bae9b7e68ec83e479"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_u5_dispatch_20260713.md",
+      "sha256": "56ee9fe92d591ccab348609e977b4227c4fd60d1760a69e3da0c682bdc518faa"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_u6_dispatch_20260713.md",
+      "sha256": "ac2af6856b104078ef5b804016f57a27d57628e7de669a6cf26a536836a3dcc5"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_x1_dispatch_20260713.md",
+      "sha256": "751dc33869533de021d827d6daae627711a99369c973671978895bbf22b5a9e0"
+    },
+    {
+      "path": "reports/agent_handoff/central_database_db2/lane_x2_dispatch_20260713.md",
+      "sha256": "7bb8e562e78af1b0bfa8bdbc8f205822b86a4801e524c68a293ab256028a9473"
+    },
+    {
+      "path": "reports/central_database/manager/central_db_db2_blocker_board_20260713.csv",
+      "sha256": "c1c2c6e0a91cf50939ab164212a6ea6e93ee722f9db4b400be4016dc035ea686"
+    },
+    {
+      "path": "reports/central_database/manager/central_db_db2_callback_registry_20260713.csv",
+      "sha256": "09ba63af940272679bd0e571e84fe88f3a513ce8c871659aee37a829efa877ab"
+    },
+    {
+      "path": "reports/central_database/manager/central_db_db2_final_summary_20260713.md",
+      "sha256": "0002036e8f34277deb0366bca12587f01c94e878b51db5d66129611cb75ec542"
+    },
+    {
+      "path": "reports/central_database/manager/central_db_db2_status_board_20260713.csv",
+      "sha256": "1075faca6e060503650df654a5477ae7311dc03a2189046c1378f3569b0db4bb"
+    },
+    {
+      "path": "reports/central_database/manager/central_db_foundation_acceptance_20260713.md",
+      "sha256": "f49b4610c7abe5889a6677930c27547961ed4a9b630f2b74d8f5642827f9e76b"
+    },
+    {
+      "path": "reports/central_database/manager/central_db_full_ingestion_dependency_graph_20260713.md",
+      "sha256": "33ce644b7045fe6e626ae72f65f2cceb85b358b08d83d394f63b55efebc240dc"
+    },
+    {
+      "path": "reports/central_database/manager/central_db_full_ingestion_task_matrix_20260713.csv",
+      "sha256": "300f58ed1037bdcbb5a3cb5db3cb408bca3c43969a8c8b30ab3f61804aec3811"
+    },
+    {
+      "path": "tasks/in_progress/central-database-full-ingestion-db2-20260713/gate_commands.txt",
+      "sha256": "34a22f89b8c592184c0aa9e060ee5bc10ab064e314ee9a32142437afd1da2689"
+    },
+    {
+      "path": "tasks/in_progress/central-database-full-ingestion-db2-20260713/handoff.md",
+      "sha256": "b4032d13d844754df4253613ad1c2ef6ea4ec3b014053d9a5176711bfc4d4740"
+    },
+    {
+      "path": "tasks/in_progress/central-database-full-ingestion-db2-20260713/spec.md",
+      "sha256": "62c2e2e7ef7fd1ba1b2b2e794c8445cfbe84ce32f1bf61041cfb1b2bb6bcc2b0"
+    }
+  ],
+  "foundation_callback_sha256": "e2868111ff7c2807dfa69b25427fc8c3ea32240117b15f21325018bb4a4463b7",
+  "issue_url": "https://github.com/2604714984-prog/quant-proj/issues/19",
+  "lane_order": [
+    "A0",
+    "A1",
+    "A2",
+    "A3",
+    "U0",
+    "U1",
+    "U2",
+    "U3",
+    "A4",
+    "A5",
+    "A6",
+    "U4",
+    "U5",
+    "U6",
+    "X1",
+    "X2"
+  ],
+  "packet_id": "CENTRAL_DATABASE_FULL_INGESTION_DB2_20260713",
+  "strategy_candidate_available": false
+}
