@@ -1,0 +1,6 @@
+/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python scripts/build_central_db_db2_manager_packet.py --check --foundation-callback https://github.com/2604714984-prog/central-data-ingestion/blob/b9b5d7e9aeeae98696debe94ac31464f56a9d155/reports/central_database/central_database_foundation_callback_20260714.md --foundation-sha256 e2868111ff7c2807dfa69b25427fc8c3ea32240117b15f21325018bb4a4463b7 --foundation-commit b9b5d7e9aeeae98696debe94ac31464f56a9d155 --foundation-tree 78b576def0ec1a1cd967f172794c49c2ad335f02
+/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python -m pytest -q tests/test_central_db_db2_manager_packet.py
+/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python -m ruff check scripts/build_central_db_db2_manager_packet.py tests/test_central_db_db2_manager_packet.py
+/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python scripts/validate_projects_registry.py
+/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python -c "import pathlib,yaml; yaml.safe_load(pathlib.Path('registry/projects.yaml').read_text()); yaml.safe_load(pathlib.Path('registry/agents.yaml').read_text())"
+git diff --check
