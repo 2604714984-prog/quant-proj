@@ -193,6 +193,7 @@ signal, broker/order/paper/live/auto, secret output, database binary commit, or 
         f"/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python scripts/build_central_db_db2_manager_packet.py --check --foundation-callback {args.foundation_callback} --foundation-sha256 {args.foundation_sha256} --foundation-commit {args.foundation_commit} --foundation-tree {args.foundation_tree}\n"
         "/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python -m pytest -q tests/test_central_db_db2_manager_packet.py\n"
         "/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python -m ruff check scripts/build_central_db_db2_manager_packet.py tests/test_central_db_db2_manager_packet.py\n"
+        "/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python scripts/validate_projects_registry.py\n"
         "/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python -c \"import pathlib,yaml; yaml.safe_load(pathlib.Path('registry/projects.yaml').read_text()); yaml.safe_load(pathlib.Path('registry/agents.yaml').read_text())\"\n"
         "git diff --check\n"
     ).encode()

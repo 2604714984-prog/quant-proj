@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 
 import build_central_db_db2_manager_packet as builder  # noqa: E402
+import validate_projects_registry as registry_validator  # noqa: E402
 
 
 def _packet() -> dict[Path, bytes]:
@@ -139,3 +140,11 @@ def test_registry_foundation_status_is_accepted() -> None:
     status = registry["projects"]["central_data_ingestion"]["foundation_status"]
     assert "independently accepted" in status
     assert "b9b5d7e9aeeae98696debe94ac31464f56a9d155" in status
+
+
+def test_registry_passes_the_ci_schema_validator() -> None:
+    registry_validator.validate(verify_local_git=False)
+    gates = _packet()[
+        Path("tasks/in_progress/central-database-full-ingestion-db2-20260713/gate_commands.txt")
+    ].decode()
+    assert "scripts/validate_projects_registry.py" in gates
