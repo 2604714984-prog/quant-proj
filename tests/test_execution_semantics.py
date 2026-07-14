@@ -27,6 +27,25 @@ UTC = timezone.utc
 SHANGHAI = "Asia/Shanghai"
 
 
+class _StatefulFloat(float):
+    def __new__(
+        cls,
+        value: float,
+        *,
+        fail_on_call: int,
+    ) -> "_StatefulFloat":
+        instance = super().__new__(cls, value)
+        instance.fail_on_call = fail_on_call
+        instance.calls = 0
+        return instance
+
+    def __float__(self) -> float:
+        self.calls += 1
+        if self.calls == self.fail_on_call:
+            raise ValueError("stateful float conversion failure")
+        return super().__float__()
+
+
 def _source(
     revision_id: str,
     sha256: str,
@@ -401,6 +420,99 @@ def test_blocked_exit_attempts_require_an_immutable_typed_tuple() -> None:
         calendar,
         attempts=(valid,),
     ).attempts == (valid,)
+
+
+def test_blocked_exit_normalizes_stateful_numbers_once_before_sale() -> None:
+    shares = _StatefulFloat(100, fail_on_call=2)
+    order = BlockedExitOrder(
+        "000001.SZ",
+        shares,  # type: ignore[arg-type]
+        date(2026, 7, 13),
+        _calendar(),
+    )
+    assert type(order.shares) is float
+    assert shares.calls == 1
+
+    portfolio = Portfolio.a_share(10_000)
+    portfolio.start_session(date(2026, 7, 10))
+    portfolio.buy("000001.SZ", 100, 10, date(2026, 7, 10))
+    portfolio.start_session(date(2026, 7, 13))
+    price = _StatefulFloat(10, fail_on_call=6)
+
+    completed, trade = execute_ready_blocked_exit(
+        order,
+        portfolio=portfolio,
+        session=date(2026, 7, 13),
+        decision_at=_decision_time(order, date(2026, 7, 13)),
+        decision=FillDecision(True, price, "filled"),
+    )
+
+    assert price.calls == 1
+    assert type(completed.execution_price) is float
+    assert type(trade.price) is float
+    assert "000001.SZ" not in portfolio.positions
+
+
+def test_price_normalization_failure_leaves_deep_state_unchanged() -> None:
+    order = _blocked_order()
+    portfolio = Portfolio.a_share(10_000)
+    portfolio.start_session(date(2026, 7, 10))
+    portfolio.buy("000001.SZ", 100, 10, date(2026, 7, 10))
+    portfolio.start_session(date(2026, 7, 13))
+    order_before = _order_snapshot(order)
+    portfolio_before = _portfolio_snapshot(portfolio)
+
+    with pytest.raises(MarketDataError, match="positive finite price"):
+        execute_ready_blocked_exit(
+            order,
+            portfolio=portfolio,
+            session=date(2026, 7, 13),
+            decision_at=_decision_time(order, date(2026, 7, 13)),
+            decision=FillDecision(
+                True,
+                _StatefulFloat(10, fail_on_call=1),
+                "filled",
+            ),
+        )
+
+    assert _order_snapshot(order) == order_before
+    assert _portfolio_snapshot(portfolio) == portfolio_before
+
+
+def test_portfolio_buy_and_sell_normalize_before_mutation() -> None:
+    portfolio = Portfolio.a_share(10_000)
+    portfolio.start_session(date(2026, 7, 10))
+    portfolio_before = _portfolio_snapshot(portfolio)
+    with pytest.raises(ValueError, match="price must be finite"):
+        portfolio.buy(
+            "000001.SZ",
+            100,
+            _StatefulFloat(10, fail_on_call=1),
+            date(2026, 7, 10),
+        )
+    assert _portfolio_snapshot(portfolio) == portfolio_before
+
+    buy_price = _StatefulFloat(10, fail_on_call=3)
+    buy = portfolio.buy("000001.SZ", 100, buy_price, date(2026, 7, 10))
+    assert buy_price.calls == 1
+    assert type(buy.price) is float
+
+    portfolio.start_session(date(2026, 7, 13))
+    portfolio_before = _portfolio_snapshot(portfolio)
+    with pytest.raises(ValueError, match="price must be finite"):
+        portfolio.sell(
+            "000001.SZ",
+            100,
+            _StatefulFloat(11, fail_on_call=1),
+            date(2026, 7, 13),
+        )
+    assert _portfolio_snapshot(portfolio) == portfolio_before
+
+    sell_price = _StatefulFloat(11, fail_on_call=3)
+    sell = portfolio.sell("000001.SZ", 100, sell_price, date(2026, 7, 13))
+    assert sell_price.calls == 1
+    assert type(sell.price) is float
+    assert "000001.SZ" not in portfolio.positions
 
 
 def test_blocked_exit_records_consecutive_sessions_and_sells_before_completion() -> None:

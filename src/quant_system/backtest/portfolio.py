@@ -141,10 +141,15 @@ class Portfolio:
         price: float,
         trade_date: date,
     ) -> Trade:
+        normalized_shares = self._normalized_number(shares, "shares")
+        normalized_price = self._normalized_number(price, "price")
         self._require_current_session(trade_date)
-        self._require_quantity(shares)
-        self._require_price(price)
-        gross = self._finite_result(shares * price, "buy gross amount")
+        self._require_quantity(normalized_shares)
+        self._require_price(normalized_price)
+        gross = self._finite_result(
+            normalized_shares * normalized_price,
+            "buy gross amount",
+        )
         costs = self._calculate_costs("buy", gross, trade_date)
         cost_total = self._cost_total(costs)
         total_cash = self._finite_result(gross + cost_total, "buy total cash")
@@ -161,7 +166,10 @@ class Portfolio:
             position.average_cost * position.shares,
             "existing position cost basis",
         )
-        new_shares = self._finite_result(position.shares + shares, "position shares")
+        new_shares = self._finite_result(
+            position.shares + normalized_shares,
+            "position shares",
+        )
         new_average_cost = self._finite_result(
             (old_cost_basis + total_cash) / new_shares,
             "position average cost",
@@ -169,7 +177,7 @@ class Portfolio:
         new_sellable = position.sellable_shares
         if not self.share_t_plus_one:
             new_sellable = self._finite_result(
-                new_sellable + shares,
+                new_sellable + normalized_shares,
                 "sellable shares",
             )
 
@@ -177,14 +185,14 @@ class Portfolio:
         position.shares = new_shares
         position.average_cost = new_average_cost
         position.sellable_shares = new_sellable
-        position.last_accepted_mark = float(price)
+        position.last_accepted_mark = normalized_price
         self.positions[symbol] = position
         return Trade(
             symbol,
             "buy",
             trade_date,
-            shares,
-            price,
+            normalized_shares,
+            normalized_price,
             gross,
             costs,
             -total_cash,
@@ -200,14 +208,19 @@ class Portfolio:
         settlement_date: date | None = None,
         accepted_settlement_sessions: tuple[date, ...] | None = None,
     ) -> Trade:
+        normalized_shares = self._normalized_number(shares, "shares")
+        normalized_price = self._normalized_number(price, "price")
         self._require_current_session(trade_date)
-        self._require_integer_quantity(shares)
-        self._require_price(price)
+        self._require_integer_quantity(normalized_shares)
+        self._require_price(normalized_price)
         position = self.positions.get(symbol)
-        if position is None or shares > position.sellable_shares + 1e-9:
+        if (
+            position is None
+            or normalized_shares > position.sellable_shares + 1e-9
+        ):
             raise InsufficientSharesError("sell quantity exceeds currently sellable shares")
         self._validate_position(position)
-        self._require_sell_lot(shares, position)
+        self._require_sell_lot(normalized_shares, position)
         if self.us_cash_settlement:
             if settlement_date is None or settlement_date <= trade_date:
                 raise ValueError("US sale requires an explicit later settlement_date")
@@ -219,19 +232,25 @@ class Portfolio:
                 accepted_settlement_sessions,
             )
 
-        gross = self._finite_result(shares * price, "sell gross amount")
+        gross = self._finite_result(
+            normalized_shares * normalized_price,
+            "sell gross amount",
+        )
         costs = self._calculate_costs("sell", gross, trade_date)
         cost_total = self._cost_total(costs)
         proceeds = self._finite_result(gross - cost_total, "sale proceeds")
         if proceeds < 0.0:
             raise ValueError("transaction costs exceed sale proceeds")
         realized_pnl = self._finite_result(
-            proceeds - position.average_cost * shares,
+            proceeds - position.average_cost * normalized_shares,
             "realized PnL",
         )
-        new_shares = self._finite_result(position.shares - shares, "position shares")
+        new_shares = self._finite_result(
+            position.shares - normalized_shares,
+            "position shares",
+        )
         new_sellable = self._finite_result(
-            position.sellable_shares - shares,
+            position.sellable_shares - normalized_shares,
             "sellable shares",
         )
         if new_shares < -1e-9 or new_sellable < -1e-9:
@@ -252,7 +271,7 @@ class Portfolio:
 
         position.shares = new_shares
         position.sellable_shares = new_sellable
-        position.last_accepted_mark = float(price)
+        position.last_accepted_mark = normalized_price
         if new_shares <= 1e-9:
             del self.positions[symbol]
 
@@ -265,8 +284,8 @@ class Portfolio:
             symbol,
             "sell",
             trade_date,
-            shares,
-            price,
+            normalized_shares,
+            normalized_price,
             gross,
             costs,
             proceeds,
@@ -406,6 +425,18 @@ class Portfolio:
         if not is_finite_number(value):
             raise ValueError(f"{label} must be finite")
         return float(value)
+
+    @staticmethod
+    def _normalized_number(value: object, label: str) -> float:
+        if value is None or isinstance(value, bool):
+            raise ValueError(f"{label} must be finite")
+        try:
+            normalized = float(value)
+        except (TypeError, ValueError, OverflowError) as exc:
+            raise ValueError(f"{label} must be finite") from exc
+        if not is_finite_number(normalized):
+            raise ValueError(f"{label} must be finite")
+        return normalized
 
     def _require_current_session(self, trade_date: date) -> None:
         if self.current_session != trade_date:
