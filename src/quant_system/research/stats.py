@@ -14,6 +14,9 @@ from typing import Sequence
 
 
 _EULER_MASCHERONI = 0.5772156649015329
+_MAX_BOOTSTRAP_DRAW_CELLS = 10_000_000
+_MAX_EXPOSED_INDEX_CELLS = 100_000
+_MAX_PBO_COMBINATIONS = 50_000
 _UINT32_RANGE = 1 << 32
 _UINT64_MASK = (1 << 64) - 1
 
@@ -151,34 +154,85 @@ def probabilistic_sharpe_ratio(
     return _normal_cdf(statistic)
 
 
-def expected_maximum_sharpe(trial_sharpes: Sequence[float]) -> float:
-    """Estimate the null expected maximum from the complete attempted trials."""
+@dataclass(frozen=True)
+class ExpectedMaximumSharpeResult:
+    value: float
+    cross_trial_mean: float
+    cross_trial_standard_deviation: float
+    attempted_trial_count: int
+    effective_independent_trial_count: float
+
+
+def _effective_trial_count(value: float, *, attempted_trial_count: int) -> float:
+    if isinstance(value, bool):
+        raise ValueError("effective_independent_trial_count must be numeric")
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError("effective_independent_trial_count must be numeric") from exc
+    if not math.isfinite(parsed) or not 1.0 <= parsed <= attempted_trial_count:
+        raise ValueError(
+            "effective_independent_trial_count must be finite and lie between 1 and "
+            "attempted_trial_count"
+        )
+    if 1.0 < parsed < 2.0:
+        raise ValueError(
+            "effective_independent_trial_count must be exactly 1 or at least 2 because "
+            "the expected-maximum approximation is undefined between those bounds"
+        )
+    return parsed
+
+
+def expected_maximum_sharpe(
+    trial_sharpes: Sequence[float],
+    *,
+    effective_independent_trial_count: float,
+) -> ExpectedMaximumSharpeResult:
+    """Estimate the null maximum from all attempts and an explicit effective count."""
 
     trials = _finite_values(trial_sharpes, name="trial_sharpes", minimum=2)
     trial_variance = _sample_variance(trials)
-    trial_count = len(trials)
-    expected_standard_maximum = (
-        (1.0 - _EULER_MASCHERONI) * _inverse_normal_cdf(1.0 - 1.0 / trial_count)
-        + _EULER_MASCHERONI
-        * _inverse_normal_cdf(1.0 - 1.0 / (trial_count * math.e))
+    attempted_count = len(trials)
+    effective_count = _effective_trial_count(
+        effective_independent_trial_count,
+        attempted_trial_count=attempted_count,
     )
-    result = math.sqrt(trial_variance) * expected_standard_maximum
+    trial_mean = _mean(trials)
+    trial_standard_deviation = math.sqrt(trial_variance)
+    if effective_count == 1.0:
+        expected_standard_maximum = 0.0
+    else:
+        expected_standard_maximum = (
+            (1.0 - _EULER_MASCHERONI)
+            * _inverse_normal_cdf(1.0 - 1.0 / effective_count)
+            + _EULER_MASCHERONI
+            * _inverse_normal_cdf(1.0 - 1.0 / (effective_count * math.e))
+        )
+    result = trial_mean + trial_standard_deviation * expected_standard_maximum
     if not math.isfinite(result):
         raise ValueError("expected maximum Sharpe is nonfinite")
-    return result
+    return ExpectedMaximumSharpeResult(
+        value=result,
+        cross_trial_mean=trial_mean,
+        cross_trial_standard_deviation=trial_standard_deviation,
+        attempted_trial_count=attempted_count,
+        effective_independent_trial_count=effective_count,
+    )
 
 
 @dataclass(frozen=True)
 class DeflatedSharpeResult:
     probability: float
     expected_maximum_sharpe: float
-    trial_count: int
+    attempted_trial_count: int
+    effective_independent_trial_count: float
 
 
 def deflated_sharpe_ratio(
     observed_sharpe: float,
     *,
     trial_sharpes: Sequence[float],
+    effective_independent_trial_count: float,
     sample_size: int,
     skewness: float = 0.0,
     kurtosis: float = 3.0,
@@ -186,15 +240,23 @@ def deflated_sharpe_ratio(
     """Apply PSR against a threshold derived from all attempted trials."""
 
     trials = _finite_values(trial_sharpes, name="trial_sharpes", minimum=2)
-    threshold = expected_maximum_sharpe(trials)
+    threshold = expected_maximum_sharpe(
+        trials,
+        effective_independent_trial_count=effective_independent_trial_count,
+    )
     probability = probabilistic_sharpe_ratio(
         observed_sharpe,
-        benchmark_sharpe=threshold,
+        benchmark_sharpe=threshold.value,
         sample_size=sample_size,
         skewness=skewness,
         kurtosis=kurtosis,
     )
-    return DeflatedSharpeResult(probability, threshold, len(trials))
+    return DeflatedSharpeResult(
+        probability,
+        threshold.value,
+        threshold.attempted_trial_count,
+        threshold.effective_independent_trial_count,
+    )
 
 
 def _sharpe_score(values: Sequence[float]) -> float:
@@ -213,6 +275,9 @@ class PBOResult:
     combinations_evaluated: int
     observations_used: int
     observations_dropped: int
+    relative_ranks: tuple[float, ...]
+    rank_tie_policy: str
+    overfit_rule: str
 
 
 def probability_of_backtest_overfitting(
@@ -245,6 +310,12 @@ def probability_of_backtest_overfitting(
         raise ValueError("slice_count cannot exceed the observation count")
     if len(rows) % slice_count != 0:
         raise ValueError("observation count must be exactly divisible by slice_count")
+    combination_count = math.comb(slice_count, slice_count // 2)
+    if combination_count > _MAX_PBO_COMBINATIONS:
+        raise ValueError(
+            f"PBO requires {combination_count} combinations; maximum is "
+            f"{_MAX_PBO_COMBINATIONS}"
+        )
 
     slice_size = len(rows) // slice_count
     slices = tuple(
@@ -253,6 +324,7 @@ def probability_of_backtest_overfitting(
     )
     all_slices = set(range(slice_count))
     logits: list[float] = []
+    relative_ranks: list[float] = []
     selected: list[int] = []
     for train_slices in combinations(range(slice_count), slice_count // 2):
         train_set = set(train_slices)
@@ -268,14 +340,19 @@ def probability_of_backtest_overfitting(
             _sharpe_score(tuple(rows[row][strategy] for row in test_rows))
             for strategy in range(strategy_count)
         )
-        ascending = sorted(range(strategy_count), key=lambda index: (test_scores[index], index))
-        out_of_sample_rank = ascending.index(selected_strategy) + 1
-        relative_rank = out_of_sample_rank / (strategy_count + 1.0)
+        selected_score = test_scores[selected_strategy]
+        lower_count = math.fsum(score < selected_score for score in test_scores)
+        tie_count = math.fsum(score == selected_score for score in test_scores)
+        average_rank = lower_count + (tie_count + 1.0) / 2.0
+        relative_rank = average_rank / (strategy_count + 1.0)
         logit = math.log(relative_rank / (1.0 - relative_rank))
         logits.append(logit)
+        relative_ranks.append(relative_rank)
         selected.append(selected_strategy)
 
-    probability = math.fsum(logit <= 0.0 for logit in logits) / len(logits)
+    probability = math.fsum(relative_rank < 0.5 for relative_rank in relative_ranks) / len(
+        relative_ranks
+    )
     return PBOResult(
         probability=probability,
         logits=tuple(logits),
@@ -283,6 +360,9 @@ def probability_of_backtest_overfitting(
         combinations_evaluated=len(logits),
         observations_used=len(rows),
         observations_dropped=0,
+        relative_ranks=tuple(relative_ranks),
+        rank_tie_policy="average",
+        overfit_rule="relative_rank < 0.5",
     )
 
 
@@ -365,6 +445,39 @@ class _PCG32:
                 return candidate % upper_bound
 
 
+def _validate_bootstrap_dimensions(
+    sample_size: int,
+    *,
+    block_length: int,
+    replications: int,
+    cell_limit: int,
+) -> None:
+    _require_int(sample_size, name="sample_size", minimum=2)
+    _require_int(block_length, name="block_length", minimum=1)
+    _require_int(replications, name="replications", minimum=1)
+    if block_length > sample_size:
+        raise ValueError("block_length cannot exceed sample_size")
+    cells = sample_size * replications
+    if cells > cell_limit:
+        raise ValueError(f"bootstrap work requires {cells} cells; maximum is {cell_limit}")
+
+
+def _iter_circular_block_bootstrap_indices(
+    sample_size: int,
+    *,
+    block_length: int,
+    replications: int,
+    seed: int,
+):
+    generator = _PCG32(seed)
+    for _ in range(replications):
+        indices: list[int] = []
+        while len(indices) < sample_size:
+            start = generator.randbelow(sample_size)
+            indices.extend((start + offset) % sample_size for offset in range(block_length))
+        yield tuple(indices[:sample_size])
+
+
 def circular_block_bootstrap_indices(
     sample_size: int,
     *,
@@ -372,22 +485,38 @@ def circular_block_bootstrap_indices(
     replications: int,
     seed: int,
 ) -> tuple[tuple[int, ...], ...]:
-    """Generate fixed-PCG32 circular block indices, truncating the final block."""
+    """Expose a bounded fixed-PCG32 index matrix for small golden tests."""
 
-    _require_int(sample_size, name="sample_size", minimum=2)
-    _require_int(block_length, name="block_length", minimum=1)
-    _require_int(replications, name="replications", minimum=1)
-    if block_length > sample_size:
-        raise ValueError("block_length cannot exceed sample_size")
-    generator = _PCG32(seed)
-    output: list[tuple[int, ...]] = []
-    for _ in range(replications):
-        indices: list[int] = []
-        while len(indices) < sample_size:
-            start = generator.randbelow(sample_size)
-            indices.extend((start + offset) % sample_size for offset in range(block_length))
-        output.append(tuple(indices[:sample_size]))
-    return tuple(output)
+    _validate_bootstrap_dimensions(
+        sample_size,
+        block_length=block_length,
+        replications=replications,
+        cell_limit=_MAX_EXPOSED_INDEX_CELLS,
+    )
+    return tuple(
+        _iter_circular_block_bootstrap_indices(
+            sample_size,
+            block_length=block_length,
+            replications=replications,
+            seed=seed,
+        )
+    )
+
+
+def _iter_circular_block_bootstrap_means(
+    values: tuple[float, ...],
+    *,
+    block_length: int,
+    replications: int,
+    seed: int,
+):
+    for replication in _iter_circular_block_bootstrap_indices(
+        len(values),
+        block_length=block_length,
+        replications=replications,
+        seed=seed,
+    ):
+        yield _mean(tuple(values[index] for index in replication))
 
 
 def circular_block_bootstrap_means(
@@ -401,13 +530,20 @@ def circular_block_bootstrap_means(
 
     frozen = _finite_values(values, name="values", minimum=2)
     _sample_variance(frozen)
-    indices = circular_block_bootstrap_indices(
+    _validate_bootstrap_dimensions(
         len(frozen),
         block_length=block_length,
         replications=replications,
-        seed=seed,
+        cell_limit=_MAX_BOOTSTRAP_DRAW_CELLS,
     )
-    return tuple(_mean(tuple(frozen[index] for index in replication)) for replication in indices)
+    return tuple(
+        _iter_circular_block_bootstrap_means(
+            frozen,
+            block_length=block_length,
+            replications=replications,
+            seed=seed,
+        )
+    )
 
 
 @dataclass(frozen=True)
@@ -437,15 +573,20 @@ def circular_block_bootstrap_greater_mean_test(
     observed_mean = _mean(frozen)
     observed_difference = observed_mean - null_mean
     null_centered = tuple(value - observed_mean + null_mean for value in frozen)
-    bootstrap_means = circular_block_bootstrap_means(
-        null_centered,
+    _validate_bootstrap_dimensions(
+        len(null_centered),
         block_length=block_length,
         replications=replications,
-        seed=seed,
+        cell_limit=_MAX_BOOTSTRAP_DRAW_CELLS,
     )
     exceedances = math.fsum(
         (bootstrap_mean - null_mean) >= observed_difference
-        for bootstrap_mean in bootstrap_means
+        for bootstrap_mean in _iter_circular_block_bootstrap_means(
+            null_centered,
+            block_length=block_length,
+            replications=replications,
+            seed=seed,
+        )
     )
     p_value = (exceedances + 1.0) / (replications + 1.0)
     return NullCenteredBootstrapResult(

@@ -55,7 +55,7 @@ def purged_embargo_train_mask(
         raise ValueError("embargo must be nonnegative")
 
     expected_type = type(observations[0])
-    if expected_type is date and embargo.seconds != 0:
+    if expected_type is date and (embargo.seconds != 0 or embargo.microseconds != 0):
         raise ValueError("date-based embargo must use a whole number of days")
     if type(test_start) is not expected_type or type(test_end) is not expected_type:
         raise TypeError("test bounds must use the same temporal type as observed_at")
@@ -100,14 +100,18 @@ def walk_forward_masks(
     """
 
     observations = _validate_time_axis(observed_at, name="observed_at")
+    labels = tuple(label_end_at)
     general_train = purged_embargo_train_mask(
         observations,
-        label_end_at,
+        labels,
         test_start=test_start,
         test_end=test_end,
     )
     train = tuple(keep and value < test_start for keep, value in zip(general_train, observations))
-    test = tuple(test_start <= value <= test_end for value in observations)
+    test = tuple(
+        test_start <= value <= test_end and label_end <= test_end
+        for value, label_end in zip(observations, labels, strict=True)
+    )
     if not any(train):
         raise ValueError("split contains no purged training observations")
     if not any(test):

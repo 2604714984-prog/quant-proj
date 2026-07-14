@@ -2,6 +2,7 @@ import math
 
 import pytest
 
+import quant_system.research.stats as stats_module
 from quant_system.research.stats import (
     circular_block_bootstrap_greater_mean_test,
     circular_block_bootstrap_indices,
@@ -25,11 +26,48 @@ def test_probabilistic_and_deflated_sharpe_have_fixed_reference_values() -> None
     result = deflated_sharpe_ratio(
         0.5,
         trial_sharpes=(-0.1, 0.0, 0.1, 0.2),
+        effective_independent_trial_count=4,
         sample_size=60,
     )
-    assert result.trial_count == 4
-    assert result.expected_maximum_sharpe == pytest.approx(0.13582847247946878)
-    assert result.probability == pytest.approx(0.9958212711192946)
+    assert result.attempted_trial_count == 4
+    assert result.effective_independent_trial_count == 4.0
+    assert result.expected_maximum_sharpe == pytest.approx(0.18582847247946879)
+    assert result.probability == pytest.approx(0.9885525596595458)
+
+
+def test_expected_maximum_includes_cross_trial_mean_and_effective_count() -> None:
+    centered = expected_maximum_sharpe(
+        (-0.2, -0.1, 0.0, 0.1),
+        effective_independent_trial_count=2.5,
+    )
+    shifted = expected_maximum_sharpe(
+        (0.8, 0.9, 1.0, 1.1),
+        effective_independent_trial_count=2.5,
+    )
+
+    assert centered.attempted_trial_count == 4
+    assert centered.effective_independent_trial_count == 2.5
+    assert centered.cross_trial_mean == pytest.approx(-0.05)
+    assert shifted.value - centered.value == pytest.approx(1.0)
+    assert shifted.cross_trial_standard_deviation == pytest.approx(
+        centered.cross_trial_standard_deviation
+    )
+    single_effective = expected_maximum_sharpe(
+        (-0.2, -0.1, 0.0, 0.1),
+        effective_independent_trial_count=1,
+    )
+    assert single_effective.value == pytest.approx(single_effective.cross_trial_mean)
+
+
+@pytest.mark.parametrize("effective_count", [0, 1.5, float("nan"), 4.1, True])
+def test_expected_maximum_rejects_invalid_effective_trial_counts(
+    effective_count: object,
+) -> None:
+    with pytest.raises(ValueError, match="effective_independent_trial_count"):
+        expected_maximum_sharpe(
+            (-0.1, 0.0, 0.1, 0.2),
+            effective_independent_trial_count=effective_count,  # type: ignore[arg-type]
+        )
 
 
 @pytest.mark.parametrize(
@@ -45,8 +83,18 @@ def test_probabilistic_and_deflated_sharpe_have_fixed_reference_values() -> None
             lambda: probabilistic_sharpe_ratio(0.1, benchmark_sharpe=0.0, sample_size=2),
             "sample_size",
         ),
-        (lambda: expected_maximum_sharpe((0.1, 0.1)), "variance"),
-        (lambda: expected_maximum_sharpe((1e308, -1e308)), "finite"),
+        (
+            lambda: expected_maximum_sharpe(
+                (0.1, 0.1), effective_independent_trial_count=2
+            ),
+            "variance",
+        ),
+        (
+            lambda: expected_maximum_sharpe(
+                (1e308, -1e308), effective_independent_trial_count=2
+            ),
+            "finite",
+        ),
     ],
 )
 def test_sharpe_statistics_fail_closed(call: object, message: str) -> None:
@@ -74,6 +122,19 @@ def test_pbo_uses_every_observation_and_has_a_deterministic_ranking() -> None:
     assert result.combinations_evaluated == 6
     assert result.observations_used == 12
     assert result.observations_dropped == 0
+    assert result.relative_ranks == pytest.approx((0.25,) * 6)
+    assert result.rank_tie_policy == "average"
+    assert result.overfit_rule == "relative_rank < 0.5"
+
+
+def test_pbo_uses_average_ranks_and_strictly_below_median_overfit_rule() -> None:
+    identical_strategies = tuple((float(index), float(index)) for index in range(1, 9))
+    result = probability_of_backtest_overfitting(identical_strategies, slice_count=4)
+
+    assert result.relative_ranks == pytest.approx((0.5,) * 6)
+    assert result.logits == pytest.approx((0.0,) * 6)
+    assert result.probability == 0.0
+    assert result.rank_tie_policy == "average"
 
 
 def test_pbo_rejects_a_nondivisible_tail_and_degenerate_split() -> None:
@@ -81,6 +142,9 @@ def test_pbo_rejects_a_nondivisible_tail_and_degenerate_split() -> None:
         probability_of_backtest_overfitting(_pbo_matrix()[:10], slice_count=4)
     with pytest.raises(ValueError, match="variance"):
         probability_of_backtest_overfitting(((1.0, 2.0),) * 8, slice_count=4)
+    large = tuple((float(index), float(-index)) for index in range(20))
+    with pytest.raises(ValueError, match="maximum is 50000"):
+        probability_of_backtest_overfitting(large, slice_count=20)
 
 
 def test_newey_west_lag_zero_matches_the_direct_population_autocovariance() -> None:
@@ -146,6 +210,23 @@ def test_circular_block_bootstrap_wraps_concatenates_and_truncates() -> None:
     )
 
 
+def test_bootstrap_means_stream_indices_instead_of_using_public_matrix_helper(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        stats_module,
+        "circular_block_bootstrap_indices",
+        lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("matrix helper called")),
+    )
+    means = circular_block_bootstrap_means(
+        (0.01, -0.02, 0.03, 0.04, -0.01, 0.05, 0.02),
+        block_length=3,
+        replications=4,
+        seed=6801,
+    )
+    assert len(means) == 4
+
+
 def test_null_centered_bootstrap_is_one_sided_and_reproducible() -> None:
     values = (0.01, -0.02, 0.03, 0.04, -0.01, 0.05, 0.02)
     first = circular_block_bootstrap_greater_mean_test(
@@ -175,3 +256,12 @@ def test_bootstrap_rejects_zero_variance_and_invalid_rng_parameters() -> None:
         circular_block_bootstrap_indices(3, block_length=4, replications=2, seed=1)
     with pytest.raises(ValueError, match="seed"):
         circular_block_bootstrap_indices(3, block_length=2, replications=2, seed=-1)
+    with pytest.raises(ValueError, match="maximum is 100000"):
+        circular_block_bootstrap_indices(2, block_length=1, replications=50_001, seed=1)
+    with pytest.raises(ValueError, match="maximum is 10000000"):
+        circular_block_bootstrap_means(
+            (0.0, 1.0),
+            block_length=1,
+            replications=5_000_001,
+            seed=1,
+        )
