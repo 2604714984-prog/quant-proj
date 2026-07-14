@@ -2,7 +2,7 @@
 
 ## Routine flow
 
-Use one GitHub issue, one implementation branch/PR, focused CI, and one short
+Use one GitHub issue, one implementation PR, focused CI, and one short
 closeout. The issue or PR is the task record; do not duplicate it into an inbox
 file or task-packet folder.
 

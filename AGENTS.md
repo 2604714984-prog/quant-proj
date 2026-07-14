@@ -16,7 +16,7 @@ This is a personal, research-only quant workspace. Keep the controller small.
 Use the shortest path that safely completes the change:
 
 ```text
-one GitHub issue -> one branch/PR -> focused CI -> short closeout
+one GitHub issue -> one PR -> focused CI -> short closeout
 ```
 
 Routine work does not require an inbox copy, a per-task packet folder, a fixed

@@ -7,7 +7,7 @@ Do not add a framework when an issue and PR are enough.
 
 1. Confirm the target repository and current default ref.
 2. Use or create one GitHub issue.
-3. Assign one implementation branch/PR.
+3. Use one implementation PR.
 4. Require focused tests and no more than two CI jobs by default.
 5. Return one short closeout with the PR, changed files, tests, and blockers.
 

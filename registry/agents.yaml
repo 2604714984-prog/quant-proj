@@ -1,6 +1,12 @@
 generated_at: "2026-07-10T23:00:00+08:00"
 workspace_root: "/home/rongyu/workspace/quant-proj"
 historical_model_routing_reference: "registry/model_routing.yaml"
+status: "HISTORICAL_REFERENCE_ONLY"
+active_enforcement: false
+current_routine_authority:
+  - "AGENTS.md"
+  - "runbooks/task_dispatch.md"
+current_routine_flow: "one issue -> one PR -> focused CI -> short closeout"
 
 agents:
   manager:
