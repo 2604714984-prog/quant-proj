@@ -42,7 +42,7 @@ NEXT_ACTION: DATABASE_EXECUTOR_PHASE_1_GREEN_PRECOMMIT
 
 ## Cutover decision
 
-`WAITING_FOR_USER_APPROVAL`
+`CUTOVER_PROPOSAL: WAITING_FOR_USER_APPROVAL`
 
 Part 1 implementation and shadow evidence are complete enough to propose a bounded cutover, but this record does not authorize it. A later owner-approved cutover must preserve the canonical writer lock, take and verify a fresh prewrite backup, stop competing writers, run one bounded append through the minimal path, verify read-only reopen and idempotent replay, and retain immediate rollback. Legacy paths remain active until that separate approval and successful cutover.
 
