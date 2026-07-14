@@ -25,13 +25,27 @@ python -m venv .venv
 .venv/bin/ruff check .
 ~~~
 
-The default data location is resolved outside the repository. Override it when
-needed:
+The default settings are built into the package, so `quant info` also works
+from a non-editable wheel without a copied `config/` directory. The default
+project root is the source checkout when present and otherwise the current
+directory. Override paths when needed:
 
 ~~~bash
 export QUANT_DATA_ROOT=/home/rongyu/workspace/quant-data
 quant info
 ~~~
 
+Market execution is fail-closed: callers must explicitly attest that bar and
+event inputs are complete and available, and settlement/tax rules are selected
+from the trade date. US settlement also carries the exact accepted-session
+sequence; A-share custom commissions never disable statutory dated stamp tax.
+This is deliberately a small contract rather than a data governance subsystem.
+
 Production market-data retrieval and broker execution are intentionally not
 part of this rebuild.
+
+## Review material
+
+- [2026-07-15 external review brief](docs/external_review_20260715.md)
+- [Minimal architecture](docs/architecture.md)
+- [Migration and recovery record](docs/migration/README.md)

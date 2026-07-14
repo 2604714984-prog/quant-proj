@@ -3,11 +3,13 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import stat
 import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 
 def _git(path: Path, *args: str, check: bool = True) -> str:
@@ -30,6 +32,30 @@ def _is_repo(path: Path) -> bool:
     return result.returncode == 0 and result.stdout.strip() == "true"
 
 
+def _sanitize_origin(value: str) -> str | None:
+    origin = value.strip()
+    if not origin:
+        return None
+    if "://" not in origin:
+        origin = origin.split("#", 1)[0].split("?", 1)[0]
+        if "@" in origin and ":" in origin.split("@", 1)[1]:
+            origin = origin.split("@", 1)[1]
+        return origin or None
+    parsed = urlsplit(origin)
+    hostname = parsed.hostname or ""
+    if ":" in hostname and not hostname.startswith("["):
+        hostname = f"[{hostname}]"
+    netloc = hostname
+    try:
+        port = parsed.port
+    except ValueError:
+        port = None
+    if port is not None:
+        netloc = f"{netloc}:{port}"
+    sanitized = urlunsplit((parsed.scheme, netloc, parsed.path, "", ""))
+    return sanitized or None
+
+
 def _repo_record(path: Path) -> dict[str, Any]:
     status = _git(path, "status", "--porcelain=v1").splitlines()
     remote = _git(path, "remote", "get-url", "origin", check=False)
@@ -42,31 +68,63 @@ def _repo_record(path: Path) -> dict[str, Any]:
         "branch": _git(path, "branch", "--show-current"),
         "head": _git(path, "rev-parse", "HEAD"),
         "tree": _git(path, "rev-parse", "HEAD^{tree}"),
-        "origin": remote or None,
+        "origin": _sanitize_origin(remote),
         "dirty_entry_count": len(status),
         "is_linked_worktree": git_dir != common_dir,
         "git_common_dir": str(common_dir),
     }
 
 
-def _sha256(path: Path) -> str:
+def _signature(value: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+def _sha256(descriptor: int) -> str:
     digest = hashlib.sha256()
-    with path.open("rb") as stream:
-        for chunk in iter(lambda: stream.read(8 * 1024 * 1024), b""):
-            digest.update(chunk)
+    while chunk := os.read(descriptor, 8 * 1024 * 1024):
+        digest.update(chunk)
     return digest.hexdigest()
 
 
 def _data_record(path: Path, hash_database: bool) -> dict[str, Any]:
-    mode = stat.S_IMODE(path.stat().st_mode)
-    record: dict[str, Any] = {
-        "path": str(path),
-        "size_bytes": path.stat().st_size,
-        "mode": f"{mode:04o}",
-    }
-    if hash_database:
-        record["sha256"] = _sha256(path)
-    return record
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as exc:
+        raise ValueError(f"database candidate is not a regular file: {path}") from exc
+    try:
+        before = os.fstat(descriptor)
+        linked = os.stat(path, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or not stat.S_ISREG(linked.st_mode)
+            or (before.st_dev, before.st_ino) != (linked.st_dev, linked.st_ino)
+        ):
+            raise ValueError(f"database candidate is not a regular file: {path}")
+        record: dict[str, Any] = {
+            "path": str(path),
+            "size_bytes": before.st_size,
+            "mode": f"{stat.S_IMODE(before.st_mode):04o}",
+        }
+        if hash_database:
+            record["sha256"] = _sha256(descriptor)
+        after = os.fstat(descriptor)
+        linked_after = os.stat(path, follow_symlinks=False)
+        if _signature(before) != _signature(after) or _signature(before) != _signature(
+            linked_after
+        ):
+            raise ValueError(f"database candidate changed during inventory: {path}")
+        return record
+    except OSError as exc:
+        raise ValueError(f"database candidate changed during inventory: {path}") from exc
+    finally:
+        os.close(descriptor)
 
 
 def build_inventory(workspace: Path, hash_database: bool) -> dict[str, Any]:

@@ -7,6 +7,7 @@ session open. Share settlement and cash accounting live in the portfolio module.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from datetime import date
 import math
 
 from .common import (
@@ -25,6 +26,18 @@ class AShareBar:
     is_suspended: bool = False
     up_limit: float | None = None
     down_limit: float | None = None
+    data_qualified: bool = False
+
+
+STAMP_TAX_REDUCTION_DATE = date(2023, 8, 28)
+
+
+def stamp_tax_rate(trade_date: date) -> float:
+    """Return the sell-side stamp-tax rate effective on ``trade_date``."""
+
+    if not isinstance(trade_date, date):
+        raise TypeError("trade_date must be a date")
+    return 0.0005 if trade_date >= STAMP_TAX_REDUCTION_DATE else 0.001
 
 
 def decide_fill(
@@ -36,14 +49,38 @@ def decide_fill(
     """Apply suspension and locked-limit rules to one accepted execution bar."""
 
     normalized_side = normalize_side(side)
+    if bar.data_qualified is not True:
+        raise MarketDataError(
+            "A-share bar must be explicitly complete and available before execution"
+        )
+    if type(bar.is_suspended) is not bool:
+        raise MarketDataError("is_suspended must be boolean")
+    up_limit = _optional_limit(bar.up_limit, "up_limit")
+    down_limit = _optional_limit(bar.down_limit, "down_limit")
+    if up_limit is not None and down_limit is not None and down_limit > up_limit:
+        raise MarketDataError("down_limit cannot exceed up_limit")
     if bar.is_suspended:
         return FillDecision(False, None, "suspended")
     if not is_positive_price(bar.open):
-        return FillDecision(False, None, "missing_or_invalid_price")
+        raise MarketDataError(
+            "qualified non-suspended A-share bar requires a positive finite open"
+        )
 
     execution_price = float(bar.open)
-    up_limit = _optional_limit(bar.up_limit, "up_limit")
-    down_limit = _optional_limit(bar.down_limit, "down_limit")
+    if up_limit is not None and execution_price > up_limit and not math.isclose(
+        execution_price,
+        up_limit,
+        rel_tol=1e-6,
+        abs_tol=0.001,
+    ):
+        raise MarketDataError("open exceeds the qualified up_limit")
+    if down_limit is not None and execution_price < down_limit and not math.isclose(
+        execution_price,
+        down_limit,
+        rel_tol=1e-6,
+        abs_tol=0.001,
+    ):
+        raise MarketDataError("open is below the qualified down_limit")
 
     if normalized_side == "buy" and up_limit is not None:
         if execution_price > up_limit or math.isclose(
@@ -62,11 +99,12 @@ def decide_fill(
         ):
             return FillDecision(False, None, "limit_down_sell_rejected")
 
-    return FillDecision(
-        True,
-        apply_slippage(execution_price, normalized_side, slippage_bps),
-        "filled",
-    )
+    fill_price = apply_slippage(execution_price, normalized_side, slippage_bps)
+    if up_limit is not None and fill_price > up_limit:
+        raise MarketDataError("slippage-adjusted fill exceeds the qualified up_limit")
+    if down_limit is not None and fill_price < down_limit:
+        raise MarketDataError("slippage-adjusted fill is below the qualified down_limit")
+    return FillDecision(True, fill_price, "filled")
 
 
 def require_board_lot(shares: float, *, lot_size: int = 100) -> None:

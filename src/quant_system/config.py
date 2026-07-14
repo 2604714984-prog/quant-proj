@@ -18,7 +18,6 @@ class ConfigurationError(ValueError):
 @dataclass(frozen=True)
 class DatabaseSettings:
     filename: str
-    read_only_default: bool
 
 
 @dataclass(frozen=True)
@@ -33,6 +32,21 @@ class AppSettings:
     database: DatabaseSettings
     writer: WriterSettings
     config_path: Path
+
+
+DEFAULT_DATABASE_FILENAME = "quant_research.duckdb"
+DEFAULT_MAX_ROWS_PER_BATCH = 100_000
+DEFAULT_LOCK_TIMEOUT_SECONDS = 5.0
+
+
+def _built_in_settings() -> dict[str, Any]:
+    return {
+        "database": {"filename": DEFAULT_DATABASE_FILENAME},
+        "writer": {
+            "max_rows_per_batch": DEFAULT_MAX_ROWS_PER_BATCH,
+            "lock_timeout_seconds": DEFAULT_LOCK_TIMEOUT_SECONDS,
+        },
+    }
 
 
 def _table(raw: dict[str, Any], name: str) -> dict[str, Any]:
@@ -51,28 +65,31 @@ def load_settings(
     env = os.environ if environ is None else environ
     initial_paths = AppPaths.discover(project_root=project_root, environ=env)
     configured_path = env.get("QUANT_CONFIG")
+    explicit_config = configured_path is not None or path is not None
     config_path = Path(configured_path).expanduser() if configured_path else path
     if config_path is None:
         config_path = initial_paths.project_root / "config" / "settings.toml"
     if not config_path.is_absolute():
         config_path = initial_paths.project_root / config_path
     config_path = config_path.resolve(strict=False)
-    try:
-        raw = tomllib.loads(config_path.read_text(encoding="utf-8"))
-    except (OSError, tomllib.TOMLDecodeError) as exc:
-        raise ConfigurationError(f"cannot load settings: {config_path}") from exc
+    if config_path.is_file():
+        try:
+            raw = tomllib.loads(config_path.read_text(encoding="utf-8"))
+        except (OSError, tomllib.TOMLDecodeError) as exc:
+            raise ConfigurationError(f"cannot load settings: {config_path}") from exc
+    elif explicit_config:
+        raise ConfigurationError(f"cannot load settings: {config_path}")
+    else:
+        raw = _built_in_settings()
 
     database_raw = _table(raw, "database")
     writer_raw = _table(raw, "writer")
     filename = database_raw.get("filename")
-    read_only_default = database_raw.get("read_only_default")
     max_rows = writer_raw.get("max_rows_per_batch")
     lock_timeout = writer_raw.get("lock_timeout_seconds")
 
     if not isinstance(filename, str):
         raise ConfigurationError("database.filename must be a string")
-    if type(read_only_default) is not bool:
-        raise ConfigurationError("database.read_only_default must be boolean")
     if type(max_rows) is not int or not 1 <= max_rows <= 1_000_000:
         raise ConfigurationError("writer.max_rows_per_batch must be 1..1000000")
     if (
@@ -88,7 +105,7 @@ def load_settings(
     )
     return AppSettings(
         paths=paths,
-        database=DatabaseSettings(filename=filename, read_only_default=read_only_default),
+        database=DatabaseSettings(filename=filename),
         writer=WriterSettings(
             max_rows_per_batch=max_rows,
             lock_timeout_seconds=float(lock_timeout),
