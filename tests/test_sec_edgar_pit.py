@@ -551,6 +551,7 @@ def test_split_adjustment_uses_latest_known_source_revision() -> None:
             retrieved,
             "split-v1",
         ),
+        exchange_timezone="America/New_York",
         ex_date=date(2024, 6, 1),
         split_ratio=Decimal("2"),
     )
@@ -614,6 +615,11 @@ def test_split_adjustment_uses_latest_known_source_revision() -> None:
         as_of=datetime(2024, 6, 2, 12, tzinfo=UTC),
         split_events=(event, revised),
     ) == Decimal("30")
+    with pytest.raises(SourceIdentityError, match="timezone"):
+        select_corporate_action_revision(
+            (event, replace(revised, exchange_timezone="UTC")),
+            as_of=datetime(2024, 6, 2, 12, tzinfo=UTC),
+        )
 
     branch = replace(
         revised,
@@ -635,6 +641,66 @@ def test_split_adjustment_uses_latest_known_source_revision() -> None:
         )
 
 
+def test_split_boundary_uses_exchange_local_effective_date() -> None:
+    shares = next(
+        fact for fact in _snapshot().facts if fact.concept == "Shares" and fact.revision == 1
+    )
+    source = _source(
+        "https://www.sec.gov/Archives/edgar/data/1/000000000124000001/cn-split.htm",
+        b"cn-split",
+        datetime(2024, 5, 31, 12, tzinfo=UTC),
+        datetime(2024, 6, 2, tzinfo=UTC),
+        "cn-split-v1",
+    )
+    event = CorporateActionIdentity(
+        subject_id=CIK,
+        action_id="split-20240601-cn",
+        action_type="split",
+        effective_at=datetime(2024, 5, 31, 16, 30, tzinfo=UTC),
+        source=source,
+        exchange_timezone="Asia/Shanghai",
+        ex_date=date(2024, 6, 1),
+        split_ratio=Decimal("2"),
+    )
+
+    assert event.effective_at.date() == date(2024, 5, 31)
+    assert event.effective_date == date(2024, 6, 1)
+    assert adjust_share_fact_for_splits(
+        replace(shares, start=None, end=date(2024, 5, 31)),
+        as_of=datetime(2024, 6, 2, tzinfo=UTC),
+        split_events=(event,),
+    ) == Decimal("20")
+    assert adjust_share_fact_for_splits(
+        replace(shares, start=None, end=date(2024, 6, 1)),
+        as_of=datetime(2024, 6, 2, tzinfo=UTC),
+        split_events=(event,),
+    ) == Decimal("10")
+    with pytest.raises(SourceIdentityError, match="local date"):
+        replace(event, ex_date=date(2024, 5, 31))
+
+
+def test_corporate_action_rejects_invalid_exchange_timezone() -> None:
+    available = datetime(2024, 5, 1, tzinfo=UTC)
+    source = _source(
+        "https://www.sec.gov/Archives/edgar/data/1/000000000124000001/split.htm",
+        b"invalid-timezone",
+        available,
+        available,
+        "invalid-timezone-v1",
+    )
+    with pytest.raises(SourceIdentityError, match="IANA timezone"):
+        CorporateActionIdentity(
+            subject_id=CIK,
+            action_id="invalid-timezone",
+            action_type="split",
+            effective_at=available,
+            source=source,
+            exchange_timezone="Not/A_Timezone",
+            ex_date=date(2024, 5, 1),
+            split_ratio=Decimal("2"),
+        )
+
+
 def test_corporate_action_identity_rejects_ambiguous_value_shapes() -> None:
     available = datetime(2024, 5, 1, tzinfo=UTC)
     source = _source(
@@ -651,6 +717,7 @@ def test_corporate_action_identity_rejects_ambiguous_value_shapes() -> None:
             action_type="split",
             effective_at=available,
             source=source,
+            exchange_timezone="UTC",
             ex_date=date(2024, 5, 1),
             split_ratio=Decimal("2"),
             cash_amount=Decimal("1"),
@@ -662,6 +729,7 @@ def test_corporate_action_identity_rejects_ambiguous_value_shapes() -> None:
             action_type="cash_dividend",
             effective_at=available,
             source=source,
+            exchange_timezone="UTC",
             cash_amount=Decimal("1"),
         )
     with pytest.raises(SourceIdentityError, match="unsupported corporate action"):
@@ -671,6 +739,7 @@ def test_corporate_action_identity_rejects_ambiguous_value_shapes() -> None:
             action_type="merger",  # type: ignore[arg-type]
             effective_at=available,
             source=source,
+            exchange_timezone="UTC",
         )
 
 
@@ -689,6 +758,7 @@ def test_corporate_action_fields_are_action_specific() -> None:
         action_type="cash_dividend",
         effective_at=available,
         source=source,
+        exchange_timezone="UTC",
         ex_date=date(2024, 5, 1),
         record_date=date(2024, 5, 2),
         pay_date=date(2024, 5, 10),
@@ -706,6 +776,7 @@ def test_corporate_action_fields_are_action_specific() -> None:
             content_sha256=hashlib.sha256(b"symbol-change").hexdigest(),
             revision_id="symbol-v1",
         ),
+        exchange_timezone="UTC",
         new_subject_id="NEW-SUBJECT",
     )
 
