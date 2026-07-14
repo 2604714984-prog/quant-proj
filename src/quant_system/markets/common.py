@@ -47,16 +47,6 @@ def require_nonempty_text(value: object, name: str) -> str:
     return value
 
 
-def require_sha256(value: object, name: str = "source_sha256") -> str:
-    if (
-        not isinstance(value, str)
-        or len(value) != 64
-        or any(character not in "0123456789abcdef" for character in value)
-    ):
-        raise MarketDataError(f"{name} must be a lowercase SHA-256 digest")
-    return value
-
-
 def require_aware_datetime(value: object, name: str) -> datetime:
     if not isinstance(value, datetime) or value.tzinfo is None or value.utcoffset() is None:
         raise MarketDataError(f"{name} must be timezone-aware")

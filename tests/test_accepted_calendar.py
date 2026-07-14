@@ -104,6 +104,14 @@ def test_calendar_rejects_duplicate_reordered_and_mixed_timezone_rows() -> None:
 
 def test_calendar_rejects_naive_times_and_invalid_lookup_ranges() -> None:
     source = _calendar_source("calendar")
+    with pytest.raises(CalendarIdentityError, match="canonical SourceIdentity"):
+        AcceptedSession(
+            session_date=date(2026, 7, 3),
+            open_at=datetime(2026, 7, 3, 13, 30, tzinfo=UTC),
+            close_at=datetime(2026, 7, 3, 20, tzinfo=UTC),
+            source=object(),  # type: ignore[arg-type]
+            exchange_timezone="America/New_York",
+        )
     with pytest.raises(SourceIdentityError, match="timezone-aware"):
         AcceptedSession(
             session_date=date(2026, 7, 3),

@@ -1,19 +1,23 @@
-"""Immutable lifecycle for exits blocked on accepted market sessions."""
+"""Immutable blocked-exit lifecycle over one accepted-session calendar."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from datetime import date
+from datetime import date, datetime
 
+from quant_system.data import AcceptedSession, AcceptedSessionCalendar
 from quant_system.markets.common import (
     FillDecision,
     MarketDataError,
     is_finite_number,
     is_positive_price,
+    require_aware_datetime,
     require_date,
     require_nonempty_text,
-    require_sha256,
 )
+from quant_system.markets.us import cash_settlement_lag_sessions
+
+from .portfolio import Portfolio, Trade
 
 BLOCKED_EXIT_REASONS = frozenset(
     {"suspended", "limit_down_sell_rejected", "confirmed_halt"}
@@ -22,18 +26,20 @@ BLOCKED_EXIT_REASONS = frozenset(
 
 @dataclass(frozen=True)
 class ExitAttempt:
-    session: date
-    accepted_session_ordinal: int
-    session_identity_sha256: str
+    session: AcceptedSession
+    decision_at: datetime
     filled: bool
     price: float | None
     reason: str
 
     def __post_init__(self) -> None:
-        require_date(self.session, "session")
-        if type(self.accepted_session_ordinal) is not int or self.accepted_session_ordinal < 0:
-            raise ValueError("accepted_session_ordinal must be a nonnegative integer")
-        require_sha256(self.session_identity_sha256, "session_identity_sha256")
+        if not isinstance(self.session, AcceptedSession):
+            raise MarketDataError("session must be an AcceptedSession")
+        cutoff = require_aware_datetime(self.decision_at, "decision_at")
+        if cutoff > self.session.open_at:
+            raise MarketDataError("decision_at cannot follow the attempted-session open")
+        if self.session.source.available_at > cutoff:
+            raise MarketDataError("attempted-session source was unavailable at decision_at")
         require_nonempty_text(self.reason, "reason")
         if type(self.filled) is not bool:
             raise MarketDataError("filled must be boolean")
@@ -49,8 +55,9 @@ class ExitAttempt:
 @dataclass(frozen=True)
 class BlockedExitOrder:
     symbol: str
-    quantity: float
+    shares: float
     requested_session: date
+    calendar: AcceptedSessionCalendar
     attempts: tuple[ExitAttempt, ...] = ()
     executed_session: date | None = None
     execution_price: float | None = None
@@ -58,18 +65,37 @@ class BlockedExitOrder:
 
     def __post_init__(self) -> None:
         require_nonempty_text(self.symbol, "symbol")
-        if not is_finite_number(self.quantity) or self.quantity <= 0.0:
-            raise ValueError("quantity must be finite and positive")
+        if (
+            not is_finite_number(self.shares)
+            or self.shares <= 0.0
+            or not float(self.shares).is_integer()
+        ):
+            raise ValueError("shares must be positive whole shares")
         require_date(self.requested_session, "requested_session")
-        previous_session: date | None = None
-        for ordinal, attempt in enumerate(self.attempts):
-            if attempt.accepted_session_ordinal != ordinal:
-                raise ValueError("exit attempts must use contiguous accepted-session ordinals")
-            if ordinal == 0 and attempt.session != self.requested_session:
-                raise ValueError("the first exit attempt must use the requested session")
-            if previous_session is not None and attempt.session <= previous_session:
-                raise ValueError("exit attempt sessions must be strictly increasing")
-            previous_session = attempt.session
+        if not isinstance(self.calendar, AcceptedSessionCalendar):
+            raise MarketDataError("calendar must be an AcceptedSessionCalendar")
+        if self.requested_session not in self.calendar.session_dates:
+            raise MarketDataError("requested_session must be present in the accepted calendar")
+
+        previous: AcceptedSession | None = None
+        for attempt in self.attempts:
+            accepted = self.calendar.session_on(
+                attempt.session.session_date,
+                as_of=attempt.decision_at,
+            )
+            if accepted != attempt.session:
+                raise MarketDataError("exit attempt does not match the accepted calendar identity")
+            if previous is None:
+                if attempt.session.session_date != self.requested_session:
+                    raise ValueError("the first exit attempt must use the requested session")
+            else:
+                expected = self.calendar.next_session(
+                    previous.session_date,
+                    as_of=attempt.decision_at,
+                )
+                if attempt.session != expected:
+                    raise ValueError("exit attempts must use consecutive accepted sessions")
+            previous = attempt.session
 
         filled_attempts = tuple(attempt for attempt in self.attempts if attempt.filled)
         if self.executed_session is None:
@@ -79,7 +105,7 @@ class BlockedExitOrder:
             if len(filled_attempts) != 1 or not self.attempts[-1].filled:
                 raise ValueError("completed exit must end in exactly one filled attempt")
             last = self.attempts[-1]
-            if self.executed_session != last.session or self.execution_price != last.price:
+            if self.executed_session != last.session.session_date or self.execution_price != last.price:
                 raise ValueError("execution fields must match the final attempt")
             if self.delay_sessions != len(self.attempts) - 1:
                 raise ValueError("delay_sessions must equal preceding blocked sessions")
@@ -89,46 +115,107 @@ class BlockedExitOrder:
         return self.executed_session is None
 
 
-def advance_blocked_exit(
+def _validated_attempt(
     order: BlockedExitOrder,
     *,
     session: date,
-    accepted_session_ordinal: int,
-    session_identity_sha256: str,
+    decision_at: datetime,
     decision: FillDecision,
-) -> BlockedExitOrder:
-    """Record every accepted session until the first executable exit."""
-
+    expected_filled: bool,
+) -> ExitAttempt:
     if not order.pending:
         raise ValueError("completed exit cannot be advanced")
     require_date(session, "session")
-    expected_ordinal = len(order.attempts)
-    if accepted_session_ordinal != expected_ordinal:
-        raise ValueError("accepted sessions cannot be skipped or replayed")
-    if expected_ordinal == 0 and session != order.requested_session:
-        raise ValueError("the first exit attempt must use the requested session")
-    if order.attempts and session <= order.attempts[-1].session:
-        raise ValueError("exit attempt sessions must be strictly increasing")
-    require_sha256(session_identity_sha256, "session_identity_sha256")
-    if type(decision.filled) is not bool:
-        raise MarketDataError("fill decision must contain a boolean filled state")
+    cutoff = require_aware_datetime(decision_at, "decision_at")
+    if not isinstance(decision, FillDecision) or type(decision.filled) is not bool:
+        raise MarketDataError("decision must be a FillDecision with boolean filled state")
+    if decision.filled is not expected_filled:
+        if expected_filled:
+            raise MarketDataError("ready-exit execution requires a filled decision")
+        raise MarketDataError("fillable decisions must execute through execute_ready_blocked_exit")
 
-    attempt = ExitAttempt(
-        session=session,
-        accepted_session_ordinal=accepted_session_ordinal,
-        session_identity_sha256=session_identity_sha256,
+    accepted = order.calendar.session_on(session, as_of=cutoff)
+    if order.attempts:
+        expected = order.calendar.next_session(
+            order.attempts[-1].session.session_date,
+            as_of=cutoff,
+        )
+        if accepted != expected:
+            raise ValueError("exit attempts must use consecutive accepted sessions")
+    elif accepted.session_date != order.requested_session:
+        raise ValueError("the first exit attempt must use the requested session")
+    return ExitAttempt(
+        session=accepted,
+        decision_at=cutoff,
         filled=decision.filled,
         price=decision.price,
         reason=decision.reason,
     )
-    attempts = order.attempts + (attempt,)
-    if not decision.filled:
-        return replace(order, attempts=attempts)
-    assert decision.price is not None
-    return replace(
+
+
+def advance_blocked_exit(
+    order: BlockedExitOrder,
+    *,
+    session: date,
+    decision_at: datetime,
+    decision: FillDecision,
+) -> BlockedExitOrder:
+    """Record one non-fill on the next consecutive accepted session."""
+
+    attempt = _validated_attempt(
         order,
-        attempts=attempts,
-        executed_session=session,
+        session=session,
+        decision_at=decision_at,
+        decision=decision,
+        expected_filled=False,
+    )
+    return replace(order, attempts=order.attempts + (attempt,))
+
+
+def execute_ready_blocked_exit(
+    order: BlockedExitOrder,
+    *,
+    portfolio: Portfolio,
+    session: date,
+    decision_at: datetime,
+    decision: FillDecision,
+) -> tuple[BlockedExitOrder, Trade]:
+    """Sell through ``Portfolio`` and only then return a completed exit order."""
+
+    if not isinstance(portfolio, Portfolio):
+        raise TypeError("portfolio must be a Portfolio")
+    attempt = _validated_attempt(
+        order,
+        session=session,
+        decision_at=decision_at,
+        decision=decision,
+        expected_filled=True,
+    )
+    assert decision.price is not None
+    settlement_date: date | None = None
+    settlement_sessions: tuple[date, ...] | None = None
+    if portfolio.us_cash_settlement:
+        accepted: list[date] = []
+        after = attempt.session.session_date
+        for _ in range(cash_settlement_lag_sessions(after)):
+            row = order.calendar.next_session(after, as_of=attempt.decision_at)
+            accepted.append(row.session_date)
+            after = row.session_date
+        settlement_sessions = tuple(accepted)
+        settlement_date = settlement_sessions[-1]
+    trade = portfolio.sell(
+        order.symbol,
+        order.shares,
+        decision.price,
+        attempt.session.session_date,
+        settlement_date=settlement_date,
+        accepted_settlement_sessions=settlement_sessions,
+    )
+    completed = replace(
+        order,
+        attempts=order.attempts + (attempt,),
+        executed_session=attempt.session.session_date,
         execution_price=float(decision.price),
         delay_sessions=len(order.attempts),
     )
+    return completed, trade

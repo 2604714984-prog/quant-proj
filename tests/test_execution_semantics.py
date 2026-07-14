@@ -1,177 +1,519 @@
-from datetime import date, datetime, timezone
+from datetime import date, datetime, time, timedelta, timezone
+from zoneinfo import ZoneInfo
 
 import pytest
 
-from quant_system.backtest.blocked_orders import BlockedExitOrder, advance_blocked_exit
+from quant_system.backtest.blocked_orders import (
+    BlockedExitOrder,
+    advance_blocked_exit,
+    execute_ready_blocked_exit,
+)
 from quant_system.backtest.capacity import (
     CapacityObservation,
     CapacityPolicy,
     assess_capacity,
 )
+from quant_system.backtest.portfolio import Portfolio
+from quant_system.data import AcceptedSession, AcceptedSessionCalendar, SourceIdentity
 from quant_system.markets.common import FillDecision, MarketDataError
-from quant_system.markets.corporate_actions import CorporateAction, select_action_revision
 from quant_system.markets.universe import StatusEvidence, evaluate_universe
 
 SHA_A = "a" * 64
 SHA_B = "b" * 64
 SHA_C = "c" * 64
 UTC = timezone.utc
+SHANGHAI = "Asia/Shanghai"
 
 
-def test_capacity_uses_the_minimum_of_explicit_volume_and_amount_caps() -> None:
-    observation = CapacityObservation(
-        session_volume=100_000,
-        volume_unit="shares",
-        session_amount=500_000,
-        amount_currency="CNY",
-        source_id="bar:000001.SZ:20260713",
-        source_sha256=SHA_A,
+def _source(
+    revision_id: str,
+    sha256: str,
+    *,
+    available_at: datetime = datetime(2026, 7, 1, tzinfo=UTC),
+    supersedes: str | None = None,
+) -> SourceIdentity:
+    return SourceIdentity(
+        source_url=f"https://example.test/{revision_id}",
+        content_sha256=sha256,
+        available_at=available_at,
+        retrieved_at=available_at + timedelta(minutes=1),
+        revision_id=revision_id,
+        supersedes_revision_id=supersedes,
     )
-    policy = CapacityPolicy(0.10, 0.05, "shares", "CNY")
 
-    accepted = assess_capacity(2_000, 10.0, observation, policy)
-    rejected = assess_capacity(3_000, 10.0, observation, policy)
+
+def _session(
+    session_date: date,
+    *,
+    revision_id: str,
+    sha256: str,
+    exchange_timezone: str = SHANGHAI,
+    source_available_at: datetime = datetime(2026, 7, 1, tzinfo=UTC),
+) -> AcceptedSession:
+    zone = ZoneInfo(exchange_timezone)
+    opened = datetime.combine(session_date, time(9, 30), zone)
+    closed = datetime.combine(session_date, time(15), zone)
+    return AcceptedSession(
+        session_date,
+        opened,
+        closed,
+        _source(revision_id, sha256, available_at=source_available_at),
+        exchange_timezone,
+    )
+
+
+def _calendar(exchange_timezone: str = SHANGHAI) -> AcceptedSessionCalendar:
+    return AcceptedSessionCalendar(
+        (
+            _session(
+                date(2026, 7, 10),
+                revision_id="cal-10",
+                sha256="1" * 64,
+                exchange_timezone=exchange_timezone,
+            ),
+            _session(
+                date(2026, 7, 13),
+                revision_id="cal-13",
+                sha256="2" * 64,
+                exchange_timezone=exchange_timezone,
+            ),
+            _session(
+                date(2026, 7, 14),
+                revision_id="cal-14",
+                sha256="3" * 64,
+                exchange_timezone=exchange_timezone,
+            ),
+            _session(
+                date(2026, 7, 15),
+                revision_id="cal-15",
+                sha256="4" * 64,
+                exchange_timezone=exchange_timezone,
+            ),
+        )
+    )
+
+
+def _capacity_observation(
+    observed_session: AcceptedSession,
+    *,
+    subject_id: str = "000001.SZ",
+    volume_shares: float = 100_000,
+    amount: float = 500_000,
+    currency: str = "CNY",
+    source: SourceIdentity | None = None,
+) -> CapacityObservation:
+    return CapacityObservation(
+        subject_id=subject_id,
+        observed_session=observed_session,
+        session_volume_shares=volume_shares,
+        session_amount=amount,
+        currency=currency,
+        source=source
+        or _source(
+            "bar-13",
+            SHA_A,
+            available_at=observed_session.close_at,
+        ),
+    )
+
+
+def test_capacity_uses_prior_accepted_share_volume_and_amount_caps() -> None:
+    calendar = _calendar()
+    observed = calendar.session_on(date(2026, 7, 13), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    execution = calendar.session_on(date(2026, 7, 14), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    decision_at = execution.open_at - timedelta(minutes=30)
+    observation = _capacity_observation(observed)
+    policy = CapacityPolicy(0.10, 0.05, "CNY")
+
+    accepted = assess_capacity(
+        "000001.SZ",
+        2_000,
+        10.0,
+        "CNY",
+        observation,
+        policy,
+        decision_at=decision_at,
+        execution_session=execution,
+    )
+    rejected = assess_capacity(
+        "000001.SZ",
+        3_000,
+        10.0,
+        "CNY",
+        observation,
+        policy,
+        decision_at=decision_at,
+        execution_session=execution,
+    )
 
     assert accepted.allowed is True
     assert accepted.binding_cap == "amount"
-    assert accepted.max_volume == pytest.approx(2_500)
+    assert accepted.max_shares == pytest.approx(2_500)
     assert accepted.max_amount == pytest.approx(25_000)
     assert rejected.reason == "exceeds_amount_cap"
 
 
-def test_capacity_fails_closed_on_missing_identity_or_mismatched_units() -> None:
-    with pytest.raises(MarketDataError, match="SHA-256"):
-        CapacityObservation(100, "shares", 1_000, "CNY", "bar", "")
-    observation = CapacityObservation(100, "shares", 1_000, "CNY", "bar", SHA_A)
-    with pytest.raises(MarketDataError, match="volume units"):
-        assess_capacity(1, 10, observation, CapacityPolicy(0.1, 0.1, "lots", "CNY"))
+def test_capacity_cannot_treat_one_hundred_lots_as_one_hundred_shares() -> None:
+    calendar = _calendar()
+    observed = calendar.session_on(date(2026, 7, 13), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    execution = calendar.session_on(date(2026, 7, 14), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    observation = _capacity_observation(observed, volume_shares=50_000, amount=10_000_000)
+
+    decision = assess_capacity(
+        "000001.SZ",
+        10_000,
+        10,
+        "CNY",
+        observation,
+        CapacityPolicy(0.10, 1.0, "CNY"),
+        decision_at=execution.open_at,
+        execution_session=execution,
+    )
+
+    assert decision.allowed is False
+    assert decision.max_shares == 5_000
+    assert decision.reason == "exceeds_volume_cap"
+
+
+def test_capacity_fails_closed_on_identity_time_currency_and_unit_mismatch() -> None:
+    calendar = _calendar()
+    observed = calendar.session_on(date(2026, 7, 13), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    execution = calendar.session_on(date(2026, 7, 14), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    cutoff = execution.open_at
+    observation = _capacity_observation(observed)
+    policy = CapacityPolicy(0.1, 0.1, "CNY")
+
+    with pytest.raises(MarketDataError, match="subject"):
+        assess_capacity(
+            "600000.SH",
+            100,
+            10,
+            "CNY",
+            observation,
+            policy,
+            decision_at=cutoff,
+            execution_session=execution,
+        )
+    with pytest.raises(MarketDataError, match="earlier accepted session"):
+        assess_capacity(
+            "000001.SZ",
+            100,
+            10,
+            "CNY",
+            _capacity_observation(execution),
+            policy,
+            decision_at=cutoff,
+            execution_session=execution,
+        )
+    late_source = _source(
+        "late-bar",
+        SHA_B,
+        available_at=cutoff + timedelta(minutes=1),
+    )
+    with pytest.raises(MarketDataError, match="unavailable"):
+        assess_capacity(
+            "000001.SZ",
+            100,
+            10,
+            "CNY",
+            _capacity_observation(observed, source=late_source),
+            policy,
+            decision_at=cutoff,
+            execution_session=execution,
+        )
+    premature_source = _source(
+        "premature-bar",
+        "8" * 64,
+        available_at=observed.open_at,
+    )
+    with pytest.raises(MarketDataError, match="before the observed-session close"):
+        assess_capacity(
+            "000001.SZ",
+            100,
+            10,
+            "CNY",
+            _capacity_observation(observed, source=premature_source),
+            policy,
+            decision_at=cutoff,
+            execution_session=execution,
+        )
+    with pytest.raises(MarketDataError, match="cannot follow"):
+        assess_capacity(
+            "000001.SZ",
+            100,
+            10,
+            "CNY",
+            observation,
+            policy,
+            decision_at=cutoff + timedelta(microseconds=1),
+            execution_session=execution,
+        )
     with pytest.raises(MarketDataError, match="currencies"):
-        assess_capacity(1, 10, observation, CapacityPolicy(0.1, 0.1, "shares", "USD"))
-    with pytest.raises(MarketDataError, match="surrounding whitespace"):
-        CapacityObservation(100, " shares", 1_000, "CNY", "bar", SHA_A)
+        assess_capacity(
+            "000001.SZ",
+            100,
+            10,
+            "USD",
+            observation,
+            policy,
+            decision_at=cutoff,
+            execution_session=execution,
+        )
+    with pytest.raises(MarketDataError, match="whole shares"):
+        assess_capacity(
+            "000001.SZ",
+            1.5,
+            10,
+            "CNY",
+            observation,
+            policy,
+            decision_at=cutoff,
+            execution_session=execution,
+        )
+
+
+def test_capacity_rejects_cross_timezone_session_reuse_and_nonfinite_values() -> None:
+    calendar = _calendar()
+    execution = calendar.session_on(date(2026, 7, 14), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    ny_observed = _session(
+        date(2026, 7, 13),
+        revision_id="nyse-13",
+        sha256=SHA_B,
+        exchange_timezone="America/New_York",
+    )
+    with pytest.raises(MarketDataError, match="mix exchange timezones"):
+        assess_capacity(
+            "000001.SZ",
+            100,
+            10,
+            "CNY",
+            _capacity_observation(ny_observed),
+            CapacityPolicy(0.1, 0.1, "CNY"),
+            decision_at=execution.open_at,
+            execution_session=execution,
+        )
+    for bad in (float("nan"), float("inf"), -1.0, 1.5):
+        with pytest.raises(MarketDataError):
+            _capacity_observation(
+                calendar.session_on(
+                    date(2026, 7, 13),
+                    as_of=datetime(2026, 7, 14, tzinfo=UTC),
+                ),
+                volume_shares=bad,
+            )
 
 
 def test_zero_observed_liquidity_is_valid_evidence_but_zero_capacity() -> None:
-    observation = CapacityObservation(0, "shares", 0, "USD", "bar", SHA_A)
-    decision = assess_capacity(1, 10, observation, CapacityPolicy(0.1, 0.1, "shares", "USD"))
+    calendar = _calendar()
+    observed = calendar.session_on(date(2026, 7, 13), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    execution = calendar.session_on(date(2026, 7, 14), as_of=datetime(2026, 7, 14, tzinfo=UTC))
+    decision = assess_capacity(
+        "000001.SZ",
+        1,
+        10,
+        "CNY",
+        _capacity_observation(observed, volume_shares=0, amount=0),
+        CapacityPolicy(0.1, 0.1, "CNY"),
+        decision_at=execution.open_at,
+        execution_session=execution,
+    )
     assert decision.allowed is False
-    assert decision.max_volume == 0.0
+    assert decision.max_shares == 0.0
     assert decision.binding_cap == "both"
 
 
-@pytest.mark.parametrize("bad", [float("nan"), float("inf"), -1.0])
-def test_capacity_rejects_nonfinite_or_negative_observations(bad: float) -> None:
-    with pytest.raises(MarketDataError):
-        CapacityObservation(bad, "shares", 1_000, "CNY", "bar", SHA_A)
+def _blocked_order() -> BlockedExitOrder:
+    return BlockedExitOrder("000001.SZ", 100, date(2026, 7, 13), _calendar())
 
 
-def test_blocked_exit_persists_and_records_delay_until_first_fill() -> None:
-    order = BlockedExitOrder("000001.SZ", 100, date(2026, 7, 13))
+def _decision_time(order: BlockedExitOrder, session: date) -> datetime:
+    return order.calendar.session_on(session, as_of=datetime(2026, 7, 15, tzinfo=UTC)).open_at
+
+
+def test_blocked_exit_records_consecutive_sessions_and_sells_before_completion() -> None:
+    order = _blocked_order()
     order = advance_blocked_exit(
         order,
         session=date(2026, 7, 13),
-        accepted_session_ordinal=0,
-        session_identity_sha256=SHA_A,
+        decision_at=_decision_time(order, date(2026, 7, 13)),
         decision=FillDecision(False, None, "suspended"),
     )
     order = advance_blocked_exit(
         order,
         session=date(2026, 7, 14),
-        accepted_session_ordinal=1,
-        session_identity_sha256=SHA_B,
+        decision_at=_decision_time(order, date(2026, 7, 14)),
         decision=FillDecision(False, None, "limit_down_sell_rejected"),
     )
-    order = advance_blocked_exit(
+    portfolio = Portfolio.a_share(100_000)
+    portfolio.start_session(date(2026, 7, 10))
+    portfolio.buy("000001.SZ", 100, 10, date(2026, 7, 10))
+    portfolio.start_session(date(2026, 7, 15))
+
+    order, trade = execute_ready_blocked_exit(
         order,
+        portfolio=portfolio,
         session=date(2026, 7, 15),
-        accepted_session_ordinal=2,
-        session_identity_sha256=SHA_C,
+        decision_at=_decision_time(order, date(2026, 7, 15)),
         decision=FillDecision(True, 9.8, "filled"),
     )
 
     assert order.pending is False
     assert order.delay_sessions == 2
     assert order.executed_session == date(2026, 7, 15)
-    assert tuple(attempt.reason for attempt in order.attempts) == (
-        "suspended",
-        "limit_down_sell_rejected",
-        "filled",
+    assert tuple(attempt.session.session_date for attempt in order.attempts) == (
+        date(2026, 7, 13),
+        date(2026, 7, 14),
+        date(2026, 7, 15),
     )
-    with pytest.raises(ValueError, match="completed"):
+    assert tuple(attempt.session.source.revision_id for attempt in order.attempts) == (
+        "cal-13",
+        "cal-14",
+        "cal-15",
+    )
+    assert trade.side == "sell"
+    assert "000001.SZ" not in portfolio.positions
+
+
+def test_blocked_exit_rejects_skipped_sessions_and_completion_without_sale() -> None:
+    terminal = _blocked_order()
+    with pytest.raises(MarketDataError, match="recognized reason"):
+        advance_blocked_exit(
+            terminal,
+            session=date(2026, 7, 13),
+            decision_at=_decision_time(terminal, date(2026, 7, 13)),
+            decision=FillDecision(False, None, "confirmed_terminal_action"),
+        )
+
+    order = _blocked_order()
+    order = advance_blocked_exit(
+        order,
+        session=date(2026, 7, 13),
+        decision_at=_decision_time(order, date(2026, 7, 13)),
+        decision=FillDecision(False, None, "suspended"),
+    )
+    with pytest.raises(ValueError, match="consecutive"):
         advance_blocked_exit(
             order,
-            session=date(2026, 7, 16),
-            accepted_session_ordinal=3,
-            session_identity_sha256=SHA_A,
+            session=date(2026, 7, 15),
+            decision_at=_decision_time(order, date(2026, 7, 15)),
+            decision=FillDecision(False, None, "confirmed_halt"),
+        )
+    with pytest.raises(MarketDataError, match="execute through"):
+        advance_blocked_exit(
+            order,
+            session=date(2026, 7, 14),
+            decision_at=_decision_time(order, date(2026, 7, 14)),
             decision=FillDecision(True, 9.9, "filled"),
         )
 
 
-def test_blocked_exit_rejects_skipped_sessions_and_unrecognized_blocks() -> None:
-    order = BlockedExitOrder("ABC", 1, date(2026, 7, 13))
-    with pytest.raises(ValueError, match="cannot be skipped"):
-        advance_blocked_exit(
+def test_failed_portfolio_sale_leaves_order_and_portfolio_unchanged() -> None:
+    order = _blocked_order()
+    portfolio = Portfolio.a_share(10_000)
+    portfolio.start_session(date(2026, 7, 13))
+    cash_before = portfolio.available_cash
+    positions_before = dict(portfolio.positions)
+
+    with pytest.raises(ValueError, match="sell quantity"):
+        execute_ready_blocked_exit(
             order,
+            portfolio=portfolio,
             session=date(2026, 7, 13),
-            accepted_session_ordinal=1,
-            session_identity_sha256=SHA_A,
-            decision=FillDecision(False, None, "suspended"),
-        )
-    with pytest.raises(MarketDataError, match="recognized reason"):
-        advance_blocked_exit(
-            order,
-            session=date(2026, 7, 13),
-            accepted_session_ordinal=0,
-            session_identity_sha256=SHA_A,
-            decision=FillDecision(False, None, "unknown_gap"),
-        )
-    with pytest.raises(MarketDataError, match="SHA-256"):
-        advance_blocked_exit(
-            order,
-            session=date(2026, 7, 13),
-            accepted_session_ordinal=0,
-            session_identity_sha256="",
-            decision=FillDecision(False, None, "suspended"),
+            decision_at=_decision_time(order, date(2026, 7, 13)),
+            decision=FillDecision(True, 10, "filled"),
         )
 
+    assert order.pending is True
+    assert order.attempts == ()
+    assert portfolio.available_cash == cash_before
+    assert portfolio.positions == positions_before
 
-def _status_records(*, st: bool = False, suspended: bool = False) -> list[StatusEvidence]:
-    known = datetime(2026, 7, 12, 12, tzinfo=UTC)
+
+def test_us_ready_exit_derives_settlement_from_the_same_accepted_calendar() -> None:
+    calendar = _calendar("America/New_York")
+    order = BlockedExitOrder("SPY", 1, date(2026, 7, 13), calendar)
+    portfolio = Portfolio.us(10_000)
+    portfolio.start_session(date(2026, 7, 10))
+    portfolio.buy("SPY", 1, 100, date(2026, 7, 10))
+    portfolio.start_session(date(2026, 7, 13))
+
+    order, trade = execute_ready_blocked_exit(
+        order,
+        portfolio=portfolio,
+        session=date(2026, 7, 13),
+        decision_at=_decision_time(order, date(2026, 7, 13)),
+        decision=FillDecision(True, 101, "filled"),
+    )
+
+    assert order.executed_session == date(2026, 7, 13)
+    assert trade.side == "sell"
+    assert tuple(item.settlement_date for item in portfolio.pending_cash) == (
+        date(2026, 7, 14),
+    )
+
+
+def _status_records(
+    *,
+    st: bool = False,
+    suspended: bool = False,
+    exchange_timezone: str = SHANGHAI,
+) -> list[StatusEvidence]:
     return [
         StatusEvidence(
-            "000001.SZ", "listed", True, date(1991, 4, 3), None, known, "list", SHA_A
+            "listing",
+            "000001.SZ",
+            "listed",
+            True,
+            date(1991, 4, 3),
+            None,
+            exchange_timezone,
+            _source("listing-v1", SHA_A),
         ),
         StatusEvidence(
+            "delisting",
             "000001.SZ",
             "delisted",
             False,
             date(1991, 4, 3),
             None,
-            known,
-            "delist",
-            SHA_B,
+            exchange_timezone,
+            _source("delisting-v1", SHA_B),
         ),
         StatusEvidence(
-            "000001.SZ", "st", st, date(2026, 1, 1), None, known, "st", SHA_C
+            "st-2026",
+            "000001.SZ",
+            "st",
+            st,
+            date(2026, 1, 1),
+            None,
+            exchange_timezone,
+            _source("st-v1", SHA_C),
         ),
         StatusEvidence(
+            "suspension-20260713",
             "000001.SZ",
             "suspended",
             suspended,
             date(2026, 7, 13),
             date(2026, 7, 14),
-            known,
-            "suspension",
-            "d" * 64,
+            exchange_timezone,
+            _source("suspension-v1", "d" * 64),
         ),
     ]
 
 
-def test_universe_predicate_requires_all_effective_identities_before_cutoff() -> None:
-    cutoff = datetime(2026, 7, 13, 9, tzinfo=UTC)
-    eligible = evaluate_universe("000001.SZ", date(2026, 7, 13), cutoff, _status_records())
+def test_universe_uses_accepted_session_and_complete_pit_statuses() -> None:
+    session = _calendar().session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 13, tzinfo=UTC),
+    )
+    decision_at = session.open_at
+    eligible = evaluate_universe("000001.SZ", session, decision_at, _status_records())
     excluded = evaluate_universe(
-        "000001.SZ", date(2026, 7, 13), cutoff, _status_records(st=True)
+        "000001.SZ",
+        session,
+        decision_at,
+        _status_records(st=True),
     )
 
     assert eligible.eligible is True
@@ -181,144 +523,155 @@ def test_universe_predicate_requires_all_effective_identities_before_cutoff() ->
         "st",
         "suspended",
     )
-    assert excluded.eligible is False
+    assert all(isinstance(source, SourceIdentity) for _, _, source in eligible.evidence)
     assert excluded.reasons == ("st",)
 
 
-def test_universe_predicate_fails_on_late_missing_or_ambiguous_status() -> None:
-    cutoff = datetime(2026, 7, 13, 9, tzinfo=UTC)
+def test_universe_selects_one_valid_linear_status_revision() -> None:
+    session = _calendar().session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 13, tzinfo=UTC),
+    )
     records = _status_records()
+    original = records[2]
+    revised_source = _source(
+        "st-v2",
+        "e" * 64,
+        available_at=datetime(2026, 7, 12, tzinfo=UTC),
+        supersedes=original.source.revision_id,
+    )
+    records.append(
+        StatusEvidence(
+            original.status_id,
+            original.symbol,
+            original.kind,
+            True,
+            original.effective_from,
+            original.effective_to,
+            original.exchange_timezone,
+            revised_source,
+        )
+    )
+
+    decision = evaluate_universe("000001.SZ", session, session.open_at, records)
+
+    assert decision.eligible is False
+    assert decision.reasons == ("st",)
+    assert dict((kind, source.revision_id) for kind, _, source in decision.evidence)["st"] == "st-v2"
+
+
+def test_universe_rejects_missing_overlapping_branched_and_late_statuses() -> None:
+    session = _calendar().session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 13, tzinfo=UTC),
+    )
+    cutoff = session.open_at
+    with pytest.raises(MarketDataError, match="missing effective suspended"):
+        evaluate_universe("000001.SZ", session, cutoff, _status_records()[:-1])
+
+    records = _status_records()
+    records.append(
+        StatusEvidence(
+            "other-st",
+            "000001.SZ",
+            "st",
+            False,
+            date(2026, 1, 1),
+            None,
+            SHANGHAI,
+            _source("other-st-v1", "f" * 64),
+        )
+    )
+    with pytest.raises(MarketDataError, match="overlapping effective st"):
+        evaluate_universe("000001.SZ", session, cutoff, records)
+
+    records = _status_records()
+    parent = records[2]
+    for revision_id, digest in (("st-v2a", "5" * 64), ("st-v2b", "6" * 64)):
+        records.append(
+            StatusEvidence(
+                parent.status_id,
+                parent.symbol,
+                parent.kind,
+                False,
+                parent.effective_from,
+                parent.effective_to,
+                parent.exchange_timezone,
+                _source(
+                    revision_id,
+                    digest,
+                    available_at=datetime(2026, 7, 12, tzinfo=UTC),
+                    supersedes=parent.source.revision_id,
+                ),
+            )
+        )
+    with pytest.raises(ValueError, match="branched"):
+        evaluate_universe("000001.SZ", session, cutoff, records)
+
+    records = _status_records()
+    late = records[2]
     records[2] = StatusEvidence(
-        "000001.SZ",
-        "st",
-        False,
-        date(2026, 1, 1),
-        None,
-        datetime(2026, 7, 13, 10, tzinfo=UTC),
-        "late-st",
-        SHA_C,
+        late.status_id,
+        late.symbol,
+        late.kind,
+        late.value,
+        late.effective_from,
+        late.effective_to,
+        late.exchange_timezone,
+        _source("late-st", SHA_C, available_at=cutoff + timedelta(minutes=1)),
     )
     with pytest.raises(MarketDataError, match="missing effective st"):
-        evaluate_universe("000001.SZ", date(2026, 7, 13), cutoff, records)
+        evaluate_universe("000001.SZ", session, cutoff, records)
 
     records = _status_records()
-    records.append(records[2])
-    with pytest.raises(MarketDataError, match="ambiguous effective st"):
-        evaluate_universe("000001.SZ", date(2026, 7, 13), cutoff, records)
+    drifted = records[2]
+    records.append(
+        StatusEvidence(
+            drifted.status_id,
+            "600000.SH",
+            drifted.kind,
+            drifted.value,
+            drifted.effective_from,
+            drifted.effective_to,
+            drifted.exchange_timezone,
+            _source(
+                "st-drifted-symbol",
+                "9" * 64,
+                available_at=datetime(2026, 7, 12, tzinfo=UTC),
+                supersedes=drifted.source.revision_id,
+            ),
+        )
+    )
+    with pytest.raises(MarketDataError, match="share symbol, kind"):
+        evaluate_universe("000001.SZ", session, cutoff, records)
 
-    with pytest.raises(MarketDataError, match="timezone-aware"):
+
+def test_universe_rejects_future_cutoff_calendar_unavailability_and_timezone_reuse() -> None:
+    session = _calendar().session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 13, tzinfo=UTC),
+    )
+    with pytest.raises(MarketDataError, match="cannot follow"):
         evaluate_universe(
             "000001.SZ",
-            date(2026, 7, 13),
-            datetime(2026, 7, 13, 9),
+            session,
+            session.open_at + timedelta(microseconds=1),
             _status_records(),
         )
-    with pytest.raises(MarketDataError, match="missing effective suspended"):
+
+    late_session = _session(
+        date(2026, 7, 13),
+        revision_id="late-calendar",
+        sha256="7" * 64,
+        source_available_at=session.open_at + timedelta(minutes=1),
+    )
+    with pytest.raises(MarketDataError, match="session source was unavailable"):
+        evaluate_universe("000001.SZ", late_session, session.open_at, _status_records())
+
+    with pytest.raises(MarketDataError, match="different exchange timezone"):
         evaluate_universe(
-            "000001.SZ", date(2026, 7, 13), cutoff, _status_records()[:-1]
-        )
-
-
-def _dividend(**overrides: object) -> CorporateAction:
-    values: dict[str, object] = {
-        "action_id": "SPY:2026Q2:dividend",
-        "action_type": "cash_dividend",
-        "symbol": "SPY",
-        "source_url": "https://example.test/distribution.pdf",
-        "source_sha256": SHA_A,
-        "revision": 1,
-        "supersedes_sha256": None,
-        "available_at": datetime(2026, 6, 1, 12, tzinfo=UTC),
-        "effective_at": datetime(2026, 6, 20, 0, tzinfo=UTC),
-        "ex_date": date(2026, 6, 20),
-        "record_date": date(2026, 6, 21),
-        "pay_date": date(2026, 6, 25),
-        "cash_amount": 1.25,
-        "currency": "USD",
-    }
-    values.update(overrides)
-    return CorporateAction(**values)
-
-
-def test_corporate_action_validates_dates_fields_and_source_identity() -> None:
-    action = _dividend()
-    assert action.cash_amount == pytest.approx(1.25)
-    with pytest.raises(MarketDataError, match="ex_date <= record_date"):
-        _dividend(record_date=date(2026, 6, 19))
-    with pytest.raises(MarketDataError, match="uncredentialed HTTPS"):
-        _dividend(source_url="https://user:secret@example.test/file")
-    with pytest.raises(MarketDataError, match="uppercase"):
-        _dividend(currency="usd")
-    with pytest.raises(MarketDataError, match="timezone-aware"):
-        _dividend(available_at=datetime(2026, 6, 1, 12))
-    with pytest.raises(MarketDataError, match="not a datetime"):
-        _dividend(ex_date=datetime(2026, 6, 20, tzinfo=UTC))
-
-
-def test_corporate_action_revision_selection_is_point_in_time_and_contiguous() -> None:
-    original = _dividend()
-    revised = _dividend(
-        source_sha256=SHA_B,
-        revision=2,
-        supersedes_sha256=SHA_A,
-        available_at=datetime(2026, 6, 10, 12, tzinfo=UTC),
-        cash_amount=1.30,
-    )
-
-    assert select_action_revision(
-        [revised, original], datetime(2026, 6, 5, tzinfo=UTC)
-    ) is original
-    assert select_action_revision(
-        [original, revised], datetime(2026, 6, 11, tzinfo=UTC)
-    ) is revised
-    broken = _dividend(
-        source_sha256=SHA_C,
-        revision=2,
-        supersedes_sha256="d" * 64,
-        available_at=datetime(2026, 6, 10, 12, tzinfo=UTC),
-    )
-    with pytest.raises(MarketDataError, match="chain is broken"):
-        select_action_revision([original, broken], datetime(2026, 6, 11, tzinfo=UTC))
-
-
-def test_split_and_symbol_change_have_distinct_strict_fields() -> None:
-    split = CorporateAction(
-        "ABC:split",
-        "split",
-        "ABC",
-        "https://example.test/split",
-        SHA_A,
-        1,
-        None,
-        datetime(2026, 6, 1, tzinfo=UTC),
-        datetime(2026, 7, 1, tzinfo=UTC),
-        ex_date=date(2026, 7, 1),
-        split_ratio=2.0,
-    )
-    change = CorporateAction(
-        "ABC:symbol",
-        "symbol_change",
-        "ABC",
-        "https://example.test/symbol",
-        SHA_B,
-        1,
-        None,
-        datetime(2026, 6, 1, tzinfo=UTC),
-        datetime(2026, 7, 1, tzinfo=UTC),
-        new_symbol="XYZ",
-    )
-    assert (split.split_ratio, change.new_symbol) == (2.0, "XYZ")
-    with pytest.raises(MarketDataError, match="cannot contain split"):
-        CorporateAction(
-            "ABC:bad-symbol",
-            "symbol_change",
-            "ABC",
-            "https://example.test/symbol",
-            SHA_C,
-            1,
-            None,
-            datetime(2026, 6, 1, tzinfo=UTC),
-            datetime(2026, 7, 1, tzinfo=UTC),
-            split_ratio=2.0,
-            new_symbol="XYZ",
+            "000001.SZ",
+            session,
+            session.open_at,
+            _status_records(exchange_timezone="America/New_York"),
         )
