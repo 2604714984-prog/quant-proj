@@ -47,7 +47,8 @@
   "local_only_git_recovery": {
     "remote_archive_tags_pushed": [
       "A_Share_Monitor:archive/pre-v2/a-share-canonical-evidence-publisher-20260712",
-      "quant-proj:archive/pre-v2/remediation-r2-gate-b-packet-20260713"
+      "quant-proj:archive/pre-v2/remediation-r2-gate-b-packet-20260713",
+      "quant-proj:archive/pre-v2/legacy-main-20260715"
     ],
     "bundles": [
       {
@@ -61,6 +62,20 @@
       {
         "path": "/home/rongyu/workspace/quant-data/legacy-recovery/git-bundles/STRATEGY_VAULT.bundle",
         "sha256": "150c3beeaa769f71a5669692999f55c18ff53dbf7531faa08d022edee91f82a6"
+      },
+      {
+        "path": "/home/rongyu/workspace/quant-data/legacy-recovery/git-bundles/quant-proj-legacy-all-local-refs-20260715.bundle",
+        "sha256": "99962b50bee9ecb976987122e1a1321b93108b3ed2ccdb366ef124374fe219b0",
+        "ref_count": 132,
+        "host_backup_path": "G:\\quant-recovery\\git-bundles\\quant-proj-legacy-all-local-refs-20260715.bundle",
+        "host_backup_sha256_verified": true
+      },
+      {
+        "path": "/home/rongyu/workspace/quant-data/legacy-recovery/git-bundles/quant-proj-legacy-complete-20260715.bundle",
+        "sha256": "48e1f10d27907c65db2a67d5fedd55a500417d7319ccb7fafe7d05a7e337ea99",
+        "legacy_main_tip": "4b70d45e00a2f20d2898bd27bc078c2393e503da",
+        "host_backup_path": "G:\\quant-recovery\\git-bundles\\quant-proj-legacy-complete-20260715.bundle",
+        "host_backup_sha256_verified": true
       }
     ],
     "bundle_verify": "PASS"
@@ -72,6 +87,46 @@
     "active_runtime": false,
     "git_worktree_paths_expected_to_work": false,
     "deleted_during_cutover": false
+  },
+  "public_git_cleanup": {
+    "completed_at_utc": "2026-07-14T18:35:07Z",
+    "pre_cleanup": {
+      "branch_count": 40,
+      "tag_count": 20,
+      "open_pull_request_count": 3
+    },
+    "post_cleanup_before_review_branch": {
+      "branches": [
+        "v2-main"
+      ],
+      "tag_count": 0,
+      "open_pull_request_count": 0
+    },
+    "closed_pull_requests": [
+      22,
+      25,
+      27
+    ],
+    "legacy_remote_refs_removed": true,
+    "recovery_bundle_sha256": "48e1f10d27907c65db2a67d5fedd55a500417d7319ccb7fafe7d05a7e337ea99",
+    "recovery_bundle_contains_legacy_main_tip": "4b70d45e00a2f20d2898bd27bc078c2393e503da",
+    "secret_scanning_enabled": true,
+    "push_protection_enabled": true,
+    "v2_main_branch_protected": true
+  },
+  "pre_external_review_validation": {
+    "review_branch": "agent/v2-self-audit-hardening-20260715",
+    "pytest_passed": 97,
+    "pytest_failed": 0,
+    "ruff": "PASS",
+    "compileall": "PASS",
+    "pip_check": "PASS",
+    "git_diff_check": "PASS",
+    "isolated_wheel_install": "PASS",
+    "wheel_sha256": "45b14ef3c9306c0dfa3df5665281a3d863c23ae33651f80ff4b3d36a0959fdd1",
+    "central_database_sha256_unchanged": "936e1ee5230207b1ca59e1fd6245ad5a3c1dd957ae030441e8420c83e57a3869",
+    "database_writes": 0,
+    "provider_requests": 0
   },
   "post_cutover_validation": {
     "fresh_virtual_environment": true,

@@ -1,8 +1,11 @@
+import os
 from pathlib import Path
+import shutil
 
 import duckdb
 import pytest
 
+import quant_system.data.reader as reader_module
 from quant_system.data.reader import DataReadError, database_info, query
 
 
@@ -24,6 +27,14 @@ def test_database_info_uses_metadata_without_full_scan(tmp_path: Path) -> None:
         ("market", "daily")
     ]
     assert info.sha256 is None
+
+
+def test_database_info_hashes_the_pinned_database(tmp_path: Path) -> None:
+    path = _database(tmp_path / "test.duckdb")
+    info = database_info(path, include_hash=True)
+
+    assert info.sha256 is not None
+    assert len(info.sha256) == 64
 
 
 def test_query_is_read_only_and_bounded(tmp_path: Path) -> None:
@@ -67,3 +78,24 @@ def test_reader_rejects_symlink_database(tmp_path: Path) -> None:
 
     with pytest.raises(DataReadError, match="regular file"):
         database_info(link)
+
+
+def test_reader_rejects_database_path_replacement(
+    tmp_path: Path, monkeypatch
+) -> None:
+    path = _database(tmp_path / "test.duckdb")
+    moved = tmp_path / "moved.duckdb"
+    real_connect = reader_module.duckdb.connect
+    replaced = False
+
+    def replacing_connect(*args, **kwargs):
+        nonlocal replaced
+        if not replaced:
+            replaced = True
+            os.replace(path, moved)
+            shutil.copy2(moved, path)
+        return real_connect(*args, **kwargs)
+
+    monkeypatch.setattr(reader_module.duckdb, "connect", replacing_connect)
+    with pytest.raises(DataReadError, match="changed while"):
+        database_info(path)

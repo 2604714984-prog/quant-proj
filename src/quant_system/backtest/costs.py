@@ -45,4 +45,10 @@ class TransactionCostModel:
         sell_tax = (
             gross_amount * self.sell_tax_rate if normalized_side == "sell" else 0.0
         )
+        if not is_finite_number(commission) or commission < 0.0:
+            raise ValueError("calculated commission must be finite and nonnegative")
+        if not is_finite_number(sell_tax) or sell_tax < 0.0:
+            raise ValueError("calculated sell tax must be finite and nonnegative")
+        if not is_finite_number(commission + sell_tax):
+            raise ValueError("calculated transaction cost total must be finite")
         return CostBreakdown(commission, sell_tax)

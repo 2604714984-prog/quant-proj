@@ -18,3 +18,13 @@ The 2026-07-15 cutover is complete. Legacy checkouts are retained temporarily at
 material only. Their linked-worktree metadata is not expected to work after the
 move. Verified patches, untracked-file archives, remote archive tags, and Git
 bundles are recorded in cutover_receipt.json.
+
+The archive tags listed in the receipt are historical preservation actions,
+not current public refs. After the complete legacy bundle was verified locally
+and copied to the host recovery drive, the legacy remote branches and tags were
+removed. The public repository now starts from the V2 history.
+
+The legacy quarantine is intentionally retained. It contains data files that
+have not yet been classified as duplicates or disposable, so this cleanup does
+not treat `git clean` as permission to delete it. It is outside the active code
+repository and is not used at runtime.

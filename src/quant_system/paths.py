@@ -27,6 +27,21 @@ def _inside(path: Path, root: Path) -> bool:
     return path == root or path.is_relative_to(root)
 
 
+def _default_project_root() -> Path:
+    """Use the source checkout when present, otherwise the caller's directory.
+
+    A wheel installs ``quant_system`` below ``site-packages`` and intentionally
+    does not bundle repository-level configuration. Falling back to the
+    current directory keeps the installed CLI usable while
+    ``QUANT_PROJECT_ROOT`` remains the explicit override.
+    """
+
+    source_root = Path(__file__).resolve().parents[2]
+    if (source_root / "pyproject.toml").is_file():
+        return source_root
+    return Path.cwd().resolve()
+
+
 @dataclass(frozen=True)
 class AppPaths:
     """Resolved locations for the one-repository application."""
@@ -44,7 +59,7 @@ class AppPaths:
         environ: Mapping[str, str] | None = None,
     ) -> AppPaths:
         env = os.environ if environ is None else environ
-        detected_root = Path(__file__).resolve().parents[2]
+        detected_root = _default_project_root()
         root_value = env.get("QUANT_PROJECT_ROOT") or project_root or detected_root
         root = _absolute(root_value, "project root")
 
@@ -63,8 +78,10 @@ class AppPaths:
                 raise PathConfigurationError("database filename must be a .duckdb basename")
             database = data_root / database_filename
 
-        if _inside(data_root, root) or _inside(database, root):
-            raise PathConfigurationError("mutable database storage must be outside the project")
+        if _inside(data_root, root) or _inside(root, data_root) or _inside(database, root):
+            raise PathConfigurationError(
+                "project and mutable data roots must be separate, non-overlapping paths"
+            )
         if not _inside(database, data_root):
             raise PathConfigurationError("database path must be inside QUANT_DATA_ROOT")
         if database.suffix != ".duckdb":

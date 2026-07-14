@@ -27,10 +27,28 @@ validates input, writes in one transaction, and returns a compact receipt.
 
 - Read queries open DuckDB in read-only mode.
 - Routine ingestion is append-only and transactional.
-- Duplicate natural keys fail unless the caller explicitly selects a documented
-  conflict policy.
+- Duplicate natural keys and conflicting existing rows fail closed. Exact
+  already-present rows are counted as existing; there is no overwrite policy.
 - Destructive migrations are separate commands and require a backup.
 - Credentials are injected at runtime and never persisted by the application.
+
+Configuration defaults are defined in code so an installed wheel does not
+depend on repository-level files under `config/`. A local settings file and
+environment variables remain optional overrides. Project and data roots must
+be separate in both directions; neither may contain the other.
+
+Execution inputs carry one explicit qualification assertion covering source
+completeness and availability. Missing unexplained bars and unqualified
+positive prices fail closed. The small date rules are fixed in code: A-share
+sell stamp tax is 0.1% before 2023-08-28 and 0.05% from that date, while US
+equity settlement is T+2 before 2024-05-28 and T+1 from that date. A custom
+A-share commission model changes commission only; the statutory dated stamp-tax
+schedule remains active. US sale settlement must be bound to the complete,
+strictly increasing accepted-session sequence after the trade date.
+
+A-share buys require 100-share board lots. Sells may use board lots, or may
+fully liquidate a remaining odd lot whose identity was created by a recorded
+corporate-action adjustment; arbitrary partial odd-lot sales fail closed.
 
 ## Migration rule
 

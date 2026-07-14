@@ -39,7 +39,19 @@ def test_paths_reject_database_storage_inside_project(
     project = tmp_path / "project"
     project.mkdir()
     data = project / relative
-    with pytest.raises(PathConfigurationError, match="outside the project"):
+    with pytest.raises(PathConfigurationError, match="non-overlapping"):
+        AppPaths.discover(
+            project_root=project,
+            environ={"QUANT_DATA_ROOT": str(data)},
+        )
+
+
+def test_paths_reject_project_nested_inside_data_root(tmp_path: Path) -> None:
+    data = tmp_path / "data"
+    project = data / "project"
+    project.mkdir(parents=True)
+
+    with pytest.raises(PathConfigurationError, match="non-overlapping"):
         AppPaths.discover(
             project_root=project,
             environ={"QUANT_DATA_ROOT": str(data)},

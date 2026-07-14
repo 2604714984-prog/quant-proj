@@ -50,4 +50,9 @@ def apply_slippage(price: float, side: Side, slippage_bps: float) -> float:
     ):
         raise ValueError("slippage_bps must be finite and in [0, 10000)")
     adjustment = float(slippage_bps) / 10_000.0
-    return price * (1.0 + adjustment if side == "buy" else 1.0 - adjustment)
+    adjusted_price = price * (
+        1.0 + adjustment if side == "buy" else 1.0 - adjustment
+    )
+    if not is_positive_price(adjusted_price):
+        raise MarketDataError("slippage-adjusted price must be positive and finite")
+    return float(adjusted_price)

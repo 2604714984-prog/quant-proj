@@ -5,8 +5,11 @@ from __future__ import annotations
 import argparse
 from datetime import date, datetime
 from decimal import Decimal
+import hashlib
 import json
+import os
 from pathlib import Path
+import stat
 from typing import Any
 
 from . import __version__
@@ -29,23 +32,106 @@ def _print(value: Any) -> None:
             ensure_ascii=False,
             sort_keys=True,
             default=_json_default,
+            allow_nan=False,
         )
     )
 
 
-def _rows(path: Path) -> list[dict[str, Any]]:
-    text = path.read_text(encoding="utf-8")
+def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise ValueError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def _reject_constant(value: str) -> None:
+    raise ValueError(f"non-finite JSON value is forbidden: {value}")
+
+
+def _loads(value: str) -> Any:
+    return json.loads(
+        value,
+        object_pairs_hook=_strict_object,
+        parse_constant=_reject_constant,
+    )
+
+
+def _signature(value: os.stat_result) -> tuple[int, int, int, int, int]:
+    return (
+        value.st_dev,
+        value.st_ino,
+        value.st_size,
+        value.st_mtime_ns,
+        value.st_ctime_ns,
+    )
+
+
+def _capture_bytes(path: Path) -> bytes:
+    candidate = path.expanduser()
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(candidate, flags)
+    except OSError as exc:
+        raise ValueError(f"input is not a regular file: {candidate}") from exc
+    try:
+        before = os.fstat(descriptor)
+        linked = os.stat(candidate, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or not stat.S_ISREG(linked.st_mode)
+            or (before.st_dev, before.st_ino) != (linked.st_dev, linked.st_ino)
+        ):
+            raise ValueError(f"input is not a regular file: {candidate}")
+        chunks: list[bytes] = []
+        while chunk := os.read(descriptor, 1024 * 1024):
+            chunks.append(chunk)
+        after = os.fstat(descriptor)
+        linked_after = os.stat(candidate, follow_symlinks=False)
+        if _signature(before) != _signature(after) or _signature(before) != _signature(
+            linked_after
+        ):
+            raise ValueError("input changed while it was being captured")
+        return b"".join(chunks)
+    except OSError as exc:
+        raise ValueError("input changed while it was being captured") from exc
+    finally:
+        os.close(descriptor)
+
+
+def _rows(path: Path) -> tuple[list[dict[str, Any]], str]:
+    raw_bytes = _capture_bytes(path)
+    try:
+        text = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise ValueError("input must be UTF-8") from exc
     if path.suffix.lower() == ".jsonl":
-        raw = [json.loads(line) for line in text.splitlines() if line.strip()]
+        raw = [_loads(line) for line in text.splitlines() if line.strip()]
     else:
-        raw = json.loads(text)
+        raw = _loads(text)
     if not isinstance(raw, list) or any(not isinstance(row, dict) for row in raw):
         raise ValueError("input must be a JSON array or JSONL objects")
-    return raw
+    return raw, hashlib.sha256(raw_bytes).hexdigest()
+
+
+def _inside(path: Path, root: Path) -> bool:
+    return path == root or path.is_relative_to(root)
 
 
 def _database(args: argparse.Namespace, settings: AppSettings) -> Path:
-    return args.db.expanduser().resolve(strict=False) if args.db else settings.paths.database
+    project_root = settings.paths.project_root.resolve(strict=False)
+    data_root = settings.paths.data_root.resolve(strict=False)
+    if _inside(data_root, project_root) or _inside(project_root, data_root):
+        raise ValueError("project and data roots must not overlap")
+    candidate = (
+        args.db.expanduser().resolve(strict=False)
+        if args.db
+        else settings.paths.database.resolve(strict=False)
+    )
+    if not _inside(candidate, data_root) or _inside(candidate, project_root):
+        raise ValueError("database override must stay inside the configured data root")
+    return candidate
 
 
 def _parser() -> argparse.ArgumentParser:
@@ -102,7 +188,9 @@ def main(argv: list[str] | None = None) -> int:
     if args.data_command == "query":
         _print(query(db_path, args.sql, max_rows=args.max_rows).to_dict())
         return 0
-    rows = _rows(args.input)
+    rows, input_sha256 = _rows(args.input)
+    if args.source_sha256 != input_sha256:
+        raise ValueError("source_sha256 does not match the captured input bytes")
     keys = tuple(key.strip() for key in args.keys.split(",") if key.strip())
     if not args.execute:
         _print(
