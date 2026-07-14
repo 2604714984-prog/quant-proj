@@ -50,7 +50,7 @@
     "reports/external_audit/workspace_external_reaudit_consolidated_20260714.md": "18731af60d8d3727491edf40afd9781da07fb60b34fe5b621220e9cd90ebb0d0",
     "reports/remediation/FINDING_CLOSURE_MATRIX.json": "be6e0100a16cd6ab424aea5acf48cd7593c7255d3f04ad6b7e1a7b0d7e786510",
     "reports/remediation_r2/R2_FINDING_CLOSURE_MATRIX_20260713.json": "1db0ca2c59bd6538ffa00b03cfd8818c2bb6fb10e22632856874142ea150db3e",
-    ".github/workflows/research-validation.yml": "92fe575674cd80ee1a9fab567b7540a3ce7664cdd1c131644c0084dbc63011c2"
+    ".github/workflows/research-validation.yml": "639f08287d78359dad724bfd5c6e7542495570a868b7341c6e060ea971382b35"
   },
   "boundaries": {
     "provider_or_network_call": false,

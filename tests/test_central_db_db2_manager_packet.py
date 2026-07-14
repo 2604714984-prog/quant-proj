@@ -114,25 +114,39 @@ def test_no_secret_or_mutation_overclaim_in_generated_packet() -> None:
 
 def test_registry_commit_tree_pairs_are_real_git_objects() -> None:
     registry = yaml.safe_load((ROOT / "registry/projects.yaml").read_text())
-    for project in registry["projects"].values():
+    verified_projects: list[str] = []
+    for project_name, project in registry["projects"].items():
         commit = project.get("commit") or project.get("accepted_commit") or project.get("base_commit")
         tree = project.get("tree") or project.get("accepted_tree") or project.get("base_tree")
         assert commit and tree
-        path = project["path"]
+        assert len(commit) == 40
+        assert len(tree) == 40
+
+        path = Path(project["path"])
+        if not path.is_dir():
+            if project_name != "quant_proj":
+                # CI checks out only this repository. External WSL repositories
+                # receive descriptor/schema validation here and enhanced Git
+                # object verification when their configured paths are mounted.
+                continue
+            path = ROOT
         object_type = subprocess.run(
-            ["git", "-C", path, "cat-file", "-t", commit],
+            ["git", "-C", str(path), "cat-file", "-t", commit],
             check=True,
             capture_output=True,
             text=True,
         ).stdout.strip()
         actual_tree = subprocess.run(
-            ["git", "-C", path, "rev-parse", f"{commit}^{{tree}}"],
+            ["git", "-C", str(path), "rev-parse", f"{commit}^{{tree}}"],
             check=True,
             capture_output=True,
             text=True,
         ).stdout.strip()
         assert object_type == "commit"
         assert actual_tree == tree
+        verified_projects.append(project_name)
+
+    assert "quant_proj" in verified_projects
 
 
 def test_registry_foundation_status_is_accepted() -> None:
