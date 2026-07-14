@@ -4,13 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, replace
 from datetime import date, datetime
+import math
 
 from quant_system.data import AcceptedSession, AcceptedSessionCalendar
 from quant_system.markets.common import (
     FillDecision,
     MarketDataError,
-    is_finite_number,
-    is_positive_price,
     require_aware_datetime,
     require_date,
     require_nonempty_text,
@@ -22,6 +21,18 @@ from .portfolio import Portfolio, Trade
 BLOCKED_EXIT_REASONS = frozenset(
     {"suspended", "limit_down_sell_rejected", "confirmed_halt"}
 )
+
+
+def _normalized_float(value: object, *, label: str) -> float:
+    if value is None or isinstance(value, bool):
+        raise ValueError(f"{label} must be numeric")
+    try:
+        normalized = float(value)
+    except (TypeError, ValueError, OverflowError) as exc:
+        raise ValueError(f"{label} must be numeric") from exc
+    if not math.isfinite(normalized):
+        raise ValueError(f"{label} must be finite")
+    return normalized
 
 
 @dataclass(frozen=True)
@@ -44,10 +55,17 @@ class ExitAttempt:
         if type(self.filled) is not bool:
             raise MarketDataError("filled must be boolean")
         if self.filled:
-            if not is_positive_price(self.price):
+            try:
+                price = _normalized_float(self.price, label="filled exit price")
+            except ValueError as exc:
+                raise MarketDataError(
+                    "filled exit requires a positive finite price"
+                ) from exc
+            if price <= 0.0:
                 raise MarketDataError("filled exit requires a positive finite price")
             if self.reason != "filled":
                 raise MarketDataError("filled exit reason must be 'filled'")
+            object.__setattr__(self, "price", price)
         elif self.price is not None or self.reason not in BLOCKED_EXIT_REASONS:
             raise MarketDataError("blocked exit requires a recognized reason and no price")
 
@@ -65,12 +83,13 @@ class BlockedExitOrder:
 
     def __post_init__(self) -> None:
         require_nonempty_text(self.symbol, "symbol")
-        if (
-            not is_finite_number(self.shares)
-            or self.shares <= 0.0
-            or not float(self.shares).is_integer()
-        ):
+        try:
+            shares = _normalized_float(self.shares, label="shares")
+        except ValueError as exc:
+            raise ValueError("shares must be positive whole shares") from exc
+        if shares <= 0.0 or not shares.is_integer():
             raise ValueError("shares must be positive whole shares")
+        object.__setattr__(self, "shares", shares)
         require_date(self.requested_session, "requested_session")
         if not isinstance(self.calendar, AcceptedSessionCalendar):
             raise MarketDataError("calendar must be an AcceptedSessionCalendar")
@@ -195,7 +214,8 @@ def execute_ready_blocked_exit(
         decision=decision,
         expected_filled=True,
     )
-    assert decision.price is not None
+    price = attempt.price
+    assert type(price) is float
     settlement_date: date | None = None
     settlement_sessions: tuple[date, ...] | None = None
     if portfolio.us_cash_settlement:
@@ -211,13 +231,13 @@ def execute_ready_blocked_exit(
         order,
         attempts=order.attempts + (attempt,),
         executed_session=attempt.session.session_date,
-        execution_price=float(decision.price),
+        execution_price=price,
         delay_sessions=len(order.attempts),
     )
     trade = portfolio.sell(
         order.symbol,
         order.shares,
-        decision.price,
+        price,
         attempt.session.session_date,
         settlement_date=settlement_date,
         accepted_settlement_sessions=settlement_sessions,
