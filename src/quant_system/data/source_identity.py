@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections import defaultdict
 from collections.abc import Iterable
 from datetime import date, datetime, timezone
@@ -10,6 +10,7 @@ from decimal import Decimal, InvalidOperation
 import re
 from typing import Literal
 from urllib.parse import urlparse
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
 _SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -113,6 +114,8 @@ class CorporateActionIdentity:
     action_type: ActionType
     effective_at: datetime
     source: SourceIdentity
+    exchange_timezone: str
+    effective_date: date = field(init=False)
     ex_date: date | None = None
     record_date: date | None = None
     pay_date: date | None = None
@@ -133,18 +136,26 @@ class CorporateActionIdentity:
         object.__setattr__(self, "subject_id", subject_id)
         object.__setattr__(self, "action_id", action_id)
         object.__setattr__(self, "action_type", action_type)
-        object.__setattr__(
-            self,
-            "effective_at",
-            require_aware_utc(self.effective_at, "effective_at"),
-        )
-        for field, value in (
+        effective_at = require_aware_utc(self.effective_at, "effective_at")
+        timezone_name = str(self.exchange_timezone).strip()
+        if not timezone_name:
+            raise SourceIdentityError("exchange_timezone is required")
+        try:
+            exchange_zone = ZoneInfo(timezone_name)
+        except ZoneInfoNotFoundError as exc:
+            raise SourceIdentityError(
+                "exchange_timezone must name an installed IANA timezone"
+            ) from exc
+        object.__setattr__(self, "effective_at", effective_at)
+        object.__setattr__(self, "exchange_timezone", timezone_name)
+        object.__setattr__(self, "effective_date", effective_at.astimezone(exchange_zone).date())
+        for field_name, value in (
             ("ex_date", self.ex_date),
             ("record_date", self.record_date),
             ("pay_date", self.pay_date),
         ):
             if value is not None and type(value) is not date:
-                raise SourceIdentityError(f"{field} must be a date")
+                raise SourceIdentityError(f"{field_name} must be a date")
         ratio = self.split_ratio
         amount = self.cash_amount
         currency = None if self.currency is None else str(self.currency).strip()
@@ -200,8 +211,10 @@ class CorporateActionIdentity:
         object.__setattr__(self, "new_subject_id", new_subject)
 
     def _require_effective_ex_date(self) -> None:
-        if self.ex_date is None or self.effective_at.date() != self.ex_date:
-            raise SourceIdentityError("effective_at date must equal ex_date")
+        if self.ex_date is None or self.effective_date != self.ex_date:
+            raise SourceIdentityError(
+                "effective_at local date in exchange_timezone must equal ex_date"
+            )
 
     def _require_optional_record_pay_order(self) -> None:
         if (self.record_date is None) != (self.pay_date is None):
@@ -227,10 +240,18 @@ def select_corporate_action_revision(
     frozen = tuple(actions)
     if not frozen:
         raise SourceIdentityError("corporate action revision chain is empty")
-    identity = (frozen[0].subject_id, frozen[0].action_id, frozen[0].action_type)
-    if any((item.subject_id, item.action_id, item.action_type) != identity for item in frozen):
+    identity = (
+        frozen[0].subject_id,
+        frozen[0].action_id,
+        frozen[0].action_type,
+        frozen[0].exchange_timezone,
+    )
+    if any(
+        (item.subject_id, item.action_id, item.action_type, item.exchange_timezone) != identity
+        for item in frozen
+    ):
         raise SourceIdentityError(
-            "corporate action revisions must share subject, action_id, and type"
+            "corporate action revisions must share subject, action_id, type, and timezone"
         )
     by_revision: dict[str, CorporateActionIdentity] = {}
     successors: dict[str, list[CorporateActionIdentity]] = defaultdict(list)

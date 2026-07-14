@@ -586,7 +586,7 @@ def adjust_share_fact_for_splits(
             raise SecEdgarDataError("invalid split source revision chain") from exc
         if event.effective_at > cutoff:
             continue
-        if event.effective_at.date() <= fact.end:
+        if event.effective_date <= fact.end:
             continue
         selected_events.append(event)
     adjusted = fact.value
