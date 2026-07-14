@@ -23,7 +23,18 @@ def test_purge_removes_cross_boundary_labels_and_post_test_embargo() -> None:
 
 def test_walk_forward_never_admits_future_observations() -> None:
     observations = tuple(date(2026, 1, day) for day in range(1, 11))
-    labels = tuple(value + timedelta(days=2) for value in observations)
+    labels = (
+        date(2026, 1, 3),
+        date(2026, 1, 4),
+        date(2026, 1, 5),
+        date(2026, 1, 6),
+        date(2026, 1, 6),
+        date(2026, 1, 6),
+        date(2026, 1, 7),
+        date(2026, 1, 8),
+        date(2026, 1, 9),
+        date(2026, 1, 10),
+    )
 
     train, test = walk_forward_masks(
         observations,
@@ -35,6 +46,28 @@ def test_walk_forward_never_admits_future_observations() -> None:
     assert train == (True, True, False, False, False, False, False, False, False, False)
     assert test == (False, False, False, False, True, True, False, False, False, False)
     assert not any(keep and value >= date(2026, 1, 5) for keep, value in zip(train, observations))
+
+
+def test_walk_forward_excludes_test_labels_crossing_test_end() -> None:
+    observations = tuple(date(2026, 1, day) for day in range(1, 8))
+    labels = (
+        date(2026, 1, 1),
+        date(2026, 1, 2),
+        date(2026, 1, 3),
+        date(2026, 1, 4),
+        date(2026, 1, 6),
+        date(2026, 1, 7),
+        date(2026, 1, 7),
+    )
+
+    _, test = walk_forward_masks(
+        observations,
+        labels,
+        test_start=date(2026, 1, 5),
+        test_end=date(2026, 1, 6),
+    )
+
+    assert test == (False, False, False, False, True, False, False)
 
 
 def test_split_inputs_fail_closed_on_ambiguous_time_or_labels() -> None:
@@ -59,6 +92,14 @@ def test_split_inputs_fail_closed_on_ambiguous_time_or_labels() -> None:
             (date(2026, 1, 2), date(2026, 1, 1)),
             test_start=date(2026, 1, 2),
             test_end=date(2026, 1, 2),
+        )
+    with pytest.raises(ValueError, match="whole number of days"):
+        purged_embargo_train_mask(
+            (date(2026, 1, 1), date(2026, 1, 2)),
+            (date(2026, 1, 1), date(2026, 1, 2)),
+            test_start=date(2026, 1, 2),
+            test_end=date(2026, 1, 2),
+            embargo=timedelta(microseconds=1),
         )
 
 
