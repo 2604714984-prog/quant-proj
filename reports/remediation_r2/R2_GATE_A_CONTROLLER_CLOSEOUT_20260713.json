@@ -1,0 +1,54 @@
+{
+  "schema_version": "remediation-r2-gate-a-controller-closeout-v1",
+  "stage_id": "REPOSITORY_WIDE_REMEDIATION_R2_AND_TUSHARE_BACKFILL",
+  "status": "READY_FOR_TARGETED_EXTERNAL_REAUDIT",
+  "current_external_verdict": "NOT_PASSED_REWORK_REQUIRED_UNTIL_REAUDIT",
+  "finding_status": {
+    "RW-001": "VERIFIED_IMPLEMENTATION_ACCEPTED",
+    "RW-002": "VERIFIED_IMPLEMENTATION_ACCEPTED",
+    "RW-003": "VERIFIED_IMPLEMENTATION_ACCEPTED",
+    "RW-004": "VERIFIED_IMPLEMENTATION_ACCEPTED",
+    "RW-005": "VERIFIED_IMPLEMENTATION_ACCEPTED",
+    "RW-006": "VERIFIED_IMPLEMENTATION_ACCEPTED",
+    "EA-001": "VERIFIED_EXTERNAL_RECEIPT"
+  },
+  "zero_tolerance_counts": {
+    "open_critical": 0,
+    "open_high": 0,
+    "new_shadow_critical": 0,
+    "new_shadow_high": 0,
+    "unclassified_row_level_artifacts": 0,
+    "tushare_token_leaks": 0,
+    "strategy_process_invocations": 0
+  },
+  "gate_a": {
+    "status": "PASS",
+    "rw001_dynamic_attacks_killed": true,
+    "rw002_synthetic_promotion_impossible": true,
+    "rw003_subset_manifest_exact": true,
+    "rw004_forbidden_current_tree_artifacts": 0,
+    "ea001_external_receipt": "PASS",
+    "db603_db607_wave1_staging": "INDEPENDENT_ACCEPTANCE_VALID",
+    "collector_network_execution": false,
+    "collector_timer_enabled": false
+  },
+  "controller": {
+    "runtime_binding_derived": true,
+    "closure_coverage_fail_closed": true,
+    "head_and_merge_ci_separated": true,
+    "merge_direct_parents_exact": true,
+    "registry_local_and_remote_identity": "PASS",
+    "independent_acceptance": "VALID"
+  },
+  "central_data": {
+    "implementation_repository": "central-data-ingestion",
+    "commit": "287416f79cd1fcb1c066f25fa7bbaedc574b0ce9",
+    "tree": "c2a62d079bcb08b04b2425c7160bf9ca8344038a",
+    "github_ci_run": 29204075556,
+    "publisher_implemented": false,
+    "publisher_enabled": false,
+    "central_database_writes": 0
+  },
+  "next_gate": "DB-608_THROUGH_DB-611_CODE_AND_MOCK_THEN_GATE_B_CANARY_AUTHORIZATION",
+  "strategy_candidate_available": false
+}

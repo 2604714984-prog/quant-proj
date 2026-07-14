@@ -1,0 +1,216 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "bandit",
+      "purl": "pkg:pypi/bandit@1.9.4",
+      "type": "library",
+      "version": "1.9.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "duckdb",
+      "purl": "pkg:pypi/duckdb@1.5.4",
+      "type": "library",
+      "version": "1.5.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "iniconfig",
+      "purl": "pkg:pypi/iniconfig@2.3.0",
+      "type": "library",
+      "version": "2.3.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "markdown-it-py",
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "type": "library",
+      "version": "4.2.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "mdurl",
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0"
+        }
+      ],
+      "name": "numpy",
+      "purl": "pkg:pypi/numpy@2.4.6",
+      "type": "library",
+      "version": "2.4.6"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-2-Clause"
+        }
+      ],
+      "name": "packaging",
+      "purl": "pkg:pypi/packaging@26.2",
+      "type": "library",
+      "version": "26.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "pandas",
+      "purl": "pkg:pypi/pandas@3.0.3",
+      "type": "library",
+      "version": "3.0.3"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pluggy",
+      "purl": "pkg:pypi/pluggy@1.6.0",
+      "type": "library",
+      "version": "1.6.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-2-Clause"
+        }
+      ],
+      "name": "pygments",
+      "purl": "pkg:pypi/pygments@2.20.0",
+      "type": "library",
+      "version": "2.20.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pytest",
+      "purl": "pkg:pypi/pytest@9.1.1",
+      "type": "library",
+      "version": "9.1.1"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "python-dateutil",
+      "purl": "pkg:pypi/python-dateutil@2.9.0.post0",
+      "type": "library",
+      "version": "2.9.0.post0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pyyaml",
+      "purl": "pkg:pypi/pyyaml@6.0.3",
+      "type": "library",
+      "version": "6.0.3"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "rich",
+      "purl": "pkg:pypi/rich@15.0.0",
+      "type": "library",
+      "version": "15.0.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "ruff",
+      "purl": "pkg:pypi/ruff@0.15.21",
+      "type": "library",
+      "version": "0.15.21"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "six",
+      "purl": "pkg:pypi/six@1.17.0",
+      "type": "library",
+      "version": "1.17.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "stevedore",
+      "purl": "pkg:pypi/stevedore@5.9.0",
+      "type": "library",
+      "version": "5.9.0"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "name": "US_Stock_Monitor",
+      "properties": [
+        {
+          "name": "git.commit",
+          "value": "44557c39001c90201a4ab51ce7dcff1595b10642"
+        },
+        {
+          "name": "git.tree",
+          "value": "064b07a302039ce4296cddda16dc186725c85f2e"
+        },
+        {
+          "name": "requirements.lock.sha256",
+          "value": "b06817cd92e878edb83dda803e3935001159cf8b124b86c418e463c933260630"
+        }
+      ],
+      "type": "application",
+      "version": "44557c39001c90201a4ab51ce7dcff1595b10642"
+    }
+  },
+  "serialNumber": "urn:uuid:3cd68d4e-288d-ff05-92b0-2c2dc430bc4d",
+  "specVersion": "1.6",
+  "version": 1
+}

@@ -1,0 +1,49 @@
+{
+  "schema_version": "repository-wide-remediation-r2-baseline-v1",
+  "stage_id": "REPOSITORY_WIDE_REMEDIATION_R2_AND_TUSHARE_BACKFILL",
+  "frozen_at": "2026-07-13T01:18:39+08:00",
+  "status": "WAVE0_BASELINE_FROZEN",
+  "current_external_verdict": "NOT_PASSED_REWORK_REQUIRED",
+  "strategy_candidate_available": false,
+  "external_input": {
+    "path": "C:/Users/rongyu/.codex/attachments/5feaee35-82a8-40e0-954b-8a8217026b0c/pasted-text.txt",
+    "sha256": "6bfe034b684e9a110d6a3b1379739e4608cc8dfa1171fbc2dbc15b19d1392cb5",
+    "classification": "USER_SUPPLIED_EXTERNAL_REMEDIATION_PLAN"
+  },
+  "controller_transport": {
+    "repository": "quant-proj",
+    "branch": "agent/remediation-reaudit-readiness-r1-20260712",
+    "commit": "bf18d3a9eab53da6581556855935dc08ec9b44c7",
+    "tree": "6768d309a3f821bee81e9fa8aee8ff3be6719003",
+    "pull_request": 11,
+    "ci_run": 29199072636,
+    "ci_jobs_success": 3
+  },
+  "audit_refs": [
+    {"repository":"quant-proj","branch":"agent/remediation-targeted-reaudit-code-root-r2-20260712","commit":"4df14a054871dba2517bf9d4d426820d4cf3ea50","tree":"41d0a92adec695c1ca4f65400125f9e5ec35d5ee","pull_request":13,"ci_run":29198065747,"remote_ref_exact":true},
+    {"repository":"A_Share_Monitor","branch":"agent/remediation-r1-f001-f002-a-share-20260712","commit":"f24aeb88efcab901c09c3d6b08574572cb2f0556","tree":"f5688b71296444e3a2733fd212398c9f9a6d3d04","pull_request":7,"ci_run":29187211346,"remote_ref_exact":true},
+    {"repository":"market_data","branch":"agent/remediation-r1-f006-filesystem-safety-20260712","commit":"17409f952209244862b92dd893ead88cd073b4d7","tree":"61f5a840ca313ab55610b2cd9ea055f7c9edeaf7","pull_request":4,"ci_run":29187805453,"remote_ref_exact":true},
+    {"repository":"quant_research_lab","branch":"agent/remediation-r1-f003-quant-lab-20260712","commit":"7362ce219dc4c426e1b58e42a82e90ce73d04d59","tree":"f51a662c8a8497dce956ed514dd5053e72604549","pull_request":5,"ci_run":29188946281,"remote_ref_exact":true},
+    {"repository":"strategy_work","branch":"agent/remediation-r1-f009-f013-strategy-methods-20260712","commit":"b09db38da257f64fa7b1c7622b893fd7291fca4f","tree":"685f8f4d5164f4d63c51f140d030d15c462e1b7c","pull_request":11,"ci_run":29186401179,"remote_ref_exact":true},
+    {"repository":"US_Stock_Monitor","branch":"agent/external-reaudit-ra001-us-csv-runtime-20260712","commit":"44557c39001c90201a4ab51ce7dcff1595b10642","tree":"064b07a302039ce4296cddda16dc186725c85f2e","pull_request":6,"ci_run":29197919583,"remote_ref_exact":true},
+    {"repository":"us_stock_30w","branch":"agent/remediation-r1-f004-us30w-pit-20260712","commit":"73222d965f3785f457cecb73e9a2392554521e66","tree":"bf192195114c9e8c2a51344aba871ce6a6025bbd","pull_request":7,"ci_run":29191481613,"remote_ref_exact":true}
+  ],
+  "live_checkouts": [
+    {"repository":"quant-proj","branch":"codex/sol-luna-collaboration-routing-20260710","commit":"13b13a3757f446f97b2b9e3d8e39c98ca247a4b5","tree":"61f5ec374eb919a993fe0ea57c5ef8150e5501ed","dirty_entries":0},
+    {"repository":"A_Share_Monitor","branch":"agent/live-a-share-research-preservation-20260712","commit":"1a64e70873fc8a3c3d998e509cbcf690010ffef0","tree":"fd280413f18443d1a341d5e142db03180aa85f8f","dirty_entries":0},
+    {"repository":"market_data","branch":"codex/r28-smallcap-evidence-contract-20260709","commit":"398c84440621db531c5801326acc417751e88665","tree":"d87c6738d0fa4a388aadf1522d2834039c5293f4","dirty_entries":0},
+    {"repository":"quant_research_lab","branch":"master","commit":"e95d21e585513b91237b696fdf305b0239f73c23","tree":"4ac13db6d8b8dc4f9f4ad36f2b2b39d11c83ab6d","dirty_entries":0},
+    {"repository":"strategy_work","branch":"agent/live-strategy-research-preservation-20260712","commit":"a27e35b59ef8b59d0771bcf019534ca93748bbcc","tree":"1439e27f10bce9d24d091ecada28116092f145a5","dirty_entries":0},
+    {"repository":"US_Stock_Monitor","branch":"main","commit":"681d3a54662c79162e0477fda2a2aa8efeff0c47","tree":"511b44ba513267ad6661e47e1fa5e3859e3af487","dirty_entries":0},
+    {"repository":"us_stock_30w","branch":"research/reasonix-ds","commit":"8a9151acc473c8aebb75a08fbe46c7dbf797b653","tree":"1bf40762db3b10ef828885085eed9fd931d8ca31","dirty_entries":0}
+  ],
+  "freeze_rules": {
+    "new_strategy_research": false,
+    "old_holdout_rerun": false,
+    "tushare_network_calls": false,
+    "central_database_writes": false,
+    "collector_may_write_private_staging_after_gate_a": true,
+    "publisher_enabled": false,
+    "database_data_may_change_strategy_state": false
+  }
+}

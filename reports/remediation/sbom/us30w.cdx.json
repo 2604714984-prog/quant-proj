@@ -1,0 +1,491 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "annotated-types",
+      "purl": "pkg:pypi/annotated-types@0.7.0",
+      "type": "library",
+      "version": "0.7.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "NCSA"
+        }
+      ],
+      "name": "arch",
+      "purl": "pkg:pypi/arch@8.0.0",
+      "type": "library",
+      "version": "8.0.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "bandit",
+      "purl": "pkg:pypi/bandit@1.9.4",
+      "type": "library",
+      "version": "1.9.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "beautifulsoup4",
+      "purl": "pkg:pypi/beautifulsoup4@4.15.0",
+      "type": "library",
+      "version": "4.15.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MPL-2.0"
+        }
+      ],
+      "name": "certifi",
+      "purl": "pkg:pypi/certifi@2026.6.17",
+      "type": "library",
+      "version": "2026.6.17"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "charset-normalizer",
+      "purl": "pkg:pypi/charset-normalizer@3.4.9",
+      "type": "library",
+      "version": "3.4.9"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "duckdb",
+      "purl": "pkg:pypi/duckdb@1.5.4",
+      "type": "library",
+      "version": "1.5.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "exchange-calendars",
+      "purl": "pkg:pypi/exchange-calendars@4.13.2",
+      "type": "library",
+      "version": "4.13.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "idna",
+      "purl": "pkg:pypi/idna@3.18",
+      "type": "library",
+      "version": "3.18"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "iniconfig",
+      "purl": "pkg:pypi/iniconfig@2.3.0",
+      "type": "library",
+      "version": "2.3.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "korean-lunar-calendar",
+      "purl": "pkg:pypi/korean-lunar-calendar@0.4.0",
+      "type": "library",
+      "version": "0.4.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "markdown-it-py",
+      "purl": "pkg:pypi/markdown-it-py@4.2.0",
+      "type": "library",
+      "version": "4.2.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "mdurl",
+      "purl": "pkg:pypi/mdurl@0.1.2",
+      "type": "library",
+      "version": "0.1.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "mypy-extensions",
+      "purl": "pkg:pypi/mypy-extensions@1.1.0",
+      "type": "library",
+      "version": "1.1.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause AND 0BSD AND MIT AND Zlib AND CC0-1.0"
+        }
+      ],
+      "name": "numpy",
+      "purl": "pkg:pypi/numpy@2.5.1",
+      "type": "library",
+      "version": "2.5.1"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-2-Clause"
+        }
+      ],
+      "name": "packaging",
+      "purl": "pkg:pypi/packaging@26.2",
+      "type": "library",
+      "version": "26.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "pandas",
+      "purl": "pkg:pypi/pandas@3.0.3",
+      "type": "library",
+      "version": "3.0.3"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pandera",
+      "purl": "pkg:pypi/pandera@0.32.1",
+      "type": "library",
+      "version": "0.32.1"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "patsy",
+      "purl": "pkg:pypi/patsy@1.0.2",
+      "type": "library",
+      "version": "1.0.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pluggy",
+      "purl": "pkg:pypi/pluggy@1.6.0",
+      "type": "library",
+      "version": "1.6.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pydantic",
+      "purl": "pkg:pypi/pydantic@2.13.4",
+      "type": "library",
+      "version": "2.13.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pydantic-core",
+      "purl": "pkg:pypi/pydantic-core@2.46.4",
+      "type": "library",
+      "version": "2.46.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-2-Clause"
+        }
+      ],
+      "name": "pygments",
+      "purl": "pkg:pypi/pygments@2.20.0",
+      "type": "library",
+      "version": "2.20.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pyluach",
+      "purl": "pkg:pypi/pyluach@2.3.0",
+      "type": "library",
+      "version": "2.3.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pytest",
+      "purl": "pkg:pypi/pytest@9.1.1",
+      "type": "library",
+      "version": "9.1.1"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0 OR BSD-3-Clause"
+        }
+      ],
+      "name": "python-dateutil",
+      "purl": "pkg:pypi/python-dateutil@2.9.0.post0",
+      "type": "library",
+      "version": "2.9.0.post0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "pyyaml",
+      "purl": "pkg:pypi/pyyaml@6.0.3",
+      "type": "library",
+      "version": "6.0.3"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "requests",
+      "purl": "pkg:pypi/requests@2.34.2",
+      "type": "library",
+      "version": "2.34.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "rich",
+      "purl": "pkg:pypi/rich@15.0.0",
+      "type": "library",
+      "version": "15.0.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "ruff",
+      "purl": "pkg:pypi/ruff@0.15.21",
+      "type": "library",
+      "version": "0.15.21"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "scipy",
+      "purl": "pkg:pypi/scipy@1.18.0",
+      "type": "library",
+      "version": "1.18.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "six",
+      "purl": "pkg:pypi/six@1.17.0",
+      "type": "library",
+      "version": "1.17.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "soupsieve",
+      "purl": "pkg:pypi/soupsieve@2.8.4",
+      "type": "library",
+      "version": "2.8.4"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "statsmodels",
+      "purl": "pkg:pypi/statsmodels@0.14.6",
+      "type": "library",
+      "version": "0.14.6"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "stevedore",
+      "purl": "pkg:pypi/stevedore@5.9.0",
+      "type": "library",
+      "version": "5.9.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "BSD-3-Clause"
+        }
+      ],
+      "name": "toolz",
+      "purl": "pkg:pypi/toolz@1.1.0",
+      "type": "library",
+      "version": "1.1.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "typeguard",
+      "purl": "pkg:pypi/typeguard@4.5.2",
+      "type": "library",
+      "version": "4.5.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "PSF-2.0"
+        }
+      ],
+      "name": "typing-extensions",
+      "purl": "pkg:pypi/typing-extensions@4.16.0",
+      "type": "library",
+      "version": "4.16.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "typing-inspect",
+      "purl": "pkg:pypi/typing-inspect@0.9.0",
+      "type": "library",
+      "version": "0.9.0"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "typing-inspection",
+      "purl": "pkg:pypi/typing-inspection@0.4.2",
+      "type": "library",
+      "version": "0.4.2"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "tzdata",
+      "purl": "pkg:pypi/tzdata@2026.3",
+      "type": "library",
+      "version": "2026.3"
+    },
+    {
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "urllib3",
+      "purl": "pkg:pypi/urllib3@2.7.0",
+      "type": "library",
+      "version": "2.7.0"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "name": "us_stock_30w",
+      "properties": [
+        {
+          "name": "git.commit",
+          "value": "73222d965f3785f457cecb73e9a2392554521e66"
+        },
+        {
+          "name": "git.tree",
+          "value": "bf192195114c9e8c2a51344aba871ce6a6025bbd"
+        },
+        {
+          "name": "requirements.lock.sha256",
+          "value": "80e930c7bf2d4dec11ffee1ab88d638fd5b013970d5e6fa39b248bb3fd7015d1"
+        }
+      ],
+      "type": "application",
+      "version": "73222d965f3785f457cecb73e9a2392554521e66"
+    }
+  },
+  "serialNumber": "urn:uuid:1a25f6a4-db48-66ba-47bd-954495472c82",
+  "specVersion": "1.6",
+  "version": 1
+}

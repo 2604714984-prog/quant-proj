@@ -2,6 +2,13 @@
 
 This folder is the controller workspace for the local quant system.
 
+## External Audit (2026-07-12)
+
+Start the GitHub-based external review with
+[`reports/external_audit/workspace_external_audit_packet_20260712.md`](reports/external_audit/workspace_external_audit_packet_20260712.md).
+The adjacent JSON manifest pins the repositories, branches, commits, CI runs,
+publication exclusions, and current fail-closed research conclusions.
+
 It does not yet contain the source repos. The current source-of-truth project roots are:
 
 - `/home/rongyu/workspace/A_Share_Monitor`

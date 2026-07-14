@@ -1,0 +1,6 @@
+SPDX-License-Identifier: CC0-1.0
+
+This fixture was created synthetically for repository identity and mutation
+tests. It contains no provider data, personal information, or investment
+evidence. To the extent possible under law, the project waives copyright and
+related rights in this fixture under CC0 1.0.

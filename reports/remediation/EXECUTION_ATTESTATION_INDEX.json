@@ -1,0 +1,32 @@
+{
+  "schema_version": "remediation-execution-attestation-index-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "trust_separation": {
+    "execution_task_id": "019f51ff-7350-7141-90d9-33a07ff46239",
+    "acceptance_task_id": "019f520c-1f03-7d31-a91d-eae2d6b3ed8e",
+    "distinct_tasks": true
+  },
+  "controller_source": {
+    "commit": "8247e619398a235911edeeaaaa3785dade4f9fe4",
+    "tree": "bdf17d1b22715c3ffe8296cfe976ab0f3fefdd54"
+  },
+  "private_record": {
+    "path": "/home/rongyu/workspace/.private_quant_inputs/remediation_attestation_r1_20260712",
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "automated_gate_sha256": "7fc19b2bcf25873a7da6f5e324c3c0058b733499116e6b332c1b9fa0af72e27f",
+    "execution_attestation_sha256": "68b0d8d6e9f11efd588f16aab49a16e4930ef4f593567cbdbd6ebd776d0dce30",
+    "luna_acceptance_sha256": "69c2f24a9dac3d18ffd35a6c6585a85dc1d4041f814d3550470d259587ad0a6e"
+  },
+  "execution": {
+    "state": "EXECUTION_ATTESTED",
+    "commands_replayed": 3,
+    "focused_tests_passed": 39,
+    "unexpected_skips": 0,
+    "log_and_stream_hashes_verified": true,
+    "command_interpreter_and_lock_identity_verified": true
+  },
+  "independent_acceptance": "ACCEPTED",
+  "secret_material_in_index": false,
+  "strategy_candidate_available": false
+}

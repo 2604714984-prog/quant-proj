@@ -1,0 +1,36 @@
+{
+  "schema_version": "central-database-r2-backup-result-v1",
+  "task_id": "REMEDIATION_R2_WAVE0_20260713",
+  "decision_id": "HG-EXEC-TASK-REMEDIATION-R2-DB-BASELINE-BACKUP-20260713",
+  "executed_at": "2026-07-13T01:29:41+08:00",
+  "status": "PASS_BYTE_IDENTICAL",
+  "source": {
+    "path": "/home/rongyu/workspace/quant_data/quant_research.duckdb",
+    "sha256": "65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5",
+    "bytes": 1001926656,
+    "mode": "0600",
+    "unchanged": true
+  },
+  "backup": {
+    "path": "/home/rongyu/workspace/quant_data/backups/quant_research_before_remediation_r2_20260713_65e2c1354380.duckdb",
+    "sha256": "65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5",
+    "bytes": 1001926656,
+    "mode": "0600",
+    "partial_residue_count": 0
+  },
+  "implementation": {
+    "commit": "0c9b3125135bb48cb298980cdf000e036c11b448",
+    "tree": "b5f36b39ea0681f893481e11eaa94553da461821",
+    "script_sha256": "ae6d381357a63ee343b9e65162faac8de7e2fda2c00a71a9eedcd98ec61775c1"
+  },
+  "transcript": {
+    "path": "reports/remediation_r2/central_db_baseline_backup_transcript_20260713.txt",
+    "sha256": "5bb023ca357aacb924de58c951c0beb08c76a66f064612fb9088a0fd8dbe1da8"
+  },
+  "writer_lock_acquired": true,
+  "network_calls": 0,
+  "provider_calls": 0,
+  "database_writes": 0,
+  "strategy_process_invocations": 0,
+  "strategy_candidate_available": false
+}

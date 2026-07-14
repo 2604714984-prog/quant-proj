@@ -1,0 +1,82 @@
+{
+  "schema_version": "external-reaudit-findings-and-targeted-rework-v2",
+  "audit_id": "EXTERNAL_REAUDIT_20260712",
+  "review_target": {
+    "repository": "quant-proj",
+    "pull_request": 11,
+    "submitted_commit": "7f7335d6d061bc0d56a23e2f88f2df0449cd1b16",
+    "submitted_tree": "0576d678763b142d57862e9f77006b6300d31d9d"
+  },
+  "source_report": "reports/remediation/EXTERNAL_REAUDIT_VERDICT_20260712.md",
+  "source_report_sha256": "744b09c877bf437e6efd49c434566d1a8e0ee49377283afa5683570ea484da9a",
+  "external_reaudit_verdict": "NOT_PASSED",
+  "pr_review": "CHANGES_REQUESTED",
+  "status": "TARGETED_REWORK_COMPLETE_EXTERNAL_EVIDENCE_PENDING",
+  "new_critical": 0,
+  "new_high": 1,
+  "strategy_candidate_available": false,
+  "accepted_components": [
+    "CORE_REMEDIATION_CODE_SUBSTANTIALLY_ACCEPTED",
+    "EXACT_HEAD_CI_ACCEPTED",
+    "ORIGINAL_STRATEGY_CONCLUSIONS_ACCEPTED",
+    "AUTOMATED_BROKER_ORDER_PAPER_LIVE_PATH_NOT_FOUND"
+  ],
+  "findings": [
+    {
+      "id": "RA-001",
+      "severity": "High",
+      "status": "CLOSED_BY_TARGETED_REWORK_PENDING_EXTERNAL_CONFIRMATION",
+      "repository": "US_Stock_Monitor",
+      "title": "CSV qualification and active runtime implementation are split",
+      "linked_original_findings": ["F-008"],
+      "remediation": {"repository": "US_Stock_Monitor", "branch": "agent/external-reaudit-ra001-us-csv-runtime-20260712", "commit": "44557c39001c90201a4ab51ce7dcff1595b10642", "tree": "064b07a302039ce4296cddda16dc186725c85f2e", "pull_request": 6, "ci_run": 29197919583, "ci_jobs_success": 3, "full_tests_passed": 656, "focused_tests_passed": 54},
+      "required_actions": [
+        "bind the csv factory to a CsvImporter-based DataProvider adapter",
+        "remove caller-controlled real_data truth claims",
+        "make readiness instantiate and validate the active runtime provider",
+        "fail closed on empty, unparsable, unprovenanced, escaping or conflicting CSV input",
+        "add runtime-factory and provenance contract tests"
+      ]
+    },
+    {
+      "id": "RA-002",
+      "severity": "Medium",
+      "status": "CLOSED_BY_TARGETED_REWORK_PENDING_EXTERNAL_CONFIRMATION",
+      "repository": "quant-proj",
+      "title": "F-008 closure mapping names importer remediation as provider remediation",
+      "linked_original_findings": ["F-008", "F-009"],
+      "remediation": {"controller_branch": "agent/remediation-targeted-reaudit-code-root-r2-20260712", "commit": "4df14a054871dba2517bf9d4d426820d4cf3ea50", "tree": "41d0a92adec695c1ca4f65400125f9e5ec35d5ee", "pull_request": 13, "ci_run": 29198065747, "online_blob_validation": "PASS"},
+      "required_actions": [
+        "bind audited and fixed paths to blob hashes",
+        "bind exact test node IDs",
+        "record runtime factory binding",
+        "correct F-008 and verify F-009 mapping"
+      ]
+    },
+    {
+      "id": "EA-001",
+      "severity": "ExternalEvidenceBlocker",
+      "status": "PRIVATE_GITHUB_RELEASE_PUBLISHED_VERIFICATION_PENDING",
+      "repository": "A_Share_Monitor",
+      "title": "Controlled data-room bytes and publisher source object not independently verified",
+      "linked_original_findings": ["F-001"],
+      "access_index": "reports/remediation/DATA_ROOM_EXTERNAL_ACCESS_INDEX_20260712.json",
+      "required_actions": [
+        "provide read-only controlled data-room bundle access",
+        "provide publisher Git object or hash-bound source archive",
+        "allow independent manifest, Parquet and checksum verification"
+      ]
+    }
+  ],
+  "credential_adjudication": {
+    "status": "OWNER_REPORTED_REVOKED",
+    "operational_use": "FORBIDDEN",
+    "provider_independent_confirmation": false,
+    "new_high": false
+  },
+  "claimed_external_evidence_zip_sha256": "fafa5c566d2d45fe7eee1c39e05ae3e5dd1e851473c2e3ec10cb86e79952ac78",
+  "zip_bytes_received_in_workspace": false,
+  "closure_summary": {"new_high_total": 1, "new_high_closed_internally": 1, "new_medium_total": 1, "new_medium_closed_internally": 1, "external_evidence_blockers_total": 1, "external_evidence_blockers_closed": 0},
+  "boundary": {"strategy_rerun": false, "provider_ingestion": false, "database_write": false, "candidate_promotion": false, "broker_order_paper_live_auto": false},
+  "targeted_reaudit_allowed_after_rework": true
+}

@@ -2,30 +2,129 @@ name: research-validation
 
 on:
   push:
-    branches:
-      - main
+    branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
+concurrency:
+  group: research-validation-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
-  static-validation:
+  static-unit:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
         with:
-          python-version: "3.11"
-      - name: Install validation dependencies
-        run: python -m pip install pyyaml
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-ci.lock
+      - name: Install hash-locked CI dependencies
+        run: python -m pip install --require-hashes -r requirements-ci.lock
       - name: Compile tracked Python files
-        run: |
-          files="$(git ls-files '*.py')"
-          if [ -n "$files" ]; then
-            python -m py_compile $files
-          fi
+        run: git ls-files -z '*.py' | xargs -0 python -m py_compile
       - name: Parse tracked JSON files
         run: |
-          git ls-files '*.json' \
-            ':!:data/**' ':!:outputs/**' ':!:reports/runops/**' \
+          git ls-files '*.json' ':!:data/**' ':!:outputs/**' ':!:reports/runops/**' \
             | while read -r file; do python -m json.tool "$file" >/dev/null; done
+      - name: Ruff
+        run: git ls-files -z '*.py' | xargs -0 python -m ruff check
+      - name: High-severity SAST
+        run: python -m bandit -r . -lll -iii -x ./.git,./data,./outputs,./reports
+      - name: Unit and controller tests
+        run: python -m pytest -q --junitxml=/tmp/pytest-unit.xml
+      - name: Enforce exact skip budget
+        run: >-
+          python scripts/validate_pytest_skip_budget.py
+          --junit /tmp/pytest-unit.xml
+          --allowlist ci/pytest-skip-allowlist.json
+
+  integration-identity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-ci.lock
+      - run: python -m pip install --require-hashes -r requirements-ci.lock
+      - name: Identity and acceptance mutation tests
+        run: >-
+          python -m pytest -q
+          tests/test_validate_automated_gate_manifest.py
+          tests/test_validate_luna_acceptance.py
+          tests/test_validate_remediation_gate0.py
+          --junitxml=/tmp/pytest-integration.xml
+      - name: Enforce zero integration skips
+        run: >-
+          python scripts/validate_pytest_skip_budget.py
+          --junit /tmp/pytest-integration.xml
+          --allowlist ci/pytest-skip-allowlist.json
+
+  controlled-fixture-reproduction:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-ci.lock
+      - run: python -m pip install --require-hashes -r requirements-ci.lock
+      - name: Validate licensed cross-repository fixture bytes
+        run: python scripts/validate_cross_repo_fixture.py
       - name: Validate current projects registry schema
         run: python scripts/validate_projects_registry.py
+
+  branch-head-identity:
+    runs-on: ubuntu-latest
+    env:
+      EXPECTED_HEAD_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.sha || github.sha }}
+      BASE_SHA: ${{ github.event_name == 'pull_request' && github.event.pull_request.base.sha || github.event.before }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: ${{ env.EXPECTED_HEAD_SHA }}
+          fetch-depth: 0
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6.3.0
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements-ci.lock
+      - run: python -m pip install --require-hashes -r requirements-ci.lock
+      - name: Prove exact branch-head checkout and record identities
+        run: |
+          python scripts/validate_ci_identity.py \
+            --mode head \
+            --branch-head-sha "$EXPECTED_HEAD_SHA" \
+            --base-sha "$BASE_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+      - name: Run controller tests on exact branch head
+        run: python -m pytest -q
+
+  merge-ref-identity:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    env:
+      BRANCH_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+      BASE_SHA: ${{ github.event.pull_request.base.sha }}
+      TESTED_MERGE_SHA: ${{ github.sha }}
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          ref: refs/pull/${{ github.event.pull_request.number }}/merge
+          fetch-depth: 0
+      - name: Prove tested merge identity and both parents
+        run: |
+          python scripts/validate_ci_identity.py \
+            --mode merge \
+            --branch-head-sha "$BRANCH_HEAD_SHA" \
+            --base-sha "$BASE_SHA" \
+            --tested-merge-sha "$TESTED_MERGE_SHA" | tee -a "$GITHUB_STEP_SUMMARY"
+          git merge-base --is-ancestor "$BASE_SHA" "$TESTED_MERGE_SHA"
+          git merge-base --is-ancestor "$BRANCH_HEAD_SHA" "$TESTED_MERGE_SHA"

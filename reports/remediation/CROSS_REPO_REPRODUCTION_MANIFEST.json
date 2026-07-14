@@ -1,0 +1,88 @@
+{
+  "schema_version": "cross-repository-reproduction-manifest-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "strategy_candidate_available": false,
+  "research_boundary": {
+    "strategy_outcomes_reopened": false,
+    "new_strategy_research_executed": false,
+    "provider_or_network_ingestion_executed": false,
+    "broker_order_paper_live_auto_enabled": false
+  },
+  "original_dynamic_reproductions": [
+    {
+      "finding_ids": ["F-001"],
+      "attack": "database_identity_mismatch_cross_split_label_and_partial_publication",
+      "result": "KILLED_BY_REGRESSION_TEST_AND_PRIVATE_DOUBLE_REPRODUCTION",
+      "evidence": "actual opened FD identity is bound; 2779/2779 crossing labels null; failed publication rolls back"
+    },
+    {
+      "finding_ids": ["F-002"],
+      "attack": "test_provenance_reaches_non_test_ticket_or_ledger",
+      "result": "KILLED_BY_REGRESSION_TEST",
+      "evidence": "runner and emitter reject; fixed report/ticket writes reject aliases and races; real ledger unchanged"
+    },
+    {
+      "finding_ids": ["F-003"],
+      "attack": "pandas_label_alignment_and_empty_final_winner",
+      "result": "KILLED_BY_REGRESSION_TEST_AND_INDEPENDENT_DYNAMIC_REPLAY",
+      "evidence": "old positional reproduction 0/3; repaired 3/3; final source order loads winner, creates frozen trial, evaluates best_factors"
+    },
+    {
+      "finding_ids": ["F-004"],
+      "attack": "unknown_or_future_available_at_enters_strict_pit",
+      "result": "KILLED_BY_REGRESSION_TEST",
+      "evidence": "null, naive, future and revision-unsafe values fail closed or remain retrospective diagnostic"
+    },
+    {
+      "finding_ids": ["F-006"],
+      "attack": "hardlink_symlink_or_race_overwrites_database",
+      "result": "KILLED_BY_REGRESSION_TEST_AND_INDEPENDENT_DYNAMIC_REPLAY",
+      "evidence": "root-to-leaf FD walk and validated atomic publication reject aliases, swaps, serialization failure and concurrent replacement"
+    }
+  ],
+  "private_a_share_double_reproduction": {
+    "status": "PASS_DETERMINISTIC_PRIVATE_ENGINEERING_REPRODUCTION",
+    "source_commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556",
+    "source_tree": "f5688b71296444e3a2733fd212398c9f9a6d3d04",
+    "runs": 2,
+    "rows": 136767,
+    "symbols": 77,
+    "date_start": "20180102",
+    "date_end": "20260703",
+    "duplicate_keys": 0,
+    "cross_boundary_rows": 2779,
+    "cross_boundary_non_null_labels": 0,
+    "purged_cross_boundary_rows": 2779,
+    "purge_audit_mismatch_rows": 0,
+    "source_and_opened_database_sha256": "687c8dcf93d01c43621078d706a987bb5ea2256783931f97e60327d48d0d8e28",
+    "universe_source_sha256": "9178a32759f17d2cb47dbd7468e5f5569a9cc170895f84c4a343f7b1317ed37f",
+    "parquet_sha256_both_runs": "b9c9d45f7558b729e4b000377acef3ca36ef744937fe53c72ab1b73047132def",
+    "report_sha256_both_runs": "bfdf2a4f0fe7ab5e26e1dfd72fd6b893f498252c1d773e0916bf7068273fce79",
+    "normalized_manifest_sha256_both_runs": "b101d5765136442a24771f0085463d5189480a3ff373de160d28309a0df39bdf",
+    "temporary_row_level_artifacts_deleted": true,
+    "temporary_residue_count": 0,
+    "canonical_publication": false,
+    "classification": "ENGINEERING_SELF_CHECK"
+  },
+  "additional_cross_repository_scenarios": [
+    {"scenario": "controller_gate_forged_test_count_or_stale_log", "result": "REJECTED", "evidence": "EXECUTION_ATTESTED independent replay"},
+    {"scenario": "csv_parent_absolute_backslash_or_symlink_escape_through_active_factory", "result": "REJECTED", "evidence": "US_Stock_Monitor 44557c3 tests/test_us_csv_runtime_contract.py exact nodes; CI 29197919583"},
+    {"scenario": "conflicting_duplicate_ohlcv_through_active_factory", "result": "REJECTED", "evidence": "US_Stock_Monitor 44557c3::test_conflicting_duplicate_ohlcv_fails_runtime_and_readiness"},
+    {"scenario": "five_empty_csv_files_claim_research_ready", "result": "REJECTED", "evidence": "US_Stock_Monitor 44557c3::test_five_empty_csv_placeholders_are_not_research_ready"},
+    {"scenario": "qualification_runtime_factory_split", "result": "REJECTED", "evidence": "US_Stock_Monitor 44557c3::test_qualification_and_factory_use_the_same_verified_runtime"},
+    {"scenario": "caller_asserts_real_data_without_controller_pins", "result": "REJECTED", "evidence": "real_data argument and CLI flag removed; mapping/unpinned/drift tests fail closed"},
+    {"scenario": "family66_canonical_verification_bypass", "result": "REJECTED", "evidence": "strategy_work F-009 tests"},
+    {"scenario": "pbo_nondivisible_remainder", "result": "REJECTED", "evidence": "strategy_work F-013 tests"},
+    {"scenario": "capability_documentation_drift", "result": "REJECTED", "evidence": "A_Share_Monitor capability matrix validation"},
+    {"scenario": "unregistered_public_binary", "result": "REJECTED", "evidence": "strategy_work and us_stock_30w artifact policies; current binaries=0"},
+    {"scenario": "missing_controlled_cross_repository_fixture", "result": "REJECTED", "evidence": "all exact-head CI controlled-fixture-reproduction jobs succeeded"}
+  ],
+  "clean_environment_evidence": {
+    "required_ci_index": "reports/remediation/CI_REQUIRED_RUNS.json",
+    "all_exact_head_jobs_success": true,
+    "unexpected_skips": 0,
+    "dependency_locks_hash_enforced": true,
+    "actions_full_sha_pinned": true
+  },
+  "conclusion": "REMEDIATION_REPRODUCTIONS_PASS_WITH_CANONICAL_A_SHARE_PUBLICATION_STILL_DISABLED"
+}

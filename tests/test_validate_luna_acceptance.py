@@ -26,6 +26,7 @@ def _record() -> dict:
         "workspace_root": "/tmp/workspace",
         "gate_manifest_path": "gate.json",
         "gate_manifest_sha256": SHA_A,
+        "required_gate_state": "EXECUTION_ATTESTED",
         "evidence_rework_count": 0,
         "missing_evidence": [],
         "evidence_conflicts": [],
@@ -105,14 +106,38 @@ def test_superseded_acceptance_is_not_final():
 def test_current_acceptance_uses_canonical_singleton(monkeypatch, tmp_path):
     record = _record()
     record["workspace_root"] = str(tmp_path)
+    attestation = tmp_path / "execution_attestation.json"
+    attestation.write_text(
+        json.dumps(
+            {"execution_task_id": "019f4cc3-e022-7f21-9f4d-0b3e036b7bf4"}
+        ),
+        encoding="utf-8",
+    )
     gate = tmp_path / "gate.json"
-    gate.write_text(json.dumps({"task_id": "TASK-1"}), encoding="utf-8")
+    gate.write_text(
+        json.dumps(
+            {
+                "task_id": "TASK-1",
+                "task_packet": {"dir": str(tmp_path)},
+                "execution_attestation": {
+                    "path": "execution_attestation.json",
+                    "sha256": __import__("hashlib").sha256(
+                        attestation.read_bytes()
+                    ).hexdigest(),
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
     record["gate_manifest_path"] = "gate.json"
     record["gate_manifest_sha256"] = __import__("hashlib").sha256(gate.read_bytes()).hexdigest()
     acceptance = tmp_path / "luna_acceptance.json"
     acceptance.write_text(json.dumps(record), encoding="utf-8")
     (tmp_path / "spec.md").write_text("STATUS: LUNA_ACCEPTED_CODE_ONLY\n", encoding="utf-8")
-    monkeypatch.setattr("scripts.validate_automated_gate_manifest.validate_file", lambda *_args, **_kwargs: None)
+    monkeypatch.setattr(
+        "scripts.validate_automated_gate_manifest.validate_file",
+        lambda *_args, **_kwargs: "EXECUTION_ATTESTED",
+    )
     from scripts.validate_luna_acceptance import validate_file
 
     validate_file(acceptance)

@@ -1,0 +1,155 @@
+{
+  "schema_version": "finding-closure-matrix-v2",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "strategy_candidate_available": false,
+  "findings": [
+    {
+      "finding_id": "F-001", "severity": "Critical", "repository": "A_Share_Monitor", "audited_ref": "e81f50c19c8e6e71ae6585eeb6dbbb10db86fd95", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Manifest identity was not bound to the database actually opened; whole-label purge and publish ordering were incomplete.",
+      "affected_paths": ["scripts/rebuild_research_validity_evidence.py", "scripts/run_r21_development_first_amendment.py", "qta/features/feature_store.py"], "remediation_branch": "agent/remediation-r1-f001-f002-a-share-20260712",
+      "positive_tests": ["616 independent full-suite tests", "32 identity integration tests", "private double reproduction: 136767 rows and 2779/2779 crossing labels purged"],
+      "negative_tests": ["database A/B mismatch", "path/inode/symlink/swap mutation", "failed validation and post-rename rollback", "cross-split non-null label"],
+      "dynamic_reproduction": "Two isolated private runs produced identical Parquet/report/normalized-manifest hashes; opened DB hash exact; zero residue.",
+      "superseded_artifacts": ["A_SHARE_R21_INVALIDATION_ROOTS", "A_SHARE_R21_DOWNSTREAM_INVALIDATION_ROOTS"],
+      "remaining_limitations": ["Canonical/public row-level evidence publication remains deliberately disabled; the double reproduction is ENGINEERING_SELF_CHECK only."],
+      "fix_commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556", "fix_tree": "f5688b71296444e3a2733fd212398c9f9a6d3d04",
+      "semantic_review": "ACCEPTED; database FD identity, true purge and atomic rollback independently reviewed.", "independent_acceptance": "ACCEPTED at final head; CI 29187211346 3/3 success."
+    },
+    {
+      "finding_id": "F-002", "severity": "Critical", "repository": "A_Share_Monitor", "audited_ref": "e81f50c19c8e6e71ae6585eeb6dbbb10db86fd95", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Test candidates/evidence could be combined with non-test ticket and ledger writes.",
+      "affected_paths": ["qta/recommendation/a10_core_universe/runner.py", "qta/recommendation/a10_core_universe/ticket_emitter.py", "qta/recommendation/a10_core_universe/evidence_context.py"], "remediation_branch": "agent/remediation-r1-f001-f002-a-share-20260712",
+      "positive_tests": ["all test-only fixture paths remain usable without real writes", "fixed report and ticket writes are atomically validated"],
+      "negative_tests": ["all test-hook flag combinations", "direct emitter bypass", "symlink/hardlink/race output alias", "real ledger unchanged"],
+      "dynamic_reproduction": "The original direct-library test-provenance path is rejected at runner and emitter layers before any ledger mutation.",
+      "superseded_artifacts": ["A10_TEST_FIXTURE_OUTPUTS"], "remaining_limitations": ["A10 real ticket and ledger surfaces remain disabled by the remediation capability boundary."],
+      "fix_commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556", "fix_tree": "f5688b71296444e3a2733fd212398c9f9a6d3d04",
+      "semantic_review": "ACCEPTED; provenance enforcement and sink-layer rejection independently reviewed.", "independent_acceptance": "ACCEPTED at final head; CI 29187211346 3/3 success."
+    },
+    {
+      "finding_id": "F-003", "severity": "High", "repository": "quant_research_lab", "audited_ref": "2a873848ef67a8b7f7509826a22818ce86cbae13", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Factor values were label-aligned after index reset and the final test omitted validated winners; experiment identities and winner bytes also lacked fail-closed lifecycle binding.",
+      "affected_paths": ["scripts/deepseek_factor_miner.py", "quant_lab/core/factor_mining_contract.py"], "remediation_branch": "agent/remediation-r1-f003-quant-lab-20260712",
+      "positive_tests": ["79 full tests and 56 focused semantic tests", "mixed completed/failed attempt selection", "all-failed diagnostic lifecycle"],
+      "negative_tests": ["non-contiguous positional index", "empty/changed winner", "symlink/hardlink/ancestor races", "completed-null/order drift", "failed selection", "duplicate frozen test"],
+      "dynamic_reproduction": "Independent replay: old positional result 0/3 and repaired 3/3; winner is loaded before one frozen test trial and evaluated as best_factors; all identity attacks reject.",
+      "superseded_artifacts": ["QRL_FACTOR_MINING_RESULT_20260710", "QRL_REASONIX_REPORT_005", "QRL_AGENTS_BEST_IC_CLAIM"],
+      "remaining_limitations": ["No old factor outcome was rerun or promoted."],
+      "fix_commit": "7362ce219dc4c426e1b58e42a82e90ce73d04d59", "fix_tree": "f51a662c8a8497dce956ed514dd5053e72604549",
+      "semantic_review": "ACCEPTED after three adversarial review rounds; no material findings.", "independent_acceptance": "ACCEPTED; CI 29188946281 exact head 3/3 success."
+    },
+    {
+      "finding_id": "F-004", "severity": "High", "repository": "us_stock_30w", "audited_ref": "379f1123ea0373daf6eaad51a66fd4548fa3d468+8a9151acc473c8aebb75a08fbe46c7dbf797b653", "status": "CLOSED_ACCEPTED",
+      "root_cause": "The strict loader required the available_at column name but not non-null, timezone, decision-time or revision safety.",
+      "affected_paths": ["scripts/validate_four_etf_strategies.py", "reports/planning/us30w_pit_availability_contract_remediation_20260712.json"], "remediation_branch": "agent/remediation-r1-f004-us30w-pit-20260712",
+      "positive_tests": ["180 clean hash-locked full tests and 175 focused PIT/governance/runtime tests", "retrospective diagnostic classification preserved", "master integration conflict resolved without reopening outcomes"],
+      "negative_tests": ["NULL available_at", "naive timestamp", "future timestamp", "future corporate-action revision", "unqualified strict claim"],
+      "dynamic_reproduction": "Unknown or unsafe availability fails strict PIT and cannot change the frozen negative adjudication.",
+      "superseded_artifacts": [], "remaining_limitations": ["US31/US36/US41/US46 remain rejected and cannot be rescued or rerun by infrastructure improvements."],
+      "fix_commit": "73222d965f3785f457cecb73e9a2392554521e66", "fix_tree": "bf192195114c9e8c2a51344aba871ce6a6025bbd",
+      "semantic_review": "ACCEPTED; available_at/revision safety and master integration independently reviewed.", "independent_acceptance": "ACCEPTED; CI 29191481613 exact head 3/3 success; PR CLEAN/MERGEABLE."
+    },
+    {
+      "finding_id": "F-005", "severity": "High", "repository": "quant-proj/A_Share_Monitor", "audited_ref": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207+e81f50c19c8e6e71ae6585eeb6dbbb10db86fd95", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Top-level research-only prose did not accurately classify retained HITL/manual-fill surfaces.",
+      "affected_paths": ["reports/remediation/CAPABILITY_BOUNDARY_ADR.md", "reports/remediation/CAPABILITY_MATRIX.json", "qta/recommendation/a10_core_universe/runner.py"], "remediation_branch": "agent/remediation-r1-f001-f002-a-share-20260712",
+      "positive_tests": ["capability matrix matches installed CLI and import paths"], "negative_tests": ["default CLI exposes actionable command", "documentation/capability drift", "automatic trade-field generation"],
+      "dynamic_reproduction": "Default research installation exposes no actionable A10/manual-fill command; retained code is disabled and separately classified.",
+      "superseded_artifacts": [], "remaining_limitations": ["Retained disabled code remains visible audit surface and requires separate authorization before any future activation."],
+      "fix_commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556", "fix_tree": "f5688b71296444e3a2733fd212398c9f9a6d3d04",
+      "semantic_review": "ACCEPTED with capability ADR and machine-readable matrix.", "independent_acceptance": "ACCEPTED at final A_Share_Monitor head."
+    },
+    {
+      "finding_id": "F-006", "severity": "High", "repository": "market_data", "audited_ref": "300d4cf902cafc7f8462991e761e658febdc1424", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Path.resolve equality missed hardlink aliases and collectors wrote directly to predictable targets.",
+      "affected_paths": ["db_introspection.py", "dump_schema.py", "collect_a_share_state.py", "collect_us_state.py"], "remediation_branch": "agent/remediation-r1-f006-filesystem-safety-20260712",
+      "positive_tests": ["202 full tests", "33 identity tests", "58 controlled fixture/race tests"],
+      "negative_tests": ["hardlink alias", "symlink victim", "ancestor race", "serialization failure", "concurrent publication", "rollback identity mismatch"],
+      "dynamic_reproduction": "Pre-fix hardlink truncated input; post-fix root-to-leaf descriptor validation and atomic publication preserve inputs and prior output under every replay.",
+      "superseded_artifacts": ["MARKET_DATA_A_SHARE_SCHEMA", "MARKET_DATA_US_SCHEMA"], "remaining_limitations": [],
+      "fix_commit": "17409f952209244862b92dd893ead88cd073b4d7", "fix_tree": "61f5a840ca313ab55610b2cd9ea055f7c9edeaf7",
+      "semantic_review": "ACCEPTED after bounded fixture-license rework.", "independent_acceptance": "ACCEPTED; CI 29187805453 exact head 3/3 success."
+    },
+    {
+      "finding_id": "F-007", "severity": "Medium", "repository": "quant-proj", "audited_ref": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Manifest structural validity could be mistaken for commands that were actually executed.",
+      "affected_paths": ["scripts/validate_luna_acceptance.py", "scripts/validate_automated_gate_manifest.py", "scripts/create_execution_attestation.py"], "remediation_branch": "agent/remediation-reaudit-code-root-r1-20260712",
+      "positive_tests": ["39 commands/tests independently replayed", "137 controller tests"], "negative_tests": ["forged count", "stale log", "command/interpreter/lock drift", "result commit/tree drift"],
+      "dynamic_reproduction": "A distinct execution task and acceptance task verified exact logs, streams, commands, executable, lock, commit and tree.",
+      "superseded_artifacts": [], "remaining_limitations": [],
+      "fix_commit": "8247e619398a235911edeeaaaa3785dade4f9fe4", "fix_tree": "bdf17d1b22715c3ffe8296cfe976ab0f3fefdd54",
+      "semantic_review": "EXECUTION_ATTESTED and independently replayed.", "independent_acceptance": "ACCEPTED; hashes indexed in EXECUTION_ATTESTATION_INDEX.json."
+    },
+    {
+      "finding_id": "F-008", "severity": "Medium", "repository": "US_Stock_Monitor", "audited_ref": "872f54211e56a162e713d987d904b49d2521bd25", "status": "CLOSED_AFTER_TARGETED_REWORK",
+      "root_cause": "The importer was hardened but qualification and the active factory still used a separate per-symbol provider that allowed traversal, keep-last conflicts and caller-asserted real-data state.",
+      "affected_paths": ["usq/data/csv_importer.py", "usq/data/csv_provider.py", "usq/data/factory.py", "usq/data/provider_qualification.py", "usq/data/data_readiness_gate.py", "usq/research/pipeline.py"], "remediation_branch": "agent/external-reaudit-ra001-us-csv-runtime-20260712",
+      "audited_path": "usq/data/csv_importer.py", "audited_blob_sha": "d4d1b7b2aa443daa39118c3e1b4584a1db5a21c0",
+      "fixed_path": "usq/data/csv_importer.py", "fixed_blob_sha": "b3b75f25229fb3c48950f271a64e48319e418102",
+      "test_file_path": "tests/test_us_csv_runtime_contract.py", "test_file_blob_sha": "8ae1372769bba029854f2913bdc18926667dbe73",
+      "test_node_ids": ["tests/test_us_csv_runtime_contract.py::test_five_empty_csv_placeholders_are_not_research_ready", "tests/test_us_csv_runtime_contract.py::test_qualification_and_factory_use_the_same_verified_runtime", "tests/test_us_csv_runtime_contract.py::test_symbol_path_traversal_and_absolute_path_fail[../outside]", "tests/test_us_csv_runtime_contract.py::test_symbol_path_traversal_and_absolute_path_fail[/tmp/outside]", "tests/test_us_csv_runtime_contract.py::test_symbol_path_traversal_and_absolute_path_fail[..\\\\outside]", "tests/test_us_csv_runtime_contract.py::test_required_table_symlink_escape_fails", "tests/test_us_csv_runtime_contract.py::test_conflicting_duplicate_ohlcv_fails_runtime_and_readiness", "tests/test_us_csv_runtime_contract.py::test_self_authored_provenance_without_controller_pin_cannot_make_real_manifest", "tests/test_us_csv_runtime_contract.py::test_inline_runtime_mapping_and_unpinned_config_path_are_rejected"],
+      "runtime_factory_binding": {"qualification_entrypoint": "usq.data.provider_qualification.qualify_providers", "runtime_entrypoint": "usq.research.pipeline.run_discovery", "factory_symbol": "usq.data.factory.get_provider", "configured_provider": "csv", "qualification_implementation": "usq.data.csv_provider.CsvImporterProvider", "runtime_implementation": "usq.data.csv_provider.CsvImporterProvider", "implementation_path": "usq/data/csv_provider.py", "implementation_blob": "17ca5c9a823c7ad939cef5e9a1f8e811030a8b27", "factory_path": "usq/data/factory.py", "factory_blob": "e95904ee655d62747d3a67a127ec556963188f7a", "same_implementation": true, "controller_pinned_provenance_required": true, "caller_controlled_real_data": false},
+      "external_reaudit_links": ["RA-001", "RA-002"],
+      "positive_tests": ["factory and qualification resolve the same importer adapter", "656 full-suite tests", "42 independent focused contract tests"], "negative_tests": ["five empty CSV files", "parent traversal", "absolute path", "backslash traversal", "symlink escape", "conflicting OHLCV duplicate", "missing provenance pin", "mapping-supplied runtime", "config hash drift"],
+      "dynamic_reproduction": "The externally reported four attacks now fail closed through the exact factory-bound runtime; readiness remains DEVELOPMENT_ONLY unless both config and source provenance bytes match controller pins.",
+      "superseded_artifacts": [], "remaining_limitations": ["No external strategy result was rerun or promoted."],
+      "fix_commit": "44557c39001c90201a4ab51ce7dcff1595b10642", "fix_tree": "064b07a302039ce4296cddda16dc186725c85f2e",
+      "semantic_review": "TARGETED_REWORK_COMPLETE; importer-only closure mapping replaced by exact runtime/blob/node bindings.", "independent_acceptance": "US_Stock_Monitor full 656/656 and focused 54/54 passed; exact-head CI 29197919583 3/3 success."
+    },
+    {
+      "finding_id": "F-009", "severity": "Medium", "repository": "strategy_work", "audited_ref": "379f1123ea0373daf6eaad51a66fd4548fa3d468", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Family66 canonical output could use a data-byte-verification bypass without a distinct result identity.",
+      "affected_paths": ["analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py"], "remediation_branch": "agent/remediation-r1-f009-f013-strategy-methods-20260712",
+      "audited_path": "analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "audited_blob_sha": "378d21af97222491115f8beb268ab208097bbc25",
+      "fixed_path": "analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "fixed_blob_sha": "f4f9cf9aa687ddc4c21ada9b5bf96bb08266584a",
+      "test_file_path": "tests/test_a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "test_file_blob_sha": "d4da15f7349a2a5943652c5f225403c7ea9b9b6a",
+      "test_node_ids": ["tests/test_a_share_breakout60_lowvol_volume_event_methodology_recompute.py::test_canonical_recompute_exposes_no_data_byte_verification_bypass", "tests/test_a_share_breakout60_lowvol_volume_event_methodology_recompute.py::test_baseline_manifest_and_methodology_are_pinned", "tests/test_a_share_breakout60_lowvol_volume_event_methodology_recompute.py::test_output_state_is_nonpromotional"],
+      "runtime_factory_binding": {"kind": "direct_entrypoint", "entrypoint": "analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "symbol": "main", "resolved_path": "analysis/a_share_breakout60_lowvol_volume_event_methodology_recompute.py", "resolved_blob": "f4f9cf9aa687ddc4c21ada9b5bf96bb08266584a", "factory_path": null, "same_implementation": true},
+      "external_reaudit_links": ["RA-002"],
+      "positive_tests": ["canonical verification metadata required before output directory creation"], "negative_tests": ["canonical bypass flag", "missing verification metadata", "same-shape bypass summary"],
+      "dynamic_reproduction": "Canonical bypass is removed; diagnostic execution cannot impersonate canonical evidence.",
+      "superseded_artifacts": ["FAMILY66_METHODOLOGY_RECOMPUTE_SUMMARY"], "remaining_limitations": ["Family66 remains rejected and was not rerun."],
+      "fix_commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f", "fix_tree": "685f8f4d5164f4d63c51f140d030d15c462e1b7c",
+      "semantic_review": "ACCEPTED by independent code and package shadow audits.", "independent_acceptance": "CI 29186401179 exact head 3/3 success; final shadow verdict ACCEPTED."
+    },
+    {
+      "finding_id": "F-010", "severity": "Medium", "repository": "cross-repository CI", "audited_ref": "workspace_external_audit_repository_manifest_20260712", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Critical integration checks could skip and Actions/dependencies were not uniformly immutable.",
+      "affected_paths": [".github/workflows", "requirements-ci.lock", "ci/pytest-skip-allowlist.json"], "remediation_branch": "per-repository remediation branches",
+      "positive_tests": ["21 exact-head required jobs successful", "seven strict CycloneDX SBOMs"], "negative_tests": ["unexpected skip", "missing/changed fixture", "mutable Action tag", "unhashed dependency"],
+      "dynamic_reproduction": "Every repository has static-unit, integration-identity and controlled-fixture-reproduction success at the exact bound commit with zero unexpected skips.",
+      "superseded_artifacts": [], "remaining_limitations": [], "fix_commit": "8247e619398a235911edeeaaaa3785dade4f9fe4", "fix_tree": "bdf17d1b22715c3ffe8296cfe976ab0f3fefdd54",
+      "semantic_review": "Required-run and SBOM indices are machine-readable and checksum-bound.", "independent_acceptance": "Remote Actions metadata revalidated."
+    },
+    {
+      "finding_id": "F-011", "severity": "Medium", "repository": "quant-proj", "audited_ref": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Shared briefs and manifests did not resolve through one immutable authoritative controller root.",
+      "affected_paths": ["reports/remediation/FINAL_CONTROLLER_ROOT.json", "reports/remediation/CHECKSUMS.sha256", "scripts/validate_final_controller_root.py", "scripts/validate_remediation_checksums.py"], "remediation_branch": "agent/remediation-reaudit-readiness-r1-20260712",
+      "positive_tests": ["offline and online immutable-ref validator", "detached checksum-chain validator"], "negative_tests": ["mutable branch drift", "stale CI", "broken artifact hash", "checksum self-reference"],
+      "dynamic_reproduction": "A pinned controller code-root branch separates executable validator identity from the later transport commit, avoiding self-referential commit claims.",
+      "superseded_artifacts": ["WORKSPACE_EXTERNAL_REVIEW_BRIEF_20260712"], "remaining_limitations": ["The package transport commit is reported separately because a file cannot self-contain its own Git commit hash."],
+      "fix_commit": "8247e619398a235911edeeaaaa3785dade4f9fe4", "fix_tree": "bdf17d1b22715c3ffe8296cfe976ab0f3fefdd54",
+      "semantic_review": "Controller validators and detached transport model accepted by package shadow audit.", "independent_acceptance": "Final root and checksum chain are subject to a separate post-commit acceptance."
+    },
+    {
+      "finding_id": "F-012", "severity": "Medium", "repository": "cross-repository data governance", "audited_ref": "workspace_external_audit_repository_manifest_20260712", "status": "CLOSED_ACCEPTED",
+      "root_cause": "Public row-level and binary artifacts lacked complete source, license and redistribution classification.",
+      "affected_paths": ["reports/remediation/BINARY_ARTIFACT_PROVENANCE_LICENSE_MANIFEST.json", "config/repository_artifact_policy.json"], "remediation_branch": "agent/remediation-reaudit-readiness-r1-20260712",
+      "positive_tests": ["22 historical artifacts enumerated by path/size/hash", "current-branch artifact-policy scans: zero binaries"], "negative_tests": ["unregistered binary", "unknown redistribution status", "missing fixture license/hash"],
+      "dynamic_reproduction": "All 22 unresolved artifacts are absent from final remediation refs; licensed CC0 fixtures are exact-hash governed.",
+      "superseded_artifacts": [], "remaining_limitations": ["Historical objects are preserved pending separate governance authority; no force-push/history rewrite was performed."],
+      "fix_commit": "8247e619398a235911edeeaaaa3785dade4f9fe4", "fix_tree": "bdf17d1b22715c3ffe8296cfe976ab0f3fefdd54",
+      "semantic_review": "Binary manifest and both repository policies reviewed.", "independent_acceptance": "Current public remediation refs contain zero unclassified binary artifacts."
+    },
+    {
+      "finding_id": "F-013", "severity": "Low", "repository": "strategy_work", "audited_ref": "379f1123ea0373daf6eaad51a66fd4548fa3d468", "status": "CLOSED_ACCEPTED",
+      "root_cause": "PBO integer blocks silently dropped a non-divisible remainder and omitted input/used/dropped counts.",
+      "affected_paths": ["analysis/research_statistics.py"], "remediation_branch": "agent/remediation-r1-f009-f013-strategy-methods-20260712",
+      "positive_tests": ["divisible sample reports input=used and dropped=0"], "negative_tests": ["non-divisible sample length"],
+      "dynamic_reproduction": "Non-divisible samples reject; no observation is silently dropped.",
+      "superseded_artifacts": [], "remaining_limitations": [],
+      "fix_commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f", "fix_tree": "685f8f4d5164f4d63c51f140d030d15c462e1b7c",
+      "semantic_review": "ACCEPTED by independent code and package shadow audits.", "independent_acceptance": "CI 29186401179 exact head 3/3 success; final shadow verdict ACCEPTED."
+    }
+  ]
+}
