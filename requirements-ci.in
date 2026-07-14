@@ -1,0 +1,5 @@
+pytest==9.1.1
+jsonschema==4.26.0
+pyyaml==6.0.3
+ruff==0.15.21
+bandit==1.9.4

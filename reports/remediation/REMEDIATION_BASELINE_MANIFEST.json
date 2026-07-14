@@ -1,0 +1,105 @@
+{
+  "schema_version": "remediation-baseline-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "captured_at": "2026-07-12T14:00:00+08:00",
+  "controller_base": {
+    "repository": "quant-proj",
+    "branch": "agent/remediation-reaudit-readiness-r1-20260712",
+    "commit": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207",
+    "tree": "224606ca0b35ec1923cf9aa0ba91b1548ec667fd",
+    "worktree_clean_at_capture": true
+  },
+  "audit_input_root": {
+    "repository_manifest_path": "reports/external_audit/workspace_external_audit_repository_manifest_20260712.json",
+    "repository_manifest_sha256": "8272da229bc6434216d8b12aed4d047137b689a648be029572068e8bb4d47112",
+    "audit_packet_sha256": "2d5f067b41994c9862ee28cb051682ddf4389d1c215ca835814cc0661e32fa00",
+    "delivery_report_sha256": "72fb96636aa17fc2a6df079e1e8b7f700c8c00d6c3a21245b551c67ba01d29a2"
+  },
+  "repositories": [
+    {
+      "name": "quant-proj",
+      "owner": "controller",
+      "audited_commit": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207",
+      "audited_tree": "224606ca0b35ec1923cf9aa0ba91b1548ec667fd",
+      "current_commit": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207",
+      "current_tree": "224606ca0b35ec1923cf9aa0ba91b1548ec667fd",
+      "divergence_audited_only_current_only": [0, 0],
+      "worktree_clean": true,
+      "findings": ["F-005", "F-007", "F-010", "F-011", "F-012"]
+    },
+    {
+      "name": "A_Share_Monitor",
+      "owner": "a_share_implementation",
+      "audited_commit": "e81f50c19c8e6e71ae6585eeb6dbbb10db86fd95",
+      "audited_tree": "704715893ca4e8e08a1d6b1e59964327966fddeb",
+      "current_commit": "1a64e70873fc8a3c3d998e509cbcf690010ffef0",
+      "current_tree": "fd280413f18443d1a341d5e142db03180aa85f8f",
+      "divergence_audited_only_current_only": [6, 3],
+      "changed_files_since_audit": 42,
+      "worktree_clean": true,
+      "drift_requires_semantic_recheck": true,
+      "findings": ["F-001", "F-002", "F-005", "F-010", "F-012"]
+    },
+    {
+      "name": "US_Stock_Monitor",
+      "owner": "us_data_implementation",
+      "audited_commit": "872f54211e56a162e713d987d904b49d2521bd25",
+      "audited_tree": "e35bac155e390b55d6fc7db5c788e64e98de5db1",
+      "current_commit": "872f54211e56a162e713d987d904b49d2521bd25",
+      "current_tree": "e35bac155e390b55d6fc7db5c788e64e98de5db1",
+      "divergence_audited_only_current_only": [0, 0],
+      "worktree_clean": true,
+      "findings": ["F-008", "F-010", "F-012"]
+    },
+    {
+      "name": "market_data",
+      "owner": "market_data_implementation",
+      "audited_commit": "300d4cf902cafc7f8462991e761e658febdc1424",
+      "audited_tree": "1d1243b9d207de6f6d34d8eea7921e0918d5dbfc",
+      "current_remediation_base_commit": "300d4cf902cafc7f8462991e761e658febdc1424",
+      "current_remediation_base_tree": "1d1243b9d207de6f6d34d8eea7921e0918d5dbfc",
+      "newer_nondefault_branch_commit": "511fd002f3607fc6547c89d7d813369792a4f852",
+      "newer_nondefault_branch_tree": "3672d188a50c9c2d7c60bce1f9abe27a96bb61f2",
+      "worktree_clean": true,
+      "findings": ["F-006", "F-010", "F-012"]
+    },
+    {
+      "name": "quant_research_lab",
+      "owner": "quant_lab_implementation",
+      "audited_commit": "2a873848ef67a8b7f7509826a22818ce86cbae13",
+      "audited_tree": "b6fd417292a658c77b95aa6769fb0ead9f654595",
+      "current_commit": "2a873848ef67a8b7f7509826a22818ce86cbae13",
+      "current_tree": "b6fd417292a658c77b95aa6769fb0ead9f654595",
+      "divergence_audited_only_current_only": [0, 0],
+      "worktree_clean": true,
+      "findings": ["F-003", "F-010", "F-012"]
+    },
+    {
+      "name": "strategy_work",
+      "owner": "strategy_methodology",
+      "audited_commit": "379f1123ea0373daf6eaad51a66fd4548fa3d468",
+      "audited_tree": "b6ffdd564a8fb76f8ac715fe17e58e8df347298f",
+      "current_commit": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "current_tree": "1439e27f10bce9d24d091ecada28116092f145a5",
+      "divergence_audited_only_current_only": [11, 2],
+      "changed_files_since_audit": 85,
+      "worktree_clean": true,
+      "drift_requires_semantic_recheck": true,
+      "findings": ["F-004", "F-009", "F-010", "F-011", "F-012", "F-013"]
+    },
+    {
+      "name": "us_stock_30w",
+      "owner": "us30w_specification",
+      "audited_commit": "8a9151acc473c8aebb75a08fbe46c7dbf797b653",
+      "audited_tree": "1bf40762db3b10ef828885085eed9fd931d8ca31",
+      "current_commit": "7d72ff9d17c05d88390d5d8df4cae300b4b0a758",
+      "current_tree": "dd265d21afeb81537a0696ed6b79255ccf5bd066",
+      "divergence_audited_only_current_only": [26, 5],
+      "changed_files_since_audit": 101,
+      "worktree_clean": true,
+      "drift_requires_semantic_recheck": true,
+      "findings": ["F-004", "F-010", "F-011", "F-012"]
+    }
+  ],
+  "conclusion": "Every finding is treated as open until its current selected remediation base is dynamically rechecked and independently accepted. Audit-time and current refs are never conflated."
+}

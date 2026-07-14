@@ -8,15 +8,19 @@ import sys
 import pytest
 
 from scripts.validate_automated_gate_manifest import (
+    EXECUTION_ATTESTED,
+    MANIFEST_VALID,
     _validate_check_semantics,
     validate_file,
     validate_payload,
 )
+from scripts.create_execution_attestation import create_attestation
 
 
 SHA1 = "0123456789abcdef0123456789abcdef01234567"
 SHA256 = "0123456789abcdef" * 4
 CALLBACK_ID = "019f4ca0-2054-77e3-9559-7005c0f9b565"
+EXECUTOR_TASK_ID = "019f4ca0-2054-77e3-9559-7005c0f9b566"
 PYTHON = shlex.quote(sys.executable)
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -74,6 +78,8 @@ def _real_gate(tmp_path: Path) -> Path:
     subprocess.run(["git", "config", "user.name", "Test"], cwd=repo, check=True)
     tracked = repo / "tracked.txt"
     tracked.write_text("source\n", encoding="utf-8")
+    dependency_lock = repo / "requirements.lock"
+    dependency_lock.write_text("pytest==test-fixture\n", encoding="utf-8")
     (repo / ".gitignore").write_text("__pycache__/\n.pytest_cache/\n", encoding="utf-8")
     boundary = repo / "scripts" / "boundary_scan.py"
     boundary.parent.mkdir()
@@ -81,7 +87,11 @@ def _real_gate(tmp_path: Path) -> Path:
     focused_test = repo / "tests" / "test_target.py"
     focused_test.parent.mkdir()
     focused_test.write_text("def test_target():\n    assert True\n", encoding="utf-8")
-    subprocess.run(["git", "add", ".gitignore", "tracked.txt", "scripts", "tests"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "add", ".gitignore", "tracked.txt", "requirements.lock", "scripts", "tests"],
+        cwd=repo,
+        check=True,
+    )
     subprocess.run(["git", "commit", "-qm", "source"], cwd=repo, check=True)
     source_commit = _run(repo, "git", "rev-parse", "HEAD")
     source_tree = _run(repo, "git", "rev-parse", "HEAD^{tree}")
@@ -169,6 +179,18 @@ CONTEXT_DELTA_SHA256: {_digest(delta)}
     manifest = tmp_path / "gate.json"
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     return manifest
+
+
+def _attest(manifest: Path) -> Path:
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    packet = Path(payload["task_packet"]["dir"])
+    return create_attestation(
+        manifest,
+        execution_task_id=EXECUTOR_TASK_ID,
+        reasoning_effort="medium",
+        dependency_lock=Path(payload["workspace_root"]) / "requirements.lock",
+        output_path=packet / "execution_attestation.json",
+    )
 
 
 def _convert_to_strategy_gate(manifest: Path) -> None:
@@ -338,6 +360,75 @@ def test_claimed_test_count_must_match_executed_pytest_summary(tmp_path):
     manifest.write_text(json.dumps(payload), encoding="utf-8")
     with pytest.raises(ValueError, match="claimed 2, observed 1"):
         validate_file(manifest)
+
+
+def test_manifest_valid_is_distinct_from_execution_attested(tmp_path):
+    manifest = _real_gate(tmp_path)
+    assert validate_file(manifest, execute_commands=False) == MANIFEST_VALID
+    with pytest.raises(ValueError, match="final acceptance requires"):
+        validate_file(
+            manifest,
+            execute_commands=True,
+            require_execution_attested=True,
+        )
+    _attest(manifest)
+    assert validate_file(manifest, execute_commands=False) == MANIFEST_VALID
+    assert (
+        validate_file(
+            manifest,
+            execute_commands=True,
+            require_execution_attested=True,
+        )
+        == EXECUTION_ATTESTED
+    )
+
+
+def test_attestation_rejects_forged_test_count_and_reused_output(tmp_path):
+    manifest = _real_gate(tmp_path)
+    attestation_path = _attest(manifest)
+    attestation = json.loads(attestation_path.read_text(encoding="utf-8"))
+    attestation["checks"][0]["test_count"] = 99
+    attestation_path.write_text(json.dumps(attestation), encoding="utf-8")
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    payload["execution_attestation"]["sha256"] = _digest(attestation_path)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="test count drifted"):
+        validate_file(manifest, require_execution_attested=True)
+
+    attestation["checks"][0]["test_count"] = 1
+    attestation["checks"][0]["normalized_output_sha256"] = "ab" * 32
+    attestation_path.write_text(json.dumps(attestation), encoding="utf-8")
+    payload["execution_attestation"]["sha256"] = _digest(attestation_path)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="output differs from attestation"):
+        validate_file(manifest, require_execution_attested=True)
+
+
+def test_attestation_rejects_executable_and_dependency_drift(tmp_path):
+    manifest = _real_gate(tmp_path)
+    attestation_path = _attest(manifest)
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    attestation = json.loads(attestation_path.read_text(encoding="utf-8"))
+    attestation["checks"][0]["executable"]["sha256"] = "ab" * 32
+    attestation_path.write_text(json.dumps(attestation), encoding="utf-8")
+    payload["execution_attestation"]["sha256"] = _digest(attestation_path)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="executable identity changed"):
+        validate_file(manifest, require_execution_attested=True)
+
+    attestation["checks"][0]["executable"] = {
+        "path": str(Path(sys.executable).resolve()),
+        "sha256": _digest(Path(sys.executable).resolve()),
+    }
+    attestation_path.write_text(json.dumps(attestation), encoding="utf-8")
+    payload["execution_attestation"]["sha256"] = _digest(attestation_path)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    attestation["dependency_lock"]["sha256"] = "ab" * 32
+    attestation_path.write_text(json.dumps(attestation), encoding="utf-8")
+    payload["execution_attestation"]["sha256"] = _digest(attestation_path)
+    manifest.write_text(json.dumps(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="dependency lock hash changed"):
+        validate_file(manifest, require_execution_attested=True)
 
 
 def test_boundary_validator_must_be_source_tracked_and_unchanged(tmp_path):

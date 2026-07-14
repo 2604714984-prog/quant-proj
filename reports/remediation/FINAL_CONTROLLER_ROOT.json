@@ -1,0 +1,109 @@
+{
+  "schema_version": "remediation-final-controller-root-v2",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "authoritative": true,
+  "status": "TARGETED_REAUDIT_PENDING",
+  "final_external_audit_verdict": "NOT_PASSED",
+  "strategy_candidate_available": false,
+  "external_reaudit": {
+    "review_target": "quant-proj#11",
+    "source_report_path": "reports/remediation/EXTERNAL_REAUDIT_VERDICT_20260712.md",
+    "source_report_sha256": "744b09c877bf437e6efd49c434566d1a8e0ee49377283afa5683570ea484da9a",
+    "review": "CHANGES_REQUESTED",
+    "status": "REWORK_REQUIRED",
+    "new_critical": 0,
+    "new_high_total": 1,
+    "new_high_closed": 1,
+    "new_medium_total": 1,
+    "new_medium_closed": 1,
+    "evidence_blocker_total": 1,
+    "evidence_blocker_closed": 0,
+    "targeted_reaudit_allowed": true
+  },
+  "research_boundary": {
+    "new_strategy_research_executed": false,
+    "frozen_strategy_outcomes_reopened": false,
+    "provider_or_network_ingestion_executed": false,
+    "broker_order_paper_live_auto_enabled": false
+  },
+  "repositories": [
+    {
+      "name": "quant-proj", "remote": "https://github.com/2604714984-prog/quant-proj.git", "branch": "agent/remediation-targeted-reaudit-code-root-r2-20260712", "commit": "4df14a054871dba2517bf9d4d426820d4cf3ea50", "tree": "41d0a92adec695c1ca4f65400125f9e5ec35d5ee",
+      "pull_request": {"number": 13, "url": "https://github.com/2604714984-prog/quant-proj/pull/13", "draft": true},
+      "ci": {"run_id": 29198065747, "url": "https://github.com/2604714984-prog/quant-proj/actions/runs/29198065747", "head_sha": "4df14a054871dba2517bf9d4d426820d4cf3ea50", "conclusion": "success", "jobs": [{"name": "static-unit", "conclusion": "success"}, {"name": "integration-identity", "conclusion": "success"}, {"name": "controlled-fixture-reproduction", "conclusion": "success"}]}
+    },
+    {
+      "name": "A_Share_Monitor", "remote": "https://github.com/2604714984-prog/A_Share_Monitor.git", "branch": "agent/remediation-r1-f001-f002-a-share-20260712", "commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556", "tree": "f5688b71296444e3a2733fd212398c9f9a6d3d04",
+      "pull_request": {"number": 7, "url": "https://github.com/2604714984-prog/A_Share_Monitor/pull/7", "draft": true},
+      "ci": {"run_id": 29187211346, "url": "https://github.com/2604714984-prog/A_Share_Monitor/actions/runs/29187211346", "head_sha": "f24aeb88efcab901c09c3d6b08574572cb2f0556", "conclusion": "success", "jobs": [{"name": "static-unit", "conclusion": "success"}, {"name": "integration-identity", "conclusion": "success"}, {"name": "controlled-fixture-reproduction", "conclusion": "success"}]}
+    },
+    {
+      "name": "market_data", "remote": "https://github.com/2604714984-prog/market_data.git", "branch": "agent/remediation-r1-f006-filesystem-safety-20260712", "commit": "17409f952209244862b92dd893ead88cd073b4d7", "tree": "61f5a840ca313ab55610b2cd9ea055f7c9edeaf7",
+      "pull_request": {"number": 4, "url": "https://github.com/2604714984-prog/market_data/pull/4", "draft": true},
+      "ci": {"run_id": 29187805453, "url": "https://github.com/2604714984-prog/market_data/actions/runs/29187805453", "head_sha": "17409f952209244862b92dd893ead88cd073b4d7", "conclusion": "success", "jobs": [{"name": "static-unit", "conclusion": "success"}, {"name": "integration-identity", "conclusion": "success"}, {"name": "controlled-fixture-reproduction", "conclusion": "success"}]}
+    },
+    {
+      "name": "quant_research_lab", "remote": "https://github.com/2604714984-prog/quant_research_lab.git", "branch": "agent/remediation-r1-f003-quant-lab-20260712", "commit": "7362ce219dc4c426e1b58e42a82e90ce73d04d59", "tree": "f51a662c8a8497dce956ed514dd5053e72604549",
+      "pull_request": {"number": 5, "url": "https://github.com/2604714984-prog/quant_research_lab/pull/5", "draft": true},
+      "ci": {"run_id": 29188946281, "url": "https://github.com/2604714984-prog/quant_research_lab/actions/runs/29188946281", "head_sha": "7362ce219dc4c426e1b58e42a82e90ce73d04d59", "conclusion": "success", "jobs": [{"name": "static-unit", "conclusion": "success"}, {"name": "integration-identity", "conclusion": "success"}, {"name": "controlled-fixture-reproduction", "conclusion": "success"}]}
+    },
+    {
+      "name": "strategy_work", "remote": "https://github.com/2604714984-prog/strategy_work.git", "branch": "agent/remediation-r1-f009-f013-strategy-methods-20260712", "commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f", "tree": "685f8f4d5164f4d63c51f140d030d15c462e1b7c",
+      "pull_request": {"number": 11, "url": "https://github.com/2604714984-prog/strategy_work/pull/11", "draft": true},
+      "ci": {"run_id": 29186401179, "url": "https://github.com/2604714984-prog/strategy_work/actions/runs/29186401179", "head_sha": "b09db38da257f64fa7b1c7622b893fd7291fca4f", "conclusion": "success", "jobs": [{"name": "static-unit", "conclusion": "success"}, {"name": "integration-identity", "conclusion": "success"}, {"name": "controlled-fixture-reproduction", "conclusion": "success"}]}
+    },
+    {
+      "name": "US_Stock_Monitor", "remote": "https://github.com/2604714984-prog/US_Stock_Monitor.git", "branch": "agent/external-reaudit-ra001-us-csv-runtime-20260712", "commit": "44557c39001c90201a4ab51ce7dcff1595b10642", "tree": "064b07a302039ce4296cddda16dc186725c85f2e",
+      "pull_request": {"number": 6, "url": "https://github.com/2604714984-prog/US_Stock_Monitor/pull/6", "draft": true},
+      "ci": {"run_id": 29197919583, "url": "https://github.com/2604714984-prog/US_Stock_Monitor/actions/runs/29197919583", "head_sha": "44557c39001c90201a4ab51ce7dcff1595b10642", "conclusion": "success", "jobs": [{"name": "static-unit", "conclusion": "success"}, {"name": "integration-identity", "conclusion": "success"}, {"name": "controlled-fixture-reproduction", "conclusion": "success"}]}
+    },
+    {
+      "name": "us_stock_30w", "remote": "https://github.com/2604714984-prog/us_stock_30w.git", "branch": "agent/remediation-r1-f004-us30w-pit-20260712", "commit": "73222d965f3785f457cecb73e9a2392554521e66", "tree": "bf192195114c9e8c2a51344aba871ce6a6025bbd",
+      "pull_request": {"number": 7, "url": "https://github.com/2604714984-prog/us_stock_30w/pull/7", "draft": true},
+      "ci": {"run_id": 29191481613, "url": "https://github.com/2604714984-prog/us_stock_30w/actions/runs/29191481613", "head_sha": "73222d965f3785f457cecb73e9a2392554521e66", "conclusion": "success", "jobs": [{"name": "static-unit", "conclusion": "success"}, {"name": "integration-identity", "conclusion": "success"}, {"name": "controlled-fixture-reproduction", "conclusion": "success"}]}
+    }
+  ],
+  "artifacts": [
+    {"path": "reports/remediation/RE_AUDIT_BRIEF.md", "sha256": "5b1c529d6eddcd37bdb6c6f569df67a81b15a6ce0faab12186564c321150a99e"},
+    {"path": "reports/remediation/EXTERNAL_REAUDIT_VERDICT_20260712.md", "sha256": "744b09c877bf437e6efd49c434566d1a8e0ee49377283afa5683570ea484da9a"},
+    {"path": "reports/remediation/EXTERNAL_REAUDIT_FINDINGS_20260712.json", "sha256": "9ef9ad51241d815421258c4c72e177ccbe040929cedac9058aa29fa5d900489c"},
+    {"path": "reports/remediation/DATA_ROOM_EXTERNAL_ACCESS_INDEX_20260712.json", "sha256": "8cc67819a333ab530c9d1f0bd5863db83dd65b2e4be65a0e1dbadc9f71ff9a80"},
+    {"path": "reports/remediation/CREDENTIAL_REVOCATION_ATTESTATION.json", "sha256": "5d7ae18647f720ae76790338d916757771a7cff8da68a99a66e2f7aa229b611e"},
+    {"path": "reports/remediation/A_SHARE_CANONICAL_EVIDENCE_PUBLICATION_INDEX.json", "sha256": "6011ed9eaad1e595367059e0d276836e94db9a0dde6751dbeec275e21a749d0e"},
+    {"path": "reports/remediation/FINDING_CLOSURE_MATRIX.json", "sha256": "be6e0100a16cd6ab424aea5acf48cd7593c7255d3f04ad6b7e1a7b0d7e786510"},
+    {"path": "reports/remediation/REMEDIATION_BASELINE_MANIFEST.json", "sha256": "9f68ac8291e28923fec0383709eeb1557ea2ad3582657f3f891517a3051de777"},
+    {"path": "reports/remediation/ARTIFACT_INVALIDATION_AND_SUPERSESSION_LEDGER.json", "sha256": "89a1f50ab0959b4bb2cf1608dc29a50136980ac12a42d8af170114998a6d1571"},
+    {"path": "reports/remediation/CAPABILITY_MATRIX.json", "sha256": "7e816712c6efc14a0653374b35ff2487b1ea4232f930fafd16bc7cf68c55785e"},
+    {"path": "reports/remediation/CAPABILITY_BOUNDARY_ADR.md", "sha256": "b8dbcfc55ab5976595441d6432ec711df0fb302ab88e26f3c89a04c73ec4fc4a"},
+    {"path": "reports/remediation/EXECUTION_ATTESTATION_INDEX.json", "sha256": "32c2a86d92ab02b3bc6502546f245ea0e9d0002d4697d4b5ebfe91a5e96f03ce"},
+    {"path": "reports/remediation/CROSS_REPO_REPRODUCTION_MANIFEST.json", "sha256": "cfcb8fbb5157b5cbda5548d650eeaf2a9550e3d516a15233b3d975ff69fd81fb"},
+    {"path": "reports/remediation/BINARY_ARTIFACT_PROVENANCE_LICENSE_MANIFEST.json", "sha256": "411b746d446d92baa42aab9f19f68169b67dfc9111128e34bfd5e51d089f90a1"},
+    {"path": "reports/remediation/DEPENDENCY_SBOM_INDEX.json", "sha256": "866b67d41353f53f02e8834183b0144ced3a77ee378721b6e36e9c70aff5d54e"},
+    {"path": "reports/remediation/CI_REQUIRED_RUNS.json", "sha256": "8bfe06c0914e4bfedc75c22e312e83d9ec85009b1e6994c7c439c0dc38a9233e"},
+    {"path": "reports/remediation/SECRET_SCAN_INDEX.json", "sha256": "6610be790f54a5a7cf76f6c4a9b2a93e8a2ad4abc2cff2b374f4e7a39c166945"},
+    {"path": "reports/remediation/SHADOW_AUDIT_INPUT_ROOT.json", "sha256": "35e3c8e9fb9f6c5a3c9d19e1ba39507f3abe5082775d8cd08cc5f12fb8982ac5"},
+    {"path": "reports/remediation/SHADOW_AUDIT_REPORT.json", "sha256": "573b863be6b05ffbfdaf9148e0a7ef29ad41ccb28c6a1868e200c75fe586fb57"},
+    {"path": "reports/remediation/REMEDIATION_STAGE_POLICY.json", "sha256": "378dbfbce49dda71b3ad84f180cdef9c9b36eb6fb80ee63c930f8639ded37ced"},
+    {"path": "reports/remediation/EXECUTION_ATTESTATION_CONTRACT.md", "sha256": "4167bdd40ef0720c4661101f8e5b63341d6344cfe328edc395312b06dc099e12"},
+    {"path": "reports/remediation/sbom/a_share.cdx.json", "sha256": "6f309381e1d777961ea1c537c8cf77db06e7a9de07f0fdaffd9164d84faff232"},
+    {"path": "reports/remediation/sbom/controller.cdx.json", "sha256": "34371218f8165f4b8af0c529df5314c5a1214f46df4f936fa91c31804afd93d2"},
+    {"path": "reports/remediation/sbom/market_data.cdx.json", "sha256": "95944b1eea53e5f5d903c9cbda7d12b2f4e593e1cf57c35b12ef61532619c4e9"},
+    {"path": "reports/remediation/sbom/qrl.cdx.json", "sha256": "7590d4442fe6e9f437c57c0febc3739773c514278a9ae87ce02f6a0385321c53"},
+    {"path": "reports/remediation/sbom/strategy.cdx.json", "sha256": "d8e97badc85331ecb0fd88ed2f1b43e6166087eb70a20a9e0b2411b49dac0ece"},
+    {"path": "reports/remediation/sbom/us30w.cdx.json", "sha256": "6a030f3d208bd4b70f7c667e88d0f3566b6d26dd8984353a6c80b3126ecade27"},
+    {"path": "reports/remediation/sbom/us_monitor.cdx.json", "sha256": "511534f58b018c18e08847d86b946ad9ea0ed52b831142dca10ac8148319f826"}
+  ],
+  "finding_summary": {"original_total": 13, "open_critical": 0, "open_high": 0, "external_open_high": 0, "external_open_medium": 0, "external_evidence_blockers": 1, "strategy_candidate_available": false},
+  "gate_summary": {
+    "unexpected_test_skips": 0,
+    "unclassified_current_branch_binaries": 0,
+    "stale_authoritative_refs": 0,
+    "new_shadow_critical": 0,
+    "new_shadow_high": 0,
+    "historical_secret_candidates": 1,
+    "rotated_or_revoked_secret_candidates": 1
+  },
+  "residual_blockers": [
+    {"id": "EA-001", "severity": "Medium", "requires_user_action": false, "status": "OPEN", "description": "The controlled data-room package is ready; external reviewer byte verification and receipt remain pending.", "evidence_refs": ["reports/remediation/DATA_ROOM_EXTERNAL_ACCESS_INDEX_20260712.json", "reports/remediation/A_SHARE_CANONICAL_EVIDENCE_PUBLICATION_INDEX.json"]}
+  ]
+}

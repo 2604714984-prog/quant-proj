@@ -1,0 +1,38 @@
+{
+  "record_type": "unaccepted_gate_b_candidate_reference",
+  "recorded_at": "2026-07-13T21:36:07+08:00",
+  "accepted_implementation_baseline": {
+    "repository": "/home/rongyu/workspace/central-data-ingestion",
+    "branch": "main",
+    "commit": "287416f79cd1fcb1c066f25fa7bbaedc574b0ce9",
+    "tree": "c2a62d079bcb08b04b2425c7160bf9ca8344038a",
+    "status": "ACCEPTED_WAVE1_STAGING_PUBLISHER_ABSENT"
+  },
+  "unaccepted_candidate": {
+    "remote_tracking_ref": "origin/codex/central-ingestion-gate-b-20260713",
+    "commit": "0bc1007235a96ab2e4c0e92700a999930761e73a",
+    "tree": "d14939354fda31adfedec22febd29b37cb360285",
+    "commits_ahead_of_main": 5,
+    "status": "UNACCEPTED_SUPERSEDED_DESIGN_INPUT",
+    "observed_non_authorizing_result_paths": [
+      "docs/REPLAY_CANARY_RESULT_20260713.json",
+      "docs/REPLAY_CANARY_RESULT_20260713.sha256"
+    ]
+  },
+  "reuse_policy": {
+    "whole_branch_cherry_pick_allowed": false,
+    "whole_commit_cherry_pick_allowed": false,
+    "replay_observation_reuse_allowed": false,
+    "provider_identity_claim_allowed": false,
+    "permitted_use": "read-only comparison of architectural skeletons and negative-test ideas followed by selective clean reimplementation from the accepted main baseline"
+  },
+  "required_disposition": [
+    "Do not copy, stage, commit, or publish either Replay canary result file.",
+    "Do not classify Replay observations as primary, accepted, official, or Gate B evidence.",
+    "Do not retain any provider response, issuer value, token-derived metadata, or consumed authorization marker.",
+    "Do not reuse any Replay HG record, consumed marker, authorization claim, canary result, or network observation.",
+    "If any candidate code is reimplemented, bind it to new mock-only tests and current clean bytes rather than candidate acceptance claims."
+  ],
+  "network_verification_performed": false,
+  "strategy_candidate_available": false
+}

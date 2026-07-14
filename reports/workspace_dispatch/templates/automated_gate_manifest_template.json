@@ -6,6 +6,8 @@
   "model_role": "executor",
   "model": "gpt-5.6-luna",
   "status": "GREEN",
+  "evidence_state": "MANIFEST_VALID",
+  "execution_attestation": null,
   "workspace_root": "/absolute/target/worktree",
   "task_packet": {
     "dir": "/absolute/controller/task-packet",
@@ -37,7 +39,7 @@
       "command": "/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python scripts/validate_projects_registry.py",
       "exit_code": 0,
       "validator_path": "scripts/validate_projects_registry.py",
-      "validator_sha256": "e1f6810482e0e852589e0d4df463c582c0541f57056c0fa26048b6a0479e9ca9"
+      "validator_sha256": "3e69877c628caf42a6d07124d50d7324228ea0a9b69331cefd18bdaa59f4d45f"
     }
   ],
   "callback": {

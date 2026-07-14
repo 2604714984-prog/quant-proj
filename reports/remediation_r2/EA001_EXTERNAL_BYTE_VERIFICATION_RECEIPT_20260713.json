@@ -1,0 +1,77 @@
+{
+  "schema_version": "ea001-external-byte-verification-receipt-v1",
+  "finding_id": "EA-001",
+  "status": "EA001_EXTERNAL_BYTE_VERIFICATION_PASS",
+  "reviewer_role": "independent_read_only_luna_acceptance",
+  "reviewed_at": "2026-07-13T02:51:14+08:00",
+  "environment": {
+    "platform": "WSL2 Linux",
+    "git": "2.43.0",
+    "github_cli": "2.45.0",
+    "python": "3.12.3",
+    "duckdb": "1.5.4"
+  },
+  "controller_inputs": {
+    "data_room_external_access_index_sha256": "8cc67819a333ab530c9d1f0bd5863db83dd65b2e4be65a0e1dbadc9f71ff9a80",
+    "publication_index_sha256": "6011ed9eaad1e595367059e0d276836e94db9a0dde6751dbeec275e21a749d0e",
+    "release_tag": "a-share-canonical-evidence-20260712",
+    "release_asset_count": 10
+  },
+  "release_verification": {
+    "fresh_downloaded_assets": 10,
+    "size_matches": 10,
+    "sha256_matches": 10,
+    "packaged_checksum_entries_passed": 9,
+    "checksum_file_sha256_exact": true
+  },
+  "publisher_source": {
+    "bundle_complete_history": true,
+    "fresh_clone_head": "3903977d2480a5ad9be67c4c267cd2a5c5a4bdb8",
+    "fresh_clone_tree": "40de1564d87c71e3b7695b631fef13d668637ac2",
+    "git_fsck_full_strict": "PASS",
+    "fresh_clone_clean": true,
+    "builder_sha256_exact": true,
+    "archive_embedded_commit_exact": true,
+    "archive_stream_matches_fresh_git_archive": true
+  },
+  "parquet_recomputation": {
+    "rows": 136767,
+    "symbols": 77,
+    "date_min": "2018-01-02",
+    "date_max": "2026-07-03",
+    "duplicate_keys": 0,
+    "cross_boundary_rows": 2779,
+    "purged_cross_boundary_rows": 2779,
+    "crossing_non_null_labels": 0,
+    "purged_non_null_labels": 0,
+    "label_mismatches": 0,
+    "split_mismatches": 0,
+    "purge_flag_mismatches": 0,
+    "purge_reason_mismatches": 0,
+    "mismatch_rows": 0
+  },
+  "additional_checks": {
+    "source_database_sha256_exact": true,
+    "universe_csv_sha256_exact": true,
+    "authorization_receipt_manifest_cross_binding": "PASS",
+    "temporary_payloads_deleted": true,
+    "temporary_clones_deleted": true
+  },
+  "commands": [
+    "gh release view/download",
+    "sha256sum and sha256sum -c",
+    "git bundle verify/clone/fsck/rev-parse",
+    "git archive, tar and gzip identity checks",
+    "DuckDB in-memory aggregate SQL",
+    "source hash and temporary-root absence checks"
+  ],
+  "boundary": {
+    "repository_edits": 0,
+    "commits": 0,
+    "pushes": 0,
+    "database_writes": 0,
+    "strategy_executions": 0,
+    "strategy_candidate_available": false
+  },
+  "scope_note": "Closes EA-001 evidence availability and byte verification only; it does not grant the overall external audit verdict."
+}

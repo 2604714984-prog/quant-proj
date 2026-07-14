@@ -1,0 +1,124 @@
+{
+  "schema_version": "capability-matrix-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "authoritative_for_capability_claims": true,
+  "strategy_candidate_available": false,
+  "capabilities": [
+    {
+      "repository": "A_Share_Monitor",
+      "capability": "research_and_backtest",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": true,
+      "write_capable": true,
+      "actionable": false,
+      "target_after_remediation": "RETAIN_RESEARCH_ONLY"
+    },
+    {
+      "repository": "A_Share_Monitor",
+      "capability": "a10_hitl_ticket",
+      "exists": true,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": false,
+      "actionable": true,
+      "gate0_state": "CODE_KILL_SWITCH_ACCEPTED_REAL_TICKET_AND_LEDGER_WRITE_DISABLED",
+      "target_after_remediation": "ACHIEVED_RETAINED_CODE_NOT_DEFAULT_CLI_AND_REAL_LEDGER_WRITE_DISABLED"
+    },
+    {
+      "repository": "A_Share_Monitor",
+      "capability": "manual_fill",
+      "exists": true,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": false,
+      "actionable": true,
+      "gate0_state": "DEFAULT_CLI_ENTRY_REMOVED_AND_WRITE_PATH_DISABLED",
+      "target_after_remediation": "ACHIEVED_RETAINED_USER_BOOKKEEPING_CODE_SEPARATE_NOT_DEFAULT_CLI"
+    },
+    {
+      "repository": "A_Share_Monitor",
+      "capability": "broker_order_paper_live_auto",
+      "exists": false,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": false,
+      "actionable": true,
+      "target_after_remediation": "FORBIDDEN"
+    },
+    {
+      "repository": "US_Stock_Monitor",
+      "capability": "research_and_backtest",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": true,
+      "write_capable": true,
+      "actionable": false,
+      "target_after_remediation": "RETAIN_RESEARCH_ONLY"
+    },
+    {
+      "repository": "US_Stock_Monitor",
+      "capability": "recommendation_rfc_scaffolds",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": false,
+      "write_capable": true,
+      "actionable": false,
+      "target_after_remediation": "DESIGN_EVIDENCE_ONLY_NO_REAL_INPUT_OR_RUNTIME"
+    },
+    {
+      "repository": "US_Stock_Monitor",
+      "capability": "recommendation_manual_fill_broker_order_paper_live_auto_runtime",
+      "exists": false,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": false,
+      "actionable": true,
+      "target_after_remediation": "FORBIDDEN"
+    },
+    {
+      "repository": "us_stock_30w",
+      "capability": "archived_paper_or_live_style_scripts",
+      "exists": true,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": false,
+      "actionable": true,
+      "guard": "scripts/runtime_isolation.py",
+      "target_after_remediation": "ARCHIVED_AND_FAIL_CLOSED"
+    },
+    {
+      "repository": "quant_research_lab",
+      "capability": "llm_factor_mining",
+      "exists": true,
+      "default_cli_exposed": false,
+      "default_enabled": false,
+      "write_capable": true,
+      "actionable": false,
+      "gate0_state": "OUTPUTS_QUARANTINED_NO_NEW_ITERATIONS",
+      "target_after_remediation": "RESEARCH_SANDBOX_WITH_VALIDATED_PROVENANCE"
+    },
+    {
+      "repository": "market_data",
+      "capability": "metadata_and_schema_export",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": false,
+      "write_capable": true,
+      "actionable": false,
+      "gate0_state": "RACE_SAFE_ATOMIC_PUBLICATION_ACCEPTED",
+      "target_after_remediation": "ACHIEVED_RACE_SAFE_ATOMIC_PUBLICATION"
+    },
+    {
+      "repository": "quant-proj",
+      "capability": "automated_gate_manifest_validation",
+      "exists": true,
+      "default_cli_exposed": true,
+      "default_enabled": true,
+      "write_capable": false,
+      "actionable": false,
+      "current_evidence_state": "DISTINCT_MANIFEST_VALID_AND_EXECUTION_ATTESTED_STATES_ACCEPTED",
+      "target_after_remediation": "ACHIEVED_DISTINCT_MANIFEST_VALID_AND_EXECUTION_ATTESTED_STATES"
+    }
+  ]
+}

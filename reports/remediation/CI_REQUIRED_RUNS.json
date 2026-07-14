@@ -1,0 +1,72 @@
+{
+  "schema_version": "remediation-required-ci-runs-v1",
+  "stage_id": "REMEDIATION_AND_REAUDIT_READINESS_R1_20260712",
+  "required_jobs": [
+    "static-unit",
+    "integration-identity",
+    "controlled-fixture-reproduction"
+  ],
+  "action_pins": {
+    "actions/checkout": "9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0",
+    "actions/setup-python": "ece7cb06caefa5fff74198d8649806c4678c61a1"
+  },
+  "repositories": [
+    {
+      "name": "quant-proj",
+      "commit": "4df14a054871dba2517bf9d4d426820d4cf3ea50",
+      "run_id": 29198065747,
+      "url": "https://github.com/2604714984-prog/quant-proj/actions/runs/29198065747",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"targeted_controller_tests_passed": 18, "online_blob_validation": "PASS", "unexpected_skips": 0}
+    },
+    {
+      "name": "A_Share_Monitor",
+      "commit": "f24aeb88efcab901c09c3d6b08574572cb2f0556",
+      "run_id": 29187211346,
+      "url": "https://github.com/2604714984-prog/A_Share_Monitor/actions/runs/29187211346",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"independent_full_suite_passed": 616, "integration_passed": 32, "fixture_passed": 6, "unexpected_skips": 0}
+    },
+    {
+      "name": "market_data",
+      "commit": "17409f952209244862b92dd893ead88cd073b4d7",
+      "run_id": 29187805453,
+      "url": "https://github.com/2604714984-prog/market_data/actions/runs/29187805453",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 202, "integration_passed": 33, "fixture_passed": 58, "unexpected_skips": 0}
+    },
+    {
+      "name": "quant_research_lab",
+      "commit": "7362ce219dc4c426e1b58e42a82e90ce73d04d59",
+      "run_id": 29188946281,
+      "url": "https://github.com/2604714984-prog/quant_research_lab/actions/runs/29188946281",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 79, "integration_passed": 56, "fixture_passed": 11, "unexpected_skips": 0}
+    },
+    {
+      "name": "strategy_work",
+      "commit": "b09db38da257f64fa7b1c7622b893fd7291fca4f",
+      "run_id": 29186401179,
+      "url": "https://github.com/2604714984-prog/strategy_work/actions/runs/29186401179",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 345, "integration_passed": 18, "fixture_passed": 2, "unexpected_skips": 0}
+    },
+    {
+      "name": "US_Stock_Monitor",
+      "commit": "44557c39001c90201a4ab51ce7dcff1595b10642",
+      "run_id": 29197919583,
+      "url": "https://github.com/2604714984-prog/US_Stock_Monitor/actions/runs/29197919583",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 656, "focused_contract_passed": 54, "unexpected_skips": 0}
+    },
+    {
+      "name": "us_stock_30w",
+      "commit": "73222d965f3785f457cecb73e9a2392554521e66",
+      "run_id": 29191481613,
+      "url": "https://github.com/2604714984-prog/us_stock_30w/actions/runs/29191481613",
+      "jobs": {"static-unit": "success", "integration-identity": "success", "controlled-fixture-reproduction": "success"},
+      "test_evidence": {"static_unit_passed": 180, "focused_local_passed": 175, "unexpected_skips": 0}
+    }
+  ],
+  "conclusion": "ALL_REQUIRED_EXACT_HEAD_JOBS_SUCCESS_ZERO_UNEXPECTED_SKIPS"
+}

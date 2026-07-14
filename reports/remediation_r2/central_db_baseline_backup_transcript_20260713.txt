@@ -1,0 +1,14 @@
+Script started on 2026-07-13 01:29:52+08:00 [COMMAND="/home/rongyu/workspace/A_Share_Monitor/.venv/bin/python scripts/backup_central_db_wave0.py --database /home/rongyu/workspace/quant_data/quant_research.duckdb --backup /home/rongyu/workspace/quant_data/backups/quant_research_before_remediation_r2_20260713_65e2c1354380.duckdb --lock-file /home/rongyu/workspace/quant_data/quant_research.duckdb.writer.lock --expected-sha256 65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5 --expected-bytes 1001926656 --allow-write" <not executed on terminal>]
+backup=/home/rongyu/workspace/quant_data/backups/quant_research_before_remediation_r2_20260713_65e2c1354380.duckdb
+bytes=1001926656
+database=/home/rongyu/workspace/quant_data/quant_research.duckdb
+database_writes=0
+mode=0600
+network_calls=0
+sha256=65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5
+source_unchanged=True
+status=PASS_BYTE_IDENTICAL
+strategy_process_invocations=0
+writer_lock_acquired=True
+
+Script done on 2026-07-13 01:29:54+08:00 [COMMAND_EXIT_CODE="0"]

@@ -82,6 +82,8 @@ def validate_payload(payload: dict) -> None:
     reason = payload.get("escalation_reason")
     refs = payload.get("disputed_evidence_refs", [])
     if decision == "LUNA_ACCEPTANCE":
+        if payload.get("required_gate_state") != "EXECUTION_ATTESTED":
+            raise ValueError("Luna acceptance requires EXECUTION_ATTESTED gate state")
         if missing or conflicts or reason or refs:
             raise ValueError("accepted evidence must be complete and coherent")
     elif decision == "REWORK_REQUIRED":
@@ -164,10 +166,25 @@ def validate_file(path: Path, *, require_current: bool = True) -> None:
         from scripts.validate_automated_gate_manifest import validate_file as validate_gate
     except ModuleNotFoundError:
         from validate_automated_gate_manifest import validate_file as validate_gate
-    validate_gate(gate_path, execute_commands=False)
+    gate_state = validate_gate(
+        gate_path,
+        execute_commands=True,
+        require_execution_attested=True,
+    )
+    if gate_state != "EXECUTION_ATTESTED":
+        raise ValueError("final acceptance requires EXECUTION_ATTESTED evidence")
     gate = json.loads(gate_path.read_text(encoding="utf-8"))
     if gate.get("task_id") != payload["task_id"]:
         raise ValueError("acceptance task differs from gate task")
+    attestation_info = gate.get("execution_attestation")
+    attestation_path = _rooted(
+        Path(gate["task_packet"]["dir"]).resolve(),
+        attestation_info["path"],
+        "execution_attestation.path",
+    )
+    attestation = json.loads(attestation_path.read_text(encoding="utf-8"))
+    if attestation.get("execution_task_id") == payload["acceptance_task_id"]:
+        raise ValueError("execution and acceptance must use different task identities")
 
     for ref in payload.get("disputed_evidence_refs", []):
         evidence = _rooted(record_root, ref["path"], "disputed evidence path")
