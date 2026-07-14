@@ -1,19 +1,12 @@
-# Task Queue
+# Task Records
 
-This directory stores task packets created by Quant-Dispatcher.
+Routine work is tracked in one GitHub issue and one branch/PR. Do not create an
+inbox copy or a per-task folder for ordinary implementation, tests, or docs.
 
-Directory roles:
+The existing `inbox/`, `backlog/`, `in_progress/`, `done/`, and `blocked/`
+trees are retained as historical evidence. New files under `tasks/` are only
+needed when an elevated data, PIT, schema, destructive DB, strategy-intake, or
+execution-boundary authorization requires a durable record.
 
-- `inbox/`: raw task lists copied from ChatGPT.
-- `backlog/`: accepted task packets not yet assigned for execution.
-- `in_progress/`: tasks currently being worked by a downstream agent.
-- `done/`: completed task reports and closeout notes.
-- `blocked/`: tasks requiring human approval, missing inputs, or external state changes.
-
-No raw databases, parquet caches, `.env`, API keys, or generated outputs belong here.
-
-Before dispatch, validate each packet with `runbooks/task_packet_validation.md`.
-
-Ordinary research-data fast-path tasks may run without per-task HG-EXEC when they are bounded, public/no-secret, source-local, and non-actionable; they still require transcript, manifest/count/hash evidence, validation, and callback.
-
-Boundary-changing L1-L4 execution tasks require a unique pre-execution `HG-EXEC-TASK-*` record before the command runs. If the record is missing, keep the task in `blocked/` or mark it `HOLD_FOR_MISSING_HG_EXEC_TASK_RECORD`; do not send it as executable work.
+Never store databases, raw payloads, caches, generated outputs, `.env` files,
+or credential values here.

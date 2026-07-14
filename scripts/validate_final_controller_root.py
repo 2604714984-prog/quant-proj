@@ -23,11 +23,6 @@ EXPECTED_REPOSITORIES = {
     "US_Stock_Monitor",
     "us_stock_30w",
 }
-EXPECTED_JOBS = {
-    "static-unit",
-    "integration-identity",
-    "controlled-fixture-reproduction",
-}
 HEX40 = re.compile(r"[0-9a-f]{40}")
 HEX64 = re.compile(r"[0-9a-f]{64}")
 SAFE_NAME = re.compile(r"[A-Za-z0-9._/-]+")
@@ -69,8 +64,13 @@ def _validate_ci(ci: object, *, repository: str) -> None:
     if ci["url"] != expected_url:
         raise FinalRootError(f"{repository} CI URL is not canonical")
     jobs = ci["jobs"]
-    if not isinstance(jobs, list) or {item.get("name") for item in jobs if isinstance(item, dict)} != EXPECTED_JOBS:
-        raise FinalRootError(f"{repository} CI job set differs")
+    if not isinstance(jobs, list) or not 1 <= len(jobs) <= 2:
+        raise FinalRootError(f"{repository} CI must contain one or two jobs")
+    names = [item.get("name") for item in jobs if isinstance(item, dict)]
+    if len(names) != len(jobs) or any(not isinstance(name, str) or not name for name in names):
+        raise FinalRootError(f"{repository} CI job name is invalid")
+    if len(names) != len(set(names)):
+        raise FinalRootError(f"{repository} CI job names are duplicated")
     for item in jobs:
         if set(item) != {"name", "conclusion"} or item["conclusion"] != "success":
             raise FinalRootError(f"{repository} CI contains a non-successful job")

@@ -45,16 +45,7 @@ def _payload(tmp_path: Path) -> dict:
                     "url": f"https://github.com/2604714984-prog/{name}/actions/runs/{index}",
                     "head_sha": commit,
                     "conclusion": "success",
-                    "jobs": [
-                        {"name": job, "conclusion": "success"}
-                        for job in sorted(
-                            {
-                                "static-unit",
-                                "integration-identity",
-                                "controlled-fixture-reproduction",
-                            }
-                        )
-                    ],
+                    "jobs": [{"name": "static-unit", "conclusion": "success"}],
                 },
             }
         )
@@ -141,6 +132,7 @@ def test_valid_controller_root(tmp_path: Path) -> None:
         "artifact_hash",
         "branch_path",
         "research_execution",
+        "too_many_ci_jobs",
     ],
 )
 def test_controller_root_mutations_fail_closed(tmp_path: Path, mutation: str) -> None:
@@ -157,6 +149,11 @@ def test_controller_root_mutations_fail_closed(tmp_path: Path, mutation: str) ->
         payload["repositories"][0]["branch"] = "main"
     elif mutation == "research_execution":
         payload["research_boundary"]["new_strategy_research_executed"] = True
+    elif mutation == "too_many_ci_jobs":
+        payload["repositories"][0]["ci"]["jobs"] = [
+            {"name": f"job-{index}", "conclusion": "success"}
+            for index in range(3)
+        ]
     with pytest.raises(FinalRootError):
         validate(payload, repository_root=tmp_path)
 

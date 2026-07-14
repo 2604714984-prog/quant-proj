@@ -1,21 +1,25 @@
 # Task Packet Validation Rule
 
-Status: active
+Status: elevated-work compatibility only
 Rule id: `TASK_PACKET_VALIDATION_V1`
 Owner: `Quant-Dispatcher`
 
-Use this rule before sending any task packet to a downstream agent.
+Routine work does not use task packets; follow `runbooks/task_dispatch.md`.
+Use this legacy-compatible validator only when an elevated boundary requires a
+durable machine-readable authorization record. Its model, callback, and
+acceptance fields preserve the older packet schema and are not requirements for
+ordinary issues or PRs.
 
 ## Required Files
 
-Every dispatched task must include:
+An elevated packet validated under this compatibility rule must include:
 
 - `spec.md`
 - `handoff.md`
 - `human_gate.md`
 
-New task packets must also include the metadata block defined in
-`prompts/task_dispatcher.md`: model role, exact model/effort, immutable source
+Legacy-format packets must also include the metadata block expected by
+`scripts/validate_task_packet.py`: model role, exact model/effort, immutable source
 commit/tree for Codex implementation, automated-gate commands, current callback
 target, acceptance role, and a hashed context delta. Codex implementation
 packets include concrete `context_delta.md` and automated-gate command files

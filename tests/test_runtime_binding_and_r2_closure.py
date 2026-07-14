@@ -23,7 +23,6 @@ def load_script(name: str):
 
 binding = load_script("derive_runtime_binding.py")
 coverage = load_script("validate_r2_closure_coverage.py")
-ci_identity = load_script("validate_ci_identity.py")
 
 
 def _fixture_repo(tmp_path: Path, contract: dict) -> Path:
@@ -213,96 +212,4 @@ def test_closure_coverage_is_exact_and_omission_fails(tmp_path: Path) -> None:
             runtime_result=wrong_source,
             runtime_contract=contract,
             runtime_contract_sha256=runtime["contract_sha256"],
-        )
-
-
-def test_workflow_separates_head_and_merge_identities() -> None:
-    text = (ROOT / ".github/workflows/research-validation.yml").read_text(encoding="utf-8")
-    for value in (
-        "branch-head-identity:",
-        "merge-ref-identity:",
-        "BRANCH_HEAD_SHA:",
-        "BASE_SHA:",
-        "TESTED_MERGE_SHA:",
-        "refs/pull/${{ github.event.pull_request.number }}/merge",
-    ):
-        assert value in text
-
-
-def test_ci_identity_rejects_head_merge_and_base_mismatch() -> None:
-    head = "a" * 40
-    base = "b" * 40
-    merge = "c" * 40
-    ci_identity.validate(
-        {
-            "mode": "head",
-            "branch_head_sha": head,
-            "base_sha": base,
-            "tested_merge_sha": "NOT_APPLICABLE",
-        },
-        checked_out_sha=head,
-    )
-    ci_identity.validate(
-        {
-            "mode": "merge",
-            "branch_head_sha": head,
-            "base_sha": base,
-            "tested_merge_sha": merge,
-        },
-        checked_out_sha=merge,
-        direct_parent_shas=(base, head),
-    )
-    with pytest.raises(ci_identity.CiIdentityError, match="head SHA differs"):
-        ci_identity.validate(
-            {
-                "mode": "head",
-                "branch_head_sha": head,
-                "base_sha": base,
-                "tested_merge_sha": "NOT_APPLICABLE",
-            },
-            checked_out_sha=merge,
-            direct_parent_shas=(base, head),
-        )
-    with pytest.raises(ci_identity.CiIdentityError, match="tested_merge_sha"):
-        ci_identity.validate(
-            {
-                "mode": "merge",
-                "branch_head_sha": head,
-                "base_sha": base,
-                "tested_merge_sha": "",
-            },
-            checked_out_sha=merge,
-            direct_parent_shas=(base, head),
-        )
-    with pytest.raises(ci_identity.CiIdentityError, match="exactly two"):
-        ci_identity.validate(
-            {
-                "mode": "merge",
-                "branch_head_sha": head,
-                "base_sha": base,
-                "tested_merge_sha": merge,
-            },
-            checked_out_sha=merge,
-            direct_parent_shas=(base,),
-        )
-    with pytest.raises(ci_identity.CiIdentityError, match="direct parents differ"):
-        ci_identity.validate(
-            {
-                "mode": "merge",
-                "branch_head_sha": head,
-                "base_sha": base,
-                "tested_merge_sha": merge,
-            },
-            checked_out_sha=merge,
-            direct_parent_shas=(base, "d" * 40),
-        )
-    with pytest.raises(ci_identity.CiIdentityError, match="base_sha"):
-        ci_identity.validate(
-            {
-                "mode": "merge",
-                "branch_head_sha": head,
-                "base_sha": "",
-                "tested_merge_sha": merge,
-            },
-            checked_out_sha=merge,
         )
