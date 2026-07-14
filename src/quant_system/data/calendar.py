@@ -6,6 +6,7 @@ from bisect import bisect_right
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import date, datetime
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from .source_identity import SourceIdentity, require_aware_utc
 
@@ -20,6 +21,7 @@ class AcceptedSession:
     open_at: datetime
     close_at: datetime
     source: SourceIdentity
+    exchange_timezone: str
     is_early_close: bool = False
 
     def __post_init__(self) -> None:
@@ -27,12 +29,29 @@ class AcceptedSession:
             raise CalendarIdentityError("session_date must be a date")
         opened = require_aware_utc(self.open_at, "open_at")
         closed = require_aware_utc(self.close_at, "close_at")
+        timezone_name = str(self.exchange_timezone).strip()
+        if not timezone_name:
+            raise CalendarIdentityError("exchange_timezone is required")
+        try:
+            exchange_zone = ZoneInfo(timezone_name)
+        except ZoneInfoNotFoundError as exc:
+            raise CalendarIdentityError(
+                "exchange_timezone must name an installed IANA timezone"
+            ) from exc
+        if (
+            opened.astimezone(exchange_zone).date() != self.session_date
+            or closed.astimezone(exchange_zone).date() != self.session_date
+        ):
+            raise CalendarIdentityError(
+                "session open and close must fall on session_date in exchange_timezone"
+            )
         if opened >= closed:
             raise CalendarIdentityError("session open must precede session close")
         if type(self.is_early_close) is not bool:
             raise CalendarIdentityError("is_early_close must be boolean")
         object.__setattr__(self, "open_at", opened)
         object.__setattr__(self, "close_at", closed)
+        object.__setattr__(self, "exchange_timezone", timezone_name)
 
 
 class AcceptedSessionCalendar:
@@ -49,13 +68,21 @@ class AcceptedSessionCalendar:
             )
         if any(current.close_at >= following.open_at for current, following in zip(rows, rows[1:])):
             raise CalendarIdentityError("session timestamps overlap or are unordered")
+        timezones = {row.exchange_timezone for row in rows}
+        if len(timezones) != 1:
+            raise CalendarIdentityError("one calendar cannot mix exchange timezones")
         self._sessions = rows
         self._dates = dates
         self._by_date = dict(zip(dates, rows, strict=True))
+        self._exchange_timezone = rows[0].exchange_timezone
 
     @property
     def session_dates(self) -> tuple[date, ...]:
         return self._dates
+
+    @property
+    def exchange_timezone(self) -> str:
+        return self._exchange_timezone
 
     def session_on(self, session_date: date, *, as_of: datetime) -> AcceptedSession:
         if type(session_date) is not date:
