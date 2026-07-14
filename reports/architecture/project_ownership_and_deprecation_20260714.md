@@ -6,12 +6,12 @@ This project is optimized for one user, one WSL host, one DuckDB, research-only 
 
 | Repository | Final active responsibility | Frozen reference | Deprecation state |
 |---|---|---|---|
-| `quant-proj` | roadmap, status, decisions, audits | `158c6c797cca5e5dedacdcf9f5e47403eb2ab10b` | controller flow reduction in progress |
-| `central-data-ingestion` | sole writer, provider adapters, routine append CLI | `d17c3b474a5a97867e9b502f57b4cd572c2ed77f`; integration `17f027785b7531534a6286821f9e0048dc633c6a` | replacement accepted; production cutover not authorized |
-| `market_data` | read-only catalog/client | `300d4cf902cafc7f8462991e761e658febdc1424` | active writer removal pending parity |
-| `quant_research_lab` | sole A-share research engine | `6b98b94d0cdd674d6e07cce93726f204ab3a6594`; R5 audited base `d5e902af4beab6826ebc34c9a940b881f25ad750` | R5 semantic repair in progress |
-| `US_Stock_Monitor` | sole US research engine | `872f54211e56a162e713d987d904b49d2521bd25` | narrow semantic repair in progress |
-| `A_Share_Monitor` | unmigrated adapters, market rules, historical evidence | main `ab12cf99331a39a1396c7c7f885072a9f0f68c08`; preservation base `1a64e70873fc8a3c3d998e509cbcf690010ffef0` | canonical repair lane selected; divergent main retained as evidence only |
+| `quant-proj` | roadmap, status, decisions, audits | PR #27 `14dcee0a44f253b8324dbacaf256684ca5912815` | routine flow reduced to one issue/PR/CI/closeout; merge pending |
+| `central-data-ingestion` | sole writer, provider adapters, routine append CLI | PR #24 `94326205df275ebc7490a1084d0849a9000bbdee` | replacement and parity accepted; production cutover not authorized |
+| `market_data` | read-only catalog/client | PR #5 `47a6c6675fe0be173a5552461921d89ec6d60b09` | active writer removed; merge pending |
+| `quant_research_lab` | target sole A-share research engine | PR #6 `4e65fbe5889d6815a8454f80d1ea96ee0802c192` | R5 semantic repair accepted; sole-authority cutover blocked by legacy dependencies |
+| `US_Stock_Monitor` | sole US research engine | PR #8 `252fe19be632943389f31d025c2789aca452df74` | semantic repair accepted; merge pending |
+| `A_Share_Monitor` | unmigrated adapters, market rules, historical evidence | PR #8 `7951e0669609d7e0bfa8325d47b14f4b954750c9`; canonical parent `a82ac7de579a9240e30bca85e01893deb45c4eff` | fail-closed repair accepted; broad deactivation blocked pending migration/allowlist |
 | `us_stock_30w` | archived forensic evidence | `62abe5ba0213e9e7a8ade69db423fc71a3746357` | archive after required frozen specs/tests are copied to owners |
 | `strategy_work` | archived knowledge and failure memory | `a050e20ba50ada3f8bb052585c667770dac2c2c4` | no new execution engine or trial authority |
 
@@ -32,25 +32,28 @@ No active path is removed until its replacement reaches parity. Each completed d
 ### Central database
 
 - replacement owner: `central-data-ingestion`
-- replacement reference: Draft PR #24, head `17f027785b7531534a6286821f9e0048dc633c6a`
+- replacement reference: Draft PR #24, head `94326205df275ebc7490a1084d0849a9000bbdee`
 - legacy reference: `market_data@300d4cf902cafc7f8462991e761e658febdc1424`
-- remove after parity: active `market_data` writer entry points, SQLite staging, copy/swap publisher, custom signature and duplicate receipt/CLI paths
-- retain: a small read-only central-store client and immutable Git history
+- parity implementation: `market_data` PR #5 removes the active `central_warehouse.py` writer and writer tests; active runtime is reduced by 1,074 net lines
+- retain: a small read-only central-store catalog/query client and immutable Git history
+- writer implementation: one set-based writer and one CLI with ingest and aggregate read-only audit subcommands; focused backup/restore and parity tests pass
 - rollback: latest verified production backup plus the frozen legacy Git refs; production cutover remains a separate owner decision
 
 ### A-share research
 
-- replacement owner: `quant_research_lab` repaired R5
+- replacement owner: `quant_research_lab` repaired R5 at PR #6, head `4e65fbe5889d6815a8454f80d1ea96ee0802c192`
 - legacy reference: `A_Share_Monitor` preservation baseline `1a64e70873fc8a3c3d998e509cbcf690010ffef0`
 - retain in legacy: only unmigrated adapters, market-specific rules, and historical evidence
-- remove after semantic parity: legacy strategy-engine imports, CLIs, CI entries, and current docs that imply authority
+- current blocker: QRL still reads A_Share cache/local DuckDB paths and imports old `qta` code in active research scripts
+- required parity copy: T+1, suspension, limit-up/down, PIT financial availability, validation-only selection, and no-test-selection specifications still exist only in `A_Share_Monitor`
+- remove only after those dependencies and specifications move: legacy strategy-engine imports, CLIs, CI entries, and current docs that imply authority
 - rollback/reference: immutable R5 and legacy branch refs; no full replay until the read-only snapshot callback is accepted
 
 ### US research
 
-- active owner: `US_Stock_Monitor@872f54211e56a162e713d987d904b49d2521bd25` plus the narrow semantic repair
+- active owner: `US_Stock_Monitor` PR #8, head `252fe19be632943389f31d025c2789aca452df74`
 - forensic reference: `us_stock_30w@62abe5ba0213e9e7a8ade69db423fc71a3746357`
-- remove after copying required specs/tests: active research or dispatch claims in `us_stock_30w`
+- remove after moving the two remaining historical callers: active research or dispatch claims in `us_stock_30w`
 - retain: immutable forensic history and rejected-result evidence
 
 ### Controller
@@ -59,6 +62,22 @@ No active path is removed until its replacement reaches parity. Each completed d
 - remove from ordinary active flow: mandatory prompt-inbox copies, per-task packet folders, fixed callback UUIDs, model-route bindings, duplicate acceptance layers, and separate branch-head/merge identity jobs
 - retain elevated controls only for material engine semantics, data/PIT/schema changes, destructive DB work, strategy intake, and future execution-stage opening
 - historical task and audit artifacts remain immutable evidence and are not deleted
+
+## Phase 3 adjudication
+
+`BLOCKED_NOT_READY`
+
+The target ownership is frozen, but the legacy repositories cannot yet be safely deactivated. The blocking evidence is narrow and concrete:
+
+1. QRL still depends on A_Share cache/local-DB paths and old `qta` imports.
+2. Six A-share semantic specifications have not yet been copied into the authoritative engine.
+3. Database parity has not yet produced the final allowlist of A_Share adapters and market rules that must remain.
+4. `US_Stock_Monitor` still has two historical callers tied to `us_stock_30w`.
+5. Final active-state archive tags do not exist for `A_Share_Monitor`, `us_stock_30w`, or `strategy_work`.
+
+The minimum safe sequence is: merge the semantic and database PRs; make QRL a read-only central-data consumer; migrate the six specifications and remove old imports; move the two US historical callers; publish the final adapter allowlist; create immutable archive tags; then use narrow deactivation PRs. Direct broad deletion is prohibited because it would remove still-active semantics and rollback evidence.
+
+Part 2 audit remains external-only and was not inspected, supplemented, accepted, or adjudicated by Quant Manager.
 
 ## Stop boundary
 
