@@ -175,11 +175,6 @@ def _effective_trial_count(value: float, *, attempted_trial_count: int) -> float
             "effective_independent_trial_count must be finite and lie between 1 and "
             "attempted_trial_count"
         )
-    if 1.0 < parsed < 2.0:
-        raise ValueError(
-            "effective_independent_trial_count must be exactly 1 or at least 2 because "
-            "the expected-maximum approximation is undefined between those bounds"
-        )
     return parsed
 
 
@@ -276,8 +271,17 @@ class PBOResult:
     observations_used: int
     observations_dropped: int
     relative_ranks: tuple[float, ...]
+    selection_tie_policy: str
     rank_tie_policy: str
     overfit_rule: str
+
+
+def _average_relative_rank(scores: Sequence[float], *, selected_index: int) -> float:
+    selected_score = scores[selected_index]
+    lower_count = math.fsum(score < selected_score for score in scores)
+    tie_count = math.fsum(score == selected_score for score in scores)
+    average_rank = lower_count + (tie_count + 1.0) / 2.0
+    return average_rank / (len(scores) + 1.0)
 
 
 def probability_of_backtest_overfitting(
@@ -335,16 +339,21 @@ def probability_of_backtest_overfitting(
             _sharpe_score(tuple(rows[row][strategy] for row in train_rows))
             for strategy in range(strategy_count)
         )
-        selected_strategy = max(range(strategy_count), key=lambda index: (train_scores[index], -index))
+        maximum_train_score = max(train_scores)
+        train_winners = tuple(
+            index for index, score in enumerate(train_scores) if score == maximum_train_score
+        )
+        if len(train_winners) != 1:
+            raise ValueError("PBO in-sample maximum is tied")
+        selected_strategy = train_winners[0]
         test_scores = tuple(
             _sharpe_score(tuple(rows[row][strategy] for row in test_rows))
             for strategy in range(strategy_count)
         )
-        selected_score = test_scores[selected_strategy]
-        lower_count = math.fsum(score < selected_score for score in test_scores)
-        tie_count = math.fsum(score == selected_score for score in test_scores)
-        average_rank = lower_count + (tie_count + 1.0) / 2.0
-        relative_rank = average_rank / (strategy_count + 1.0)
+        relative_rank = _average_relative_rank(
+            test_scores,
+            selected_index=selected_strategy,
+        )
         logit = math.log(relative_rank / (1.0 - relative_rank))
         logits.append(logit)
         relative_ranks.append(relative_rank)
@@ -361,6 +370,7 @@ def probability_of_backtest_overfitting(
         observations_used=len(rows),
         observations_dropped=0,
         relative_ranks=tuple(relative_ranks),
+        selection_tie_policy="fail_closed",
         rank_tie_policy="average",
         overfit_rule="relative_rank < 0.5",
     )
