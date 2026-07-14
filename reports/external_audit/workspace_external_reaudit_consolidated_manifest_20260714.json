@@ -1,0 +1,63 @@
+{
+  "schema_version": "workspace-external-reaudit-consolidated-manifest-v1",
+  "generated_at": "2026-07-14T09:10:40+08:00",
+  "status": "READY_FOR_INDEPENDENT_EXTERNAL_REAUDIT_WITH_DATA_LANES_BLOCKED",
+  "strategy_candidate_available": false,
+  "repository": {
+    "name": "quant-proj",
+    "branch": "codex/external-audit-final-consolidation-20260714",
+    "pre_artifact_head": "70f2a48b95a9c5e66e188b6da0c76c036c66ea83",
+    "pre_artifact_tree": "888dbafb849a1e338a3d9ac23bab146de2d4f239",
+    "main_at_branch_creation": "9963a6263a986343e1ed878876130c4981a6ee71"
+  },
+  "incorporated_history": {
+    "accepted_remediation_chain_merge": "e95e712",
+    "targeted_reaudit_merge": "70f2a48b95a9c5e66e188b6da0c76c036c66ea83",
+    "superseded_open_pull_requests": [10, 12],
+    "incorporated_open_pull_requests": [11, 13, 16, 18]
+  },
+  "central_database_orchestration": {
+    "controller_issue": 19,
+    "controller_issue_state": "CLOSED_COMPLETED_WITH_BLOCKED_DATASETS",
+    "central_data_ingestion_final_merge": "d17c3b474a5a97867e9b502f57b4cd572c2ed77f",
+    "final_pull_request": 21,
+    "accepted_dataset_count": 0,
+    "lane_outcomes": {
+      "A0": "DESIGN_ONLY",
+      "A1_A6": "ACCEPTED_BLOCKED",
+      "U0_U6": "ACCEPTED_BLOCKED",
+      "X1": "ACCEPTED_BLOCKED",
+      "X2": "ACCEPTED_BLOCKED_NO_ACCEPTED_DATASET"
+    },
+    "x2_artifact_sha256": "0f31979d90fa01e286c0398afd483c906e466dadc78f715ce4a93c5376cd2178",
+    "current_database_sha256": "d356add782758746ea05666af38dd0f64918ae675ec3a7cd5e645588e44309d4",
+    "current_database_bytes": 2399678464,
+    "current_database_mode": "0600",
+    "database_binary_in_git": false,
+    "database_writes_by_consolidation": 0
+  },
+  "remediation_counts": {
+    "r1_findings": 13,
+    "r1_closed_accepted": 12,
+    "r1_closed_after_targeted_rework": 1,
+    "r2_findings": 7,
+    "r2_verified_implementation_accepted": 6,
+    "r2_verified_external_receipt": 1
+  },
+  "artifact_sha256": {
+    "registry/projects.yaml": "be1a8700395ccceb89bef8a4209b29128fed0fb31bd52009348ce4c1506505b7",
+    "reports/workspace_status/registry_refresh_external_audit_20260714.md": "b2904cc9ed4582c2c5690d61f43fc3ecd10807f042e8f69ba9bd942910954272",
+    "reports/external_audit/workspace_external_reaudit_consolidated_20260714.md": "18731af60d8d3727491edf40afd9781da07fb60b34fe5b621220e9cd90ebb0d0",
+    "reports/remediation/FINDING_CLOSURE_MATRIX.json": "be6e0100a16cd6ab424aea5acf48cd7593c7255d3f04ad6b7e1a7b0d7e786510",
+    "reports/remediation_r2/R2_FINDING_CLOSURE_MATRIX_20260713.json": "1db0ca2c59bd6538ffa00b03cfd8818c2bb6fb10e22632856874142ea150db3e",
+    ".github/workflows/research-validation.yml": "92fe575674cd80ee1a9fab567b7540a3ce7664cdd1c131644c0084dbc63011c2"
+  },
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_or_cache_write": false,
+    "secret_access_or_output": false,
+    "strategy_execution_or_outcome_access": false,
+    "recommendation_or_candidate_promotion": false,
+    "broker_order_paper_live_auto": false
+  }
+}

@@ -1,4 +1,4 @@
-generated_at: "2026-07-14T04:10:00+08:00"
+generated_at: "2026-07-14T09:10:40+08:00"
 workspace_root: "/home/rongyu/workspace"
 registry_kind: "live_source_commit_registry"
 decision: "source repositories are authoritative; resolve exact Git objects before dispatch"
@@ -12,23 +12,25 @@ source_of_truth_precedence:
 
 projects:
   quant_proj:
-    path: "/home/rongyu/workspace/.wt-manager-central-db-db2-20260714"
+    path: "/home/rongyu/workspace/.wt-external-audit-final-consolidation-20260714"
     role: "controller and external-audit package owner"
-    branch: "codex/manager-central-db-db2-20260714"
+    branch: "codex/external-audit-final-consolidation-20260714"
+    commit: "70f2a48b95a9c5e66e188b6da0c76c036c66ea83"
+    tree: "888dbafb849a1e338a3d9ac23bab146de2d4f239"
     base_commit: "b8ff0760c89a6450052193ee5a7e1b3940e96b2b"
     base_tree: "43ffd89db644d4e1b7a0d588d80f1a209516e84f"
     upstream_ref: "origin/main"
-    working_tree: "clean before DB2 manager artifact generation"
+    working_tree: "clean at refresh before final registry and audit artifacts"
 
   central_data_ingestion:
     path: "/home/rongyu/workspace/central-data-ingestion"
     role: "authoritative central-database ingestion and publication owner"
     branch: "main"
     accepted_remote_ref: "origin/main"
-    commit: "5801bc2819fc7d37fffe6bdab298ed8ca1c31b6d"
-    tree: "9ad5d3a8633fc2518e7fea000bd1f408a300b128"
+    commit: "d17c3b474a5a97867e9b502f57b4cd572c2ed77f"
+    tree: "0a6b921b28ca57ce7ae26d01bf214922903a5825"
     local_checkout_note: "local main is clean but behind accepted remote main; use clean isolated worktrees"
-    foundation_status: "structural repair and routine append fast lane merged; immutable foundation callback independently accepted and preserved at b9b5d7e9aeeae98696debe94ac31464f56a9d155"
+    foundation_status: "structural repair and routine append fast lane independently accepted at b9b5d7e9aeeae98696debe94ac31464f56a9d155 and merged; A0-A6, U0-U6, X1 and X2 adjudicated with zero accepted datasets; X2 merged in PR 21"
 
   a_share_monitor:
     path: "/home/rongyu/workspace/A_Share_Monitor"
@@ -86,6 +88,21 @@ projects:
     tree: "500243bf02b1269aaa829fd88fd472835b9a8183"
     upstream_ref: "origin/research/c2-remediation-r4-1a-20260713"
     working_tree: "clean at refresh"
+    identity_kind: "remote_ref_authoritative"
+
+central_database:
+  path: "/home/rongyu/workspace/quant_data/quant_research.duckdb"
+  access: "single future writer central-data-ingestion; publisher absent/disabled for production datasets; routine append remains profile-gated and every other repository is read-only"
+  sha256: "65e2c1354380b69b563b1846ec61871c6f99c46156736dc1954939278093c5c5"
+  bytes: 1001926656
+  identity_semantics: "immutable R2 Wave 0 baseline retained for validator compatibility; not current bytes"
+  current_observed_sha256: "d356add782758746ea05666af38dd0f64918ae675ec3a7cd5e645588e44309d4"
+  current_observed_bytes: 2399678464
+  current_observed_mode: "0600"
+  current_observed_relations: 54
+  accepted_dataset_count: 0
+  routine_append_status: "generic code accepted; no accepted source profile or production schedule instantiated"
+  publisher_enabled: false
 
 boundaries:
   research_only: true
@@ -96,3 +113,7 @@ boundaries:
   product_route_or_readiness_activation: false
   secret_access_or_output: false
   database_binary_in_git: false
+  provider_network_calls_for_final_audit: false
+  central_database_writes_for_final_audit: false
+  provider_network_calls_wave0: false
+  central_database_writes_wave0: false

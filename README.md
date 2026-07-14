@@ -2,6 +2,16 @@
 
 This folder is the controller workspace for the local quant system.
 
+## Consolidated External Re-audit (2026-07-14)
+
+Use
+[`reports/external_audit/workspace_external_reaudit_consolidated_20260714.md`](reports/external_audit/workspace_external_reaudit_consolidated_20260714.md)
+as the current external-review entry point. It incorporates the prior audit package,
+R1/R2 remediation, targeted re-audit bindings, Gate-B controller evidence, and the
+completed A0-A6/U0-U6/X1/X2 central-database adjudication. The package is ready for
+independent review but explicitly retains blocked data-source outcomes and
+`strategy_candidate_available=false`.
+
 ## External Audit (2026-07-12)
 
 Start the GitHub-based external review with
