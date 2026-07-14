@@ -701,6 +701,21 @@ def test_corporate_action_rejects_invalid_exchange_timezone() -> None:
         )
 
 
+def test_corporate_action_requires_canonical_source_identity() -> None:
+    available = datetime(2024, 5, 1, tzinfo=UTC)
+    with pytest.raises(SourceIdentityError, match="canonical SourceIdentity"):
+        CorporateActionIdentity(
+            subject_id=CIK,
+            action_id="invalid-source",
+            action_type="split",
+            effective_at=available,
+            source=object(),  # type: ignore[arg-type]
+            exchange_timezone="UTC",
+            ex_date=date(2024, 5, 1),
+            split_ratio=Decimal("2"),
+        )
+
+
 def test_corporate_action_identity_rejects_ambiguous_value_shapes() -> None:
     available = datetime(2024, 5, 1, tzinfo=UTC)
     source = _source(

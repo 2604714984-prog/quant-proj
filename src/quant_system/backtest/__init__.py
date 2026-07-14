@@ -1,6 +1,11 @@
 """Lightweight deterministic backtest primitives."""
 
-from .blocked_orders import BlockedExitOrder, ExitAttempt, advance_blocked_exit
+from .blocked_orders import (
+    BlockedExitOrder,
+    ExitAttempt,
+    advance_blocked_exit,
+    execute_ready_blocked_exit,
+)
 from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
 from .costs import CostBreakdown, TransactionCostModel
 from .portfolio import Portfolio
@@ -15,4 +20,5 @@ __all__ = [
     "TransactionCostModel",
     "advance_blocked_exit",
     "assess_capacity",
+    "execute_ready_blocked_exit",
 ]

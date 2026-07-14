@@ -126,6 +126,8 @@ class CorporateActionIdentity:
     new_subject_id: str | None = None
 
     def __post_init__(self) -> None:
+        if not isinstance(self.source, SourceIdentity):
+            raise SourceIdentityError("source must be a canonical SourceIdentity")
         subject_id = str(self.subject_id).strip()
         action_id = str(self.action_id).strip()
         action_type = str(self.action_type).strip().lower()
@@ -229,14 +231,75 @@ class CorporateActionIdentity:
                 )
 
 
+def select_source_revision(
+    sources: Iterable[SourceIdentity],
+    *,
+    as_of: datetime,
+) -> SourceIdentity:
+    """Select the latest available member of one complete linear revision chain."""
+
+    cutoff = require_aware_utc(as_of, "as_of")
+    frozen = tuple(sources)
+    if not frozen:
+        raise SourceIdentityError("source revision chain is empty")
+    if any(not isinstance(source, SourceIdentity) for source in frozen):
+        raise SourceIdentityError("revision chain must contain only SourceIdentity values")
+    by_revision: dict[str, SourceIdentity] = {}
+    successors: dict[str, list[SourceIdentity]] = defaultdict(list)
+    roots: list[SourceIdentity] = []
+    content_hashes: set[str] = set()
+    for source in frozen:
+        revision_id = source.revision_id
+        if revision_id in by_revision:
+            raise SourceIdentityError("source revision IDs must be unique")
+        if source.content_sha256 in content_hashes:
+            raise SourceIdentityError("source revision hashes must be unique")
+        by_revision[revision_id] = source
+        content_hashes.add(source.content_sha256)
+        prior = source.supersedes_revision_id
+        if prior is None:
+            roots.append(source)
+        else:
+            successors[prior].append(source)
+    if len(roots) != 1:
+        raise SourceIdentityError("source must have exactly one root revision")
+    for prior, items in successors.items():
+        if prior not in by_revision:
+            raise SourceIdentityError("source revision chain has a missing parent")
+        if len(items) != 1:
+            raise SourceIdentityError("source revision chain is branched")
+
+    chain: list[SourceIdentity] = []
+    current = roots[0]
+    seen: set[str] = set()
+    while True:
+        revision_id = current.revision_id
+        if revision_id in seen:
+            raise SourceIdentityError("source revision chain contains a cycle")
+        seen.add(revision_id)
+        chain.append(current)
+        children = successors.get(revision_id, ())
+        if not children:
+            break
+        child = children[0]
+        if child.available_at <= current.available_at:
+            raise SourceIdentityError("source revision availability must increase")
+        current = child
+    if len(seen) != len(frozen):
+        raise SourceIdentityError("source revisions are not one connected chain")
+    eligible = tuple(source for source in chain if source.available_at <= cutoff)
+    if not eligible:
+        raise SourceIdentityError("no source revision was available at as_of")
+    return eligible[-1]
+
+
 def select_corporate_action_revision(
     actions: Iterable[CorporateActionIdentity],
     *,
     as_of: datetime,
 ) -> CorporateActionIdentity:
-    """Select one complete, linear source revision chain at ``as_of``."""
+    """Select one complete, linear corporate-action revision at ``as_of``."""
 
-    cutoff = require_aware_utc(as_of, "as_of")
     frozen = tuple(actions)
     if not frozen:
         raise SourceIdentityError("corporate action revision chain is empty")
@@ -253,53 +316,8 @@ def select_corporate_action_revision(
         raise SourceIdentityError(
             "corporate action revisions must share subject, action_id, type, and timezone"
         )
-    by_revision: dict[str, CorporateActionIdentity] = {}
-    successors: dict[str, list[CorporateActionIdentity]] = defaultdict(list)
-    roots: list[CorporateActionIdentity] = []
-    content_hashes: set[str] = set()
-    for item in frozen:
-        revision_id = item.source.revision_id
-        if revision_id in by_revision:
-            raise SourceIdentityError("corporate action revision IDs must be unique")
-        if item.source.content_sha256 in content_hashes:
-            raise SourceIdentityError("corporate action revision hashes must be unique")
-        by_revision[revision_id] = item
-        content_hashes.add(item.source.content_sha256)
-        prior = item.source.supersedes_revision_id
-        if prior is None:
-            roots.append(item)
-        else:
-            successors[prior].append(item)
-    if len(roots) != 1:
-        raise SourceIdentityError("corporate action must have exactly one root revision")
-    for prior, items in successors.items():
-        if prior not in by_revision:
-            raise SourceIdentityError("corporate action revision chain has a missing parent")
-        if len(items) != 1:
-            raise SourceIdentityError("corporate action revision chain is branched")
-
-    chain: list[CorporateActionIdentity] = []
-    current = roots[0]
-    seen: set[str] = set()
-    while True:
-        revision_id = current.source.revision_id
-        if revision_id in seen:
-            raise SourceIdentityError("corporate action revision chain contains a cycle")
-        seen.add(revision_id)
-        chain.append(current)
-        children = successors.get(revision_id, ())
-        if not children:
-            break
-        child = children[0]
-        if child.source.available_at <= current.source.available_at:
-            raise SourceIdentityError("corporate action revision availability must increase")
-        current = child
-    if len(seen) != len(frozen):
-        raise SourceIdentityError("corporate action revisions are not one connected chain")
-    eligible = tuple(item for item in chain if item.source.available_at <= cutoff)
-    if not eligible:
-        raise SourceIdentityError("no corporate action revision was available at as_of")
-    return eligible[-1]
+    selected = select_source_revision((item.source for item in frozen), as_of=as_of)
+    return next(item for item in frozen if item.source == selected)
 
 
 __all__ = [
@@ -307,4 +325,5 @@ __all__ = [
     "SourceIdentity",
     "SourceIdentityError",
     "select_corporate_action_revision",
+    "select_source_revision",
 ]

@@ -27,6 +27,8 @@ class AcceptedSession:
     def __post_init__(self) -> None:
         if type(self.session_date) is not date:
             raise CalendarIdentityError("session_date must be a date")
+        if not isinstance(self.source, SourceIdentity):
+            raise CalendarIdentityError("source must be a canonical SourceIdentity")
         opened = require_aware_utc(self.open_at, "open_at")
         closed = require_aware_utc(self.close_at, "close_at")
         timezone_name = str(self.exchange_timezone).strip()
@@ -61,6 +63,8 @@ class AcceptedSessionCalendar:
         rows = tuple(sessions)
         if not rows:
             raise CalendarIdentityError("at least one accepted session is required")
+        if any(not isinstance(row, AcceptedSession) for row in rows):
+            raise CalendarIdentityError("calendar rows must be AcceptedSession values")
         dates = tuple(row.session_date for row in rows)
         if any(current >= following for current, following in zip(dates, dates[1:])):
             raise CalendarIdentityError(
