@@ -17,6 +17,7 @@ from .source_identity import (
     CorporateActionIdentity,
     SourceIdentity,
     SourceIdentityError,
+    select_corporate_action_revision,
 )
 from .writer import AppendResult, DataWriteError, append_rows
 
@@ -42,5 +43,6 @@ __all__ = [
     "database_info",
     "normalize_companyfacts_payload",
     "query",
+    "select_corporate_action_revision",
     "select_facts_as_of",
 ]

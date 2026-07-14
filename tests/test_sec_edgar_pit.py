@@ -18,6 +18,7 @@ from quant_system.data.source_identity import (
     CorporateActionIdentity,
     SourceIdentity,
     SourceIdentityError,
+    select_corporate_action_revision,
 )
 
 
@@ -84,6 +85,29 @@ def _filings() -> tuple[FilingIdentity, FilingIdentity]:
         ),
     )
     return original, amendment
+
+
+def _branched_amendment(original: FilingIdentity) -> FilingIdentity:
+    accession = "0000000001-24-000003"
+    accepted = datetime(2024, 5, 15, 20, 30, tzinfo=UTC)
+    return FilingIdentity(
+        cik=CIK,
+        accession=accession,
+        form="10-K/A",
+        filed=date(2024, 5, 15),
+        acceptance_utc=accepted,
+        retrieved_at=original.retrieved_at,
+        revision=2,
+        supersedes_accession=ORIGINAL,
+        source=_source(
+            f"https://www.sec.gov/Archives/edgar/data/1/{accession.replace('-', '')}/facts.json",
+            b"branched-amendment",
+            accepted,
+            original.retrieved_at,
+            accession,
+            ORIGINAL,
+        ),
+    )
 
 
 def _payload() -> bytes:
@@ -158,6 +182,7 @@ def test_companyfacts_normalization_preserves_filing_identity_and_is_immutable()
     assert amendment.form == "10-K/A"
     assert amendment.acceptance_utc == datetime(2024, 4, 15, 20, 30, tzinfo=UTC)
     assert amendment.content_sha256 == hashlib.sha256(b"amended-filing").hexdigest()
+    assert not hasattr(snapshot, "raw_bytes")
     with pytest.raises(FrozenInstanceError):
         amendment.value = Decimal("999")  # type: ignore[misc]
 
@@ -190,6 +215,9 @@ def test_pit_ratio_does_not_use_later_denominator_revision() -> None:
         (Decimal("0.5"), 1),
         (Decimal("0.1"), 2),
     ]
+    assert all(ratio.unit == "1" for ratio in ratios)
+    assert all(ratio.numerator_unit == "USD" for ratio in ratios)
+    assert all(ratio.denominator_unit == "USD" for ratio in ratios)
 
 
 def test_pit_ratio_fails_closed_on_units_missing_period_and_zero() -> None:
@@ -211,6 +239,44 @@ def test_pit_ratio_fails_closed_on_units_missing_period_and_zero() -> None:
         )
     with pytest.raises(SecEdgarDataError, match="zero"):
         build_pit_ratios((numerator,), (replace(denominator, value=Decimal("0")),))
+    instant_denominator = replace(denominator, start=None)
+    instant_ratio = build_pit_ratios((numerator,), (instant_denominator,))[0]
+    assert instant_ratio.value == Decimal("0.5")
+    assert instant_ratio.unit == "1"
+
+
+@pytest.mark.parametrize("branch_side", ["numerator", "denominator"])
+def test_pit_ratio_rejects_branched_input_graphs(branch_side: str) -> None:
+    facts = _snapshot().facts
+    original, _amendment = _filings()
+    branch = _branched_amendment(original)
+    numerators = tuple(fact for fact in facts if fact.concept == "Revenue")
+    denominators = tuple(fact for fact in facts if fact.concept == "Assets")
+    if branch_side == "numerator":
+        numerators = (
+            *numerators,
+            replace(numerators[0], filing=branch, value=Decimal("58")),
+        )
+    else:
+        denominators = (
+            *denominators,
+            replace(denominators[0], filing=branch, value=Decimal("580")),
+        )
+
+    with pytest.raises(SecEdgarDataError, match="globally branched"):
+        build_pit_ratios(numerators, denominators)
+
+
+def test_pit_ratio_rejects_branch_split_across_numerator_and_denominator() -> None:
+    facts = _snapshot().facts
+    original, _amendment = _filings()
+    branch = _branched_amendment(original)
+    revenues = tuple(fact for fact in facts if fact.concept == "Revenue")
+    original_asset = next(fact for fact in facts if fact.concept == "Assets" and fact.revision == 1)
+    branched_asset = replace(original_asset, filing=branch, value=Decimal("580"))
+
+    with pytest.raises(SecEdgarDataError, match="globally branched"):
+        build_pit_ratios(revenues, (original_asset, branched_asset))
 
 
 def test_companyfacts_rejects_hash_url_missing_identity_and_duplicate_json() -> None:
@@ -262,6 +328,90 @@ def test_companyfacts_rejects_hash_url_missing_identity_and_duplicate_json() -> 
         )
 
 
+@pytest.mark.parametrize("constant", ["NaN", "Infinity", "-Infinity"])
+def test_companyfacts_rejects_nonfinite_json_constants(constant: str) -> None:
+    raw = _payload().replace(b'"val":"50"', f'"val":{constant}'.encode(), 1)
+    retrieved = datetime(2024, 7, 1, 12, tzinfo=UTC)
+    source = _source(
+        f"https://data.sec.gov/api/xbrl/companyfacts/CIK{CIK}.json",
+        raw,
+        retrieved,
+        retrieved,
+        f"nonfinite-{constant}",
+    )
+    with pytest.raises(SecEdgarDataError, match="non-finite JSON constant"):
+        normalize_companyfacts_payload(
+            raw,
+            snapshot_source=source,
+            filing_identities=_filings(),
+        )
+
+
+def test_snapshot_available_at_cannot_precede_any_contained_filing() -> None:
+    raw = _payload()
+    source = _source(
+        f"https://data.sec.gov/api/xbrl/companyfacts/CIK{CIK}.json",
+        raw,
+        datetime(2024, 3, 1, tzinfo=UTC),
+        datetime(2024, 7, 1, 12, tzinfo=UTC),
+        "premature-snapshot",
+    )
+    with pytest.raises(SecEdgarDataError, match="contained filing acceptance"):
+        normalize_companyfacts_payload(
+            raw,
+            snapshot_source=source,
+            filing_identities=_filings(),
+        )
+    snapshot = _snapshot()
+    with pytest.raises(SecEdgarDataError, match="contained filing acceptance"):
+        replace(
+            snapshot,
+            source=replace(
+                snapshot.source,
+                available_at=datetime(2024, 3, 1, tzinfo=UTC),
+            ),
+        )
+
+
+def test_unreferenced_later_filing_does_not_change_snapshot_availability() -> None:
+    raw = _payload()
+    snapshot_time = datetime(2024, 7, 1, 12, tzinfo=UTC)
+    source = _source(
+        f"https://data.sec.gov/api/xbrl/companyfacts/CIK{CIK}.json",
+        raw,
+        snapshot_time,
+        snapshot_time,
+        "snapshot-with-extra-registry-identity",
+    )
+    accession = "0000000001-24-000004"
+    accepted = datetime(2024, 8, 1, 20, tzinfo=UTC)
+    retrieved = datetime(2024, 8, 2, tzinfo=UTC)
+    unreferenced = FilingIdentity(
+        cik=CIK,
+        accession=accession,
+        form="8-K",
+        filed=date(2024, 8, 1),
+        acceptance_utc=accepted,
+        retrieved_at=retrieved,
+        revision=1,
+        source=_source(
+            f"https://www.sec.gov/Archives/edgar/data/1/{accession.replace('-', '')}/filing.htm",
+            b"unreferenced-filing",
+            accepted,
+            retrieved,
+            accession,
+        ),
+    )
+
+    snapshot = normalize_companyfacts_payload(
+        raw,
+        snapshot_source=source,
+        filing_identities=(*_filings(), unreferenced),
+    )
+
+    assert len(snapshot.facts) == 6
+
+
 def test_filing_identity_rejects_naive_availability_bad_archive_and_broken_chain() -> None:
     original, amendment = _filings()
     with pytest.raises(SourceIdentityError, match="timezone-aware"):
@@ -296,24 +446,22 @@ def test_filing_identity_rejects_naive_availability_bad_archive_and_broken_chain
 
 
 def test_equal_acceptance_or_nonfinite_fact_is_rejected() -> None:
-    original, amendment = _filings()
+    original, _amendment = _filings()
     competing_accession = "0000000001-24-000003"
     competing = FilingIdentity(
         cik=CIK,
         accession=competing_accession,
-        form="10-K/A",
+        form="10-K",
         filed=original.filed,
         acceptance_utc=original.acceptance_utc,
         retrieved_at=original.retrieved_at,
-        revision=2,
-        supersedes_accession=ORIGINAL,
+        revision=1,
         source=_source(
             f"https://www.sec.gov/Archives/edgar/data/1/{competing_accession.replace('-', '')}/facts.json",
             b"competing",
             original.acceptance_utc,
             original.retrieved_at,
             competing_accession,
-            ORIGINAL,
         ),
     )
     revenue = next(
@@ -326,14 +474,65 @@ def test_equal_acceptance_or_nonfinite_fact_is_rejected() -> None:
         )
     with pytest.raises(SourceIdentityError, match="finite"):
         replace(revenue, value=Decimal("NaN"))
-    amended_revenue = next(
-        fact for fact in _snapshot().facts if fact.concept == "Revenue" and fact.filing == amendment
+
+
+def test_later_original_comparative_fact_is_selected_without_amendment_chain() -> None:
+    revenue = next(
+        fact for fact in _snapshot().facts if fact.concept == "Revenue" and fact.revision == 1
     )
-    with pytest.raises(SecEdgarDataError, match="incomplete revision chain"):
-        select_facts_as_of((amended_revenue,), as_of=amendment.acceptance_utc)
+    accession = "0000000001-25-000001"
+    accepted = datetime(2025, 2, 14, 22, tzinfo=UTC)
+    retrieved = datetime(2025, 2, 15, tzinfo=UTC)
+    later_original = FilingIdentity(
+        cik=CIK,
+        accession=accession,
+        form="10-K",
+        filed=date(2025, 2, 14),
+        acceptance_utc=accepted,
+        retrieved_at=retrieved,
+        revision=1,
+        source=_source(
+            f"https://www.sec.gov/Archives/edgar/data/1/{accession.replace('-', '')}/facts.json",
+            b"later-comparative-filing",
+            accepted,
+            retrieved,
+            accession,
+        ),
+    )
+    comparative = replace(revenue, filing=later_original, value=Decimal("52"))
+
+    selected = select_facts_as_of((revenue, comparative), as_of=accepted)
+
+    assert selected == (comparative,)
 
 
-def test_split_adjustment_uses_only_known_events_and_rejects_conflicts() -> None:
+def test_globally_branched_filing_chain_is_rejected() -> None:
+    original, amendment = _filings()
+    branch = _branched_amendment(original)
+    raw = _payload()
+    snapshot_source = _source(
+        f"https://data.sec.gov/api/xbrl/companyfacts/CIK{CIK}.json",
+        raw,
+        original.retrieved_at,
+        original.retrieved_at,
+        "branched-snapshot",
+    )
+    with pytest.raises(SecEdgarDataError, match="globally branched"):
+        normalize_companyfacts_payload(
+            raw,
+            snapshot_source=snapshot_source,
+            filing_identities=(original, amendment, branch),
+        )
+
+    revenues = tuple(fact for fact in _snapshot().facts if fact.concept == "Revenue")
+    with pytest.raises(SecEdgarDataError, match="globally branched"):
+        select_facts_as_of(
+            (*revenues, replace(revenues[0], filing=branch, value=Decimal("58"))),
+            as_of=branch.acceptance_utc,
+        )
+
+
+def test_split_adjustment_uses_latest_known_source_revision() -> None:
     shares = next(
         fact for fact in _snapshot().facts if fact.concept == "Shares" and fact.revision == 1
     )
@@ -352,6 +551,7 @@ def test_split_adjustment_uses_only_known_events_and_rejects_conflicts() -> None
             retrieved,
             "split-v1",
         ),
+        ex_date=date(2024, 6, 1),
         split_ratio=Decimal("2"),
     )
 
@@ -378,17 +578,60 @@ def test_split_adjustment_uses_only_known_events_and_rejects_conflicts() -> None
         split_events=(late_identity,),
     ) == Decimal("10")
 
-    conflict = replace(
+    revised = replace(
         event,
-        action_id="split-conflict",
         split_ratio=Decimal("3"),
-        source=replace(event.source, revision_id="split-v2"),
+        source=_source(
+            event.source.source_url,
+            b"split-revised",
+            datetime(2024, 6, 2, 12, tzinfo=UTC),
+            retrieved,
+            "split-v2",
+            "split-v1",
+        ),
     )
-    with pytest.raises(SecEdgarDataError, match="conflicting split ratios"):
+    assert (
+        select_corporate_action_revision(
+            (event, revised),
+            as_of=datetime(2024, 6, 2, 11, 59, tzinfo=UTC),
+        )
+        == event
+    )
+    assert (
+        select_corporate_action_revision(
+            (event, revised),
+            as_of=datetime(2024, 6, 2, 12, tzinfo=UTC),
+        )
+        == revised
+    )
+    assert adjust_share_fact_for_splits(
+        shares,
+        as_of=datetime(2024, 6, 2, 11, 59, tzinfo=UTC),
+        split_events=(event, revised),
+    ) == Decimal("20")
+    assert adjust_share_fact_for_splits(
+        shares,
+        as_of=datetime(2024, 6, 2, 12, tzinfo=UTC),
+        split_events=(event, revised),
+    ) == Decimal("30")
+
+    branch = replace(
+        revised,
+        split_ratio=Decimal("4"),
+        source=_source(
+            event.source.source_url,
+            b"split-branch",
+            datetime(2024, 6, 2, 13, tzinfo=UTC),
+            retrieved,
+            "split-v2-branch",
+            "split-v1",
+        ),
+    )
+    with pytest.raises(SecEdgarDataError, match="source revision chain"):
         adjust_share_fact_for_splits(
             shares,
-            as_of=datetime(2024, 6, 2, tzinfo=UTC),
-            split_events=(event, conflict),
+            as_of=datetime(2024, 6, 3, tzinfo=UTC),
+            split_events=(event, revised, branch),
         )
 
 
@@ -401,17 +644,18 @@ def test_corporate_action_identity_rejects_ambiguous_value_shapes() -> None:
         available,
         "action-v1",
     )
-    with pytest.raises(SourceIdentityError, match="require only"):
+    with pytest.raises(SourceIdentityError, match="split actions"):
         CorporateActionIdentity(
             subject_id=CIK,
             action_id="split",
             action_type="split",
             effective_at=available,
             source=source,
+            ex_date=date(2024, 5, 1),
             split_ratio=Decimal("2"),
             cash_amount=Decimal("1"),
         )
-    with pytest.raises(SourceIdentityError, match="cash_amount and unit"):
+    with pytest.raises(SourceIdentityError, match="cash_amount, currency, and unit"):
         CorporateActionIdentity(
             subject_id=CIK,
             action_id="dividend",
@@ -420,3 +664,56 @@ def test_corporate_action_identity_rejects_ambiguous_value_shapes() -> None:
             source=source,
             cash_amount=Decimal("1"),
         )
+    with pytest.raises(SourceIdentityError, match="unsupported corporate action"):
+        CorporateActionIdentity(
+            subject_id=CIK,
+            action_id="merger",
+            action_type="merger",  # type: ignore[arg-type]
+            effective_at=available,
+            source=source,
+        )
+
+
+def test_corporate_action_fields_are_action_specific() -> None:
+    available = datetime(2024, 5, 1, tzinfo=UTC)
+    source = _source(
+        "https://www.sec.gov/Archives/edgar/data/1/000000000124000001/action.htm",
+        b"cash-action",
+        available,
+        available,
+        "cash-v1",
+    )
+    cash = CorporateActionIdentity(
+        subject_id=CIK,
+        action_id="cash-20240501",
+        action_type="cash_dividend",
+        effective_at=available,
+        source=source,
+        ex_date=date(2024, 5, 1),
+        record_date=date(2024, 5, 2),
+        pay_date=date(2024, 5, 10),
+        cash_amount=Decimal("1.25"),
+        currency="USD",
+        unit="USD/share",
+    )
+    symbol_change = CorporateActionIdentity(
+        subject_id=CIK,
+        action_id="symbol-20240501",
+        action_type="symbol_change",
+        effective_at=available,
+        source=replace(
+            source,
+            content_sha256=hashlib.sha256(b"symbol-change").hexdigest(),
+            revision_id="symbol-v1",
+        ),
+        new_subject_id="NEW-SUBJECT",
+    )
+
+    assert (cash.ex_date, cash.record_date, cash.pay_date) == (
+        date(2024, 5, 1),
+        date(2024, 5, 2),
+        date(2024, 5, 10),
+    )
+    assert cash.currency == "USD"
+    assert cash.unit == "USD/share"
+    assert symbol_change.new_subject_id == "NEW-SUBJECT"

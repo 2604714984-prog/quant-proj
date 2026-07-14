@@ -9,7 +9,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Iterable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import date, datetime
 from decimal import Decimal
 import hashlib
@@ -24,6 +24,7 @@ from .source_identity import (
     SourceIdentity,
     require_aware_utc,
     require_decimal,
+    select_corporate_action_revision,
 )
 
 
@@ -62,6 +63,10 @@ def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
             raise SecEdgarDataError(f"duplicate JSON key: {key}")
         result[key] = value
     return result
+
+
+def _reject_nonfinite_constant(value: str) -> None:
+    raise SecEdgarDataError(f"non-finite JSON constant is not allowed: {value}")
 
 
 def _require_archive_url(url: str, cik: str, accession: str) -> None:
@@ -239,8 +244,23 @@ class CompanyFactsSnapshot:
     cik: str
     entity_name: str
     source: SourceIdentity
-    raw_bytes: bytes
     facts: tuple[SecFact, ...]
+
+    def __post_init__(self) -> None:
+        cik = _normalize_cik(self.cik)
+        entity_name = str(self.entity_name).strip()
+        facts = tuple(self.facts)
+        if not entity_name or not facts:
+            raise SecEdgarDataError("snapshot entity_name and facts are required")
+        if any(fact.cik != cik or fact.entity_name != entity_name for fact in facts):
+            raise SecEdgarDataError("snapshot facts must match its CIK and entity_name")
+        if self.source.available_at < max(fact.acceptance_utc for fact in facts):
+            raise SecEdgarDataError(
+                "snapshot available_at cannot precede a contained filing acceptance"
+            )
+        object.__setattr__(self, "cik", cik)
+        object.__setattr__(self, "entity_name", entity_name)
+        object.__setattr__(self, "facts", facts)
 
 
 @dataclass(frozen=True)
@@ -253,13 +273,16 @@ class PointInTimeRatio:
     denominator_accession: str
     numerator_revision: int
     denominator_revision: int
-    unit: str
+    numerator_unit: str
+    denominator_unit: str
+    unit: str = field(default="1", init=False)
 
 
 def _validate_filing_chain(
     filings: Sequence[FilingIdentity], cik: str
 ) -> dict[str, FilingIdentity]:
     by_accession: dict[str, FilingIdentity] = {}
+    successors: dict[str, list[FilingIdentity]] = defaultdict(list)
     for filing in filings:
         if filing.cik != cik:
             raise SecEdgarDataError("all filing identities must match the payload CIK")
@@ -278,7 +301,39 @@ def _validate_filing_chain(
             or prior.acceptance_utc >= filing.acceptance_utc
         ):
             raise SecEdgarDataError("revision chain is not monotonic and unambiguous")
+        assert filing.supersedes_accession is not None
+        successors[filing.supersedes_accession].append(filing)
+    if any(len(children) > 1 for children in successors.values()):
+        raise SecEdgarDataError("revision chain is globally branched")
     return by_accession
+
+
+def _validate_observed_filing_relationships(facts: Iterable[SecFact]) -> None:
+    """Reject branching in a fact subset without requiring omitted parent facts."""
+
+    filings: dict[tuple[str, str], FilingIdentity] = {}
+    successors: dict[tuple[str, str], set[str]] = defaultdict(set)
+    for fact in facts:
+        key = (fact.cik, fact.accession)
+        existing = filings.setdefault(key, fact.filing)
+        if existing != fact.filing:
+            raise SecEdgarDataError("one filing accession has conflicting identities")
+        parent = fact.filing.supersedes_accession
+        if parent is not None:
+            successors[(fact.cik, parent)].add(fact.accession)
+    if any(len(children) > 1 for children in successors.values()):
+        raise SecEdgarDataError("revision chain is globally branched")
+    for (cik, _accession), filing in filings.items():
+        parent_accession = filing.supersedes_accession
+        if parent_accession is None:
+            continue
+        parent = filings.get((cik, parent_accession))
+        if parent is not None and (
+            parent.revision != filing.revision - 1
+            or parent.base_form != filing.base_form
+            or parent.acceptance_utc >= filing.acceptance_utc
+        ):
+            raise SecEdgarDataError("revision chain is not monotonic and unambiguous")
 
 
 def normalize_companyfacts_payload(
@@ -295,7 +350,11 @@ def normalize_companyfacts_payload(
     if hashlib.sha256(raw_bytes).hexdigest() != snapshot_source.content_sha256:
         raise SecEdgarDataError("Company Facts content SHA-256 mismatch")
     try:
-        payload = json.loads(raw_bytes, object_pairs_hook=_strict_object)
+        payload = json.loads(
+            raw_bytes,
+            object_pairs_hook=_strict_object,
+            parse_constant=_reject_nonfinite_constant,
+        )
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise SecEdgarDataError("Company Facts payload is not valid strict JSON") from exc
     if not isinstance(payload, Mapping):
@@ -405,7 +464,6 @@ def normalize_companyfacts_payload(
         cik=cik,
         entity_name=entity_name,
         source=snapshot_source,
-        raw_bytes=raw_bytes,
         facts=tuple(facts),
     )
 
@@ -418,28 +476,18 @@ def select_facts_as_of(
     """Return the latest unambiguous accepted revision for each economic period."""
 
     cutoff = require_aware_utc(as_of, "as_of")
+    frozen = tuple(facts)
+    _validate_observed_filing_relationships(frozen)
     grouped: dict[tuple[object, ...], list[SecFact]] = defaultdict(list)
-    for fact in facts:
+    for fact in frozen:
         if fact.acceptance_utc <= cutoff:
             grouped[fact.period_identity].append(fact)
     selected: list[SecFact] = []
     for period, revisions in grouped.items():
-        ordered = sorted(revisions, key=lambda item: (item.acceptance_utc, item.revision))
-        if ordered[0].revision != 1:
-            raise SecEdgarDataError(f"incomplete revision chain for period {period}")
-        seen_revision: dict[int, str] = {}
+        ordered = sorted(revisions, key=lambda item: (item.acceptance_utc, item.accession))
         for earlier, later in zip(ordered, ordered[1:]):
             if earlier.acceptance_utc == later.acceptance_utc:
                 raise SecEdgarDataError(f"ambiguous equal-time revisions for period {period}")
-            if (
-                later.revision != earlier.revision + 1
-                or later.filing.supersedes_accession != earlier.accession
-            ):
-                raise SecEdgarDataError(f"non-monotonic revisions for period {period}")
-        for fact in ordered:
-            prior_accession = seen_revision.setdefault(fact.revision, fact.accession)
-            if prior_accession != fact.accession:
-                raise SecEdgarDataError(f"duplicate revision number for period {period}")
         selected.append(ordered[-1])
     return tuple(
         sorted(
@@ -457,6 +505,7 @@ def build_pit_ratios(
 
     numerators = tuple(numerator_facts)
     denominators = tuple(denominator_facts)
+    _validate_observed_filing_relationships((*numerators, *denominators))
     if len({fact.concept for fact in numerators}) != 1:
         raise SecEdgarDataError("numerator facts must contain exactly one concept")
     if len({fact.concept for fact in denominators}) != 1:
@@ -467,7 +516,10 @@ def build_pit_ratios(
             fact
             for fact in denominators
             if fact.cik == numerator.cik
-            and fact.start == numerator.start
+            and (
+                fact.start is None
+                or (numerator.start is not None and fact.start == numerator.start)
+            )
             and fact.end == numerator.end
             and fact.filing.base_form == numerator.filing.base_form
         )
@@ -495,7 +547,8 @@ def build_pit_ratios(
                 denominator_accession=denominator.accession,
                 numerator_revision=numerator.revision,
                 denominator_revision=denominator.revision,
-                unit=numerator.unit,
+                numerator_unit=numerator.unit,
+                denominator_unit=denominator.unit,
             )
         )
     return tuple(results)
@@ -516,28 +569,33 @@ def adjust_share_fact_for_splits(
         raise SecEdgarDataError("share fact cannot be negative")
     if fact.acceptance_utc > cutoff:
         raise SecEdgarDataError("share fact was not accepted at as_of")
-    by_action_id: dict[str, CorporateActionIdentity] = {}
+    by_action_id: dict[str, list[CorporateActionIdentity]] = defaultdict(list)
     for event in split_events:
         if event.action_type not in {"split", "reverse_split"}:
             raise SecEdgarDataError("split_events may contain only split actions")
         if event.subject_id != fact.cik:
             raise SecEdgarDataError("split subject_id must match fact CIK")
-        prior = by_action_id.setdefault(event.action_id, event)
-        if prior != event:
-            raise SecEdgarDataError("one action_id has conflicting split identities")
-    effective_ratios: dict[datetime, Decimal] = {}
-    for event in by_action_id.values():
-        if event.source.available_at > cutoff or event.effective_at > cutoff:
+        by_action_id[event.action_id].append(event)
+    selected_events: list[CorporateActionIdentity] = []
+    for revisions in by_action_id.values():
+        if not any(event.source.available_at <= cutoff for event in revisions):
+            continue
+        try:
+            event = select_corporate_action_revision(revisions, as_of=cutoff)
+        except ValueError as exc:
+            raise SecEdgarDataError("invalid split source revision chain") from exc
+        if event.effective_at > cutoff:
             continue
         if event.effective_at.date() <= fact.end:
             continue
-        assert event.split_ratio is not None
-        prior_ratio = effective_ratios.setdefault(event.effective_at, event.split_ratio)
-        if prior_ratio != event.split_ratio:
-            raise SecEdgarDataError("conflicting split ratios at one effective time")
+        selected_events.append(event)
     adjusted = fact.value
-    for ratio in effective_ratios.values():
-        adjusted *= ratio
+    for event in sorted(
+        selected_events,
+        key=lambda item: (item.effective_at, item.action_id),
+    ):
+        assert event.split_ratio is not None
+        adjusted *= event.split_ratio
     if not adjusted.is_finite():
         raise SecEdgarDataError("split-adjusted value must be finite")
     return adjusted
