@@ -1,0 +1,14 @@
+case_id,phase,status,required_evidence,current_evidence,owner,production_db_mutated_by_migration,blocking_reason
+T0_IDENTITY,0,PASS,"DB path,size,SHA,relations,backup,lock and audited refs","DB SHA 936e1ee5230207b1ca59e1fd6245ad5a3c1dd957ae030441e8420c83e57a3869; 2411212800 bytes; 54 relations; backup d356add782758746ea05666af38dd0f64918ae675ec3a7cd5e645588e44309d4",manager,false,
+MINIMAL_CONFIG_AND_CLI,1,IN_PROGRESS,"one versioned config and one CLI without crypto/HG or private test/remediation imports","database executor dispatched",database_executor,false,
+SET_BASED_NEW_ROWS,2,PENDING,"row/key/value parity for new rows and fixed-statement bulk insert",,database_executor,false,"implementation incomplete"
+EXACT_REPLAY,2,PENDING,"second execution inserts zero and reports exact no-ops",,database_executor,false,"implementation incomplete"
+CONFLICTING_KEY,2,PENDING,"differing value is quarantined without target overwrite",,database_executor,false,"implementation incomplete"
+PARTIAL_RESPONSE,2,PENDING,"partial input fails or is explicitly bounded without silent completeness claim",,database_executor,false,"implementation incomplete"
+ROLLBACK_INJECTION,2,PENDING,"injected pre-commit failure leaves target and run state consistent",,database_executor,false,"implementation incomplete"
+INVALID_SCHEMA,2,PENDING,"schema or key drift refused before mutation",,database_executor,false,"implementation incomplete"
+HELD_LOCK,2,PENDING,"second writer fails closed without target mutation",,database_executor,false,"implementation incomplete"
+BACKUP_RESTORE,2,PENDING,"temporary backup restores and reopens with exact expected rows",,database_executor,false,"implementation incomplete"
+PRODUCTION_SHAPED_SHADOW,2,PENDING,"bounded same-source/same-schema local batch has exact row/key/value parity",,database_executor,false,"implementation incomplete"
+POSTCHECK_REOPEN,2,PENDING,"row/date/null/duplicate checks pass after read-only reopen",,database_executor,false,"implementation incomplete"
+CUTOVER,3,WAITING_FOR_USER_APPROVAL,"Phase 1/2 pass; external writer audit; rollback; explicit owner approval",,manager,false,"production cutover not authorized"
