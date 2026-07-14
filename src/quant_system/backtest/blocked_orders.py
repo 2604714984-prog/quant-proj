@@ -76,6 +76,10 @@ class BlockedExitOrder:
             raise MarketDataError("calendar must be an AcceptedSessionCalendar")
         if self.requested_session not in self.calendar.session_dates:
             raise MarketDataError("requested_session must be present in the accepted calendar")
+        if type(self.attempts) is not tuple:
+            raise MarketDataError("attempts must be an immutable tuple")
+        if any(not isinstance(attempt, ExitAttempt) for attempt in self.attempts):
+            raise MarketDataError("attempts must contain only ExitAttempt values")
 
         previous: AcceptedSession | None = None
         for attempt in self.attempts:
@@ -180,7 +184,7 @@ def execute_ready_blocked_exit(
     decision_at: datetime,
     decision: FillDecision,
 ) -> tuple[BlockedExitOrder, Trade]:
-    """Sell through ``Portfolio`` and only then return a completed exit order."""
+    """Validate completion, sell through ``Portfolio``, then return both results."""
 
     if not isinstance(portfolio, Portfolio):
         raise TypeError("portfolio must be a Portfolio")
@@ -203,6 +207,13 @@ def execute_ready_blocked_exit(
             after = row.session_date
         settlement_sessions = tuple(accepted)
         settlement_date = settlement_sessions[-1]
+    completed = replace(
+        order,
+        attempts=order.attempts + (attempt,),
+        executed_session=attempt.session.session_date,
+        execution_price=float(decision.price),
+        delay_sessions=len(order.attempts),
+    )
     trade = portfolio.sell(
         order.symbol,
         order.shares,
@@ -210,12 +221,5 @@ def execute_ready_blocked_exit(
         attempt.session.session_date,
         settlement_date=settlement_date,
         accepted_settlement_sessions=settlement_sessions,
-    )
-    completed = replace(
-        order,
-        attempts=order.attempts + (attempt,),
-        executed_session=attempt.session.session_date,
-        execution_price=float(decision.price),
-        delay_sessions=len(order.attempts),
     )
     return completed, trade

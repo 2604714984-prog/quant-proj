@@ -1,3 +1,4 @@
+from copy import deepcopy
 from datetime import date, datetime, time, timedelta, timezone
 from zoneinfo import ZoneInfo
 
@@ -5,6 +6,7 @@ import pytest
 
 from quant_system.backtest.blocked_orders import (
     BlockedExitOrder,
+    ExitAttempt,
     advance_blocked_exit,
     execute_ready_blocked_exit,
 )
@@ -326,8 +328,79 @@ def _blocked_order() -> BlockedExitOrder:
     return BlockedExitOrder("000001.SZ", 100, date(2026, 7, 13), _calendar())
 
 
+def _order_snapshot(order: BlockedExitOrder) -> object:
+    return deepcopy(
+        (
+            order.symbol,
+            order.shares,
+            order.requested_session,
+            order.calendar.session_dates,
+            order.attempts,
+            order.executed_session,
+            order.execution_price,
+            order.delay_sessions,
+        )
+    )
+
+
+def _portfolio_snapshot(portfolio: Portfolio) -> object:
+    return deepcopy(
+        (
+            portfolio.settled_cash,
+            portfolio.costs,
+            portfolio.lot_size,
+            portfolio.share_t_plus_one,
+            portfolio.us_cash_settlement,
+            portfolio.a_share_stamp_tax_schedule,
+            portfolio.positions,
+            portfolio.pending_cash,
+            portfolio.current_session,
+        )
+    )
+
+
 def _decision_time(order: BlockedExitOrder, session: date) -> datetime:
     return order.calendar.session_on(session, as_of=datetime(2026, 7, 15, tzinfo=UTC)).open_at
+
+
+def test_blocked_exit_attempts_require_an_immutable_typed_tuple() -> None:
+    with pytest.raises(MarketDataError, match="immutable tuple"):
+        BlockedExitOrder(
+            "000001.SZ",
+            100,
+            date(2026, 7, 13),
+            _calendar(),
+            attempts=[],  # type: ignore[arg-type]
+        )
+
+    with pytest.raises(MarketDataError, match="only ExitAttempt"):
+        BlockedExitOrder(
+            "000001.SZ",
+            100,
+            date(2026, 7, 13),
+            _calendar(),
+            attempts=(object(),),  # type: ignore[arg-type]
+        )
+
+    calendar = _calendar()
+    session = calendar.session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 13, tzinfo=UTC),
+    )
+    valid = ExitAttempt(
+        session,
+        session.open_at,
+        False,
+        None,
+        "suspended",
+    )
+    assert BlockedExitOrder(
+        "000001.SZ",
+        100,
+        date(2026, 7, 13),
+        calendar,
+        attempts=(valid,),
+    ).attempts == (valid,)
 
 
 def test_blocked_exit_records_consecutive_sessions_and_sells_before_completion() -> None:
@@ -411,8 +484,8 @@ def test_failed_portfolio_sale_leaves_order_and_portfolio_unchanged() -> None:
     order = _blocked_order()
     portfolio = Portfolio.a_share(10_000)
     portfolio.start_session(date(2026, 7, 13))
-    cash_before = portfolio.available_cash
-    positions_before = dict(portfolio.positions)
+    order_before = _order_snapshot(order)
+    portfolio_before = _portfolio_snapshot(portfolio)
 
     with pytest.raises(ValueError, match="sell quantity"):
         execute_ready_blocked_exit(
@@ -423,10 +496,30 @@ def test_failed_portfolio_sale_leaves_order_and_portfolio_unchanged() -> None:
             decision=FillDecision(True, 10, "filled"),
         )
 
-    assert order.pending is True
-    assert order.attempts == ()
-    assert portfolio.available_cash == cash_before
-    assert portfolio.positions == positions_before
+    assert _order_snapshot(order) == order_before
+    assert _portfolio_snapshot(portfolio) == portfolio_before
+
+
+def test_ready_exit_precondition_failure_leaves_deep_state_unchanged() -> None:
+    order = _blocked_order()
+    portfolio = Portfolio.a_share(10_000)
+    portfolio.start_session(date(2026, 7, 10))
+    portfolio.buy("000001.SZ", 100, 10, date(2026, 7, 10))
+    portfolio.start_session(date(2026, 7, 13))
+    order_before = _order_snapshot(order)
+    portfolio_before = _portfolio_snapshot(portfolio)
+
+    with pytest.raises(MarketDataError, match="requires a filled decision"):
+        execute_ready_blocked_exit(
+            order,
+            portfolio=portfolio,
+            session=date(2026, 7, 13),
+            decision_at=_decision_time(order, date(2026, 7, 13)),
+            decision=FillDecision(False, None, "suspended"),
+        )
+
+    assert _order_snapshot(order) == order_before
+    assert _portfolio_snapshot(portfolio) == portfolio_before
 
 
 def test_us_ready_exit_derives_settlement_from_the_same_accepted_calendar() -> None:
