@@ -1,0 +1,42 @@
+{
+  "schema_version": 1,
+  "migration_policy": "selective_reimplementation_no_history_import",
+  "sources": [
+    {
+      "repository": "central-data-ingestion",
+      "commit": "04a3258acb2ca6f924ea2e0bd222bf957ac7555e",
+      "tree": "f3fc18ee49dc6fd1e9a8afddb303eb3b359da4a5",
+      "use": "minimal central DuckDB read and append semantics"
+    },
+    {
+      "repository": "A_Share_Monitor",
+      "commit": "b6a4ddc48899a95c5b0c9e8cce03bb5e24b493eb",
+      "tree": "98d628e57d27dbc0e6823536ef93c371e8d6f36a",
+      "use": "A-share T+1, suspension, price-limit, and point-in-time fail-closed semantics"
+    },
+    {
+      "repository": "US_Stock_Monitor",
+      "commit": "22d79956be4755e7bdea3235f91c16284d48a242",
+      "tree": "8f964fde80a5ef9245b0691c872c6d9c7706c77d",
+      "use": "US halt, delisting, corporate-action, and delayed-availability semantics"
+    },
+    {
+      "repository": "quant_research_lab",
+      "commit": "d3359a87c0873a76c5b374c281ed844ac5f29c98",
+      "tree": "894d9b252177a3f4d67d9ceff1c52c87b99cb413",
+      "use": "deterministic research statistics and synthetic test patterns"
+    },
+    {
+      "repository": "market_data",
+      "commit": "47a6c6675fe0be173a5552461921d89ec6d60b09",
+      "tree": "5d6d0599869cf67c3ea3635ebc4de2c9606efb53",
+      "use": "source-boundary and read-only parity reference only"
+    },
+    {
+      "repository": "quant-proj",
+      "commit": "b2cda719e0c73a5192d5a9598857acd149a837ea",
+      "tree": "3b74a8400a65d1203bf55e06bd5ca882103b841d",
+      "use": "legacy governance provenance only; controller architecture is not migrated"
+    }
+  ]
+}

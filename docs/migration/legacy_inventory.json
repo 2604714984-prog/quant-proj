@@ -1,0 +1,1564 @@
+{
+  "created_at_utc": "2026-07-14T17:39:34.763973+00:00",
+  "database_candidates": [
+    {
+      "mode": "0600",
+      "path": "/home/rongyu/workspace/quant_data/quant_research.duckdb",
+      "sha256": "936e1ee5230207b1ca59e1fd6245ad5a3c1dd957ae030441e8420c83e57a3869",
+      "size_bytes": 2411212800
+    }
+  ],
+  "repositories": [
+    {
+      "branch": "agent/a-share-canonical-evidence-publisher-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "3903977d2480a5ad9be67c4c267cd2a5c5a4bdb8",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-canonical-evidence-publisher-20260712",
+      "tree": "40de1564d87c71e3b7695b631fef13d668637ac2"
+    },
+    {
+      "branch": "main",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "ab12cf99331a39a1396c7c7f885072a9f0f68c08",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-central-db-consumer-20260711",
+      "tree": "a3eb75c58d8e93afddcb4c5c2ade2ff85bccd087"
+    },
+    {
+      "branch": "codex/fix-research-validation-baostock-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "3923932a05e92fcee23dcbfa92e5d15eb0cbc026",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-ci-baostock-20260711",
+      "tree": "e9529e0b17304fd19f0d85daa96e85e2afddaef3"
+    },
+    {
+      "branch": "agent/external-audit-evidence-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "e81f50c19c8e6e71ae6585eeb6dbbb10db86fd95",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-external-audit-20260712",
+      "tree": "704715893ca4e8e08a1d6b1e59964327966fddeb"
+    },
+    {
+      "branch": "main",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/.wt-a-share-external-data-room-publish-20260712/.git",
+      "head": "a7502f648f790b392cec2a394921511d17c76878",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/a-share-canonical-evidence-data-room.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-external-data-room-publish-20260712",
+      "tree": "0a19f50cb0afb32efba194190b05bfc5d4d6c2de"
+    },
+    {
+      "branch": "codex/a-share-industry-mapping-blocker-adjudication-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-industry-mapping-blocker-adjudication-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/a-share-minute-data-schema-design-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-minute-data-schema-design-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/a-share-minute-event-identification-discovery-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-minute-event-identification-discovery-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/a-share-pead-discovery-20260713",
+      "dirty_entry_count": 6,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-pead-discovery-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/a-share-pead-lineage-delta-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-pead-lineage-delta-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/a-share-portability-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "90204b3a598dce3498ed1161e087cfdcc7673473",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-portability-20260711",
+      "tree": "b3b3b99c21dc888aac41e00860cdaaf96e737f34"
+    },
+    {
+      "branch": "codex/fix-security-audit-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "8489ca0523b909a379a2187b90033ce170ab7060",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-security-audit-20260711",
+      "tree": "ad766977c20e9b2ba2fa83134965e71bd31f5e08"
+    },
+    {
+      "branch": "codex/a-share-vcv-monthly-code-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "fe8934b807beddba638e743047604a54e60a0651",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-vcv-monthly-code-20260713",
+      "tree": "6de3bf2865c58074f5050d4c33882a3ae7b330e1"
+    },
+    {
+      "branch": "codex/a-share-volume-variability-discovery-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "fc92606934d1530be5fcb4d237646d879b4f0aa4",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-a-share-volume-variability-discovery-20260713",
+      "tree": "19785786776bcfef55811fbe789136788e948f1b"
+    },
+    {
+      "branch": "codex/baostock-fundamental-smoke-code-20260710",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "b995d04faf700bbce2f61e46f032b1e7bf13063a",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-baostock-fundamental-smoke-20260710",
+      "tree": "40738d6fed812a02a706aabb58ad098c8fdfb441"
+    },
+    {
+      "branch": "codex/central-db-a0-design-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "59c737a83b8c3dcda5af77e2f47e32b2d8a1c8ed",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-a0-design-20260714",
+      "tree": "0fcba22ea587d2c7a351fc6a70f2fa9e4d9711ef"
+    },
+    {
+      "branch": "codex/central-db-a0-foundation-tools-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "03d73396e989553a15ee26fbe8d47eea649c4511",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-a0-foundation-tools-20260714",
+      "tree": "1b042eeb6d0f901c4fef16e60cd41072b7b41d23"
+    },
+    {
+      "branch": "codex/central-db-a1-daily-basic-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "2a34e6be3a76154aa91f6487a421ffde7ee3a998",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-a1-daily-basic-20260714",
+      "tree": "1d93fff37237deccc359e7e3e920fe83558a6ab4"
+    },
+    {
+      "branch": "codex/central-db-a2-adjustment-ca-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "3799276107fa52c1a948892bea66933b366256a7",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-a2-adjustment-ca-20260714",
+      "tree": "5c743f761d7f5c1a8d39ece7849cc188047b098a"
+    },
+    {
+      "branch": "codex/central-db-a3-tradability-status-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "c0851a325bdda05b37950c4487eccf8cc66a4e8f",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-a3-tradability-status-20260714",
+      "tree": "7c304afd62c8525047615186d9e3e2f94343d50f"
+    },
+    {
+      "branch": "codex/central-db-a4-pit-industry-membership-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "8ded9832017b2dc97b5063327109fd3cc7f17a93",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-a4-pit-industry-membership-20260714",
+      "tree": "a146ef00a78e9f7248bb3d33bbb853c2c823e31f"
+    },
+    {
+      "branch": "codex/central-db-a5-pit-fundamentals-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "3ffcec5798baaddc86d2c8d0e3ed63961c68f02c",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-a5-pit-fundamentals-20260714",
+      "tree": "c9148189d4f8c81805d3ac3e489523dbd35cc424"
+    },
+    {
+      "branch": "codex/central-db-a6-events-fund-flows-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "fc6f26f3a265e2645d8b70f41ba56f224ecac3e3",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-a6-events-fund-flows-20260714",
+      "tree": "2eb433a815d2a7e03f8bf8f00397f56bac6fce1e"
+    },
+    {
+      "branch": "codex/central-db-foundation-callback-db2-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "b9b5d7e9aeeae98696debe94ac31464f56a9d155",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-foundation-callback-db2-20260714",
+      "tree": "78b576def0ec1a1cd967f172794c49c2ad335f02"
+    },
+    {
+      "branch": "agent/central-db-lean-architecture-audit-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "f2d401e42aa8f7cd17a14d94c039f45ba6546d9d",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-lean-architecture-audit-20260714",
+      "tree": "6f9692d9efafe2ee0f3521d774635e45121aefde"
+    },
+    {
+      "branch": "codex/central-db-minimal-writer-mainline-integration-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "04a3258acb2ca6f924ea2e0bd222bf957ac7555e",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-minimal-writer-mainline-integration-20260714",
+      "tree": "f3fc18ee49dc6fd1e9a8afddb303eb3b359da4a5"
+    },
+    {
+      "branch": "codex/central-db-minimal-writer-shadow-migration-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "fdb4da2f8a07e71873bc7295388a2d432d01e849",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-minimal-writer-shadow-migration-20260714",
+      "tree": "872b81d504999d15cece9dbd597cc2c66c9b07db"
+    },
+    {
+      "branch": "codex/central-db-ownership-parity-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "94326205df275ebc7490a1084d0849a9000bbdee",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-ownership-parity-20260714",
+      "tree": "ba58dce1e99e675e30525714a6b8169bf6310d7e"
+    },
+    {
+      "branch": "codex/central-db-remediation-r0-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "26422337056a98c3b7530db5b9bfbdc8cfb1ed0c",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-remediation-r0-20260714",
+      "tree": "d7f575413250560988de348426d44ae3e7658636"
+    },
+    {
+      "branch": "codex/central-db-routine-append-fast-lane-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "94de4f77ed2a345236433b3b989fa6103bd38074",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-routine-append-fast-lane-20260714",
+      "tree": "9ad5d3a8633fc2518e7fea000bd1f408a300b128"
+    },
+    {
+      "branch": "codex/central-db-source-registry-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "a8af606cad1c93cb69a86f1ee179fac082d8eede",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-source-registry-20260714",
+      "tree": "b6b051f9164d4b94b48c8b2c6e9e64516cb14b5b"
+    },
+    {
+      "branch": "codex/central-db-third-party-tushare-requalification-20260714",
+      "dirty_entry_count": 1,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "d17c3b474a5a97867e9b502f57b4cd572c2ed77f",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-third-party-tushare-requalification-20260714",
+      "tree": "0a6b921b28ca57ce7ae26d01bf214922903a5825"
+    },
+    {
+      "branch": "codex/central-db-tushare-a0-a1-ingestion-20260714",
+      "dirty_entry_count": 3,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "fead02f07d393a2b5dffd23ede2d8dab239dbfac",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-tushare-a0-a1-ingestion-20260714",
+      "tree": "16233f9409b0670729a631d18780fbf50609016b"
+    },
+    {
+      "branch": "codex/central-db-tushare-replay-fast-lane-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "fead02f07d393a2b5dffd23ede2d8dab239dbfac",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-tushare-replay-fast-lane-20260714",
+      "tree": "16233f9409b0670729a631d18780fbf50609016b"
+    },
+    {
+      "branch": "codex/central-db-u0-us-calendar-symbol-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "fbcab187d521b064b12b57b113a7941809345f57",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-u0-us-calendar-symbol-20260714",
+      "tree": "a633d04e79f7a04b8452bdf0b535431779b1a19a"
+    },
+    {
+      "branch": "codex/central-db-u1-qqq-gld-strict-data-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "a22d41a635739b1331a6e1ce4c4568ace1598b69",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-u1-qqq-gld-strict-data-20260714",
+      "tree": "bccd9035978be040e5be6b1f3e0d4f68fdbedf87"
+    },
+    {
+      "branch": "codex/central-db-u2-regime-core-etfs-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "788ca48aa8e8f7591d7cb6f156bda5e880b46920",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-u2-regime-core-etfs-20260714",
+      "tree": "1b59e5529eece9d819035a1575f029916c7bc490"
+    },
+    {
+      "branch": "codex/central-db-u3-sector-etf-breadth-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "ba04ee29a12a4a21f3dda858b6273dbe07297c1c",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-u3-sector-etf-breadth-20260714",
+      "tree": "a12a8d8f20e6bd55e20812d5554e9906bfc760c2"
+    },
+    {
+      "branch": "codex/central-db-u4-vol-rates-credit-macro-pit-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "dba43346ead79ac69bc0afe44c70e64de2d9e453",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-u4-vol-rates-credit-macro-pit-20260714",
+      "tree": "b25362049520955e68927e7b83468f761038aabd"
+    },
+    {
+      "branch": "codex/central-db-u5-us-equity-survivorship-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "1ebfda6e56c3f2e1b5a5dcd9e2f378ca8a33cafd",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-u5-us-equity-survivorship-20260714",
+      "tree": "89adb71deb283d38fa7d135abaeec93a72d7cee6"
+    },
+    {
+      "branch": "codex/central-db-u6-us-pit-fundamentals-earnings-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "c1f5d211119c691fb121b181fbdd4bc29a745ece",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-u6-us-pit-fundamentals-earnings-20260714",
+      "tree": "08111f022ebdc22209d6e62f9621918d1a6de8f4"
+    },
+    {
+      "branch": "codex/central-db-x1-cross-market-derived-features-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "2961467981922a00ac4bd2fc7e62e3295a599c20",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-x1-cross-market-derived-features-20260714",
+      "tree": "a3487c60cd0244ecf591b8fb354955fbe5f4c813"
+    },
+    {
+      "branch": "codex/central-db-x2-source-health-automation-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "cbe204fea022e6f2c1ea1bd58e886cbdb4a5ae84",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-db-x2-source-health-automation-20260714",
+      "tree": "0a6b921b28ca57ce7ae26d01bf214922903a5825"
+    },
+    {
+      "branch": "codex/central-ingestion-gate-b-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "0bc1007235a96ab2e4c0e92700a999930761e73a",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-ingestion-gate-b-20260713",
+      "tree": "d14939354fda31adfedec22febd29b37cb360285"
+    },
+    {
+      "branch": "codex/central-ingestion-gate-b-r2-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "88f4dd709b41ca31ac2bd419980d22fb627ca8b6",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/.wt-central-ingestion-gate-b-r2-20260713",
+      "tree": "442c101ba58c8cc5be7debc5bb40803fcef1a3a8"
+    },
+    {
+      "branch": "main",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/market_data/.git",
+      "head": "7966343449e9cc1883598a63cae1010b667ea0b4",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/market_data.git",
+      "path": "/home/rongyu/workspace/.wt-central-quant-data-warehouse-20260711",
+      "tree": "b734743e6cb5bb83c0662a3edef8b80cb5bcf52a"
+    },
+    {
+      "branch": "agent/central-warehouse-fill-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/market_data/.git",
+      "head": "511fd002f3607fc6547c89d7d813369792a4f852",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/market_data.git",
+      "path": "/home/rongyu/workspace/.wt-central-warehouse-fill-20260712",
+      "tree": "3672d188a50c9c2d7c60bce1f9abe27a96bb61f2"
+    },
+    {
+      "branch": "codex/cross-market-local-data-availability-adjudication-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-cross-market-local-data-availability-adjudication-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/external-audit-final-consolidation-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "f6b4828858440be9280fb1ea17382cf4b1ddedb2",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-external-audit-final-consolidation-20260714",
+      "tree": "f44136e15c25e692dd9081f62d0e5898830fd8ec"
+    },
+    {
+      "branch": "codex/family68-b1-plan-builder-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "1a5681f9a550c56eb55326786ad1948f6f38e8ec",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-family68-b1-plan-builder-20260712",
+      "tree": "33f66a6c038aff09995a3696eec8cb260bf4e4e1"
+    },
+    {
+      "branch": "codex/family68-controller-instance-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "fa65b46d691925c2280757008f3efe87b34bd68f",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-family68-controller-instance-20260712",
+      "tree": "0562667e5ebeacddfdcfa63ea7f9c3d10a2c663c"
+    },
+    {
+      "branch": "codex/family68-snapshot-warehouse-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "db3411cad0a6d4659a394d4dd3b1c359a7123f48",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-family68-snapshot-warehouse-20260712",
+      "tree": "c9d698a82bba739c6979b7b32c928673930549c6"
+    },
+    {
+      "branch": "codex/family68-v2-controller-input-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "196acee30af16985ef607673dc57ed3683c223e0",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-family68-v2-controller-input-20260711",
+      "tree": "cac608897970398b14cbd274143e90588cc5b2fe"
+    },
+    {
+      "branch": "codex/family68-v21-hardened-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "fbb7902c9e46aa9194ce60ddcc5be9e9e28be3a4",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-family68-v21-hardened-20260712",
+      "tree": "c2f5acb9761ebc159e83140e0b34fab627fb0ea1"
+    },
+    {
+      "branch": "codex/family68-v21-method-amendment-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "2d1d1f102019de8e858ae8444013cc0ad91526a5",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-family68-v21-method-amendment-20260711",
+      "tree": "363781a5c9bf7a884d8ae9ac392fe776ff380219"
+    },
+    {
+      "branch": "codex/family68-v22-bootstrap-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "6a45bacc06fbcb720248503889fad910a01f9a9c",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-family68-v22-bootstrap-20260712",
+      "tree": "76c3a07f61924714e28929d38898793da56c68e0"
+    },
+    {
+      "branch": "codex/fingpt-audit-closeout-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/FinGPT/.git",
+      "head": "218690148ad924f068605762b6f4bdcb67f2505a",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/AI4Finance-Foundation/FinGPT.git",
+      "path": "/home/rongyu/workspace/.wt-fingpt-audit-closeout-20260711",
+      "tree": "b7073d898694a9216bd79d82079a06767bc8b166"
+    },
+    {
+      "branch": "codex/fingpt-security-fixes-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/FinGPT/.git",
+      "head": "c817bd48e2ee52430d0a3e35cc4f782930222c09",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/AI4Finance-Foundation/FinGPT.git",
+      "path": "/home/rongyu/workspace/.wt-fingpt-security-fixes-20260711",
+      "tree": "bc55a452c3de642f37ad30beda1222899c9903b8"
+    },
+    {
+      "branch": "codex/free-source-blocker-resolution-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "9f500a8775bdba82fbb1ce15647dff77f8ccd0be",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-free-source-blocker-resolution-20260711",
+      "tree": "8d4e062ab1adc6c8f5c18981f700c2a4b7d930d8"
+    },
+    {
+      "branch": "codex/manager-central-db-db2-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "76511fa344c850177395dda92918597aa2ae4957",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-manager-central-db-db2-20260714",
+      "tree": "9f1b78f10824ceb660dbd99e660176bc37129fa6"
+    },
+    {
+      "branch": "codex/manager-central-db-minimalization-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "a93092b5555a4a6e16d4d51aa1c770b4790ab34c",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-manager-central-db-minimalization-20260714",
+      "tree": "673264e087c2f993add8bb6508959303a19762c6"
+    },
+    {
+      "branch": "codex/market-data-readonly-parity-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/market_data/.git",
+      "head": "47a6c6675fe0be173a5552461921d89ec6d60b09",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/market_data.git",
+      "path": "/home/rongyu/workspace/.wt-market-data-readonly-parity-20260714",
+      "tree": "5d6d0599869cf67c3ea3635ebc4de2c9606efb53"
+    },
+    {
+      "branch": "codex/market-data-security-fixes-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/market_data/.git",
+      "head": "3a1cce0ed09b9b57d46c4a1621a9f0d4afcc9df6",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/market_data.git",
+      "path": "/home/rongyu/workspace/.wt-market-data-security-fixes-20260711",
+      "tree": "edde0ccf74935da23944e1f698d470d94fed8214"
+    },
+    {
+      "branch": "codex/project-wide-remediation-minimalization-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "b2cda719e0c73a5192d5a9598857acd149a837ea",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-project-wide-remediation-minimalization-20260714",
+      "tree": "3b74a8400a65d1203bf55e06bd5ca882103b841d"
+    },
+    {
+      "branch": "codex/qrl-audit-closeout-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant_research_lab/.git",
+      "head": "7476a34cc21d67421f977850ef3d2b773ae7ddc6",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant_research_lab.git",
+      "path": "/home/rongyu/workspace/.wt-qrl-audit-closeout-20260711",
+      "tree": "2988554cfddf25df4694f32ff87e93fc5d5b6c29"
+    },
+    {
+      "branch": "codex/a-share-r5-mainline-integration-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant_research_lab/.git",
+      "head": "d3359a87c0873a76c5b374c281ed844ac5f29c98",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant_research_lab.git",
+      "path": "/home/rongyu/workspace/.wt-qrl-r5-mainline-integration-20260714",
+      "tree": "894d9b252177a3f4d67d9ceff1c52c87b99cb413"
+    },
+    {
+      "branch": "codex/security-pit-fixes-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant_research_lab/.git",
+      "head": "1cd6b74ab2e64930939d409fb3ffafa6e570c84b",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant_research_lab.git",
+      "path": "/home/rongyu/workspace/.wt-qrl-security-pit-20260711",
+      "tree": "ad3a25dbeffc9eb4745fdca2df27ffac2c9bc19e"
+    },
+    {
+      "branch": "agent/central-db-external-audit-addendum-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "0e90a2647a84010476470d83ebee017db7f5d20b",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-quant-proj-central-db-audit-addendum-20260714",
+      "tree": "baee03c8fd93bbf0b9e55f185db984562116bce1"
+    },
+    {
+      "branch": "agent/central-warehouse-fill-controller-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "d978e893f9aa950f2acf8e69e77397bd2df17a06",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-quant-proj-central-warehouse-fill-20260712",
+      "tree": "07e46a39e2e9564b0ba52eb87a49b6f4599203ae"
+    },
+    {
+      "branch": "main",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "51147491889f9b75f4f55ab0919fa4a71aaf3fb6",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-quant-proj-ci-single-pr-run-20260711",
+      "tree": "f612820df946a154019b85d9211eae5f5540251c"
+    },
+    {
+      "branch": "codex/controller-integrity-fixes-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "f8507992a429cecbe49108e09344cdf3b4bcdf99",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-quant-proj-controller-integrity-20260711",
+      "tree": "f5d9b18c56ea33081c848afda9d3e4b69c66ffaa"
+    },
+    {
+      "branch": "agent/external-audit-package-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "3bb43db99bd954f8a7a06b1dbc7de09226fd5207",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-quant-proj-external-audit-20260712",
+      "tree": "224606ca0b35ec1923cf9aa0ba91b1548ec667fd"
+    },
+    {
+      "branch": "codex/ci-single-pr-run-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant_research_lab/.git",
+      "head": "52ad4d46211250503cc685ecfaeb297ca72dbc7e",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant_research_lab.git",
+      "path": "/home/rongyu/workspace/.wt-quant-research-lab-ci-single-pr-run-20260711",
+      "tree": "b6fd417292a658c77b95aa6769fb0ead9f654595"
+    },
+    {
+      "branch": "codex/rdagent-audit-closeout-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/RD-Agent/.git",
+      "head": "e927d873c4280ea5b001f0bb2d0592a61636a570",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/microsoft/RD-Agent.git",
+      "path": "/home/rongyu/workspace/.wt-rdagent-audit-closeout-20260711",
+      "tree": "d8b2860762cea1d5cb3eac8fe7475f1b41da649e"
+    },
+    {
+      "branch": "agent/external-audit-local-compat-draft-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/RD-Agent/.git",
+      "head": "92aa18336f943c4f83fdea49843151dabd254bbb",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/microsoft/RD-Agent.git",
+      "path": "/home/rongyu/workspace/.wt-rdagent-local-compat-audit-20260712",
+      "tree": "bf0bb9e6884fdcafafcbf4f9072cbd9ea44c58e5"
+    },
+    {
+      "branch": "codex/rdagent-security-fixes-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/RD-Agent/.git",
+      "head": "aa39c94a550b1bbb7e9ce0dc906b3fa874283c29",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/microsoft/RD-Agent.git",
+      "path": "/home/rongyu/workspace/.wt-rdagent-security-fixes-20260711",
+      "tree": "579875c5b22f1c27164a1882a7c8da6953200508"
+    },
+    {
+      "branch": "codex/rdagent-security-recovery-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/RD-Agent/.git",
+      "head": "1aa1857af7bdb406a147a456871be37b41e671ff",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/microsoft/RD-Agent.git",
+      "path": "/home/rongyu/workspace/.wt-rdagent-security-recovery-20260711",
+      "tree": "b611c48d5d33c0c94455cd73bd3ce0624d817393"
+    },
+    {
+      "branch": "",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "8247e619398a235911edeeaaaa3785dade4f9fe4",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-attestation-20260712",
+      "tree": "bdf17d1b22715c3ffe8296cfe976ab0f3fefdd54"
+    },
+    {
+      "branch": "agent/remediation-r1-f001-f002-a-share-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "f24aeb88efcab901c09c3d6b08574572cb2f0556",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-f001-f002-a-share-20260712",
+      "tree": "f5688b71296444e3a2733fd212398c9f9a6d3d04"
+    },
+    {
+      "branch": "agent/remediation-r1-f003-quant-lab-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant_research_lab/.git",
+      "head": "7362ce219dc4c426e1b58e42a82e90ce73d04d59",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant_research_lab.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-f003-quant-lab-20260712",
+      "tree": "f51a662c8a8497dce956ed514dd5053e72604549"
+    },
+    {
+      "branch": "agent/remediation-r1-f004-us30w-pit-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "42e41f509d1d336714980d8fb37603ba090ec07d",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-f004-us30w-pit-20260712",
+      "tree": "863b3f2e06b105386efa32ede8d971209c0eb246"
+    },
+    {
+      "branch": "agent/remediation-r1-f006-filesystem-safety-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/market_data/.git",
+      "head": "17409f952209244862b92dd893ead88cd073b4d7",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/market_data.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-f006-market-data-20260712",
+      "tree": "61f5a840ca313ab55610b2cd9ea055f7c9edeaf7"
+    },
+    {
+      "branch": "agent/remediation-r1-f008-us-csv-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "88ed912bc67b34214a139da799c6d456a5ac7c52",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-f008-us-csv-20260712",
+      "tree": "89235c2d11303ba04fe8cd8e3562d2b64de234fa"
+    },
+    {
+      "branch": "agent/remediation-r1-f009-f013-strategy-methods-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "b09db38da257f64fa7b1c7622b893fd7291fca4f",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-f009-f013-strategy-20260712",
+      "tree": "685f8f4d5164f4d63c51f140d030d15c462e1b7c"
+    },
+    {
+      "branch": "agent/remediation-r2-gate-b-packet-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "98f43e5dd5ba2e7fad5b1957336960272e3abed6",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-r2-gate-b-packet-20260713",
+      "tree": "6732ea16f5eed7e03b4a1ea959c3169b29ed4417"
+    },
+    {
+      "branch": "agent/remediation-r2-strategy-data-governance-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "4ded0eb006908f4ba6692b146bcfed10a0bf3133",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-r2-strategy-data-governance-20260713",
+      "tree": "d2547fefdbbbda99a1104bec4a9fa1821a6fb169"
+    },
+    {
+      "branch": "agent/remediation-r2-tushare-wave0-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "8bf821144c3d87ad20ee6d5aec08b8a5d0fc5b50",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-r2-tushare-wave0-20260713",
+      "tree": "86fbc01c4d41922874208a338b55b2c2d65c1036"
+    },
+    {
+      "branch": "agent/remediation-r2-usm-authority-lineage-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "b0e956ebfcdf29f2aedcd43e4ace610aea887ab3",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-r2-usm-authority-lineage-20260713",
+      "tree": "35615365f9540b5cd27403dcc1c4dedded97b0c1"
+    },
+    {
+      "branch": "agent/remediation-reaudit-readiness-r1-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "bf18d3a9eab53da6581556855935dc08ec9b44c7",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-reaudit-r1-20260712",
+      "tree": "6768d309a3f821bee81e9fa8aee8ff3be6719003"
+    },
+    {
+      "branch": "agent/remediation-targeted-reaudit-code-root-r2-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "4df14a054871dba2517bf9d4d426820d4cf3ea50",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-remediation-targeted-reaudit-code-root-r2-20260712",
+      "tree": "41d0a92adec695c1ca4f65400125f9e5ec35d5ee"
+    },
+    {
+      "branch": "codex/research-blocker-controller-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "d9a527ddabf06dbdba7e8fa31874f25fe86c6fb8",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-research-blocker-controller-20260711",
+      "tree": "4b29c1e3dab95886d82fd7f49f862fbc599fb523"
+    },
+    {
+      "branch": "codex/s2-a-share-regime-engine-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "caad748837fcb4142bb3a89549e699257f53dbb0",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-s2-a-share-regime-engine-20260713",
+      "tree": "8014649ae2bd609c271711cad9c610873aca0040"
+    },
+    {
+      "branch": "codex/s2-callback-integration-20260713",
+      "dirty_entry_count": 6,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "d132f69a8607a3903260634faf14a38e5bd5679b",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-s2-callback-integration-20260713",
+      "tree": "42b20ca05ef89f38bc8c04e7e3cbaa0a5f9970c6"
+    },
+    {
+      "branch": "codex/s2-controller-hardening-20260713",
+      "dirty_entry_count": 19,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "56b799643b522e5a3e3dcb30c7a634e290344e9c",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-s2-controller-hardening-20260713",
+      "tree": "0ab0b5eb5ddf5bb66704359e2ad65c135345ef74"
+    },
+    {
+      "branch": "codex/s2-regime-allocator-harness-20260713",
+      "dirty_entry_count": 3,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "d132f69a8607a3903260634faf14a38e5bd5679b",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-s2-regime-allocator-harness-20260713",
+      "tree": "42b20ca05ef89f38bc8c04e7e3cbaa0a5f9970c6"
+    },
+    {
+      "branch": "codex/s2-regime-data-availability-audit-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-s2-regime-data-availability-audit-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/s2-strategy-intake-contract-20260713",
+      "dirty_entry_count": 4,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "d132f69a8607a3903260634faf14a38e5bd5679b",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-s2-strategy-intake-contract-20260713",
+      "tree": "42b20ca05ef89f38bc8c04e7e3cbaa0a5f9970c6"
+    },
+    {
+      "branch": "codex/s2-us-calendar-materializer-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "15711e7338341533e0f8f983b8a6534495c52c6a",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-s2-us-calendar-materializer-20260713",
+      "tree": "e1c8cfda007376e83c9a80c5c46f318b34965b44"
+    },
+    {
+      "branch": "codex/s2-us-regime-engine-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "8c75f6faf3cb967f630714e89a48568e7ad24cae",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-s2-us-regime-engine-20260713",
+      "tree": "792617a23f0a6177da107299951598ea3ade95f6"
+    },
+    {
+      "branch": "codex/s2-us-six-etf-source-qualification-packet-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "de817d97ba3ee4d2e95626ad72bbe9c0a13b92cc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-s2-us-six-etf-source-qualification-packet-20260713",
+      "tree": "45a0214637ed0fe0524793aca801e720283c7ad3"
+    },
+    {
+      "branch": "codex/s2-us-tiingo-chunked-capture-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "df68659479a8d07322aa583065d5ba37a43f575a",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-s2-us-tiingo-chunked-capture-20260713",
+      "tree": "7e53732d927d4999d6bbea46fe225c57540ad66a"
+    },
+    {
+      "branch": "codex/s2-us-tiingo-two-phase-capture-20260713",
+      "dirty_entry_count": 6,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "df68659479a8d07322aa583065d5ba37a43f575a",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-s2-us-tiingo-two-phase-capture-20260713",
+      "tree": "7e53732d927d4999d6bbea46fe225c57540ad66a"
+    },
+    {
+      "branch": "codex/strategy-active-lane-budget-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-strategy-active-lane-budget-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "agent/external-audit-evidence-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "379f1123ea0373daf6eaad51a66fd4548fa3d468",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-strategy-external-audit-20260712",
+      "tree": "b6ffdd564a8fb76f8ac715fe17e58e8df347298f"
+    },
+    {
+      "branch": "codex/strategy-lineage-final-evidence-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "b95323d428ddcf275334b1b7d6d8b415d66818f9",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-strategy-lineage-final-evidence-20260712",
+      "tree": "3b42b7fef4a54630bf45fa82562d845383f92b0f"
+    },
+    {
+      "branch": "codex/strategy-portability-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a93fa714a50b92d34772df0beead8148b5f5908a",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-strategy-portability-20260711",
+      "tree": "cf4550f07b8e2ae23ff6d8cfc9c1713aa339baea"
+    },
+    {
+      "branch": "codex/qts-stats-salvage-r1-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "85a2b3fe75b77b059c6a3e1d6ae19981fe08eaa5",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-strategy-stats-salvage-20260711",
+      "tree": "a9b9c6b09f2089f066a1b413a29e895fad752a50"
+    },
+    {
+      "branch": "codex/vault-boundary-fix-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/STRATEGY_VAULT/.git",
+      "head": "f0c9d4cb4d94d89054063d6a127bb54e39c62a59",
+      "is_linked_worktree": true,
+      "origin": null,
+      "path": "/home/rongyu/workspace/.wt-strategy-vault-boundary-fix-20260711",
+      "tree": "d9a1feba7ece49a68bf2a9e52589df351f26ef02"
+    },
+    {
+      "branch": "codex/strategy-work-boundary-validator-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "ac2d5d6a07c770673e05fb7152698cff3367ba64",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-strategy-work-boundary-validator-20260711",
+      "tree": "e8f57b2b1944da931b746bced09ad5c631beb371"
+    },
+    {
+      "branch": "codex/ci-single-pr-run-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "dc69efe11c176329c6bf5542aa2a41cc210309e8",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-strategy-work-ci-single-pr-run-20260711",
+      "tree": "fd060ece0b796fb4f77c89ae2c4ef25359e56960"
+    },
+    {
+      "branch": "codex/tushare-15000-plan-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "e0af738a0b744bc21ef308a77ce822258c1d14ee",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-tushare-15000-plan-20260712",
+      "tree": "03cdc501e387b8176cc2b675fd2284cd02db9ad0"
+    },
+    {
+      "branch": "codex/us-c2-r2-lineage-conflict-hold-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-us-c2-r2-lineage-conflict-hold-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/us-central-db-readonly-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "475ab37256923f97eb8a8a0f0ae8c9ecf0521cce",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-us-central-db-readonly-20260711",
+      "tree": "e35bac155e390b55d6fc7db5c788e64e98de5db1"
+    },
+    {
+      "branch": "agent/external-reaudit-ra001-us-csv-runtime-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "44557c39001c90201a4ab51ce7dcff1595b10642",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-us-csv-runtime-ra001-20260712",
+      "tree": "064b07a302039ce4296cddda16dc186725c85f2e"
+    },
+    {
+      "branch": "codex/qts-us-edgar-salvage-r1-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "e396e09882afc942f4a4b2cf5884849b77b2dea7",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-us-edgar-salvage-20260711",
+      "tree": "bf90cbf1d4aaaad8f6f3cbc118d9ca5dc3fa7503"
+    },
+    {
+      "branch": "codex/us-monitor-pickle-hardening-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "975edc40524c66f5efd67bf70d76eb32aa873ef0",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-us-monitor-pickle-hardening-20260711",
+      "tree": "5b43cb8372e8fababf3bbfafe80d78dee258dd48"
+    },
+    {
+      "branch": "codex/us-monitor-security-fixes-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "a9205204f741a8b6707489a3b749beb79255544d",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-us-monitor-security-fixes-20260711",
+      "tree": "a658913e3709eab491871d5a82941f9a0e8f2209"
+    },
+    {
+      "branch": "codex/us-prospective-fixed-etf-trend-feasibility-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-us-prospective-fixed-etf-trend-feasibility-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/us-residual-momentum-preregistration-20260713",
+      "dirty_entry_count": 2,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/.wt-us-residual-momentum-preregistration-20260713",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "codex/us-sec-pit-contracts-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "2d24c248445ff2a9f6089cd1cda5c0eaec2ead54",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-us-sec-pit-contracts-20260711",
+      "tree": "b8a196e2a386bb5c5638d109795af16b20acc883"
+    },
+    {
+      "branch": "codex/us-semantic-gap-policy-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "22d79956be4755e7bdea3235f91c16284d48a242",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/.wt-us-semantic-gap-policy-20260714",
+      "tree": "8f964fde80a5ef9245b0691c872c6d9c7706c77d"
+    },
+    {
+      "branch": "codex/us30w-a1-executor-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "61dcb1ebd7aa59b51f9c1e1f231c0eb0a66c852a",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-a1-executor-20260712",
+      "tree": "5a76ff43d8386dbe7b99f2172d94e0375428bab0"
+    },
+    {
+      "branch": "codex/us30w-boundary-fixes-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "13722c4e70eb31463d55c47655a50c8100da18e2",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-boundary-fixes-20260711",
+      "tree": "f9cb526a9598984015b78b031c9fd08e161bc8ed"
+    },
+    {
+      "branch": "codex/us30w-runtime-boundary-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "1469ae90fda929e3534e6ed768448e989551b0c8",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-boundary-pr-20260711",
+      "tree": "29a3d24a3ad0a27d01550b301dfe4cda2e720897"
+    },
+    {
+      "branch": "codex/us30w-default-runtime-boundary-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "c6b91af75fba9fc22a41c82d750ddfbac9482db2",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-default-boundary-20260711",
+      "tree": "e0fb39c39be970377f2424d185c7acc089fdb817"
+    },
+    {
+      "branch": "codex/us30w-etf-formal-validation-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "a9cc8b163c826b2420a1762f110c6fa78077d6b7",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-etf-formal-validation-20260711",
+      "tree": "ab7890ab9d681c7d8297d180cf66f1bc87e4b64b"
+    },
+    {
+      "branch": "codex/us30w-etf-validation-clean-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "dd19a6a64371483023624f6d128f60d2f4eac10d",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-etf-validation-clean-20260711",
+      "tree": "dcb633282a7e66808343e68254f4f3a81ca50e0e"
+    },
+    {
+      "branch": "codex/us30w-four-etf-validation-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "dba3ac94d2c9496bc99f4d63c18686aec1caa4e3",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-four-etf-validation-20260712",
+      "tree": "2fb5e4f3a6c259c18dcaf691173c70fef0a5478c"
+    },
+    {
+      "branch": "codex/us30w-provider-diagnostic-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "04753ef90506f7957823f5c3118eb0b361423987",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-provider-diagnostic-20260712",
+      "tree": "c36d2cc7e464fb2e5264b4fe796a146df9ad8522"
+    },
+    {
+      "branch": "codex/us30w-r2-source-acquisition-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "92fd4a49a0f6ca8849eb56c941426f4314c83a02",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-r2-source-acquisition-20260712",
+      "tree": "a4ad0ea2f35e32fbc782d0a31b01d82fb40c714d"
+    },
+    {
+      "branch": "codex/us30w-residual-boundary-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "e28ef476ad0ab9cd855fdde2f673fef4b06a2bb4",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-residual-boundary-20260711",
+      "tree": "33bcf6bbbd9736f9d5bff695ee22429f44947aee"
+    },
+    {
+      "branch": "codex/us30w-sina-forensic-main-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "a7851e31d2fa5b398eb5ba7ef77ba42ebdb57061",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-sina-forensic-main-20260711",
+      "tree": "eb5d981abc44bf85766950e009e634ef3da18bd6"
+    },
+    {
+      "branch": "codex/us30w-sina-forensic-replication-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "db80e85abdd62e4a4dd6ca2ca997a5dd562c259f",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-sina-forensic-replication-20260711",
+      "tree": "30e8b8570bddc05b913d6265af50921ac41a23d0"
+    },
+    {
+      "branch": "codex/us30w-total-return-source-qualification-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "a8ae62e9d1f21a36c205f817641e97310e68cb52",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-total-return-source-qualification-20260711",
+      "tree": "5c0dc0758e63353542831bd8766962c0c23d56f8"
+    },
+    {
+      "branch": "master",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "4147e84c8b36de3e5a1a350a5b0d6c3565b3eccc",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/.wt-us30w-validation-stack-hardening-20260711",
+      "tree": "5c50b9e9e9478dc3821a0dc656ac4637e12eafd1"
+    },
+    {
+      "branch": "codex/vcv-multiplicity-adjudication-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "1e478bac6a9a82ff2a54e4d7d1b7b90b81527bed",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-vcv-multiplicity-adjudication-20260713",
+      "tree": "73cea5fd184f8dbbf63bb8bf7222db08eaaf98f8"
+    },
+    {
+      "branch": "codex/vcv-pit-data-qualification-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "3fd8634d0852e3eb42227e493d6e7799af433118",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-vcv-pit-data-qualification-20260713",
+      "tree": "6e87b483ae560b18fba4f6cab781ba47f4014520"
+    },
+    {
+      "branch": "codex/vcv-prospective-route-qualification-design-20260713",
+      "dirty_entry_count": 4,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "3fd8634d0852e3eb42227e493d6e7799af433118",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-vcv-prospective-route-qualification-design-20260713",
+      "tree": "6e87b483ae560b18fba4f6cab781ba47f4014520"
+    },
+    {
+      "branch": "codex/vcv-trial-reservation-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "10f8685079985fd6e68cf4ee2124b17c3e3a4d1b",
+      "is_linked_worktree": true,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/.wt-vcv-trial-reservation-20260713",
+      "tree": "92daa42293e3206fab4d49317b925120fce56e2b"
+    },
+    {
+      "branch": "codex/a-share-canonical-semantic-followup-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/A_Share_Monitor/.git",
+      "head": "b6a4ddc48899a95c5b0c9e8cce03bb5e24b493eb",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/A_Share_Monitor.git",
+      "path": "/home/rongyu/workspace/A_Share_Monitor",
+      "tree": "98d628e57d27dbc0e6823536ef93c371e8d6f36a"
+    },
+    {
+      "branch": "master",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/FinGPT/.git",
+      "head": "aef3ee8236f8b813009340b1a55f49c3d511baef",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/AI4Finance-Foundation/FinGPT.git",
+      "path": "/home/rongyu/workspace/FinGPT",
+      "tree": "f9b292bf6d02f65b7b6a728bc3953eb76d6a7ede"
+    },
+    {
+      "branch": "main",
+      "dirty_entry_count": 5,
+      "git_common_dir": "/home/rongyu/workspace/RD-Agent/.git",
+      "head": "4f9ecb005881cddc08df0124a2e894c018007679",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/microsoft/RD-Agent.git",
+      "path": "/home/rongyu/workspace/RD-Agent",
+      "tree": "fe0e249710773cc22c86b30b142f35ffe6dc78bf"
+    },
+    {
+      "branch": "master",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/STRATEGY_VAULT/.git",
+      "head": "d5698a457dfbe08513a08d75715f647eff802194",
+      "is_linked_worktree": false,
+      "origin": null,
+      "path": "/home/rongyu/workspace/STRATEGY_VAULT",
+      "tree": "4745e3113e09662e4c362ffddb4388abf846d0c4"
+    },
+    {
+      "branch": "main",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/US_Stock_Monitor/.git",
+      "head": "681d3a54662c79162e0477fda2a2aa8efeff0c47",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/US_Stock_Monitor.git",
+      "path": "/home/rongyu/workspace/US_Stock_Monitor",
+      "tree": "511b44ba513267ad6661e47e1fa5e3859e3af487"
+    },
+    {
+      "branch": "main",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/central-data-ingestion/.git",
+      "head": "287416f79cd1fcb1c066f25fa7bbaedc574b0ce9",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/central-data-ingestion.git",
+      "path": "/home/rongyu/workspace/central-data-ingestion",
+      "tree": "c2a62d079bcb08b04b2425c7160bf9ca8344038a"
+    },
+    {
+      "branch": "main",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/global-stock-data/.git",
+      "head": "d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/simonlin1212/global-stock-data.git",
+      "path": "/home/rongyu/workspace/global-stock-data",
+      "tree": "5f5d1389277acc78f06cd6051a27cb8fdcd41e7a"
+    },
+    {
+      "branch": "codex/r28-smallcap-evidence-contract-20260709",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/market_data/.git",
+      "head": "398c84440621db531c5801326acc417751e88665",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/market_data.git",
+      "path": "/home/rongyu/workspace/market_data",
+      "tree": "d87c6738d0fa4a388aadf1522d2834039c5293f4"
+    },
+    {
+      "branch": "codex/archive-qts-prototype-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/qts/.git",
+      "head": "954d2ae93f572cc027ccabc2b54bca51e495d4b3",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/qts.git",
+      "path": "/home/rongyu/workspace/qts",
+      "tree": "fb3d916e0855645356a06bbe753184730838d5d0"
+    },
+    {
+      "branch": "codex/legacy-quant-archive-r1-20260711",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant/.git",
+      "head": "217444189674367cee06c1370a6cab79d509bf7b",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/quant.git",
+      "path": "/home/rongyu/workspace/quant",
+      "tree": "954fd4a9e6db83b3cdd053dcdda3ea495fe3f9c3"
+    },
+    {
+      "branch": "codex/sol-luna-collaboration-routing-20260710",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-proj/.git",
+      "head": "13b13a3757f446f97b2b9e3d8e39c98ca247a4b5",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/quant-proj.git",
+      "path": "/home/rongyu/workspace/quant-proj",
+      "tree": "61f5ec374eb919a993fe0ea57c5ef8150e5501ed"
+    },
+    {
+      "branch": "agent/workspace-external-audit-brief-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant-project-shared-reports/.git",
+      "head": "9909010902f84aa5f454932d9a97fc8f7f32dd4c",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/quant-project-shared-reports.git",
+      "path": "/home/rongyu/workspace/quant-project-shared-reports",
+      "tree": "e61836fd14a49370aae51d7d71825abedea9e21a"
+    },
+    {
+      "branch": "codex/a-share-r5-critical-semantic-repair-20260714",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/quant_research_lab/.git",
+      "head": "dbce6616ebf1bd8c7637addef50cd368c35034e4",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/quant_research_lab.git",
+      "path": "/home/rongyu/workspace/quant_research_lab",
+      "tree": "9b2476bcd5191b86409d7876a06fec1dfb61d5d9"
+    },
+    {
+      "branch": "agent/live-strategy-research-preservation-20260712",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/strategy_work/.git",
+      "head": "a27e35b59ef8b59d0771bcf019534ca93748bbcc",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/strategy_work.git",
+      "path": "/home/rongyu/workspace/strategy_work",
+      "tree": "1439e27f10bce9d24d091ecada28116092f145a5"
+    },
+    {
+      "branch": "research/c2-remediation-r3-20260713",
+      "dirty_entry_count": 0,
+      "git_common_dir": "/home/rongyu/workspace/us_stock_30w/.git",
+      "head": "6880e2c8f55e86f678f45bad5a5b149c22222d98",
+      "is_linked_worktree": false,
+      "origin": "https://github.com/2604714984-prog/us_stock_30w.git",
+      "path": "/home/rongyu/workspace/us_stock_30w",
+      "tree": "00474cd47a98659da175de0eec07f768fa54d6eb"
+    }
+  ],
+  "schema_version": 1,
+  "summary": {
+    "dirty_top_level_worktrees": 19,
+    "linked_top_level_worktrees": 138,
+    "top_level_git_worktrees": 154
+  },
+  "target_layout": {
+    "active_repository": "/home/rongyu/workspace/quant-proj",
+    "external_data_root": "/home/rongyu/workspace/quant-data"
+  },
+  "workspace": "/home/rongyu/workspace"
+}
