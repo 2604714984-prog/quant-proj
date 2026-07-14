@@ -57,9 +57,15 @@ def test_expected_maximum_includes_cross_trial_mean_and_effective_count() -> Non
         effective_independent_trial_count=1,
     )
     assert single_effective.value == pytest.approx(single_effective.cross_trial_mean)
+    fractional_effective = expected_maximum_sharpe(
+        (-0.2, -0.1, 0.0, 0.1),
+        effective_independent_trial_count=1.5,
+    )
+    assert fractional_effective.effective_independent_trial_count == 1.5
+    assert math.isfinite(fractional_effective.value)
 
 
-@pytest.mark.parametrize("effective_count", [0, 1.5, float("nan"), 4.1, True])
+@pytest.mark.parametrize("effective_count", [0, float("nan"), 4.1, True])
 def test_expected_maximum_rejects_invalid_effective_trial_counts(
     effective_count: object,
 ) -> None:
@@ -123,18 +129,42 @@ def test_pbo_uses_every_observation_and_has_a_deterministic_ranking() -> None:
     assert result.observations_used == 12
     assert result.observations_dropped == 0
     assert result.relative_ranks == pytest.approx((0.25,) * 6)
+    assert result.selection_tie_policy == "fail_closed"
     assert result.rank_tie_policy == "average"
     assert result.overfit_rule == "relative_rank < 0.5"
 
 
 def test_pbo_uses_average_ranks_and_strictly_below_median_overfit_rule() -> None:
-    identical_strategies = tuple((float(index), float(index)) for index in range(1, 9))
-    result = probability_of_backtest_overfitting(identical_strategies, slice_count=4)
+    relative_rank = stats_module._average_relative_rank((0.2, 0.2), selected_index=0)
 
-    assert result.relative_ranks == pytest.approx((0.5,) * 6)
-    assert result.logits == pytest.approx((0.0,) * 6)
-    assert result.probability == 0.0
-    assert result.rank_tie_policy == "average"
+    assert relative_rank == pytest.approx(0.5)
+    assert not relative_rank < 0.5
+
+
+def test_pbo_fails_closed_on_an_in_sample_selection_tie() -> None:
+    identical_strategies = tuple((float(index), float(index)) for index in range(1, 9))
+
+    with pytest.raises(ValueError, match="in-sample maximum is tied"):
+        probability_of_backtest_overfitting(identical_strategies, slice_count=4)
+
+
+def test_pbo_is_invariant_to_strategy_column_permutation() -> None:
+    matrix = _pbo_matrix()
+    permutation = (2, 0, 1)
+    permuted_matrix = tuple(
+        tuple(row[index] for index in permutation)
+        for row in matrix
+    )
+
+    original = probability_of_backtest_overfitting(matrix, slice_count=4)
+    permuted = probability_of_backtest_overfitting(permuted_matrix, slice_count=4)
+
+    assert permuted.probability == original.probability
+    assert permuted.logits == pytest.approx(original.logits)
+    assert permuted.relative_ranks == pytest.approx(original.relative_ranks)
+    assert tuple(
+        permutation[index] for index in permuted.selected_strategy_indices
+    ) == original.selected_strategy_indices
 
 
 def test_pbo_rejects_a_nondivisible_tail_and_degenerate_split() -> None:
