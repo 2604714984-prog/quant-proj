@@ -2,7 +2,7 @@
 
 ## Status
 
-`IN_PROGRESS_PHASE_1_IMPLEMENTATION`
+`PHASE_1_2_ACCEPTED_CUTOVER_PROPOSAL_WAITING_FOR_USER_APPROVAL`
 
 ## Controlling identities
 
@@ -14,6 +14,10 @@
 - database content action: `KEEP_AND_MIGRATE_IN_PLACE`
 - controller verdict: `SIMPLIFY_NOW`
 - tracking issue: https://github.com/2604714984-prog/quant-proj/issues/24
+- accepted frozen-base implementation commit/tree: `fdb4da2f8a07e71873bc7295388a2d432d01e849` / `872b81d504999d15cece9dbd597cc2c66c9b07db`
+- current-main integration commit/tree: `17f027785b7531534a6286821f9e0048dc633c6a` / `e3a5b0f99ec2d9c829a6a5fe89abf402903c7d83`
+- implementation Draft PR: https://github.com/2604714984-prog/central-data-ingestion/pull/24
+- implementation PR scope: exactly one commit and 11 files
 
 ## Ownership
 
