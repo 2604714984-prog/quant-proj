@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "cutover_at_utc": "2026-07-14T17:48:04Z",
+  "status": "CUTOVER_COMPLETE_LEGACY_QUARANTINE_RETAINED",
+  "active_layout": {
+    "top_level_entries": [
+      "quant-data",
+      "quant-proj"
+    ],
+    "repository": "/home/rongyu/workspace/quant-proj",
+    "data_root": "/home/rongyu/workspace/quant-data",
+    "compatibility_symlinks": 0
+  },
+  "v2_source": {
+    "branch": "v2-main",
+    "commit_before_receipt": "1653d400458c7dc197abb328cbc2515886e6b342",
+    "tree_before_receipt": "b5020e227f64e62702e5fac2889c7e6849625735",
+    "remote_ref_exact": true,
+    "github_ci_run": 29355105651,
+    "github_ci_conclusion": "success"
+  },
+  "database_move": {
+    "old_path": "/home/rongyu/workspace/quant_data/quant_research.duckdb",
+    "new_path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "size_bytes": 2411212800,
+    "sha256_before": "936e1ee5230207b1ca59e1fd6245ad5a3c1dd957ae030441e8420c83e57a3869",
+    "sha256_after": "936e1ee5230207b1ca59e1fd6245ad5a3c1dd957ae030441e8420c83e57a3869",
+    "mode_after": "0600",
+    "read_only_table_count_after": 39
+  },
+  "private_runtime_state": {
+    "path": "/home/rongyu/workspace/quant-data/private",
+    "file_count": 128,
+    "directory_mode": "0700",
+    "file_mode": "0600",
+    "bad_directory_mode_count": 0,
+    "bad_file_mode_count": 0,
+    "credential_values_inspected": false
+  },
+  "dirty_state_recovery": {
+    "path": "/home/rongyu/workspace/quant-data/legacy-recovery/dirty-state-20260715",
+    "repository_count": 19,
+    "capture_verified": true,
+    "tracked_patch_count": 2,
+    "untracked_file_count": 82
+  },
+  "local_only_git_recovery": {
+    "remote_archive_tags_pushed": [
+      "A_Share_Monitor:archive/pre-v2/a-share-canonical-evidence-publisher-20260712",
+      "quant-proj:archive/pre-v2/remediation-r2-gate-b-packet-20260713"
+    ],
+    "bundles": [
+      {
+        "path": "/home/rongyu/workspace/quant-data/legacy-recovery/git-bundles/A_Share_local_only.bundle",
+        "sha256": "428fefee8fbb959d7e1c7db9271aa8f1543bd28ba096023cbb55cdf0ed58540f"
+      },
+      {
+        "path": "/home/rongyu/workspace/quant-data/legacy-recovery/git-bundles/quant_proj_local_only.bundle",
+        "sha256": "8598142c78b0739436fb018bddaea08c2c1fcd0b4789c188bc457cf5e35bbbbe"
+      },
+      {
+        "path": "/home/rongyu/workspace/quant-data/legacy-recovery/git-bundles/STRATEGY_VAULT.bundle",
+        "sha256": "150c3beeaa769f71a5669692999f55c18ff53dbf7531faa08d022edee91f82a6"
+      }
+    ],
+    "bundle_verify": "PASS"
+  },
+  "legacy_quarantine": {
+    "path": "/home/rongyu/workspace/quant-data/recovery/legacy-local",
+    "entry_count": 157,
+    "size_bytes": 24136317879,
+    "active_runtime": false,
+    "git_worktree_paths_expected_to_work": false,
+    "deleted_during_cutover": false
+  },
+  "post_cutover_validation": {
+    "fresh_virtual_environment": true,
+    "pytest_passed": 44,
+    "ruff": "PASS",
+    "py_compile": "PASS",
+    "git_diff_check": "PASS",
+    "central_database_read_only_open": "PASS"
+  }
+}

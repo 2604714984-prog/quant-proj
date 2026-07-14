@@ -12,3 +12,9 @@ The cutover is intentionally staged:
 
 Dirty legacy worktrees are never silently discarded. They must be classified as
 already preserved, intentionally obsolete, or migrated before deletion.
+
+The 2026-07-15 cutover is complete. Legacy checkouts are retained temporarily at
+/home/rongyu/workspace/quant-data/recovery/legacy-local as opaque rollback
+material only. Their linked-worktree metadata is not expected to work after the
+move. Verified patches, untracked-file archives, remote archive tags, and Git
+bundles are recorded in cutover_receipt.json.
