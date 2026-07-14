@@ -12,6 +12,11 @@ completed A0-A6/U0-U6/X1/X2 central-database adjudication. The package is ready 
 independent review but explicitly retains blocked data-source outcomes and
 `strategy_candidate_available=false`.
 
+The personal-project complexity addendum is
+[`reports/external_audit/central_database_lean_architecture_external_review_addendum_20260714.md`](reports/external_audit/central_database_lean_architecture_external_review_addendum_20260714.md).
+It asks whether the central database should be simplified and must be reviewed as a single-user
+local research system, not as an institutional platform.
+
 ## External Audit (2026-07-12)
 
 Start the GitHub-based external review with

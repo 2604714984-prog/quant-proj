@@ -1,0 +1,51 @@
+{
+  "schema": "CENTRAL_DATABASE_LEAN_ARCHITECTURE_EXTERNAL_REVIEW_MANIFEST_V1",
+  "status": "READY_FOR_INDEPENDENT_EXTERNAL_ARCHITECTURE_REVIEW",
+  "extends_without_modifying": {
+    "consolidated_review_path": "reports/external_audit/workspace_external_reaudit_consolidated_20260714.md",
+    "consolidated_review_sha256": "18731af60d8d3727491edf40afd9781da07fb60b34fe5b621220e9cd90ebb0d0",
+    "consolidated_manifest_path": "reports/external_audit/workspace_external_reaudit_consolidated_manifest_20260714.json",
+    "consolidated_manifest_sha256": "b77c6365a963ec0d49c8bdd3d32b4393f119d4edba8cbe56ef9c9816493513ca"
+  },
+  "central_repository": {
+    "name": "2604714984-prog/central-data-ingestion",
+    "visibility": "PRIVATE",
+    "pull_request": 22,
+    "branch": "agent/central-db-lean-architecture-audit-20260714",
+    "commit": "f2d401e42aa8f7cd17a14d94c039f45ba6546d9d",
+    "tree": "6f9692d9efafe2ee0f3521d774635e45121aefde",
+    "architecture_document_sha256": "3f8317d5d2ae3dab12ebc7eaaf7fc0bf34cdf33bb41ed1a161067d9e099c6d6e",
+    "evidence_json_sha256": "744b38dbbe83207c1cf142a6625775f2f91527b60c20a35726ce404b55336064",
+    "evidence_sidecar_sha256": "e7f27faff083ff6019747239960bb52b3fb2136191dcca214705f3b0e2b48b29"
+  },
+  "architecture_metrics": {
+    "production_modules": 19,
+    "production_lines": 6689,
+    "test_files": 9,
+    "test_lines": 3425,
+    "json_artifacts": 34,
+    "deployment_templates": 5,
+    "inserted_lines_since_initial": 15355
+  },
+  "latest_database_evidence": {
+    "post_database_sha256": "936e1ee5230207b1ca59e1fd6245ad5a3c1dd957ae030441e8420c83e57a3869",
+    "post_database_bytes": 2411212800,
+    "daily_inserted_rows": 5524,
+    "daily_basic_inserted_rows": 60,
+    "duplicate_natural_keys": 0,
+    "database_binary_in_git": false
+  },
+  "requested_verdicts": [
+    "KEEP_AS_IS",
+    "SIMPLIFY_NOW",
+    "REBUILD_MINIMAL"
+  ],
+  "boundaries": {
+    "database_or_backup_in_git": false,
+    "raw_payload_in_git": false,
+    "credential_or_private_key_in_git": false,
+    "strategy_execution": false,
+    "strategy_candidate_available": false,
+    "broker_order_paper_live_auto": false
+  }
+}
