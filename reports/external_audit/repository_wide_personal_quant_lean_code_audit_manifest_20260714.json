@@ -1,0 +1,144 @@
+{
+  "schema": "REPOSITORY_WIDE_PERSONAL_QUANT_LEAN_CODE_AUDIT_MANIFEST_V1",
+  "status": "COMPLETED_RISK_BASED_REPOSITORY_WIDE_AUDIT",
+  "generated_at": "2026-07-14",
+  "project_context": {
+    "owner_count": 1,
+    "host_model": "single_WSL_host",
+    "intended_capital_cny": 400000,
+    "research_only": true,
+    "live_trading": false
+  },
+  "overall_verdict": {
+    "project_architecture": "SIMPLIFY_NOW",
+    "central_database": "REBUILD_MINIMAL",
+    "backtest_trust": "NOT_YET_READY_FOR_STRATEGY_SELECTION",
+    "system_intake_ready": false,
+    "strategy_candidate_available": false
+  },
+  "audited_refs": [
+    {
+      "repository": "2604714984-prog/central-data-ingestion",
+      "ref": "f2d401e42aa8f7cd17a14d94c039f45ba6546d9d",
+      "scope": "repository architecture, database writer/publisher/append/replay paths"
+    },
+    {
+      "repository": "2604714984-prog/quant-proj",
+      "ref": "0e90a2647a84010476470d83ebee017db7f5d20b",
+      "scope": "controller architecture and audit addendum"
+    },
+    {
+      "repository": "2604714984-prog/quant_research_lab",
+      "ref": "d5e902af4beab6826ebc34c9a940b881f25ad750",
+      "scope": "A-share R5 method engine, detectors, allocators, tests and smoke evidence"
+    },
+    {
+      "repository": "2604714984-prog/A_Share_Monitor",
+      "ref": "ab12cf99331a39a1396c7c7f885072a9f0f68c08",
+      "scope": "backtest engine, portfolio, fills, metrics, evaluator and strategy search"
+    },
+    {
+      "repository": "2604714984-prog/US_Stock_Monitor",
+      "ref": "872f54211e56a162e713d987d904b49d2521bd25",
+      "scope": "US backtest engine, portfolio, metrics, evaluator and SEC PIT fundamentals"
+    },
+    {
+      "repository": "2604714984-prog/market_data",
+      "ref": "300d4cf902cafc7f8462991e761e658febdc1424",
+      "scope": "central warehouse ownership and read-only adapter"
+    },
+    {
+      "repository": "2604714984-prog/strategy_work",
+      "ref": "a050e20ba50ada3f8bb052585c667770dac2c2c4",
+      "scope": "PSR, DSR, PBO and Newey-West validation code"
+    },
+    {
+      "repository": "2604714984-prog/us_stock_30w",
+      "ref": "62abe5ba0213e9e7a8ade69db423fc71a3746357",
+      "scope": "fixed ETF validation and forensic evidence"
+    }
+  ],
+  "inventory_classification": {
+    "active_runtime_deep_review": [
+      "central-data-ingestion",
+      "quant-proj",
+      "quant_research_lab",
+      "A_Share_Monitor",
+      "US_Stock_Monitor",
+      "market_data",
+      "strategy_work",
+      "us_stock_30w"
+    ],
+    "evidence_or_archive_classification": [
+      "STRATEGY_VAULT",
+      "quant-project-shared-reports",
+      "a-share-canonical-evidence-data-room"
+    ],
+    "archived": [
+      "quant",
+      "qts"
+    ],
+    "external_noncanonical": [
+      "FinGPT",
+      "RD-Agent"
+    ]
+  },
+  "dynamic_reproductions": [
+    {
+      "id": "DR-001",
+      "finding": "R5 allocator same-day state/return lookahead",
+      "same_day_equity": 1.1,
+      "lagged_equity": 1.0
+    },
+    {
+      "id": "DR-002",
+      "finding": "R5 deterministic detector initial-state lock",
+      "input": "10 consecutive trend observations",
+      "final_state": "LOW_CONFIDENCE_NEUTRAL",
+      "final_dwell": 0
+    },
+    {
+      "id": "DR-003",
+      "finding": "missing held price marked to zero",
+      "prior_value": 10000,
+      "marked_value": 0,
+      "implied_return": -1.0
+    },
+    {
+      "id": "DR-004",
+      "finding": "monthly return omits prior period boundary",
+      "correct_return": 0.21,
+      "reported_return": 0.10
+    },
+    {
+      "id": "DR-005",
+      "finding": "chunk warmup due order removed without execution",
+      "due_orders": 1,
+      "pending_after": 0,
+      "executed": 0
+    },
+    {
+      "id": "DR-006",
+      "finding": "PBO integer blocks drop remainder",
+      "periods": 103,
+      "blocks": 10,
+      "used": 100,
+      "dropped": 3
+    }
+  ],
+  "critical_findings": [
+    "R5_ALLOCATOR_SAME_DAY_LOOKAHEAD",
+    "MISSING_HELD_PRICE_ZERO_VALUATION",
+    "A_SHARE_CHUNK_WARMUP_ORDER_DROP",
+    "CENTRAL_DB_OVERLAPPING_WRITERS_AND_UNPRESERVED_LIVE_BRIDGE"
+  ],
+  "high_findings": [
+    "R5_DETERMINISTIC_INITIAL_STATE_LOCK",
+    "A_SHARE_MONTHLY_YEARLY_RETURN_BOUNDARY_ERROR",
+    "STRATEGY_WORK_PBO_REMAINDER_DROP",
+    "CENTRAL_DB_ROW_BY_ROW_QUERY_AND_INSERT",
+    "CENTRAL_DB_PROFILE_SCOPED_FULL_BACKUP_DUPLICATION",
+    "R5_DETECTOR_TO_STRATEGY_INTEGRATION_NOT_PROVEN"
+  ],
+  "report_path": "reports/external_audit/repository_wide_personal_quant_lean_code_audit_20260714.md"
+}
