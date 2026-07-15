@@ -1,0 +1,349 @@
+{
+  "broker_order_paper_live_auto": false,
+  "classification": "CLEAN_ROOM_MIGRATION_REPLAY_OF_REJECTED_LINEAGE",
+  "definition_id": "US31_US36_US41_US46_CLEANROOM_MIGRATION_REPLAY_V1_20260715",
+  "definition_sha256": "0e235072fc3d440cd4e5c457d74b0f73741856dbcc46b39f60fafcadba0f08ce",
+  "eligible_for_new_evidence": false,
+  "executed_at_utc": "2026-07-15T11:40:06.760982+00:00",
+  "historical_strategy_count": 4,
+  "historical_strategy_pass_count": 0,
+  "holm_family": [
+    {
+      "adjusted_p": 1.0,
+      "comparator_id": "SPY",
+      "holm_lower_bound": -0.0003467517515806875,
+      "holm_rank": 7,
+      "holm_threshold": 0.0125,
+      "observed_mean": -2.1343389200725373e-07,
+      "raw_p": 0.49722513874306284,
+      "seed": 680031364146,
+      "strategy_id": "US31",
+      "test_pass": false
+    },
+    {
+      "adjusted_p": 1.0,
+      "comparator_id": "same_constituent_buy_and_hold",
+      "holm_lower_bound": -0.00010548417689159256,
+      "holm_rank": 5,
+      "holm_threshold": 0.00625,
+      "observed_mean": 1.4459911226977488e-05,
+      "raw_p": 0.38533073346332686,
+      "seed": 680031364147,
+      "strategy_id": "US31",
+      "test_pass": false
+    },
+    {
+      "adjusted_p": 0.527573621318934,
+      "comparator_id": "SPY",
+      "holm_lower_bound": -5.601035370217486e-05,
+      "holm_rank": 1,
+      "holm_threshold": 0.003125,
+      "observed_mean": 7.039778254030931e-05,
+      "raw_p": 0.06594670266486675,
+      "seed": 680031364156,
+      "strategy_id": "US36",
+      "test_pass": false
+    },
+    {
+      "adjusted_p": 1.0,
+      "comparator_id": "same_constituent_buy_and_hold",
+      "holm_lower_bound": -1.0717273999916078e-05,
+      "holm_rank": 8,
+      "holm_threshold": 0.025,
+      "observed_mean": -4.449505231451388e-06,
+      "raw_p": 0.9234038298085095,
+      "seed": 680031364157,
+      "strategy_id": "US36",
+      "test_pass": false
+    },
+    {
+      "adjusted_p": 1.0,
+      "comparator_id": "SPY",
+      "holm_lower_bound": -0.00024299835634563038,
+      "holm_rank": 3,
+      "holm_threshold": 0.004166666666666667,
+      "observed_mean": 4.132705273127058e-05,
+      "raw_p": 0.34258287085645717,
+      "seed": 680031364166,
+      "strategy_id": "US41",
+      "test_pass": false
+    },
+    {
+      "adjusted_p": 1.0,
+      "comparator_id": "same_constituent_buy_and_hold",
+      "holm_lower_bound": -0.00010600940931997269,
+      "holm_rank": 4,
+      "holm_threshold": 0.005,
+      "observed_mean": 1.7346155795241043e-05,
+      "raw_p": 0.36768161591920406,
+      "seed": 680031364167,
+      "strategy_id": "US41",
+      "test_pass": false
+    },
+    {
+      "adjusted_p": 1.0,
+      "comparator_id": "SPY",
+      "holm_lower_bound": -0.00035744490751002557,
+      "holm_rank": 2,
+      "holm_threshold": 0.0035714285714285718,
+      "observed_mean": 6.915699797569026e-05,
+      "raw_p": 0.3206339683015849,
+      "seed": 680031364176,
+      "strategy_id": "US46",
+      "test_pass": false
+    },
+    {
+      "adjusted_p": 1.0,
+      "comparator_id": "same_constituent_buy_and_hold",
+      "holm_lower_bound": -9.526126023882324e-05,
+      "holm_rank": 6,
+      "holm_threshold": 0.008333333333333333,
+      "observed_mean": 1.3552897213793354e-05,
+      "raw_p": 0.38953052347382633,
+      "seed": 680031364177,
+      "strategy_id": "US46",
+      "test_pass": false
+    }
+  ],
+  "original_status_preserved": "rejected",
+  "price_session_count": 2769,
+  "return_observation_count": 2768,
+  "schema_version": "us-four-cleanroom-replication-result-v1",
+  "source_commit": "2717298406157c191152e663eba77a418a722d4b",
+  "source_slice_concat_row_sha256": "38e9da138c511a24e7e2e002c7be49a63138f39047773b6ebe04936740354142",
+  "source_slice_consumed_sha256": "785bc3f3ef7286fe9ef15b4f17bb1b5eddaea84150e4b83ce54682f072f75e1c",
+  "source_snapshot_id": "tiingo_raw_20260711T142010Z_5c24877d23cfc4a0",
+  "strategies": {
+    "US31": {
+      "comparators": {
+        "SPY": {
+          "arithmetic_mean_daily_return": 0.000349975552183593,
+          "cagr_252": 0.0706749041531387,
+          "max_drawdown": -0.5520110457217626,
+          "observation_count": 2768,
+          "sharpe_252_ddof1": 0.4418689639357765,
+          "terminal_wealth": 2.117205920523627,
+          "total_return": 1.1172059205236269
+        },
+        "same_constituent_buy_and_hold": {
+          "arithmetic_mean_daily_return": 0.00033530220706460824,
+          "cagr_252": 0.07608921211264419,
+          "max_drawdown": -0.3093847761976368,
+          "observation_count": 2768,
+          "sharpe_252_ddof1": 0.5663892728445583,
+          "terminal_wealth": 2.2378219281837106,
+          "total_return": 1.2378219281837106
+        }
+      },
+      "cost_runs": {
+        "10": {
+          "metrics": {
+            "arithmetic_mean_daily_return": 0.00035219251394288855,
+            "cagr_252": 0.08158800616355077,
+            "max_drawdown": -0.34040065454553936,
+            "observation_count": 2768,
+            "sharpe_252_ddof1": 0.6184147082614107,
+            "terminal_wealth": 2.3666815497150964,
+            "total_return": 1.3666815497150964
+          },
+          "rebalance_count": 43,
+          "total_cost_fraction": 0.0016822496975549513,
+          "total_turnover": 1.6822496975549512
+        },
+        "50": {
+          "metrics": {
+            "arithmetic_mean_daily_return": 0.00034976211829158577,
+            "cagr_252": 0.08092548050729009,
+            "max_drawdown": -0.3406664523145905,
+            "observation_count": 2768,
+            "sharpe_252_ddof1": 0.6141344720394996,
+            "terminal_wealth": 2.350806372120081,
+            "total_return": 1.350806372120081
+          },
+          "rebalance_count": 43,
+          "total_cost_fraction": 0.008411248487774756,
+          "total_turnover": 1.6822496975549512
+        }
+      },
+      "historical_interval_pass": false,
+      "target_weights": {
+        "GLD": 0.5,
+        "SPY": 0.5
+      }
+    },
+    "US36": {
+      "comparators": {
+        "SPY": {
+          "arithmetic_mean_daily_return": 0.000349975552183593,
+          "cagr_252": 0.0706749041531387,
+          "max_drawdown": -0.5520110457217626,
+          "observation_count": 2768,
+          "sharpe_252_ddof1": 0.4418689639357765,
+          "terminal_wealth": 2.117205920523627,
+          "total_return": 1.1172059205236269
+        },
+        "same_constituent_buy_and_hold": {
+          "arithmetic_mean_daily_return": 0.0004248228399553537,
+          "cagr_252": 0.09082188101076283,
+          "max_drawdown": -0.5382339295106389,
+          "observation_count": 2768,
+          "sharpe_252_ddof1": 0.5334796695756369,
+          "terminal_wealth": 2.59832207589149,
+          "total_return": 1.59832207589149
+        }
+      },
+      "cost_runs": {
+        "10": {
+          "metrics": {
+            "arithmetic_mean_daily_return": 0.0004213038526192525,
+            "cagr_252": 0.08995561707251976,
+            "max_drawdown": -0.5369691809400353,
+            "observation_count": 2768,
+            "sharpe_252_ddof1": 0.5302771102259894,
+            "terminal_wealth": 2.575746757084255,
+            "total_return": 1.575746757084255
+          },
+          "rebalance_count": 43,
+          "total_cost_fraction": 0.0006447653300544782,
+          "total_turnover": 0.6447653300544781
+        },
+        "50": {
+          "metrics": {
+            "arithmetic_mean_daily_return": 0.00042037333472390233,
+            "cagr_252": 0.08969970473513578,
+            "max_drawdown": -0.5371722335672651,
+            "observation_count": 2768,
+            "sharpe_252_ddof1": 0.5291006168219747,
+            "terminal_wealth": 2.56911173852618,
+            "total_return": 1.5691117385261801
+          },
+          "rebalance_count": 43,
+          "total_cost_fraction": 0.0032238266502723906,
+          "total_turnover": 0.6447653300544781
+        }
+      },
+      "historical_interval_pass": false,
+      "target_weights": {
+        "QQQ": 0.5,
+        "SPY": 0.5
+      }
+    },
+    "US41": {
+      "comparators": {
+        "SPY": {
+          "arithmetic_mean_daily_return": 0.000349975552183593,
+          "cagr_252": 0.0706749041531387,
+          "max_drawdown": -0.5520110457217626,
+          "observation_count": 2768,
+          "sharpe_252_ddof1": 0.4418689639357765,
+          "terminal_wealth": 2.117205920523627,
+          "total_return": 1.1172059205236269
+        },
+        "same_constituent_buy_and_hold": {
+          "arithmetic_mean_daily_return": 0.00037395644911962256,
+          "cagr_252": 0.08772212403624202,
+          "max_drawdown": -0.3438091566683513,
+          "observation_count": 2768,
+          "sharpe_252_ddof1": 0.6621630775901799,
+          "terminal_wealth": 2.518360695875616,
+          "total_return": 1.5183606958756162
+        }
+      },
+      "cost_runs": {
+        "10": {
+          "metrics": {
+            "arithmetic_mean_daily_return": 0.0003936407662419718,
+            "cagr_252": 0.09199389791202295,
+            "max_drawdown": -0.39267726696993355,
+            "observation_count": 2768,
+            "sharpe_252_ddof1": 0.6633864155454469,
+            "terminal_wealth": 2.6291517696020894,
+            "total_return": 1.6291517696020894
+          },
+          "rebalance_count": 43,
+          "total_cost_fraction": 0.001617942035671029,
+          "total_turnover": 1.617942035671029
+        },
+        "50": {
+          "metrics": {
+            "arithmetic_mean_daily_return": 0.00039130260491486364,
+            "cagr_252": 0.09135058115121586,
+            "max_drawdown": -0.39324790561760736,
+            "observation_count": 2768,
+            "sharpe_252_ddof1": 0.659438943619421,
+            "terminal_wealth": 2.612188521953602,
+            "total_return": 1.6121885219536018
+          },
+          "rebalance_count": 43,
+          "total_cost_fraction": 0.008089710178355145,
+          "total_turnover": 1.617942035671029
+        }
+      },
+      "historical_interval_pass": false,
+      "target_weights": {
+        "GLD": 0.3333333333333333,
+        "QQQ": 0.3333333333333333,
+        "SPY": 0.3333333333333333
+      }
+    },
+    "US46": {
+      "comparators": {
+        "SPY": {
+          "arithmetic_mean_daily_return": 0.000349975552183593,
+          "cagr_252": 0.0706749041531387,
+          "max_drawdown": -0.5520110457217626,
+          "observation_count": 2768,
+          "sharpe_252_ddof1": 0.4418689639357765,
+          "terminal_wealth": 2.117205920523627,
+          "total_return": 1.1172059205236269
+        },
+        "same_constituent_buy_and_hold": {
+          "arithmetic_mean_daily_return": 0.0004055796529454899,
+          "cagr_252": 0.09533739491076965,
+          "max_drawdown": -0.30240617559855454,
+          "observation_count": 2768,
+          "sharpe_252_ddof1": 0.6857294310510343,
+          "terminal_wealth": 2.7189380835516004,
+          "total_return": 1.7189380835516004
+        }
+      },
+      "cost_runs": {
+        "10": {
+          "metrics": {
+            "arithmetic_mean_daily_return": 0.00042164713316048626,
+            "cagr_252": 0.100361514027969,
+            "max_drawdown": -0.3472156211421745,
+            "observation_count": 2768,
+            "sharpe_252_ddof1": 0.7301102811956028,
+            "terminal_wealth": 2.859104455668652,
+            "total_return": 1.859104455668652
+          },
+          "rebalance_count": 43,
+          "total_cost_fraction": 0.00174108869693725,
+          "total_turnover": 1.7410886969372499
+        },
+        "50": {
+          "metrics": {
+            "arithmetic_mean_daily_return": 0.0004191325501592832,
+            "cagr_252": 0.09966392414845915,
+            "max_drawdown": -0.34739129829414417,
+            "observation_count": 2768,
+            "sharpe_252_ddof1": 0.7257328612453887,
+            "terminal_wealth": 2.839257845897961,
+            "total_return": 1.839257845897961
+          },
+          "rebalance_count": 43,
+          "total_cost_fraction": 0.00870544348468625,
+          "total_turnover": 1.7410886969372499
+        }
+      },
+      "historical_interval_pass": false,
+      "target_weights": {
+        "GLD": 0.5,
+        "QQQ": 0.5
+      }
+    }
+  },
+  "strategy_candidate_available": false,
+  "strict_pit_eligible": false
+}
