@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Qualify one locally preserved snapshot of the fixed SPY official sources."""
+"""Qualify one locally preserved snapshot of the fixed SPY official sources.
+
+Status: FROZEN_ONE_OFF_EVIDENCE / NO_GENERALIZATION. This is a frozen one-off
+evidence reproducer, not a reusable source adapter. Do not import or generalize
+it into the runtime API.
+"""
 
 from __future__ import annotations
 

@@ -1,5 +1,8 @@
 """Offline-first SEC Company Facts point-in-time primitives.
 
+Status: EXPERIMENTAL_NOT_ACTIVE. Import this module explicitly as
+``quant_system.data.sec_edgar``; it is not part of the active top-level data API.
+
 The module deliberately has no network client.  Callers supply hash-pinned raw
 Company Facts bytes plus independently obtained filing identities, including the
 SEC acceptance timestamp that is absent from the Company Facts response.

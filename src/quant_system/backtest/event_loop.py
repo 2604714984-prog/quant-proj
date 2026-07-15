@@ -117,6 +117,7 @@ def run_static_rebalance(
     execution_inputs: tuple[ExecutionInput, ...],
     target_weights: TargetWeightCallback,
     capacity_policy: CapacityPolicy | None = None,
+    max_positions: int | None = None,
     slippage_bps: float = 0.0,
     prior_stage_hash: str = "0" * 64,
 ) -> StaticRebalanceResult:
@@ -130,6 +131,10 @@ def run_static_rebalance(
         raise MarketDataError("decision_at must be between signal close and next-session open")
     if not is_finite_number(slippage_bps) or not 0 <= float(slippage_bps) < 10_000:
         raise ValueError("slippage_bps must be finite and in [0, 10000)")
+    if max_positions is not None and (
+        type(max_positions) is not int or max_positions < 1
+    ):
+        raise ValueError("max_positions must be a positive integer or None")
     rows = _inputs(execution_inputs, portfolio, execution)
     working = deepcopy(portfolio)
     working.start_session(execution.session_date)
@@ -162,11 +167,40 @@ def run_static_rebalance(
                 requested, current, abs_tol=1e-9
             ) else _lot(requested, working.lot_size)
             if requested:
+                if (
+                    side == "buy"
+                    and max_positions is not None
+                    and symbol not in working.positions
+                    and len(working.positions) >= max_positions
+                ):
+                    _receipt(
+                        receipts,
+                        symbol,
+                        side,
+                        requested,
+                        0,
+                        None,
+                        0,
+                        0,
+                        0,
+                        working.available_cash,
+                        "max_positions_after_blocked_exit",
+                    )
+                    continue
                 _order(working, calendar, execution, cutoff, rows[symbol], side, requested,
                        capacity_policy, slippage_bps, receipts)
     final_nav = working.nav(_marks(working, rows))
-    identity = _identity(context, calendar, rows, portfolio, weights, capacity_policy,
-                         slippage_bps, cutoff)
+    identity = _identity(
+        context,
+        calendar,
+        rows,
+        portfolio,
+        weights,
+        capacity_policy,
+        max_positions,
+        slippage_bps,
+        cutoff,
+    )
     receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, prior_stage_hash)
     return StaticRebalanceResult(working, context, weights, tuple(receipts), identity,
                                  receipt_hashes, stage_hash, final_nav)
@@ -442,7 +476,7 @@ def _identity(
     context: DecisionContext, calendar: AcceptedSessionCalendar,
     rows: Mapping[str, ExecutionInput], portfolio: Portfolio,
     weights: tuple[tuple[str, float], ...], policy: CapacityPolicy | None,
-    slippage: float, cutoff: datetime,
+    max_positions: int | None, slippage: float, cutoff: datetime,
 ) -> str:
     payload = {
         "context": context,
@@ -453,6 +487,8 @@ def _identity(
         "capacity_policy": policy,
         "slippage_bps": slippage,
     }
+    if max_positions is not None:
+        payload["max_positions"] = max_positions
     encoded = json.dumps(_normal(payload), sort_keys=True, separators=(",", ":"))
     return hashlib.sha256(encoded.encode()).hexdigest()
 

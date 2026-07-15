@@ -1,5 +1,8 @@
 """Dependency-light statistics for preregistered quantitative research.
 
+Status: EXPERIMENTAL_NOT_ACTIVE. Import this module explicitly as
+``quant_system.research.stats``; it is not part of the active top-level research API.
+
 The module deliberately contains no experiment registry, strategy selection, or
 data-access code. Callers must supply already frozen inputs and multiplicity
 counts.

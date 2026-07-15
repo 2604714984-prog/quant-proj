@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 """Replay the four legacy US ETF formulas from the local database.
 
-This is deliberately a migration check, not a new strategy experiment.  It
-matches the arithmetic in legacy ``scripts/four_strategies.py``: constant
-close-to-close weights and a fixed quarterly cost deduction.
+Status: FROZEN_ONE_OFF_EVIDENCE / NO_GENERALIZATION. This is a frozen one-off
+evidence reproducer, not a new strategy experiment. It is not a general-purpose
+runner. Do not import or generalize it into the runtime API. It matches the
+arithmetic in legacy
+``scripts/four_strategies.py``: constant close-to-close weights and a fixed
+quarterly cost deduction.
 """
 
 from __future__ import annotations
@@ -15,6 +18,7 @@ import hashlib
 import json
 import math
 from pathlib import Path
+import re
 import statistics
 from typing import Any
 
@@ -30,6 +34,15 @@ REBALANCE_SESSIONS = 63
 COST_BPS = 5.0
 LEGACY_BLOB = "0a015ace9ebb637598c857b46c21a911c13b2e96"
 LEGACY_REPORT_BLOB = "2d1444b06c99923f855844b30d1d29ab90e886d4"
+FROZEN_EXPECTED_ROW_COUNT = 7_542
+FROZEN_EXPECTED_SESSION_COUNT = 2_514
+FROZEN_EXPECTED_FIRST_SESSION = date(2016, 1, 4)
+FROZEN_EXPECTED_LAST_SESSION = date(2025, 12, 31)
+FROZEN_EXPECTED_SNAPSHOT_ID = "sina_us_etf_20160101_20251231_e4c60497095e76f9"
+FROZEN_EXPECTED_SLICE_SHA256 = (
+    "7183133d689717670d9b8b9caae9116e7822e5bb78ed8351ffe0f029875e8701"
+)
+ROW_SHA256 = re.compile(r"[0-9a-f]{64}")
 STRATEGIES = {
     "US31_SPY_GLD_50_50": {"SPY": 0.5, "QQQ": 0.0, "GLD": 0.5},
     "US36_SPY_QQQ_50_50": {"SPY": 0.5, "QQQ": 0.5, "GLD": 0.0},
@@ -88,7 +101,9 @@ def load_market_slice(database: Path) -> MarketSlice:
             raise ReplayError("duplicate or invalid close in market slice")
         by_symbol[symbol][session] = price
         snapshots.add(str(snapshot))
-        identities.append(str(row_sha256))
+        if not isinstance(row_sha256, str) or ROW_SHA256.fullmatch(row_sha256) is None:
+            raise ReplayError("row_sha256 must be lowercase 64-hex SHA-256")
+        identities.append(row_sha256)
         missing_available_at += available_at is None
     common = set.intersection(*(set(values) for values in by_symbol.values()))
     sessions = tuple(sorted(common))
@@ -153,6 +168,67 @@ def replay(closes: dict[str, tuple[float, ...]], weights: dict[str, float]) -> d
 
 
 def build_report(market: MarketSlice) -> dict[str, Any]:
+    boundary_counts_exact = (
+        market.row_count == FROZEN_EXPECTED_ROW_COUNT
+        and len(market.sessions) == FROZEN_EXPECTED_SESSION_COUNT
+        and market.sessions[0] == FROZEN_EXPECTED_FIRST_SESSION
+        and market.sessions[-1] == FROZEN_EXPECTED_LAST_SESSION
+    )
+    input_slice_hash_exact = market.slice_sha256 == FROZEN_EXPECTED_SLICE_SHA256
+    snapshot_id_exact = market.snapshot_id == FROZEN_EXPECTED_SNAPSHOT_ID
+    mismatch_reasons: list[str] = []
+    if not boundary_counts_exact:
+        mismatch_reasons.append("boundary_counts_mismatch")
+    if not input_slice_hash_exact:
+        mismatch_reasons.append("input_slice_hash_mismatch")
+    if not snapshot_id_exact:
+        mismatch_reasons.append("snapshot_id_mismatch")
+
+    report: dict[str, Any] = {
+        "schema_version": "legacy-us-etf-migration-replay-v1.1",
+        "classification": "RETROSPECTIVE_MIGRATION_CONSISTENCY_ONLY",
+        "evidence_state": "FROZEN_ONE_OFF_EVIDENCE",
+        "generalization_allowed": False,
+        "generalization_policy": "NO_GENERALIZATION",
+        "legacy_implementation": {
+            "blob_oid": LEGACY_BLOB,
+            "formula": "constant_weight_close_returns_with_63_session_cost_deduction",
+            "headline_report_blob_oid": LEGACY_REPORT_BLOB,
+        },
+        "source": {
+            "available_at_missing": market.available_at_missing,
+            "first_session": market.sessions[0].isoformat(),
+            "last_session": market.sessions[-1].isoformat(),
+            "row_count": market.row_count,
+            "session_count": len(market.sessions),
+            "slice_sha256": market.slice_sha256,
+            "snapshot_id": market.snapshot_id,
+        },
+        "boundary_counts_exact": boundary_counts_exact,
+        "input_slice_hash_exact": input_slice_hash_exact,
+        "snapshot_id_exact": snapshot_id_exact,
+        "mismatch_reasons": mismatch_reasons,
+        "limitations": [
+            "replays legacy close-to-close arithmetic rather than next-open holdings",
+            "uses raw Sina closes and does not establish strict PIT or corporate-action completeness",
+            "US31/US36/US41/US46 remain rejected and are not reopened by this replay",
+        ],
+        "strict_pit_eligible": False,
+        "strategy_evidence_eligible": False,
+        "strategy_candidate_available": False,
+        "recommendation_available": False,
+    }
+    if mismatch_reasons:
+        report.update(
+            {
+                "headline_metrics_reproduced": None,
+                "legacy_headline_drift": None,
+                "results": None,
+                "status": "INPUT_SLICE_MISMATCH",
+            }
+        )
+        return report
+
     results = {name: replay(market.closes, weights) for name, weights in STRATEGIES.items()}
     drift = {
         name: {
@@ -167,46 +243,19 @@ def build_report(market: MarketSlice) -> dict[str, Any]:
         and abs(values["max_drawdown"]) <= 0.01
         for values in drift.values()
     )
-    coverage_exact = (
-        market.row_count == 7_542
-        and len(market.sessions) == 2_514
-        and market.sessions[0] == date(2016, 1, 4)
-        and market.sessions[-1] == END
+    report.update(
+        {
+            "headline_metrics_reproduced": headline_reproduced,
+            "legacy_headline_drift": drift,
+            "results": results,
+            "status": (
+                "REPLAY_COMPLETE_HEADLINES_REPRODUCED"
+                if headline_reproduced
+                else "REPLAY_COMPLETE_HEADLINES_NOT_REPRODUCED"
+            ),
+        }
     )
-    return {
-        "schema_version": "legacy-us-etf-migration-replay-v1",
-        "classification": "RETROSPECTIVE_MIGRATION_CONSISTENCY_ONLY",
-        "legacy_implementation": {
-            "blob_oid": LEGACY_BLOB,
-            "formula": "constant_weight_close_returns_with_63_session_cost_deduction",
-            "headline_report_blob_oid": LEGACY_REPORT_BLOB,
-        },
-        "source": {
-            "available_at_missing": market.available_at_missing,
-            "row_count": market.row_count,
-            "session_count": len(market.sessions),
-            "slice_sha256": market.slice_sha256,
-            "snapshot_id": market.snapshot_id,
-        },
-        "coverage_exact": coverage_exact,
-        "headline_metrics_reproduced": headline_reproduced,
-        "legacy_headline_drift": drift,
-        "status": (
-            "REPLAY_COMPLETE_HEADLINES_REPRODUCED"
-            if headline_reproduced
-            else "REPLAY_COMPLETE_HEADLINES_NOT_REPRODUCED"
-        ),
-        "results": results,
-        "limitations": [
-            "replays legacy close-to-close arithmetic rather than next-open holdings",
-            "uses raw Sina closes and does not establish strict PIT or corporate-action completeness",
-            "US31/US36/US41/US46 remain rejected and are not reopened by this replay",
-        ],
-        "strict_pit_eligible": False,
-        "strategy_evidence_eligible": False,
-        "strategy_candidate_available": False,
-        "recommendation_available": False,
-    }
+    return report
 
 
 def main(argv: list[str] | None = None) -> int:

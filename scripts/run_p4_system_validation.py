@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Run the bounded synthetic P4 system-conformance fixture."""
+"""Run the bounded synthetic P4 system-conformance fixture.
+
+Status: FROZEN_ONE_OFF_EVIDENCE / NO_GENERALIZATION. This is a frozen one-off
+evidence reproducer, not a general backtest runner. Do not import or generalize
+it into the runtime API.
+"""
 
 from __future__ import annotations
 

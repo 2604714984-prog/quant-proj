@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Validate one free-source SPY replay without claiming PIT strategy evidence."""
+"""Validate one free-source SPY replay without claiming PIT strategy evidence.
+
+Status: FROZEN_ONE_OFF_EVIDENCE / NO_GENERALIZATION. This is a frozen one-off
+evidence reproducer, not a general strategy runner. Do not import or generalize
+it into the runtime API.
+"""
 
 from __future__ import annotations
 
