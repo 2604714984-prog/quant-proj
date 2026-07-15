@@ -176,6 +176,11 @@
       "inference.holdout.excess_vs_511880.bh_adjusted_p_le_alpha"
     ]
   },
+  "output_contract": {
+    "runtime_timestamp_in_content_addressed_result": false,
+    "false_fixed_time_permitted": false,
+    "determinism": "identical accepted definition, input bytes, and source commit must produce byte-identical result JSON"
+  },
   "lineage_and_execution_boundary": {
     "original_status": "REJECTED_BY_METHODOLOGY_RECOMPUTE_GATE",
     "eligible_for_new_evidence": false,

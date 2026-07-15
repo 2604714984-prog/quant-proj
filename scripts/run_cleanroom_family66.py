@@ -7,7 +7,7 @@ import argparse
 from collections.abc import Mapping, Sequence
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
-from datetime import date, datetime, timezone
+from datetime import date
 import hashlib
 import json
 import math
@@ -38,7 +38,7 @@ from quant_system.research.event_cohort import (  # noqa: E402
 
 DEFINITION = ROOT / "research/definitions/a_share_family66_cleanroom_event_replay_v1.json"
 OUTPUT = ROOT / "reports/validation/a_share_family66_cleanroom_event_replay_v1.json"
-DEFINITION_SHA256 = "f37bca74d6cc2574b05aa375fc189fd072acabbff7bd10337524edc66967ba4d"
+DEFINITION_SHA256 = "b7154219f76eea259fe86334270a4669abfe20fb6a66da065aecaff9735e0ff0"
 HEX = frozenset("0123456789abcdef")
 
 
@@ -224,6 +224,15 @@ def _load_definition(path: Path = DEFINITION) -> tuple[dict[str, Any], str]:
     gate_order = definition.get("gate_contract", {}).get("gate_order")
     if not isinstance(gate_order, list) or len(gate_order) != 48 or len(set(gate_order)) != 48:
         raise Family66ReplayError("exact 48-gate order changed")
+    if definition.get("output_contract") != {
+        "runtime_timestamp_in_content_addressed_result": False,
+        "false_fixed_time_permitted": False,
+        "determinism": (
+            "identical accepted definition, input bytes, and source commit must produce "
+            "byte-identical result JSON"
+        ),
+    }:
+        raise Family66ReplayError("deterministic output contract changed")
     return definition, digest
 
 
@@ -931,7 +940,6 @@ def build_report(
         "definition_id": definition["definition_id"],
         "definition_sha256": definition_sha256,
         "source_commit": source_commit,
-        "executed_at_utc": datetime.now(timezone.utc).isoformat(),
         "classification": definition["classification"],
         "source_paths": dict(source_paths),
         "source_feature_manifest_sha256": definition["source_contract"][
