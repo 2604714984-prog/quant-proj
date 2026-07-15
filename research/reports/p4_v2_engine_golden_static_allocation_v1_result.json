@@ -1,0 +1,171 @@
+{
+  "boundary_result": "PASS_SYNTHETIC_SYSTEM_ONLY",
+  "evidence_class": "SYNTHETIC_SYSTEM_EVIDENCE_ONLY",
+  "gate_results": {
+    "blocked_exit_retries_and_delay_exact": true,
+    "calendar_and_source_cutoffs": true,
+    "clean_committed_runtime_identity": true,
+    "definition_and_fixture_hashes_exact": true,
+    "deterministic_replay_and_mutation_sensitivity": true,
+    "distribution_entitlement_and_pay_date_once_only": true,
+    "initial_allocation_and_costs_exact": true,
+    "nav_accounting_identity_exact": true,
+    "receipt_and_stage_hash_chain_exact": true,
+    "settlement_cash_timing_exact": true,
+    "split_value_and_once_only": true,
+    "synthetic_only_boundary": true,
+    "terminal_value_and_nonrepurchase_exact": true
+  },
+  "identities": {
+    "definition_sha256": "eea3e233688d3efb677eba924432a172b02784dabbc991aecfe9bbf63a2f0e46",
+    "fixture_sha256": "e54db1193717c97ef6833a37e52b65ec089be9c99b4d114e560baa7826070fba",
+    "git_commit": "68cb35dfa80b2b6c3f5a933dc9587b401be0a85f",
+    "git_tree": "e333a572e90d2c5ec95f17ee2ac554e46067bd45",
+    "runner_sha256": "bd2f7f150afd669c79c5b0253aa274efa5867c50f7d9304fb1818f3b8c9d137d"
+  },
+  "observed_ledger": {
+    "accounting_residual": "0.000000000",
+    "blocked_attempt_count": 2,
+    "commission_total": "74.962475000",
+    "corporate_action_receipt_count": 3,
+    "final_nav": "100400.087525000",
+    "receipt_count": 8,
+    "receipt_hashes": [
+      "05ae102bfc457843037cf85a6c99c9dfcf51bb4b7021553aef561fa9836c0452",
+      "9a1f9db722e0024496e7974fbb9071731fe18e1cb093c16a95fe2a043e7701e6",
+      "35ad5cc57e91c4a9da31dd3fb79e43548774bc6a3c66a9f0674c125d8da43918",
+      "c5c4a9d7164a229c47a48de7018827047c4a16cbdc5445adb26dca4a0910e2f0",
+      "b8b521f54a238c9b469b26304074ba3ec5e92922db7394e7878c0323341a1dae",
+      "41e4b07976803f1ae8aeba535cf6eb26266e5c71f6588f36e8dad52e0371edd1",
+      "ee025265ffbf80e0939008721a1df579d682c7561e288d41dbecbf5da0192a33",
+      "656cac2ee4f57d10668e73147e7dd954b972ec9743e27aabfd1d6f4e8e6000be"
+    ],
+    "slippage_total": "74.950000000",
+    "stage_hashes": [
+      "9a1f9db722e0024496e7974fbb9071731fe18e1cb093c16a95fe2a043e7701e6",
+      "c5c4a9d7164a229c47a48de7018827047c4a16cbdc5445adb26dca4a0910e2f0",
+      "42d48eccbcac82e35c2f477e73efaea3a8f4b2e4be6adfa214dae33e11731eb8",
+      "2f6db6bf462822b95883699861a843e035234a7f6f86bf2d061086cb62a04231",
+      "41e4b07976803f1ae8aeba535cf6eb26266e5c71f6588f36e8dad52e0371edd1",
+      "ee025265ffbf80e0939008721a1df579d682c7561e288d41dbecbf5da0192a33",
+      "656cac2ee4f57d10668e73147e7dd954b972ec9743e27aabfd1d6f4e8e6000be",
+      "44ead987c6da84a4bf5b29e7d6139f04f0a2adb84ddfb2dbe3479662a1af129d"
+    ],
+    "stages": [
+      {
+        "blocked_delay": null,
+        "final_nav": "99900.075025000",
+        "pending_cash": "0.000000000",
+        "positions": {
+          "SYN_A": "500.000000000",
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [
+          "filled",
+          "filled"
+        ],
+        "settled_cash": "0.075025000",
+        "stage_id": "entry"
+      },
+      {
+        "blocked_delay": null,
+        "final_nav": "99900.075025000",
+        "pending_cash": "500.000000000",
+        "positions": {
+          "SYN_A": "1000.000000000",
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [
+          "split_applied",
+          "entitlement:500"
+        ],
+        "settled_cash": "0.075025000",
+        "stage_id": "actions"
+      },
+      {
+        "blocked_delay": null,
+        "final_nav": "99900.075025000",
+        "pending_cash": "500.000000000",
+        "positions": {
+          "SYN_A": "1000.000000000",
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [],
+        "settled_cash": "0.075025000",
+        "stage_id": "distribution_pending"
+      },
+      {
+        "blocked_delay": null,
+        "final_nav": "99900.075025000",
+        "pending_cash": "0.000000000",
+        "positions": {
+          "SYN_A": "1000.000000000",
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [],
+        "settled_cash": "500.075025000",
+        "stage_id": "distribution_paid"
+      },
+      {
+        "blocked_delay": 1,
+        "final_nav": "99900.075025000",
+        "pending_cash": "0.000000000",
+        "positions": {
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [
+          "terminal_delisting",
+          "confirmed_halt"
+        ],
+        "settled_cash": "50450.075025000",
+        "stage_id": "terminal_and_blocked_exit_1"
+      },
+      {
+        "blocked_delay": 2,
+        "final_nav": "99900.075025000",
+        "pending_cash": "0.000000000",
+        "positions": {
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [
+          "confirmed_halt"
+        ],
+        "settled_cash": "50450.075025000",
+        "stage_id": "blocked_exit_2"
+      },
+      {
+        "blocked_delay": 2,
+        "final_nav": "100400.087525000",
+        "pending_cash": "49950.012500000",
+        "positions": {},
+        "receipt_reasons": [
+          "filled"
+        ],
+        "settled_cash": "50450.075025000",
+        "stage_id": "blocked_exit_filled"
+      },
+      {
+        "blocked_delay": 2,
+        "final_nav": "100400.087525000",
+        "pending_cash": "0.000000000",
+        "positions": {},
+        "receipt_reasons": [],
+        "settled_cash": "100400.087525000",
+        "stage_id": "sale_settled"
+      }
+    ],
+    "trade_fill_count": 3
+  },
+  "phase": "FORMAL_SYSTEM_CONFORMANCE_VALIDATION",
+  "research_id": "P4_V2_ENGINE_GOLDEN_STATIC_ALLOCATION_V1",
+  "run_identity_sha256": "2ba22f4b53498bfb75553eb255feff6f6f17e21a546e6f3e69f7971771cf61a9",
+  "schema_version": "p4-system-validation-result-v1",
+  "strategy_candidate_available": false,
+  "strategy_evidence_eligible": false,
+  "strategy_gate_counts": null,
+  "system_gate_counts": {
+    "passed": 13,
+    "total": 13
+  },
+  "system_validation_status": "FORMAL_SYSTEM_VALIDATION_PASS"
+}
