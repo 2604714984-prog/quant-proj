@@ -1,0 +1,212 @@
+{
+  "boundaries": {
+    "central_database_write_performed": false,
+    "raw_values_published_in_report": false,
+    "strategy_candidate_available": false,
+    "strategy_execution_performed": false
+  },
+  "component_results": {
+    "calendar": {
+      "available_years": [
+        2022,
+        2023,
+        2024,
+        2025
+      ],
+      "classification": "PARTIAL_OFFICIAL_2022_2025_ONLY",
+      "documents": [
+        {
+          "bytes": 111260,
+          "content_sha256": "2c2e63b780c4a373d8d546904ae46c8ba7e8070ad9357d23d2c92749985bb6c9",
+          "year": 2022
+        },
+        {
+          "bytes": 112881,
+          "content_sha256": "3d28b46a7197424c822087fb7117cdf3f303bd9a73f29660525b605f542bcfe2",
+          "year": 2023
+        },
+        {
+          "bytes": 115340,
+          "content_sha256": "02282e733512d1f112230372efccfd18f81599c682af94bb6f21fd9bccbfd145",
+          "year": 2024
+        },
+        {
+          "bytes": 115262,
+          "content_sha256": "3e8b540ad74474bc12a0aba473dbca28f37e0a5c1795cf66701b9a506a34226e",
+          "year": 2025
+        }
+      ],
+      "missing_target_years": [
+        2016,
+        2017,
+        2018,
+        2019,
+        2020,
+        2021
+      ]
+    },
+    "distributions": {
+      "all_spy_event_count": 135,
+      "all_spy_ex_date_max": "2026-06-18",
+      "all_spy_ex_date_min": "1993-03-19",
+      "classification": "QUALIFIED_RETROSPECTIVE_DISTRIBUTIONS_PIT_UNQUALIFIED",
+      "historical_announced_at_complete": false,
+      "revision_lineage_complete": false,
+      "target_amounts_complete": true,
+      "target_dates_complete": true,
+      "target_event_count": 40,
+      "target_year_counts": {
+        "2016": 4,
+        "2017": 4,
+        "2018": 4,
+        "2019": 4,
+        "2020": 4,
+        "2021": 4,
+        "2022": 4,
+        "2023": 4,
+        "2024": 4,
+        "2025": 4
+      }
+    },
+    "nav": {
+      "classification": "QUALIFIED_RETROSPECTIVE_NAV_NOT_TRADABLE_OHLC",
+      "contains_raw_open_close": false,
+      "date_max": "2026-07-14",
+      "date_min": "2003-12-01",
+      "row_count": 5692,
+      "target_row_count": 2514,
+      "target_year_counts": {
+        "2016": 252,
+        "2017": 251,
+        "2018": 251,
+        "2019": 252,
+        "2020": 253,
+        "2021": 252,
+        "2022": 251,
+        "2023": 250,
+        "2024": 252,
+        "2025": 250
+      }
+    },
+    "premium_discount": {
+      "classification": "PARTIAL_RECENT_PREMIUM_DISCOUNT_NOT_RAW_OHLC",
+      "contains_raw_open_close": false,
+      "date_max": "2026-07-13",
+      "date_min": "2025-01-02",
+      "row_count": 381,
+      "target_end_covered": true,
+      "target_row_count": 250,
+      "target_start_covered": false
+    },
+    "product_identity": {
+      "classification": "QUALIFIED_PRIMARY_STATIC_IDENTITY",
+      "cusip": "78462F103",
+      "inception_date": "1993-01-22",
+      "isin": "US78462F1030",
+      "primary_exchange": "NYSE ARCA",
+      "snapshot_date": "2026-07-13",
+      "ticker": "SPY"
+    },
+    "raw_ohlc": {
+      "classification": "QUALIFIED_OFFICIAL_OHLC_SCHEMA_SAMPLE_ONLY",
+      "field_count": 14,
+      "historical_access": "BLOCKED_ENTITLEMENT",
+      "row_count": 12203,
+      "sample_date": "2026-04-01",
+      "spy_row_count": 1,
+      "target_period_covered": false
+    },
+    "split_and_lifecycle": {
+      "classification": "BLOCKED_COMPLETE_OFFICIAL_IDENTITY",
+      "complete_2016_2025": false
+    }
+  },
+  "conclusion": "PARTIALLY_QUALIFIED_BLOCKED_ANONYMOUS_OFFICIAL_RAW_OHLC",
+  "definition_sha256": "49315f4141bb2880e5a48ff4e61bce441a25282fd95e7e57cd280552a2b0fd54",
+  "gate_counts": null,
+  "p4_r_strict_eligible": false,
+  "phase": "P3",
+  "qualification_id": "P3_SPY_OFFICIAL_SOURCE_QUALIFICATION_V1",
+  "residual_blockers": [
+    "2016_2025_official_raw_open_close_requires_paid_entitlement",
+    "complete_split_and_historical_lifecycle_identity_unavailable_anonymously",
+    "official_session_calendar_missing_2016_2021",
+    "historical_distribution_announced_at_and_revision_lineage_unqualified"
+  ],
+  "source_snapshot": {
+    "manifest_sha256": "a0308bf153d70dc0eaca53516c99b3728f432299ce58c015e6175dd7c42a4fb3",
+    "resource_count": 9,
+    "resources": {
+      "nyse_arca_closing_prices_sample": {
+        "bytes": 1014766,
+        "content_sha256": "2ecbf85abb0e3481ed97651d9d0bf5bbbb6089ea57636a36083b70efbdd7fb6c",
+        "observed_available_at": "2026-07-15T05:31:55.318311Z",
+        "server_last_modified": "Wed, 01 Jul 2026 04:07:56 GMT",
+        "url": "https://ftp.nyse.com/Historical%20Data%20Samples/TAQ%20CLOSING%20PRICES/EQY_US_ARCA_SUM_CLOSE_20260401.txt"
+      },
+      "nyse_calendar_2022": {
+        "bytes": 111260,
+        "content_sha256": "2c2e63b780c4a373d8d546904ae46c8ba7e8070ad9357d23d2c92749985bb6c9",
+        "observed_available_at": "2026-07-15T05:31:57.613583Z",
+        "server_last_modified": "Fri, 17 Dec 2021 14:43:26 GMT",
+        "url": "https://www.nyse.com/publicdocs/ICE_NYSE_2022_Yearly_Trading_Calendar.pdf"
+      },
+      "nyse_calendar_2023": {
+        "bytes": 112881,
+        "content_sha256": "3d28b46a7197424c822087fb7117cdf3f303bd9a73f29660525b605f542bcfe2",
+        "observed_available_at": "2026-07-15T05:31:59.920976Z",
+        "server_last_modified": "Mon, 03 Apr 2023 20:49:41 GMT",
+        "url": "https://www.nyse.com/publicdocs/ICE_NYSE_2023_Yearly_Trading_Calendar.pdf"
+      },
+      "nyse_calendar_2024": {
+        "bytes": 115340,
+        "content_sha256": "02282e733512d1f112230372efccfd18f81599c682af94bb6f21fd9bccbfd145",
+        "observed_available_at": "2026-07-15T05:32:01.717080Z",
+        "server_last_modified": "Thu, 12 Dec 2024 22:26:34 GMT",
+        "url": "https://www.nyse.com/publicdocs/ICE_NYSE_2024_Yearly_Trading_Calendar.pdf"
+      },
+      "nyse_calendar_2025": {
+        "bytes": 115262,
+        "content_sha256": "3e8b540ad74474bc12a0aba473dbca28f37e0a5c1795cf66701b9a506a34226e",
+        "observed_available_at": "2026-07-15T05:32:03.800514Z",
+        "server_last_modified": "Fri, 03 Jan 2025 17:12:03 GMT",
+        "url": "https://www.nyse.com/publicdocs/ICE_NYSE_2025_Yearly_Trading_Calendar.pdf"
+      },
+      "ssga_historical_distributions": {
+        "bytes": 574035,
+        "content_sha256": "d1069653df9ea7f4393782f99a3a926e4e9cacf3178209463c3a220fc13dd8aa",
+        "observed_available_at": "2026-07-15T05:30:00.007827Z",
+        "server_last_modified": "Wed, 01 Jul 2026 08:56:51 GMT",
+        "url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/spdr-etf-historical-distributions.xlsx"
+      },
+      "ssga_nav_history": {
+        "bytes": 274917,
+        "content_sha256": "df6d345ebc09b9d8cd464ee26e63114e035717b07e75ef0bba879d7a29cdba80",
+        "observed_available_at": "2026-07-15T05:30:21.565718Z",
+        "server_last_modified": "Wed, 15 Jul 2026 05:09:35 GMT",
+        "url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/navhist-us-en-spy.xlsx"
+      },
+      "ssga_premium_discount_history": {
+        "bytes": 29226,
+        "content_sha256": "27ba10a6879c5483c54d6dbb94874feaee2b8fa188d73b1bfcda3078b851d623",
+        "observed_available_at": "2026-07-15T05:30:24.003710Z",
+        "server_last_modified": "Tue, 14 Jul 2026 06:04:50 GMT",
+        "url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/pdhist-us-en-spy.xlsx"
+      },
+      "ssga_product_snapshot": {
+        "bytes": 94326,
+        "content_sha256": "a007d845653aad67585d04804501084d4bd407207df6603bffacd8d3e00af4a3",
+        "observed_available_at": "2026-07-15T05:29:52.170564Z",
+        "server_last_modified": "Tue, 14 Jul 2026 18:30:05 GMT",
+        "url": "https://www.ssga.com/library-content/products/fund-data/etfs/us/spdr-product-data-us-en.xlsx"
+      }
+    },
+    "snapshot_id": "ssga_spy_20260715T052647Z"
+  },
+  "strategy_candidate_available": false,
+  "target_period": {
+    "end": "2025-12-31",
+    "start": "2016-01-04"
+  },
+  "version": 1
+}
