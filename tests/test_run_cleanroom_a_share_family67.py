@@ -71,6 +71,7 @@ def test_definition_freezes_mapping_signal_costs_and_label_only_supplement() -> 
     )
     assert "observed values" in supplement["permitted_use"]
     assert definition["inference"]["seed"] == 20260710
+    assert definition["output"]["runtime_timestamp_in_content_addressed_result"] is False
 
 
 def test_default_path_opens_no_source_socket_or_output(monkeypatch, capsys) -> None:
@@ -302,6 +303,19 @@ def test_synthetic_report_derives_exact_23_gates_without_promoting(monkeypatch) 
         _synthetic_loaded(module),
         source_commit="a" * 40,
     )
+    repeated = module.build_report(
+        definition,
+        digest,
+        _synthetic_loaded(module),
+        source_commit="a" * 40,
+    )
+    assert report == repeated
+    assert "executed_at_utc" not in report
+    assert json.dumps(report, sort_keys=True, allow_nan=False) == json.dumps(
+        repeated,
+        sort_keys=True,
+        allow_nan=False,
+    )
     assert report["gate_results"]["total_count"] == 23
     expected_gate_ids = {
         f"{split}.{suffix}"
@@ -369,5 +383,9 @@ def test_publish_is_atomic_non_overwriting_and_strict_json(tmp_path) -> None:
     assert hashlib.sha256(output.read_bytes()).hexdigest() == digest
     assert json.loads(output.read_text(encoding="utf-8")) == {"value": 1.0}
     assert sidecar.read_text(encoding="ascii") == f"{digest}  result.json\n"
+    repeated_output = tmp_path / "repeated.json"
+    repeated_digest, _ = module._publish({"value": 1.0}, repeated_output)
+    assert repeated_digest == digest
+    assert repeated_output.read_bytes() == output.read_bytes()
     with pytest.raises(module.Family67ReplayError, match="already exists"):
         module._publish({"value": 2.0}, output)

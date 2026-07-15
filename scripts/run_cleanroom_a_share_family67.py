@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 import csv
 from dataclasses import dataclass
-from datetime import date, datetime, timezone
+from datetime import date, datetime
 import hashlib
 import io
 import json
@@ -35,7 +35,7 @@ from quant_system.research.strict_bootstrap import bootstrap_one_sided  # noqa: 
 
 DEFINITION = ROOT / "research/definitions/a_share_family67_cleanroom_replication_v1.json"
 OUTPUT = ROOT / "reports/validation/a_share_family67_cleanroom_replication_v1.json"
-DEFINITION_SHA256 = "8a1ee84c99088a1b71bddf4d10100d7dd9d135f968827b073a027cf67eafe556"
+DEFINITION_SHA256 = "916b78df19d0004923d8d0b86d30233dcb728e4cbea9ae24e9406f03055f71ba"
 HEX = frozenset("0123456789abcdef")
 
 
@@ -538,7 +538,6 @@ def build_report(
         "family_number": 67,
         "status": "RETROSPECTIVE_CLEANROOM_MIGRATION_REPLAY_COMPLETED",
         "classification": "RETROSPECTIVE_CLEANROOM_MIGRATION_REPLAY",
-        "executed_at_utc": datetime.now(timezone.utc).isoformat(),
         "source_commit": source_commit,
         "definition_sha256": definition_sha256,
         "source_data": {
