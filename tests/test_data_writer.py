@@ -14,18 +14,19 @@ SOURCE_A = "a" * 64
 SOURCE_B = "b" * 64
 
 
-def _database(path: Path) -> Path:
+def _database(path: Path, *, close_type: str = "DOUBLE") -> Path:
+    assert close_type in {"FLOAT", "REAL", "DOUBLE"}
     with duckdb.connect(str(path)) as connection:
         connection.execute("CREATE SCHEMA market")
         connection.execute(
             "CREATE TABLE market.daily("
             "symbol VARCHAR NOT NULL, trade_date DATE NOT NULL, "
-            "close DOUBLE, source VARCHAR NOT NULL)"
+            f"close {close_type}, source VARCHAR NOT NULL)"
         )
     return path
 
 
-def _rows(close: float = 10.0) -> list[dict[str, object]]:
+def _rows(close: object = 10.0) -> list[dict[str, object]]:
     return [
         {
             "symbol": "AAA",
@@ -64,7 +65,8 @@ def test_append_and_exact_replay_are_idempotent(tmp_path: Path) -> None:
     assert first.status == "COMPLETED"
     assert first.inserted_rows == 2
     assert replay.status == "IDEMPOTENT_REPLAY"
-    assert replay.inserted_rows == 2
+    assert replay.inserted_rows == 0
+    assert replay.existing_rows == 2
     assert second_identity.inserted_rows == 0
     assert second_identity.existing_rows == 2
     with duckdb.connect(str(path), read_only=True) as connection:
@@ -72,6 +74,30 @@ def test_append_and_exact_replay_are_idempotent(tmp_path: Path) -> None:
         assert connection.execute(
             "SELECT count(*) FROM _quant_meta.ingest_runs"
         ).fetchone() == (2,)
+        assert connection.execute(
+            "SELECT inserted_rows, existing_rows FROM _quant_meta.ingest_runs "
+            "WHERE batch_id='batch-001'"
+        ).fetchone() == (2, 0)
+
+
+@pytest.mark.parametrize("close_type", ["FLOAT", "REAL", "DOUBLE"])
+@pytest.mark.parametrize("value", ["NaN", "Infinity", "-Infinity"])
+def test_staging_rejects_nonfinite_values_in_every_floating_column_type(
+    tmp_path: Path,
+    close_type: str,
+    value: str,
+) -> None:
+    path = _database(tmp_path / "test.duckdb", close_type=close_type)
+
+    with pytest.raises(DataWriteError, match="nonfinite floating"):
+        _append(path, _rows(close=value), "batch-001", SOURCE_A)
+
+    with duckdb.connect(str(path), read_only=True) as connection:
+        assert connection.execute("SELECT count(*) FROM market.daily").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM information_schema.tables "
+            "WHERE table_schema='_quant_meta' AND table_name='ingest_runs'"
+        ).fetchone() == (0,)
 
 
 def test_conflict_rolls_back_entire_batch(tmp_path: Path) -> None:

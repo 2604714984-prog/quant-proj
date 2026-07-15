@@ -41,10 +41,11 @@ Execution inputs carry one explicit qualification assertion covering source
 completeness and availability. Missing unexplained bars and unqualified
 positive prices fail closed. The small date rules are fixed in code: A-share
 sell stamp tax is 0.1% before 2023-08-28 and 0.05% from that date, while US
-equity settlement is T+2 before 2024-05-28 and T+1 from that date. A custom
-A-share commission model changes commission only; the statutory dated stamp-tax
-schedule remains active. US sale settlement must be bound to the complete,
-strictly increasing accepted-session sequence after the trade date.
+equity settlement is T+3 before 2017-09-05, T+2 from that date through
+2024-05-27, and T+1 from 2024-05-28. A custom A-share commission model changes
+commission only; the statutory dated stamp-tax schedule remains active. US sale
+settlement must be bound to the complete, strictly increasing accepted-session
+sequence after the trade date.
 
 A-share buys require 100-share board lots. Sells may use board lots, or may
 fully liquidate a remaining odd lot whose identity was created by a recorded

@@ -7,7 +7,11 @@ from datetime import date
 
 from quant_system.markets.a_share import require_board_lot, stamp_tax_rate
 from quant_system.markets.common import is_finite_number, is_positive_price
-from quant_system.markets.us import require_accepted_settlement_sessions, split_adjustment
+from quant_system.markets.us import (
+    TERMINAL_ACTION_TYPES,
+    require_accepted_settlement_sessions,
+    split_adjustment,
+)
 
 from .costs import CostBreakdown, TransactionCostModel
 
@@ -72,6 +76,7 @@ class Portfolio:
         self.positions: dict[str, Position] = {}
         self.pending_cash: list[PendingCash] = []
         self.current_session: date | None = None
+        self._applied_terminal_action_ids: set[str] = set()
 
     @classmethod
     def a_share(
@@ -324,6 +329,93 @@ class Portfolio:
         position.last_accepted_mark = adjusted_mark
         position.corporate_action_odd_lot = adjusted_odd_lot
 
+    def apply_terminal_action(
+        self,
+        symbol: str,
+        *,
+        event_id: str,
+        action_type: str,
+        recovery_per_share: float,
+        successor_symbol: str | None = None,
+        successor_shares_per_share: float | None = None,
+    ) -> float:
+        """Settle one accepted US terminal event exactly once."""
+
+        if not self.us_cash_settlement:
+            raise ValueError("terminal actions are supported only for US portfolios")
+        self._require_stable_identity(symbol, "symbol")
+        self._require_stable_identity(event_id, "event_id")
+        if event_id in self._applied_terminal_action_ids:
+            raise ValueError("terminal action event_id has already been applied")
+        if action_type not in TERMINAL_ACTION_TYPES:
+            raise ValueError("action_type must be a terminal US corporate action")
+
+        position = self.positions.get(symbol)
+        if position is None:
+            raise ValueError("terminal action requires an existing position")
+        self._validate_position(position)
+        normalized_recovery = self._normalized_number(
+            recovery_per_share,
+            "recovery_per_share",
+        )
+        if normalized_recovery < 0.0:
+            raise ValueError("recovery_per_share must be finite and nonnegative")
+        cash_recovery = self._finite_result(
+            position.shares * normalized_recovery,
+            "terminal cash recovery",
+        )
+        new_cash = self._finite_result(
+            self.settled_cash + cash_recovery,
+            "settled cash",
+        )
+
+        successor_position: Position | None = None
+        requires_mapping = action_type in {"merger", "symbol_change"}
+        if requires_mapping:
+            if successor_symbol is None or successor_shares_per_share is None:
+                raise ValueError(
+                    "merger and symbol_change require an explicit successor mapping"
+                )
+            self._require_stable_identity(successor_symbol, "successor_symbol")
+            if successor_symbol == symbol:
+                raise ValueError("successor_symbol must differ from the old symbol")
+            if successor_symbol in self.positions:
+                raise ValueError("successor_symbol already has a portfolio position")
+            conversion = self._normalized_number(
+                successor_shares_per_share,
+                "successor_shares_per_share",
+            )
+            if conversion <= 0.0:
+                raise ValueError(
+                    "successor_shares_per_share must be positive and finite"
+                )
+            successor_position = Position(
+                shares=self._finite_result(
+                    position.shares * conversion,
+                    "successor shares",
+                ),
+                sellable_shares=self._finite_result(
+                    position.sellable_shares * conversion,
+                    "successor sellable shares",
+                ),
+                average_cost=self._finite_result(
+                    position.average_cost / conversion,
+                    "successor average cost",
+                ),
+                last_accepted_mark=None,
+            )
+            self._validate_position(successor_position)
+        elif successor_symbol is not None or successor_shares_per_share is not None:
+            raise ValueError("delisting does not accept a successor mapping")
+
+        self.settled_cash = new_cash
+        del self.positions[symbol]
+        if successor_position is not None:
+            assert successor_symbol is not None
+            self.positions[successor_symbol] = successor_position
+        self._applied_terminal_action_ids.add(event_id)
+        return cash_recovery
+
     def credit_cash(self, amount: float) -> None:
         if not is_finite_number(amount) or amount < 0.0:
             raise ValueError("cash credit must be finite and nonnegative")
@@ -437,6 +529,17 @@ class Portfolio:
         if not is_finite_number(normalized):
             raise ValueError(f"{label} must be finite")
         return normalized
+
+    @staticmethod
+    def _require_stable_identity(value: object, label: str) -> str:
+        if (
+            not isinstance(value, str)
+            or not value
+            or value != value.strip()
+            or len(value) > 256
+        ):
+            raise ValueError(f"{label} must be a stable nonempty identity")
+        return value
 
     def _require_current_session(self, trade_date: date) -> None:
         if self.current_session != trade_date:

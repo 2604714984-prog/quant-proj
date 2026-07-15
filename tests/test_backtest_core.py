@@ -68,6 +68,117 @@ def test_split_updates_portfolio_quantity_basis_and_last_mark() -> None:
     assert position.last_accepted_mark == pytest.approx(5.0)
 
 
+def test_terminal_delisting_recovery_is_settled_once_and_position_is_removed() -> None:
+    portfolio = Portfolio.us(1_000.0, costs=TransactionCostModel())
+    trade_date = date(2026, 7, 13)
+    portfolio.start_session(trade_date)
+    portfolio.buy("DELISTED", 10, 10.0, trade_date)
+
+    recovery = portfolio.apply_terminal_action(
+        "DELISTED",
+        event_id="delisting-DELISTED-20260713-v1",
+        action_type="delisting",
+        recovery_per_share=2.5,
+    )
+
+    assert recovery == pytest.approx(25.0)
+    assert portfolio.available_cash == pytest.approx(925.0)
+    assert portfolio.positions == {}
+    assert portfolio.nav({}) == pytest.approx(925.0)
+    with pytest.raises(ValueError, match="already been applied"):
+        portfolio.apply_terminal_action(
+            "DELISTED",
+            event_id="delisting-DELISTED-20260713-v1",
+            action_type="delisting",
+            recovery_per_share=2.5,
+        )
+    assert portfolio.available_cash == pytest.approx(925.0)
+
+
+def test_zero_terminal_recovery_closes_position_without_a_zero_nav_mark() -> None:
+    portfolio = Portfolio.us(100.0, costs=TransactionCostModel())
+    trade_date = date(2026, 7, 13)
+    portfolio.start_session(trade_date)
+    portfolio.buy("ZERO", 1, 10.0, trade_date)
+
+    assert portfolio.apply_terminal_action(
+        "ZERO",
+        event_id="delisting-ZERO-20260713-v1",
+        action_type="delisting",
+        recovery_per_share=0.0,
+    ) == 0.0
+    assert portfolio.positions == {}
+    assert portfolio.nav({}) == pytest.approx(90.0)
+
+
+@pytest.mark.parametrize("bad_recovery", [float("nan"), float("inf"), -1.0])
+def test_invalid_terminal_recovery_fails_before_mutation(bad_recovery: float) -> None:
+    portfolio = Portfolio.us(100.0, costs=TransactionCostModel())
+    trade_date = date(2026, 7, 13)
+    portfolio.start_session(trade_date)
+    portfolio.buy("ABC", 1, 10.0, trade_date)
+
+    with pytest.raises(ValueError, match="recovery_per_share"):
+        portfolio.apply_terminal_action(
+            "ABC",
+            event_id="terminal-ABC-20260713-v1",
+            action_type="delisting",
+            recovery_per_share=bad_recovery,
+        )
+
+    assert portfolio.available_cash == pytest.approx(90.0)
+    assert portfolio.positions["ABC"].shares == 1.0
+
+
+@pytest.mark.parametrize("action_type", ["merger", "symbol_change"])
+def test_stock_terminal_action_without_successor_mapping_fails_closed(
+    action_type: str,
+) -> None:
+    portfolio = Portfolio.us(100.0, costs=TransactionCostModel())
+    trade_date = date(2026, 7, 13)
+    portfolio.start_session(trade_date)
+    portfolio.buy("OLD", 2, 10.0, trade_date)
+
+    with pytest.raises(ValueError, match="explicit successor mapping"):
+        portfolio.apply_terminal_action(
+            "OLD",
+            event_id=f"{action_type}-OLD-20260713-v1",
+            action_type=action_type,
+            recovery_per_share=0.0,
+        )
+
+    assert portfolio.available_cash == pytest.approx(80.0)
+    assert portfolio.positions["OLD"].shares == 2.0
+
+
+def test_symbol_change_mapping_replaces_position_and_requires_a_fresh_mark() -> None:
+    portfolio = Portfolio.us(1_000.0, costs=TransactionCostModel())
+    trade_date = date(2026, 7, 13)
+    portfolio.start_session(trade_date)
+    portfolio.buy("OLD", 10, 10.0, trade_date)
+
+    recovery = portfolio.apply_terminal_action(
+        "OLD",
+        event_id="symbol-change-OLD-NEW-20260713-v1",
+        action_type="symbol_change",
+        recovery_per_share=1.0,
+        successor_symbol="NEW",
+        successor_shares_per_share=0.5,
+    )
+
+    assert recovery == pytest.approx(10.0)
+    assert "OLD" not in portfolio.positions
+    successor = portfolio.positions["NEW"]
+    assert successor.shares == pytest.approx(5.0)
+    assert successor.sellable_shares == pytest.approx(5.0)
+    assert successor.average_cost == pytest.approx(20.0)
+    assert successor.last_accepted_mark is None
+    assert portfolio.available_cash == pytest.approx(910.0)
+    with pytest.raises(ValueError, match="accepted mark"):
+        portfolio.nav({})
+    assert portfolio.nav({"NEW": 20.0}) == pytest.approx(1_010.0)
+
+
 @pytest.mark.parametrize("bad_value", [float("nan"), float("inf"), -1.0])
 def test_nonfinite_or_negative_inputs_fail_closed(bad_value: float) -> None:
     with pytest.raises(ValueError):

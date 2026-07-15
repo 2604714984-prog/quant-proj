@@ -99,6 +99,30 @@ def test_terminal_valuation_requires_explicit_action_complete_value() -> None:
     ) == 0.0
 
 
+@pytest.mark.parametrize(
+    "action_type",
+    ["split", "reverse_split", "dividend", "special_dividend"],
+)
+def test_ordinary_corporate_action_cannot_explain_a_missing_execution_bar(
+    action_type: str,
+) -> None:
+    with pytest.raises(UnexplainedProviderGapError, match="no accepted event"):
+        decide_fill(
+            "buy",
+            None,
+            action_types={action_type},
+            data_qualified=True,
+        )
+
+    available = decide_fill(
+        "buy",
+        10.0,
+        action_types={action_type},
+        data_qualified=True,
+    )
+    assert (available.filled, available.reason) == (True, "filled")
+
+
 def test_split_and_cash_distribution_arithmetic_is_value_preserving() -> None:
     shares, average_cost = split_adjustment(10.0, 100.0, 2.0)
     assert (shares, average_cost) == (20.0, 50.0)
@@ -174,11 +198,27 @@ def test_invalid_us_settlement_date_does_not_mutate_position() -> None:
     assert portfolio.pending_cash_total == 0.0
 
 
-def test_us_settlement_lag_changes_on_2024_05_28_and_is_explicit() -> None:
+def test_us_settlement_lag_historical_transitions_are_explicit() -> None:
+    t_plus_three = date(2017, 9, 4)
+    t_plus_two = date(2017, 9, 5)
     old_date = date(2024, 5, 27)
     new_date = date(2024, 5, 28)
+    assert cash_settlement_lag_sessions(t_plus_three) == 3
+    assert cash_settlement_lag_sessions(t_plus_two) == 2
     assert cash_settlement_lag_sessions(old_date) == 2
     assert cash_settlement_lag_sessions(new_date) == 1
+
+    with pytest.raises(ValueError, match="exactly 3 session"):
+        require_accepted_settlement_sessions(
+            t_plus_three,
+            date(2017, 9, 7),
+            (date(2017, 9, 5), date(2017, 9, 6)),
+        )
+    assert require_accepted_settlement_sessions(
+        t_plus_three,
+        date(2017, 9, 7),
+        (date(2017, 9, 5), date(2017, 9, 6), date(2017, 9, 7)),
+    ) == (date(2017, 9, 5), date(2017, 9, 6), date(2017, 9, 7))
 
     portfolio = Portfolio.us(1_000.0, costs=TransactionCostModel())
     portfolio.start_session(old_date)

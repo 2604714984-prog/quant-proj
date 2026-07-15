@@ -43,6 +43,7 @@ PRICE_IDENTITY_ACTION_TYPES = frozenset(
 )
 TERMINAL_ACTION_TYPES = frozenset({"symbol_change", "merger", "delisting"})
 KNOWN_ACTION_TYPES = PRICE_IDENTITY_ACTION_TYPES | {"trading_halt", "earnings_date"}
+T_PLUS_TWO_EFFECTIVE_DATE = date(2017, 9, 5)
 T_PLUS_ONE_EFFECTIVE_DATE = date(2024, 5, 28)
 
 
@@ -51,7 +52,11 @@ def cash_settlement_lag_sessions(trade_date: date) -> int:
 
     if type(trade_date) is not date:
         raise TypeError("trade_date must be a date")
-    return 1 if trade_date >= T_PLUS_ONE_EFFECTIVE_DATE else 2
+    if trade_date >= T_PLUS_ONE_EFFECTIVE_DATE:
+        return 1
+    if trade_date >= T_PLUS_TWO_EFFECTIVE_DATE:
+        return 2
+    return 3
 
 
 def require_accepted_settlement_sessions(
@@ -99,7 +104,7 @@ def classify_bar(
     _require_data_qualified(data_qualified)
     if is_positive_price(price):
         return GapClass.AVAILABLE
-    if types & PRICE_IDENTITY_ACTION_TYPES:
+    if types & TERMINAL_ACTION_TYPES:
         return GapClass.CONFIRMED_CORPORATE_ACTION
     if "trading_halt" in types:
         return GapClass.CONFIRMED_HALT

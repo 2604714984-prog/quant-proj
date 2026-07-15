@@ -260,6 +260,23 @@ def _target_columns(
     return tuple(str(row[0]) for row in rows)
 
 
+def _floating_columns(
+    connection: duckdb.DuckDBPyConnection,
+    schema: str,
+    table: str,
+) -> tuple[str, ...]:
+    rows = connection.execute(
+        "SELECT column_name, upper(data_type) FROM information_schema.columns "
+        "WHERE table_schema = ? AND table_name = ? ORDER BY ordinal_position",
+        [schema, table],
+    ).fetchall()
+    return tuple(
+        str(column_name)
+        for column_name, data_type in rows
+        if str(data_type) in {"FLOAT", "REAL", "DOUBLE"}
+    )
+
+
 def _ensure_metadata(connection: duckdb.DuckDBPyConnection) -> None:
     connection.execute("CREATE SCHEMA IF NOT EXISTS _quant_meta")
     connection.execute(
@@ -385,6 +402,22 @@ def append_rows(
                     f"INSERT INTO _incoming ({column_sql}) VALUES ({placeholders})",
                     [[row[column] for column in columns] for row in rows],
                 )
+                floating_columns = _floating_columns(connection, schema, table)
+                if floating_columns:
+                    nonfinite = " OR ".join(
+                        f"({_quote(column)} IS NOT NULL "
+                        f"AND NOT isfinite({_quote(column)}))"
+                        for column in floating_columns
+                    )
+                    nonfinite_rows = int(
+                        connection.execute(
+                            f"SELECT count(*) FROM _incoming WHERE {nonfinite}"
+                        ).fetchone()[0]
+                    )
+                    if nonfinite_rows:
+                        raise DataWriteError(
+                            "staging conversion produced nonfinite floating values"
+                        )
                 incoming_keys = ",".join(_quote(key) for key in keys)
                 duplicate_incoming_keys = int(
                     connection.execute(
@@ -447,8 +480,8 @@ def append_rows(
                         batch_id=batch_id,
                         target=target,
                         row_count=stored_counts[0],
-                        inserted_rows=stored_counts[1],
-                        existing_rows=stored_counts[2],
+                        inserted_rows=0,
+                        existing_rows=existing_rows,
                         batch_sha256=batch_sha256,
                         source_sha256=source_sha256,
                         status="IDEMPOTENT_REPLAY",
