@@ -339,7 +339,9 @@ def test_outside_split_complete_cohort_is_excluded_without_inflating_purge() -> 
     assert incomplete_dates == incomplete_events == incomplete_labels == 0
 
 
-def _write_synthetic_sources(tmp_path: Path) -> tuple[Path, Path, Path]:
+def _write_synthetic_sources(
+    tmp_path: Path, *, reverse_feature_rows: bool = False
+) -> tuple[Path, Path, Path]:
     calendar = tmp_path / "calendar.parquet"
     features_dir = tmp_path / "features"
     features_dir.mkdir()
@@ -430,6 +432,8 @@ def _write_synthetic_sources(tmp_path: Path) -> tuple[Path, Path, Path]:
                     False,
                 )
             )
+        if reverse_feature_rows:
+            rows.reverse()
         connection.executemany(
             "INSERT INTO feature VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", rows
         )
@@ -632,6 +636,31 @@ def test_duckdb_query_builds_expected_signal_breakout_and_eligible_sleeves(tmp_p
     assert row.cash_gross_return == pytest.approx(0.02)
 
 
+def test_duckdb_cohort_bytes_are_invariant_to_feature_row_order(tmp_path) -> None:
+    module = _load_script()
+    normal_dir = tmp_path / "normal"
+    reversed_dir = tmp_path / "reversed"
+    normal_dir.mkdir()
+    reversed_dir.mkdir()
+    normal_features, normal_calendar, normal_etf = _write_synthetic_sources(normal_dir)
+    reversed_features, reversed_calendar, reversed_etf = _write_synthetic_sources(
+        reversed_dir, reverse_feature_rows=True
+    )
+
+    normal = module._load_raw_cohorts(
+        features_dir=normal_features,
+        trade_calendar=normal_calendar,
+        etf_csv=normal_etf,
+    )
+    reversed_rows = module._load_raw_cohorts(
+        features_dir=reversed_features,
+        trade_calendar=reversed_calendar,
+        etf_csv=reversed_etf,
+    )
+
+    assert normal == reversed_rows
+
+
 def _append_duplicate_parquet_row(path: Path) -> None:
     replacement = path.with_name(f"{path.stem}-duplicate.parquet")
     connection = duckdb.connect(":memory:")
@@ -810,7 +839,7 @@ def test_report_preserves_exact_rejection_and_candidate_boundaries() -> None:
     repeated = module.build_report(
         definition,
         digest,
-        _full_synthetic_raw(module),
+        tuple(reversed(_full_synthetic_raw(module))),
         source_commit="a" * 40,
         source_paths={"features_dir": "/synthetic"},
     )
