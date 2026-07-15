@@ -295,3 +295,114 @@ def test_pending_cash_overflow_fails_before_sale_mutation() -> None:
         after.last_accepted_mark,
     ) == before_values
     assert portfolio.pending_cash_total == 1e308
+
+
+def test_cash_distribution_freezes_ex_date_entitlement_and_settles_once() -> None:
+    portfolio = Portfolio.us(1_000.0, costs=TransactionCostModel())
+    prior_date = date(2026, 7, 10)
+    ex_date = date(2026, 7, 13)
+    pay_date = date(2026, 7, 15)
+    portfolio.start_session(prior_date)
+    portfolio.buy("ABC", 10, 10.0, prior_date)
+    portfolio.start_session(ex_date)
+
+    entitlement = portfolio.apply_cash_distribution(
+        "ABC",
+        event_id="abc-dividend-20260713-v1",
+        amount_per_share=0.5,
+        ex_date=ex_date,
+        pay_date=pay_date,
+    )
+
+    assert entitlement == pytest.approx(5.0)
+    assert portfolio.available_cash == pytest.approx(900.0)
+    assert portfolio.pending_cash_total == pytest.approx(5.0)
+    with pytest.raises(ValueError, match="already been applied"):
+        portfolio.apply_cash_distribution(
+            "ABC",
+            event_id="abc-dividend-20260713-v1",
+            amount_per_share=0.5,
+            ex_date=ex_date,
+            pay_date=pay_date,
+        )
+    portfolio.start_session(date(2026, 7, 14))
+    assert portfolio.available_cash == pytest.approx(900.0)
+    portfolio.start_session(pay_date)
+    assert portfolio.available_cash == pytest.approx(905.0)
+    assert portfolio.pending_cash_total == 0.0
+
+
+def test_distribution_uses_session_open_shares_not_ex_date_trading() -> None:
+    buyer = Portfolio.us(1_000.0, costs=TransactionCostModel())
+    ex_date = date(2026, 7, 13)
+    pay_date = date(2026, 7, 15)
+    buyer.start_session(ex_date)
+    buyer.buy("ABC", 10, 10.0, ex_date)
+    assert buyer.apply_cash_distribution(
+        "ABC",
+        event_id="buyer-dividend",
+        amount_per_share=0.5,
+        ex_date=ex_date,
+        pay_date=pay_date,
+    ) == 0.0
+    assert buyer.pending_cash_total == 0.0
+
+    seller = Portfolio.us(1_000.0, costs=TransactionCostModel())
+    prior_date = date(2026, 7, 10)
+    seller.start_session(prior_date)
+    seller.buy("ABC", 10, 10.0, prior_date)
+    seller.start_session(ex_date)
+    seller.sell(
+        "ABC",
+        10,
+        10.0,
+        ex_date,
+        settlement_date=date(2026, 7, 14),
+        accepted_settlement_sessions=(date(2026, 7, 14),),
+    )
+    assert seller.apply_cash_distribution(
+        "ABC",
+        event_id="seller-dividend",
+        amount_per_share=0.5,
+        ex_date=ex_date,
+        pay_date=pay_date,
+    ) == pytest.approx(5.0)
+    assert seller.pending_cash_total == pytest.approx(105.0)
+
+
+def test_cash_distribution_and_split_validation_fail_before_mutation() -> None:
+    portfolio = Portfolio.us(1_000.0, costs=TransactionCostModel())
+    prior_date = date(2026, 7, 10)
+    ex_date = date(2026, 7, 13)
+    portfolio.start_session(prior_date)
+    portfolio.buy("ABC", 10, 10.0, prior_date)
+    portfolio.start_session(ex_date)
+
+    with pytest.raises(ValueError, match="pay_date"):
+        portfolio.apply_cash_distribution(
+            "ABC",
+            event_id="bad-pay-date",
+            amount_per_share=1.0,
+            ex_date=ex_date,
+            pay_date=date(2026, 7, 12),
+        )
+    assert portfolio.pending_cash_total == 0.0
+    assert portfolio.apply_cash_distribution(
+        "ABC",
+        event_id="bad-pay-date",
+        amount_per_share=1.0,
+        ex_date=ex_date,
+        pay_date=ex_date,
+    ) == pytest.approx(10.0)
+
+    portfolio.apply_split("ABC", 2.0, event_id="abc-split-v1")
+    assert portfolio.positions["ABC"].shares == 20.0
+    with pytest.raises(ValueError, match="already been applied"):
+        portfolio.apply_split("ABC", 2.0, event_id="abc-split-v1")
+    assert portfolio.positions["ABC"].shares == 20.0
+
+    portfolio.apply_split("MISSING", 2.0, event_id="missing-split-v1")
+    portfolio.buy("MISSING", 1, 10.0, ex_date)
+    with pytest.raises(ValueError, match="already been applied"):
+        portfolio.apply_split("MISSING", 2.0, event_id="missing-split-v1")
+    assert portfolio.positions["MISSING"].shares == 1.0
