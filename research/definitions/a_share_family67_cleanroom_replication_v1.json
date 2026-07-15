@@ -276,6 +276,8 @@
     "classification": "RETROSPECTIVE_CLEANROOM_MIGRATION_REPLAY",
     "strict_pit": false,
     "strategy_candidate_available": false,
+    "runtime_timestamp_in_content_addressed_result": false,
+    "determinism": "identical accepted definition, source bytes, and source commit must produce byte-identical result JSON",
     "default_mode": "validate definition only; no source read and no file write",
     "execute_requires": "clean committed worktree and exact source commit"
   },
