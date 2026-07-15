@@ -7,7 +7,6 @@ from dataclasses import dataclass
 from datetime import date
 import math
 from numbers import Real
-from statistics import median
 
 from quant_system.research.strict_bootstrap import (
     bootstrap_one_sided,
@@ -153,11 +152,28 @@ def aggregate_event_sleeve(
     frozen = tuple(events)
     if any(not isinstance(item, EventReturnInput) for item in frozen):
         raise EventCohortError("events must contain EventReturnInput values")
+    ordered = tuple(
+        sorted(
+            frozen,
+            key=lambda item: (
+                item.signal_date,
+                item.entry_date,
+                item.exit_date,
+                item.symbol,
+            ),
+        )
+    )
+    identities = tuple(
+        (item.signal_date, item.entry_date, item.exit_date, item.symbol)
+        for item in ordered
+    )
+    if len(identities) != len(set(identities)):
+        raise EventCohortError("events must have unique stable identities")
     resolved = tuple(
         resolve_event_return(
             event, cash_gross_return=cash_gross_return, bps_per_side=bps_per_side
         )
-        for event in frozen
+        for event in ordered
     )
     retained = tuple(value for value in resolved if value is not None)
     return CohortAggregate(
@@ -227,14 +243,20 @@ class EconomicSummary:
 
 
 def economic_summary(values: Sequence[float]) -> EconomicSummary:
-    frozen = tuple(_finite(value, name="return") for value in values)
-    if not frozen:
+    ordered = tuple(sorted(_finite(value, name="return") for value in values))
+    if not ordered:
         raise EventCohortError("economic summary requires at least one return")
+    midpoint = len(ordered) // 2
+    median_value = (
+        ordered[midpoint]
+        if len(ordered) % 2
+        else math.fsum((ordered[midpoint - 1], ordered[midpoint])) / 2.0
+    )
     return EconomicSummary(
-        count=len(frozen),
-        mean=math.fsum(frozen) / len(frozen),
-        median=float(median(frozen)),
-        positive_fraction=sum(value > 0.0 for value in frozen) / len(frozen),
+        count=len(ordered),
+        mean=math.fsum(ordered) / len(ordered),
+        median=median_value,
+        positive_fraction=sum(value > 0.0 for value in ordered) / len(ordered),
     )
 
 

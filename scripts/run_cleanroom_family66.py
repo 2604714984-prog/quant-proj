@@ -504,7 +504,7 @@ WITH calendar_source AS (
   LEFT JOIN etf ee ON ee.ts_code='510300.SH' AND ee.trade_date=l.entry_date
   LEFT JOIN etf ex ON ex.ts_code='510300.SH' AND ex.trade_date=l.exit_date
 ), resolved AS (
-  SELECT l.signal_date, l.entry_date, l.exit_date, d.is_signal, d.is_breakout,
+  SELECT l.signal_date, l.entry_date, l.exit_date, d.ts_code, d.is_signal, d.is_breakout,
     CASE WHEN isfinite(e.feature_open) AND e.feature_open > 0
                AND isfinite(x.feature_open) AND x.feature_open > 0
                AND e.is_limit_up IS NOT NULL AND b.cash_gross_return IS NOT NULL
@@ -517,19 +517,10 @@ WITH calendar_source AS (
   LEFT JOIN features x ON x.ts_code=d.ts_code AND x.trade_date=l.exit_date
   JOIN benchmarks b USING (signal_date)
 )
-SELECT signal_date, min(entry_date), min(exit_date),
-  count(*) FILTER (WHERE is_signal),
-  count(event_gross_return) FILTER (WHERE is_signal),
-  count(*) FILTER (WHERE is_breakout),
-  count(event_gross_return) FILTER (WHERE is_breakout),
-  count(*), count(event_gross_return),
-  avg(event_gross_return) FILTER (WHERE is_signal),
-  avg(event_gross_return) FILTER (WHERE is_breakout),
-  avg(event_gross_return),
-  min(equity_gross_return), min(cash_gross_return)
+SELECT signal_date, entry_date, exit_date, ts_code, is_signal, is_breakout,
+       event_gross_return, equity_gross_return, cash_gross_return
 FROM resolved
-GROUP BY signal_date
-ORDER BY signal_date
+ORDER BY signal_date, ts_code
 """
 
 
@@ -623,18 +614,82 @@ def _load_raw_cohorts(
         raise Family66ReplayError("source cohorts could not be derived") from exc
     finally:
         connection.close()
-    cohorts: list[RawCohort] = []
+    previous_key: tuple[date, str] | None = None
+    grouped: dict[date, list[tuple[Any, ...]]] = {}
     for row in rows:
-        try:
-            cohort = RawCohort(*row)
-        except TypeError as exc:
-            raise Family66ReplayError("cohort query shape changed") from exc
-        if type(cohort.signal_date) is not date or any(
-            value is not None and type(value) is not date
-            for value in (cohort.entry_date, cohort.exit_date)
+        if len(row) != 9:
+            raise Family66ReplayError("event-row query shape changed")
+        signal_date, entry_date, exit_date, symbol, is_signal, is_breakout, *_ = row
+        if (
+            type(signal_date) is not date
+            or (entry_date is not None and type(entry_date) is not date)
+            or (exit_date is not None and type(exit_date) is not date)
+            or not isinstance(symbol, str)
+            or not symbol
+            or type(is_signal) is not bool
+            or type(is_breakout) is not bool
         ):
-            raise Family66ReplayError("cohort date type changed")
-        cohorts.append(cohort)
+            raise Family66ReplayError("event-row identity or type changed")
+        key = (signal_date, symbol)
+        if previous_key is not None and key <= previous_key:
+            raise Family66ReplayError("event rows are not uniquely canonical ordered")
+        previous_key = key
+        grouped.setdefault(signal_date, []).append(row)
+
+    cohorts: list[RawCohort] = []
+    for signal_date, group in grouped.items():
+        entry_dates = {row[1] for row in group}
+        exit_dates = {row[2] for row in group}
+        equity_returns = {row[7] for row in group}
+        cash_returns = {row[8] for row in group}
+        if any(len(values) != 1 for values in (
+            entry_dates,
+            exit_dates,
+            equity_returns,
+            cash_returns,
+        )):
+            raise Family66ReplayError("event rows disagree within one signal-date cohort")
+
+        def complete_values(flag_index: int | None) -> tuple[float, ...]:
+            values: list[float] = []
+            for row in group:
+                if flag_index is not None and row[flag_index] is not True:
+                    continue
+                value = row[6]
+                if value is not None:
+                    parsed = float(value)
+                    if not math.isfinite(parsed):
+                        raise Family66ReplayError("event return is nonfinite")
+                    values.append(parsed)
+            return tuple(values)
+
+        signal_values = complete_values(4)
+        breakout_values = complete_values(5)
+        eligible_values = complete_values(None)
+        signal_count = sum(row[4] is True for row in group)
+        breakout_count = sum(row[5] is True for row in group)
+
+        def deterministic_mean(values: tuple[float, ...]) -> float | None:
+            return None if not values else math.fsum(values) / len(values)
+
+        cohorts.append(
+            RawCohort(
+                signal_date=signal_date,
+                entry_date=next(iter(entry_dates)),
+                exit_date=next(iter(exit_dates)),
+                signal_candidate_count=signal_count,
+                signal_complete_count=len(signal_values),
+                breakout_candidate_count=breakout_count,
+                breakout_complete_count=len(breakout_values),
+                eligible_candidate_count=len(group),
+                eligible_complete_count=len(eligible_values),
+                signal_gross_return=deterministic_mean(signal_values),
+                breakout_gross_return=deterministic_mean(breakout_values),
+                eligible_gross_return=deterministic_mean(eligible_values),
+                equity_gross_return=next(iter(equity_returns)),
+                cash_gross_return=next(iter(cash_returns)),
+            )
+        )
     return tuple(cohorts)
 
 
@@ -653,9 +708,18 @@ def _observations(
     raw: Sequence[RawCohort], definition: Mapping[str, Any], *, bps_per_side: float
 ) -> tuple[tuple[CohortObservation, ...], int, int, int, int]:
     splits = _split_windows(definition)
+    frozen = tuple(raw)
+    if any(
+        not isinstance(row, RawCohort) or type(row.signal_date) is not date
+        for row in frozen
+    ):
+        raise Family66ReplayError("raw cohorts must have valid stable identities")
+    ordered = tuple(sorted(frozen, key=lambda row: row.signal_date))
+    if len({row.signal_date for row in ordered}) != len(ordered):
+        raise Family66ReplayError("raw cohorts must have unique signal dates")
     retained: list[CohortObservation] = []
     purged_dates = incomplete_dates = incomplete_events = incomplete_label_dates = 0
-    for row in raw:
+    for row in ordered:
         signal_splits = tuple(split for split in splits if split.contains(row.signal_date))
         if not signal_splits:
             # Complete cohorts outside every declared split are not part of the
@@ -749,7 +813,17 @@ def _observations(
 def _summary(rows: Sequence[CohortObservation], split_ids: Sequence[str]) -> dict[str, Any]:
     result: dict[str, Any] = {}
     for split_id in split_ids:
-        selected = tuple(row for row in rows if row.split_id == split_id)
+        selected = tuple(
+            sorted(
+                (row for row in rows if row.split_id == split_id),
+                key=lambda row: (
+                    row.signal_date,
+                    row.entry_date,
+                    row.exit_date,
+                    row.split_id,
+                ),
+            )
+        )
         payload: dict[str, Any] = {
             "signal_date_count": len(selected),
             "signal_event_count": sum(row.signal_event_count for row in selected),
@@ -786,7 +860,20 @@ def _gate_checks(
     incomplete_cohort_dates: int,
 ) -> tuple[dict[str, Any], ...]:
     splits = tuple(item["split_id"] for item in definition["splits"])
-    selected = {split_id: tuple(row for row in rows if row.split_id == split_id) for split_id in splits}
+    selected = {
+        split_id: tuple(
+            sorted(
+                (row for row in rows if row.split_id == split_id),
+                key=lambda row: (
+                    row.signal_date,
+                    row.entry_date,
+                    row.exit_date,
+                    row.split_id,
+                ),
+            )
+        )
+        for split_id in splits
+    }
     checks: dict[str, dict[str, Any]] = {}
 
     def add(gate_id: str, observed: Any, threshold: str, passed: bool) -> None:
