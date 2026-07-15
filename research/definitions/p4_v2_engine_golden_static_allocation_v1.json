@@ -1,0 +1,158 @@
+{
+  "date": "2026-07-15",
+  "evidence_class": "SYNTHETIC_SYSTEM_EVIDENCE_ONLY",
+  "family_number": null,
+  "fixture_path": "research/fixtures/p4_v2_engine_golden_static_allocation_v1.json",
+  "fixture_sha256": "e54db1193717c97ef6833a37e52b65ec089be9c99b4d114e560baa7826070fba",
+  "forbidden_interpretations": [
+    "alpha evidence",
+    "market evidence",
+    "strategy validation",
+    "strategy candidate",
+    "recommendation",
+    "paper or live readiness"
+  ],
+  "golden_ledger": {
+    "accounting_residual": "0.000000000",
+    "blocked_attempt_count": 2,
+    "commission_total": "74.962475000",
+    "corporate_action_receipt_count": 3,
+    "final_nav": "100400.087525000",
+    "receipt_count": 8,
+    "slippage_total": "74.950000000",
+    "stages": [
+      {
+        "blocked_delay": null,
+        "final_nav": "99900.075025000",
+        "pending_cash": "0.000000000",
+        "positions": {
+          "SYN_A": "500.000000000",
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [
+          "filled",
+          "filled"
+        ],
+        "settled_cash": "0.075025000",
+        "stage_id": "entry"
+      },
+      {
+        "blocked_delay": null,
+        "final_nav": "99900.075025000",
+        "pending_cash": "500.000000000",
+        "positions": {
+          "SYN_A": "1000.000000000",
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [
+          "split_applied",
+          "entitlement:500"
+        ],
+        "settled_cash": "0.075025000",
+        "stage_id": "actions"
+      },
+      {
+        "blocked_delay": null,
+        "final_nav": "99900.075025000",
+        "pending_cash": "500.000000000",
+        "positions": {
+          "SYN_A": "1000.000000000",
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [],
+        "settled_cash": "0.075025000",
+        "stage_id": "distribution_pending"
+      },
+      {
+        "blocked_delay": null,
+        "final_nav": "99900.075025000",
+        "pending_cash": "0.000000000",
+        "positions": {
+          "SYN_A": "1000.000000000",
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [],
+        "settled_cash": "500.075025000",
+        "stage_id": "distribution_paid"
+      },
+      {
+        "blocked_delay": 1,
+        "final_nav": "99900.075025000",
+        "pending_cash": "0.000000000",
+        "positions": {
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [
+          "terminal_delisting",
+          "confirmed_halt"
+        ],
+        "settled_cash": "50450.075025000",
+        "stage_id": "terminal_and_blocked_exit_1"
+      },
+      {
+        "blocked_delay": 2,
+        "final_nav": "99900.075025000",
+        "pending_cash": "0.000000000",
+        "positions": {
+          "SYN_B": "500.000000000"
+        },
+        "receipt_reasons": [
+          "confirmed_halt"
+        ],
+        "settled_cash": "50450.075025000",
+        "stage_id": "blocked_exit_2"
+      },
+      {
+        "blocked_delay": 2,
+        "final_nav": "100400.087525000",
+        "pending_cash": "49950.012500000",
+        "positions": {},
+        "receipt_reasons": [
+          "filled"
+        ],
+        "settled_cash": "50450.075025000",
+        "stage_id": "blocked_exit_filled"
+      },
+      {
+        "blocked_delay": 2,
+        "final_nav": "100400.087525000",
+        "pending_cash": "0.000000000",
+        "positions": {},
+        "receipt_reasons": [],
+        "settled_cash": "100400.087525000",
+        "stage_id": "sale_settled"
+      }
+    ],
+    "trade_fill_count": 3
+  },
+  "market": "synthetic_us",
+  "phase": "FORMAL_SYSTEM_CONFORMANCE_VALIDATION",
+  "real_market_data_used": false,
+  "research_id": "P4_V2_ENGINE_GOLDEN_STATIC_ALLOCATION_V1",
+  "runtime_contract": {
+    "clean_committed_worktree_required_for_execute": true,
+    "default_mode": "validate_only",
+    "deterministic_result_bytes": true,
+    "output_overwrite_allowed": false,
+    "result_files_created_by_execute": 2
+  },
+  "schema_version": "p4-system-validation-definition-v1",
+  "strategy_candidate_available": false,
+  "strategy_evidence_eligible": false,
+  "strategy_gate_counts": null,
+  "strict_gates": [
+    "definition_and_fixture_hashes_exact",
+    "clean_committed_runtime_identity",
+    "synthetic_only_boundary",
+    "calendar_and_source_cutoffs",
+    "initial_allocation_and_costs_exact",
+    "split_value_and_once_only",
+    "distribution_entitlement_and_pay_date_once_only",
+    "blocked_exit_retries_and_delay_exact",
+    "terminal_value_and_nonrepurchase_exact",
+    "settlement_cash_timing_exact",
+    "nav_accounting_identity_exact",
+    "receipt_and_stage_hash_chain_exact",
+    "deterministic_replay_and_mutation_sensitivity"
+  ]
+}
