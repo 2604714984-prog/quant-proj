@@ -14,11 +14,11 @@
   },
   "implementation": {
     "path": "src/quant_system/backtest/permanent_portfolio.py",
-    "sha256": "1f64dd45f2b9e155f3a0ae829c39f304fdfdd2a4c0b4375a2622f8700d78cc5b"
+    "sha256": "11874465320c71218e89bad9bdf6ad543aa74dd3335a7571cc8ca2cc97ac6ffe"
   },
   "tests": {
     "path": "tests/test_permanent_portfolio_cleanroom.py",
-    "sha256": "0b27d59b07e2d6bf63be90edb61aaad9ae5782157c35fa82be860e3a15b3f0aa"
+    "sha256": "77259fff4710706352011d4341edd4dcdae739958741e0d57e4074c6ea6bd859"
   },
   "scope": {
     "exact_new_file_count": 3,
@@ -70,6 +70,8 @@
     "formal_evaluator_accepts_evidence_paths_only": true,
     "formal_evaluator_captures_both_evidence_files_internally": true,
     "caller_supplied_liquidity_values_rejected": true,
+    "contract_irrelevant_liquidity_rows_ignored": true,
+    "required_defensive_liquidity_rows_strictly_validated": true,
     "synthetic_dataset_formal_evaluation_rejected": true,
     "synthetic_result_type_distinct_from_formal_evaluation": true,
     "frozen_evaluation_endpoints_required": true,

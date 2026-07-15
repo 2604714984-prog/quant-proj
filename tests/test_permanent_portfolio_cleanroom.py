@@ -256,6 +256,24 @@ def _write_liquidity_csv(path: Path, *, mutation: str | None = None) -> str:
         rows[0]["data_start"] = "2018-01-03"
     elif mutation == "missingness":
         rows[0]["amount_missing_rate"] = "0.1"
+    elif mutation == "malformed_required":
+        rows[0]["median_amount"] = "nan"
+    elif mutation == "extra_irrelevant":
+        extra = dict(rows[0])
+        extra.update(
+            {
+                "ts_code": "159999.SZ",
+                "name": "",
+                "rows": "not-an-integer",
+                "data_start": "not-a-date",
+                "data_end": "not-a-date",
+                "amount_materialized": "False",
+                "median_amount": "nan",
+                "amount_missing_rate": "nan",
+                "field_status": "",
+            }
+        )
+        rows.extend((extra, dict(extra)))
     with path.open("w", encoding="utf-8", newline="") as handle:
         writer = csv.DictWriter(handle, fieldnames=family42.LIQUIDITY_HEADER)
         writer.writeheader()
@@ -371,6 +389,16 @@ def test_liquidity_loader_binds_bytes_and_rejects_public_fixture(tmp_path) -> No
         family42.load_defensive_median_amounts(path)
 
 
+def test_liquidity_loader_ignores_contract_irrelevant_extra_rows(tmp_path) -> None:
+    path = tmp_path / "liquidity-extra.csv"
+    digest = _write_liquidity_csv(path, mutation="extra_irrelevant")
+    amounts = family42._load_defensive_median_amounts_with_expected_identity(
+        path,
+        expected_source_sha256=digest,
+    )
+    assert set(amounts) == set(family42.DEFENSIVE_SYMBOLS)
+
+
 @pytest.mark.parametrize(
     ("mutation", "message"),
     [
@@ -378,6 +406,7 @@ def test_liquidity_loader_binds_bytes_and_rejects_public_fixture(tmp_path) -> No
         ("missing", "missing"),
         ("window", "window"),
         ("missingness", "zero missingness"),
+        ("malformed_required", "finite and nonnegative"),
     ],
 )
 def test_liquidity_loader_rejects_malformed_evidence(
