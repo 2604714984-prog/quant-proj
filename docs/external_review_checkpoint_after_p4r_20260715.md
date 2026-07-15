@@ -127,3 +127,24 @@ a concrete failure in this personal-project scope requires them.
 
 No strategy search, provider retrieval, database write, candidate promotion,
 recommendation, or trading action was performed to prepare this checkpoint.
+
+## External verdict recorded on 2026-07-15
+
+GitHub review `4702447072` returned `ACCEPT_WITH_NARROW_FIXES` against this
+checkpoint. The reviewer accepted the lightweight architecture and the current
+synthetic, retrospective, and migration-only evidence classifications. The
+review did not authorize a new hypothesis, provider ingestion, database write,
+strategy candidate, recommendation, or trading path.
+
+The three bounded follow-up areas are:
+
+1. bind the legacy replay to an immutable input-slice hash and compact run
+   manifest, while allowing mismatch diagnostics but forbidding completion or
+   headline comparison on identity drift;
+2. enforce an optional actual-position cap after failed exits, with trapped
+   holdings consuming slots before replacement buys;
+3. freeze P3/P4 scripts as one-off evidence and remove inactive SEC-EDGAR and
+   advanced-statistics primitives from top-level public exports.
+
+These repairs belong in a separate narrow code pull request. This document is
+the pre-fix checkpoint and remains evidence of the reviewed state.
