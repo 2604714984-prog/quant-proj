@@ -14,6 +14,7 @@ from quant_system.research.event_cohort import (
     assign_whole_label_split,
     benjamini_hochberg_adjusted,
     block_bootstrap_summary,
+    economic_summary,
     fixed_two_side_cost_return,
     resolve_event_return,
 )
@@ -86,6 +87,36 @@ def test_sleeve_records_incomplete_events_instead_of_hiding_them() -> None:
     assert aggregate.retained_count == 2
     assert aggregate.incomplete_count == 1
     assert aggregate.mean_return == pytest.approx(0.04)
+
+
+def test_sleeve_reduction_is_invariant_to_event_input_order() -> None:
+    events = (
+        _event("CCC", exit=12.0),
+        _event("AAA", exit=10.0),
+        _event("BBB", exit=11.0),
+    )
+
+    assert aggregate_event_sleeve(
+        events,
+        cash_gross_return=0.02,
+        bps_per_side=100,
+    ) == aggregate_event_sleeve(
+        events[::-1],
+        cash_gross_return=0.02,
+        bps_per_side=100,
+    )
+
+
+def test_economic_summary_has_order_invariant_fsum_and_sorted_median() -> None:
+    values = (1e16, 1.0, -1e16, 3.0)
+
+    forward = economic_summary(values)
+    reversed_result = economic_summary(values[::-1])
+
+    assert forward == reversed_result
+    assert forward.mean == 1.0
+    assert forward.median == 2.0
+    assert forward.positive_fraction == 0.75
 
 
 def test_cohort_series_are_arithmetic_return_differences() -> None:
