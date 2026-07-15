@@ -95,6 +95,7 @@ GATED_SPLITS = (
     "retrospective_holdout_2024_2026h1",
     "prospective_forward_2027_2029",
 )
+HISTORICAL_GATED_SPLITS = GATED_SPLITS[:2]
 ASSIGNABLE_SPLITS = ("development_2019_2021", *GATED_SPLITS)
 MINIMUM_INTERVALS = {
     "validation_2022_2023": 20,
@@ -658,24 +659,72 @@ def evaluate_twelve_tests(
 ) -> tuple[BonferroniTestResult, ...]:
     """Evaluate the exact four-by-three family against the complete audit ledger."""
 
+    return _evaluate_tests(
+        observations,
+        decision_ledgers=decision_ledgers,
+        split_ids=GATED_SPLITS,
+        observation_split_error="inference accepts gated split observations only",
+        ledger_order_error=(
+            "decision ledgers must contain the exact ordered 12 gated "
+            "variant-split tests"
+        ),
+    )
+
+
+def evaluate_historical_eight_tests(
+    observations: Sequence[AssignedObservation],
+    *,
+    decision_ledgers: Sequence[GatedDecisionLedger],
+) -> tuple[BonferroniTestResult, ...]:
+    """Evaluate only the four-by-two completed historical test family.
+
+    The function deliberately excludes development and prospective-forward
+    observations. Split orders remain the contract-wide orders one and two,
+    so its seeds and Bonferroni gates are identical to the matching tests from
+    :func:`evaluate_twelve_tests` without requiring fabricated forward data.
+    """
+
+    return _evaluate_tests(
+        observations,
+        decision_ledgers=decision_ledgers,
+        split_ids=HISTORICAL_GATED_SPLITS,
+        observation_split_error=(
+            "historical inference accepts validation and retrospective "
+            "holdout observations only"
+        ),
+        ledger_order_error=(
+            "decision ledgers must contain the exact ordered 8 historical "
+            "variant-split tests"
+        ),
+    )
+
+
+def _evaluate_tests(
+    observations: Sequence[AssignedObservation],
+    *,
+    decision_ledgers: Sequence[GatedDecisionLedger],
+    split_ids: tuple[str, ...],
+    observation_split_error: str,
+    ledger_order_error: str,
+) -> tuple[BonferroniTestResult, ...]:
+    """Evaluate one exact ordered subset of the frozen 12-test family."""
+
     frozen = tuple(observations)
     if any(not isinstance(item, AssignedObservation) for item in frozen):
         raise RelativeStrengthContractError("assigned observations have invalid types")
-    if any(item.split_id not in GATED_SPLITS for item in frozen):
-        raise RelativeStrengthContractError("inference accepts gated split observations only")
+    if any(item.split_id not in split_ids for item in frozen):
+        raise RelativeStrengthContractError(observation_split_error)
     ledgers = tuple(decision_ledgers)
     if any(not isinstance(item, GatedDecisionLedger) for item in ledgers):
         raise RelativeStrengthContractError("decision_ledgers have invalid types")
     expected = tuple(
         (variant.variant_id, split_id)
         for variant in VARIANTS
-        for split_id in GATED_SPLITS
+        for split_id in split_ids
     )
     ledger_pairs = tuple((item.variant_id, item.split_id) for item in ledgers)
     if ledger_pairs != expected:
-        raise RelativeStrengthContractError(
-            "decision ledgers must contain the exact ordered 12 gated variant-split tests"
-        )
+        raise RelativeStrengthContractError(ledger_order_error)
     expected_observation_identities = tuple(
         (ledger.variant_id, ledger.split_id, *decision.identity)
         for ledger in ledgers
@@ -708,7 +757,8 @@ def evaluate_twelve_tests(
     results: list[BonferroniTestResult] = []
     cursor = 0
     for variant in VARIANTS:
-        for split_order, split_id in enumerate(GATED_SPLITS, start=1):
+        for split_id in split_ids:
+            split_order = GATED_SPLITS.index(split_id) + 1
             ledger = ledgers[len(results)]
             group = frozen[cursor : cursor + len(ledger.decisions)]
             cursor += len(group)
@@ -939,6 +989,7 @@ __all__ = [
     "DecisionAudit",
     "FormalEvidence",
     "GATED_SPLITS",
+    "HISTORICAL_GATED_SPLITS",
     "GatedDecisionLedger",
     "MonthlyObservation",
     "QUALIFICATION_SHA256",
@@ -953,6 +1004,7 @@ __all__ = [
     "build_monthly_targets",
     "build_synthetic_diagnostic",
     "canonical_report_bytes",
+    "evaluate_historical_eight_tests",
     "evaluate_twelve_tests",
     "load_formal_evidence",
     "new_strategy_portfolio",
