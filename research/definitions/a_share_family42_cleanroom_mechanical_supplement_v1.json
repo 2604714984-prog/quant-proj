@@ -1,0 +1,560 @@
+{
+  "schema_version": 1,
+  "supplement_id": "A_SHARE_FAMILY42_CLEANROOM_MECHANICAL_SUPPLEMENT_V1_20260715",
+  "family_number": 42,
+  "research_id": "A_SHARE_PERMANENT_PORTFOLIO_V1_20260710",
+  "created_on": "2026-07-15",
+  "status": "OUTCOME_BLIND_MECHANICAL_SUPPLEMENT_READY",
+  "classification": "RETROSPECTIVE_CLEAN_ROOM_MIGRATION_MECHANICS_ONLY",
+  "implementation_ready": true,
+  "source_lock": {
+    "preregistration_json": {
+      "path": "/home/rongyu/workspace/quant-data/recovery/legacy-local/strategy_work/reports/planning/a_share_permanent_portfolio_preregistration_20260710.json",
+      "sha256": "1d704156812a56afb02ee1f3c0cc40a78d41052efd747ca19c5fe002f8617534"
+    },
+    "preregistration_markdown": {
+      "path": "/home/rongyu/workspace/quant-data/recovery/legacy-local/strategy_work/reports/planning/a_share_permanent_portfolio_preregistration_20260710.md",
+      "sha256": "27b333ea41006e8dad8b8fa078390960b9136f08df7f1486a81ff987638f5833"
+    },
+    "sidecar_file_sha256": "f77c799b783790cb3aa1a4ccd90b9b9c9144e63ead1dc63e9da0a3d3603ebfde",
+    "recovered_copy_count": 17,
+    "all_recovered_copies_identical": true,
+    "legacy_code_or_functions_read": false,
+    "legacy_result_or_outcome_values_read": false
+  },
+  "preserved_contract": {
+    "weights": {
+      "510300.SH": 0.25,
+      "511010.SH": 0.25,
+      "518880.SH": 0.25,
+      "511880.SH": 0.25
+    },
+    "roles": {
+      "510300.SH": "China_large_cap_equity",
+      "511010.SH": "China_treasury_bond_proxy",
+      "518880.SH": "gold",
+      "511880.SH": "cash_equivalent"
+    },
+    "locked_price": {
+      "path": "/home/rongyu/workspace/A_Share_Monitor/data/cache/etf_rotation_e1_20260707/etf_daily_qfq_tencent_20260707.csv",
+      "sha256": "c5f37bc0ad3a086ab24c50e84ebc1333ef716effd397bd46972f36d9d8b7c1b6",
+      "adjustment": "qfq"
+    },
+    "common_calendar": "strict ascending intersection of dates with finite positive close for all four instruments",
+    "evaluation": [
+      "2018-01-02",
+      "2026-06-30"
+    ],
+    "rebalance_offsets": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12
+    ],
+    "canonical_inference_offset": 1,
+    "offset_selection_allowed": false,
+    "strict_cost_bps": 50,
+    "reported_costs_bps": [
+      20,
+      50
+    ],
+    "cash_flows": "none"
+  },
+  "accounting_supplement": {
+    "initialization": {
+      "all_offsets": "equal weights at the first common evaluation close, 2018-01-02",
+      "initial_turnover": 1,
+      "reported_cost_bps": [
+        20,
+        50
+      ],
+      "strict_gate_cost_bps": 50,
+      "cost_factor_formula": "1 - (cost_bps / 10000) * initial_turnover",
+      "strict_gate_cost_factor": 0.995,
+      "initial_cost": "for each reported cost case, apply 1-(cost_bps/10000)*1 once before the first subsequent close-to-close holding return",
+      "first_return_factor": "initial_cost_factor * (1 + first_portfolio_holding_return)",
+      "offset_scope": "offset controls only later annual rebalance month",
+      "no_double_trade": "for offset 1, initialization is the only 2018-01-02 trade"
+    },
+    "annual_rebalance": {
+      "schedule": "first common complete session of the offset calendar month, at most once per calendar year after initialization",
+      "turnover": "0.5 * sum_i(abs(target_weight_i - drifted_weight_i))",
+      "reported_cost_bps": [
+        20,
+        50
+      ],
+      "strict_gate_cost_bps": 50,
+      "cost_factor": "1 - (cost_bps / 10000) * turnover",
+      "close_event_order": [
+        "apply prior holdings to current close-to-close returns",
+        "compute finite positive post-return sleeve notionals and drifted weights",
+        "compute turnover and apply cost on a scheduled close",
+        "set target weights for the next close-to-close interval"
+      ]
+    },
+    "ledger": {
+      "continuous_per_offset": true,
+      "wealth_before_initial_cost": 1,
+      "split_rule": "slice one continuous ledger; never reset holdings, wealth, costs, or running peak at split boundaries",
+      "invalid_price_notional_cost_or_wealth": "fail_closed"
+    }
+  },
+  "comparators": {
+    "csi300": {
+      "symbol": "510300.SH",
+      "type": "single_asset_buy_and_hold",
+      "calendar": "same aligned common qfq close dates",
+      "initial_close": "2018-01-02",
+      "initial_turnover": 1,
+      "reported_cost_bps": [
+        20,
+        50
+      ],
+      "strict_gate_cost_bps": 50,
+      "initial_cost_factor": "1 - (cost_bps / 10000) * 1",
+      "paired_cost_rule": "For each 20 or 50 bps report, use the identical cost_bps and initial-cost event order as the paired strategy run.",
+      "later_rebalances": 0
+    },
+    "cash": {
+      "symbol": "511880.SH",
+      "type": "single_asset_buy_and_hold",
+      "calendar": "same aligned common qfq close dates",
+      "initial_close": "2018-01-02",
+      "initial_turnover": 1,
+      "reported_cost_bps": [
+        20,
+        50
+      ],
+      "strict_gate_cost_bps": 50,
+      "initial_cost_factor": "1 - (cost_bps / 10000) * 1",
+      "paired_cost_rule": "For each 20 or 50 bps report, use the identical cost_bps and initial-cost event order as the paired strategy run.",
+      "later_rebalances": 0
+    },
+    "monthly_excess_vs_cash": "compounded monthly net portfolio return minus compounded monthly net cash-comparator return"
+  },
+  "metrics": {
+    "total_return": "prod(1+r_t)-1",
+    "annualized_return": "(prod(1+r_t))**(252/N)-1",
+    "annualized_volatility": "sqrt(252)*sample_std(r_t,ddof=1)",
+    "annualized_sharpe": "sqrt(252)*arithmetic_mean(r_t)/sample_std(r_t,ddof=1)",
+    "sharpe_risk_free_rate": 0,
+    "maximum_drawdown": "min(wealth_t/running_peak_t-1)",
+    "peak_rule": "running peak is carried from evaluation start; do not reset at split start",
+    "fail_closed": "N<2, missing/nonfinite input or output, nonpositive wealth, or zero/nonfinite denominator"
+  },
+  "splits": {
+    "development_2018_2021": [
+      "2018-01-02",
+      "2021-12-31"
+    ],
+    "validation_2022_2023": [
+      "2022-01-01",
+      "2023-12-31"
+    ],
+    "holdout_2024_2025": [
+      "2024-01-01",
+      "2025-12-31"
+    ],
+    "forward_2026h1": [
+      "2026-01-01",
+      "2026-06-30"
+    ],
+    "bounds": "inclusive calendar dates on the continuous ledger"
+  },
+  "bootstrap": {
+    "scope": {
+      "split": "holdout_2024_2025",
+      "offset": 1,
+      "months": [
+        "2024-01",
+        "2024-02",
+        "2024-03",
+        "2024-04",
+        "2024-05",
+        "2024-06",
+        "2024-07",
+        "2024-08",
+        "2024-09",
+        "2024-10",
+        "2024-11",
+        "2024-12",
+        "2025-01",
+        "2025-02",
+        "2025-03",
+        "2025-04",
+        "2025-05",
+        "2025-06",
+        "2025-07",
+        "2025-08",
+        "2025-09",
+        "2025-10",
+        "2025-11",
+        "2025-12"
+      ],
+      "missing_or_partial_month": "fail_closed"
+    },
+    "series": [
+      "monthly_portfolio_return",
+      "monthly_excess_vs_cash"
+    ],
+    "monthly_portfolio_return": "compound all aligned daily net returns in each calendar month",
+    "rng": {
+      "generator": "numpy.random.Generator(PCG64)",
+      "seed": 20260710,
+      "draws": 50000,
+      "block_months": 3,
+      "reset": "fresh generator with the same seed separately for each listed series",
+      "algorithm": "per draw sample ceil(N/3) starts uniformly from [0,N); append indices (start+j) mod N for j=0,1,2 in start order; concatenate and truncate to N",
+      "reuse": "same indices for uncentered lower bound and centered-null p-value"
+    },
+    "lower_bound": {
+      "statistic": "arithmetic mean of each uncentered resample",
+      "q": 0.0005952380952380953,
+      "quantile": "linear: sort R means; h=(R-1)*q; y[floor(h)]+(h-floor(h))*(y[ceil(h)]-y[floor(h)])",
+      "pass": "finite lower bound strictly greater than zero"
+    },
+    "p_value": {
+      "role": "diagnostic_only",
+      "null": "x-arithmetic_mean(x)",
+      "formula": "(1+count(centered_resample_mean>=observed_mean))/(50000+1)"
+    },
+    "multiplicity": {
+      "global_familywise_alpha": 0.05,
+      "family_index": 42,
+      "family_alpha": 0.0011904761904761906,
+      "tests": 2,
+      "each_test_alpha": 0.0005952380952380953,
+      "formula": "0.05/(42*2)",
+      "both_required": true
+    }
+  },
+  "diversification": {
+    "split": "development_2018_2021",
+    "returns": "same-date simple close-to-close returns directly from locked qfq closes, before weights or costs",
+    "statistic": "Pearson sample correlation on paired finite observations",
+    "minimum_observations": 2,
+    "zero_variance_or_nonfinite": "fail_closed",
+    "pairs": [
+      [
+        "510300.SH",
+        "518880.SH",
+        0.6
+      ],
+      [
+        "510300.SH",
+        "511010.SH",
+        0.6
+      ],
+      [
+        "510300.SH",
+        "511880.SH",
+        0.6
+      ]
+    ]
+  },
+  "gates": {
+    "strict_cost_bps": 50,
+    "all_required": true,
+    "expected_count": 183,
+    "order": [
+      "core split development, validation, holdout; offset 01..12; total return, Sharpe, drawdown, volatility",
+      "cross-offset development, validation, holdout",
+      "forward offset 01..12; total return then drawdown",
+      "bootstrap portfolio then excess vs cash",
+      "development correlations gold, bond, cash",
+      "capacity 510300, 511010, 518880, 511880"
+    ],
+    "ids": [
+      "core.development_2018_2021.offset_01.total_return_positive",
+      "core.development_2018_2021.offset_01.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_01.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_01.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_02.total_return_positive",
+      "core.development_2018_2021.offset_02.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_02.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_02.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_03.total_return_positive",
+      "core.development_2018_2021.offset_03.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_03.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_03.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_04.total_return_positive",
+      "core.development_2018_2021.offset_04.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_04.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_04.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_05.total_return_positive",
+      "core.development_2018_2021.offset_05.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_05.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_05.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_06.total_return_positive",
+      "core.development_2018_2021.offset_06.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_06.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_06.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_07.total_return_positive",
+      "core.development_2018_2021.offset_07.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_07.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_07.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_08.total_return_positive",
+      "core.development_2018_2021.offset_08.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_08.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_08.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_09.total_return_positive",
+      "core.development_2018_2021.offset_09.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_09.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_09.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_10.total_return_positive",
+      "core.development_2018_2021.offset_10.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_10.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_10.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_11.total_return_positive",
+      "core.development_2018_2021.offset_11.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_11.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_11.annualized_volatility_lt_csi300",
+      "core.development_2018_2021.offset_12.total_return_positive",
+      "core.development_2018_2021.offset_12.annualized_sharpe_positive",
+      "core.development_2018_2021.offset_12.maximum_drawdown_ge_neg_0_20",
+      "core.development_2018_2021.offset_12.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_01.total_return_positive",
+      "core.validation_2022_2023.offset_01.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_01.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_01.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_02.total_return_positive",
+      "core.validation_2022_2023.offset_02.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_02.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_02.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_03.total_return_positive",
+      "core.validation_2022_2023.offset_03.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_03.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_03.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_04.total_return_positive",
+      "core.validation_2022_2023.offset_04.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_04.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_04.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_05.total_return_positive",
+      "core.validation_2022_2023.offset_05.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_05.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_05.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_06.total_return_positive",
+      "core.validation_2022_2023.offset_06.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_06.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_06.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_07.total_return_positive",
+      "core.validation_2022_2023.offset_07.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_07.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_07.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_08.total_return_positive",
+      "core.validation_2022_2023.offset_08.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_08.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_08.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_09.total_return_positive",
+      "core.validation_2022_2023.offset_09.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_09.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_09.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_10.total_return_positive",
+      "core.validation_2022_2023.offset_10.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_10.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_10.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_11.total_return_positive",
+      "core.validation_2022_2023.offset_11.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_11.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_11.annualized_volatility_lt_csi300",
+      "core.validation_2022_2023.offset_12.total_return_positive",
+      "core.validation_2022_2023.offset_12.annualized_sharpe_positive",
+      "core.validation_2022_2023.offset_12.maximum_drawdown_ge_neg_0_20",
+      "core.validation_2022_2023.offset_12.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_01.total_return_positive",
+      "core.holdout_2024_2025.offset_01.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_01.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_01.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_02.total_return_positive",
+      "core.holdout_2024_2025.offset_02.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_02.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_02.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_03.total_return_positive",
+      "core.holdout_2024_2025.offset_03.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_03.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_03.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_04.total_return_positive",
+      "core.holdout_2024_2025.offset_04.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_04.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_04.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_05.total_return_positive",
+      "core.holdout_2024_2025.offset_05.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_05.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_05.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_06.total_return_positive",
+      "core.holdout_2024_2025.offset_06.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_06.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_06.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_07.total_return_positive",
+      "core.holdout_2024_2025.offset_07.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_07.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_07.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_08.total_return_positive",
+      "core.holdout_2024_2025.offset_08.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_08.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_08.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_09.total_return_positive",
+      "core.holdout_2024_2025.offset_09.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_09.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_09.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_10.total_return_positive",
+      "core.holdout_2024_2025.offset_10.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_10.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_10.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_11.total_return_positive",
+      "core.holdout_2024_2025.offset_11.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_11.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_11.annualized_volatility_lt_csi300",
+      "core.holdout_2024_2025.offset_12.total_return_positive",
+      "core.holdout_2024_2025.offset_12.annualized_sharpe_positive",
+      "core.holdout_2024_2025.offset_12.maximum_drawdown_ge_neg_0_20",
+      "core.holdout_2024_2025.offset_12.annualized_volatility_lt_csi300",
+      "cross_offset.development_2018_2021.median_annualized_sharpe_ge_0_30",
+      "cross_offset.development_2018_2021.fraction_total_return_gt_cash_ge_0_75",
+      "cross_offset.validation_2022_2023.median_annualized_sharpe_ge_0_30",
+      "cross_offset.validation_2022_2023.fraction_total_return_gt_cash_ge_0_75",
+      "cross_offset.holdout_2024_2025.median_annualized_sharpe_ge_0_30",
+      "cross_offset.holdout_2024_2025.fraction_total_return_gt_cash_ge_0_75",
+      "forward.forward_2026h1.offset_01.total_return_positive",
+      "forward.forward_2026h1.offset_01.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_02.total_return_positive",
+      "forward.forward_2026h1.offset_02.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_03.total_return_positive",
+      "forward.forward_2026h1.offset_03.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_04.total_return_positive",
+      "forward.forward_2026h1.offset_04.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_05.total_return_positive",
+      "forward.forward_2026h1.offset_05.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_06.total_return_positive",
+      "forward.forward_2026h1.offset_06.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_07.total_return_positive",
+      "forward.forward_2026h1.offset_07.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_08.total_return_positive",
+      "forward.forward_2026h1.offset_08.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_09.total_return_positive",
+      "forward.forward_2026h1.offset_09.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_10.total_return_positive",
+      "forward.forward_2026h1.offset_10.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_11.total_return_positive",
+      "forward.forward_2026h1.offset_11.maximum_drawdown_ge_neg_0_15",
+      "forward.forward_2026h1.offset_12.total_return_positive",
+      "forward.forward_2026h1.offset_12.maximum_drawdown_ge_neg_0_15",
+      "bootstrap.holdout_2024_2025.offset_01.monthly_portfolio_return.lower_bound_gt_zero",
+      "bootstrap.holdout_2024_2025.offset_01.monthly_excess_vs_cash.lower_bound_gt_zero",
+      "diversification.development_2018_2021.equity_gold_pearson_le_0_60",
+      "diversification.development_2018_2021.equity_bond_pearson_le_0_60",
+      "diversification.development_2018_2021.equity_cash_pearson_le_0_60",
+      "capacity.510300_SH.median_volume_proxy_ge_1000000",
+      "capacity.511010_SH.median_amount_cny_ge_100000000",
+      "capacity.518880_SH.median_amount_cny_ge_100000000",
+      "capacity.511880_SH.median_amount_cny_ge_100000000"
+    ]
+  },
+  "capacity": {
+    "evidence": {
+      "path": "/home/rongyu/workspace/A_Share_Monitor/reports/workspace_dispatch/etf_r21_amount_nav_premium_materialization_20260708.csv",
+      "sha256": "43f50efb7b41c161e825d8452097a9a59754e195bc525d44331d76bf10d1b80e"
+    },
+    "defensive": {
+      "window": [
+        "2018-01-02",
+        "2026-07-07"
+      ],
+      "field": "median_amount",
+      "unit": "CNY",
+      "threshold_inclusive": 100000000,
+      "rows": [
+        {
+          "symbol": "511010.SH",
+          "rows": 2063,
+          "median_amount_cny": 165343696,
+          "missing_rate": 0
+        },
+        {
+          "symbol": "518880.SH",
+          "rows": 2063,
+          "median_amount_cny": 1180540144,
+          "missing_rate": 0
+        },
+        {
+          "symbol": "511880.SH",
+          "rows": 2063,
+          "median_amount_cny": 11116939925,
+          "missing_rate": 0
+        }
+      ]
+    },
+    "equity": {
+      "symbol": "510300.SH",
+      "window": [
+        "2018-01-02",
+        "2026-06-30"
+      ],
+      "field": "volume",
+      "aggregation": "median",
+      "population": "510300.SH rows on the common complete evaluation-date set from 2018-01-02 through 2026-06-30 inclusive",
+      "value_gate": "parse as numeric; every included value must be finite and nonnegative; require at least one included observation",
+      "threshold_inclusive": 1000000,
+      "threshold_unit": "TENCENT_PROVIDER_NATIVE_NUMERIC_VOLUME_UNIT_SEMANTICS_UNKNOWN",
+      "source_identity": {
+        "logical_path": "/home/rongyu/workspace/A_Share_Monitor/data/cache/etf_rotation_e1_20260707/etf_daily_qfq_tencent_20260707.csv",
+        "verified_recovery_copy_path": "/home/rongyu/workspace/quant-data/recovery/legacy-local/A_Share_Monitor/data/cache/etf_rotation_e1_20260707/etf_daily_qfq_tencent_20260707.csv",
+        "sha256": "c5f37bc0ad3a086ab24c50e84ebc1333ef716effd397bd46972f36d9d8b7c1b6",
+        "provider_source": "tencent_ifzq_qfq_kline_public_open_endpoint_via_simonlin1212_policy",
+        "observed_header": [
+          "snapshot_id",
+          "ts_code",
+          "trade_date",
+          "open",
+          "close",
+          "high",
+          "low",
+          "volume",
+          "amount",
+          "provider_source",
+          "adjustment",
+          "nav_available"
+        ]
+      },
+      "source_field": "volume",
+      "native_unit": "TENCENT_PROVIDER_NATIVE_NUMERIC_VOLUME_UNIT_SEMANTICS_UNKNOWN",
+      "unit_nonclaims": [
+        "not labeled shares",
+        "not labeled lots",
+        "not labeled hands",
+        "not labeled contracts",
+        "not labeled currency"
+      ],
+      "conversion_factor": 1,
+      "conversion": "identity; no conversion; compute and compare the median in the provider-native numeric unit",
+      "evidence_rows": 0,
+      "evidence_status": "ETF_FIELD_FETCH_UNAVAILABLE",
+      "accepted_liquidity_evidence_role": "defensive-leg amount evidence only; its unavailable 510300.SH row must not substitute for the locked price CSV volume field",
+      "qualification": "OUTCOME_BLIND_PROVIDER_NATIVE_PROXY_LOCKED",
+      "evaluation_allowed": true,
+      "research_liquidity_proxy_only": true,
+      "executable_order_capacity_evidence": false
+    },
+    "fail_closed": "For 510300.SH, use only the exact locked CSV volume field and provider-native numeric unit with identity conversion. Never relabel it as shares, lots, hands, contracts, or currency; missing, nonnumeric, nonfinite, negative, empty, wrong-hash, or non-common-date input fails the capacity gate."
+  },
+  "remaining_blocker": null,
+  "boundary": {
+    "mechanical_supplement_only": true,
+    "real_data_or_outcome_access_authorized": false,
+    "backtest_execution_authorized": false,
+    "strategy_evidence_created": false,
+    "strategy_candidate_available": false,
+    "promotion_allowed": false,
+    "recommendation_or_trading_allowed": false,
+    "runtime_timestamp_in_content": false,
+    "commit_or_push_authorized": false
+  }
+}
