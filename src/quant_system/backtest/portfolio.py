@@ -9,6 +9,7 @@ from quant_system.markets.a_share import require_board_lot, stamp_tax_rate
 from quant_system.markets.common import is_finite_number, is_positive_price
 from quant_system.markets.us import (
     TERMINAL_ACTION_TYPES,
+    cash_distribution,
     require_accepted_settlement_sessions,
     split_adjustment,
 )
@@ -76,7 +77,10 @@ class Portfolio:
         self.positions: dict[str, Position] = {}
         self.pending_cash: list[PendingCash] = []
         self.current_session: date | None = None
+        self._session_open_shares: dict[str, float] = {}
         self._applied_terminal_action_ids: set[str] = set()
+        self._applied_distribution_action_ids: set[str] = set()
+        self._applied_split_action_ids: set[str] = set()
 
     @classmethod
     def a_share(
@@ -137,6 +141,10 @@ class Portfolio:
         if new_session and self.share_t_plus_one:
             for position in self.positions.values():
                 position.sellable_shares = position.shares
+        if new_session:
+            self._session_open_shares = {
+                symbol: position.shares for symbol, position in self.positions.items()
+            }
         self.current_session = as_of
 
     def buy(
@@ -297,9 +305,22 @@ class Portfolio:
             realized_pnl,
         )
 
-    def apply_split(self, symbol: str, ratio: float) -> None:
+    def apply_split(
+        self,
+        symbol: str,
+        ratio: float,
+        *,
+        event_id: str | None = None,
+    ) -> None:
+        if event_id is not None:
+            self._require_stable_identity(event_id, "event_id")
+            if event_id in self._applied_split_action_ids:
+                raise ValueError("split action event_id has already been applied")
         position = self.positions.get(symbol)
         if position is None:
+            split_adjustment(0.0, 0.0, ratio)
+            if event_id is not None:
+                self._applied_split_action_ids.add(event_id)
             return
         self._validate_position(position)
         adjusted_shares, adjusted_average_cost = split_adjustment(
@@ -328,6 +349,47 @@ class Portfolio:
         position.sellable_shares = adjusted_sellable
         position.last_accepted_mark = adjusted_mark
         position.corporate_action_odd_lot = adjusted_odd_lot
+        if event_id is not None:
+            self._applied_split_action_ids.add(event_id)
+
+    def apply_cash_distribution(
+        self,
+        symbol: str,
+        *,
+        event_id: str,
+        amount_per_share: float,
+        ex_date: date,
+        pay_date: date,
+    ) -> float:
+        """Freeze ex-date entitlement and settle one cash action exactly once."""
+
+        if not self.us_cash_settlement:
+            raise ValueError("cash distributions are supported only for US portfolios")
+        self._require_stable_identity(symbol, "symbol")
+        self._require_stable_identity(event_id, "event_id")
+        if event_id in self._applied_distribution_action_ids:
+            raise ValueError("cash distribution event_id has already been applied")
+        if type(ex_date) is not date or type(pay_date) is not date:
+            raise TypeError("ex_date and pay_date must be dates")
+        if self.current_session != ex_date:
+            raise ValueError("cash distribution must be applied on its ex_date session")
+        if pay_date < ex_date:
+            raise ValueError("pay_date cannot precede ex_date")
+        entitled_shares = self._session_open_shares.get(symbol, 0.0)
+        entitlement = cash_distribution(entitled_shares, amount_per_share)
+        if pay_date == ex_date:
+            self.settled_cash = self._finite_result(
+                self.settled_cash + entitlement,
+                "cash after distribution",
+            )
+        else:
+            self._finite_result(
+                self.pending_cash_total + entitlement,
+                "pending cash after distribution",
+            )
+            self.pending_cash.append(PendingCash(pay_date, entitlement))
+        self._applied_distribution_action_ids.add(event_id)
+        return entitlement
 
     def apply_terminal_action(
         self,

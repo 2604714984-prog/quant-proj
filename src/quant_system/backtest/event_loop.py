@@ -1,0 +1,488 @@
+"""One deterministic, point-in-time next-session rebalance."""
+from __future__ import annotations
+
+from collections.abc import Callable, Mapping
+from copy import deepcopy
+from dataclasses import asdict, dataclass, fields, is_dataclass
+from datetime import date, datetime
+from decimal import Decimal
+import hashlib
+import json
+import math
+from typing import Any, Literal
+from zoneinfo import ZoneInfo
+
+from quant_system.data import (
+    AcceptedSession, AcceptedSessionCalendar, CorporateActionIdentity, SourceIdentity,
+)
+from quant_system.markets.a_share import AShareBar, decide_fill as a_share_fill
+from quant_system.markets.common import (
+    FillDecision, MarketDataError, is_finite_number, is_positive_price,
+    require_aware_datetime, require_nonempty_text,
+)
+from quant_system.markets.universe import StatusEvidence, evaluate_universe
+from quant_system.markets.us import (
+    CorporateActionValuationError, KNOWN_ACTION_TYPES, TERMINAL_ACTION_TYPES,
+    cash_settlement_lag_sessions,
+    decide_fill as us_fill, resolve_mark,
+)
+from .blocked_orders import BLOCKED_EXIT_REASONS, BlockedExitOrder, advance_blocked_exit
+from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
+from .portfolio import Portfolio, Position, Trade
+
+Market = Literal["a_share", "us"]
+TargetWeightCallback = Callable[["DecisionContext"], Mapping[str, float]]
+_RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
+
+
+@dataclass(frozen=True)
+class TerminalAction:
+    event_id: str
+    action_type: str
+    effective_at: datetime
+    recovery_per_share: float
+    source: SourceIdentity
+    successor_symbol: str | None = None
+    successor_shares_per_share: float | None = None
+
+    def __post_init__(self) -> None:
+        require_nonempty_text(self.event_id, "event_id")
+        require_aware_datetime(self.effective_at, "effective_at")
+        if self.action_type not in TERMINAL_ACTION_TYPES:
+            raise MarketDataError("unsupported terminal action_type")
+        if not is_finite_number(self.recovery_per_share) or self.recovery_per_share < 0:
+            raise MarketDataError("recovery_per_share must be finite and nonnegative")
+        if not isinstance(self.source, SourceIdentity):
+            raise MarketDataError("terminal action requires a SourceIdentity")
+
+
+@dataclass(frozen=True)
+class ExecutionInput:
+    symbol: str
+    market: Market
+    open_price: float | None
+    currency: str
+    source: SourceIdentity
+    status_records: tuple[StatusEvidence, ...]
+    action_types: tuple[str, ...] = ()
+    corporate_actions: tuple[CorporateActionIdentity, ...] = ()
+    is_suspended: bool = False
+    up_limit: float | None = None
+    down_limit: float | None = None
+    capacity: CapacityObservation | None = None
+    terminal_action: TerminalAction | None = None
+
+
+@dataclass(frozen=True)
+class DecisionContext:
+    signal_session: AcceptedSession
+    execution_session: AcceptedSession
+    decision_at: datetime
+    eligible_symbols: tuple[str, ...]
+
+
+@dataclass(frozen=True)
+class ExecutionReceipt:
+    sequence: int
+    symbol: str
+    side: str
+    requested_shares: float
+    filled_shares: float
+    price: float | None
+    commission: float
+    sell_tax: float
+    cash_change: float
+    cash_after: float
+    reason: str
+
+
+@dataclass(frozen=True)
+class StaticRebalanceResult:
+    portfolio: Portfolio
+    context: DecisionContext
+    target_weights: tuple[tuple[str, float], ...]
+    receipts: tuple[ExecutionReceipt, ...]
+    input_identity_hash: str
+    receipt_hashes: tuple[str, ...]
+    stage_hash: str
+    final_nav: float
+
+
+def run_static_rebalance(
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    *,
+    signal_session: date,
+    decision_at: datetime,
+    execution_inputs: tuple[ExecutionInput, ...],
+    target_weights: TargetWeightCallback,
+    capacity_policy: CapacityPolicy | None = None,
+    slippage_bps: float = 0.0,
+    prior_stage_hash: str = "0" * 64,
+) -> StaticRebalanceResult:
+    """Run one static rebalance on a copy; caller state stays unchanged."""
+    if not isinstance(portfolio, Portfolio) or not isinstance(calendar, AcceptedSessionCalendar):
+        raise TypeError("portfolio and calendar have invalid types")
+    cutoff = require_aware_datetime(decision_at, "decision_at")
+    signal = calendar.session_on(signal_session, as_of=cutoff)
+    execution = calendar.next_session(signal_session, as_of=cutoff)
+    if cutoff < signal.close_at or cutoff > execution.open_at:
+        raise MarketDataError("decision_at must be between signal close and next-session open")
+    if not is_finite_number(slippage_bps) or not 0 <= float(slippage_bps) < 10_000:
+        raise ValueError("slippage_bps must be finite and in [0, 10000)")
+    rows = _inputs(execution_inputs, portfolio, execution)
+    working = deepcopy(portfolio)
+    working.start_session(execution.session_date)
+    if set(working.positions) - rows.keys():
+        raise MarketDataError("every held symbol requires an execution input")
+    decisions = {
+        symbol: evaluate_universe(symbol, execution, cutoff, row.status_records)
+        for symbol, row in rows.items()
+    }
+    _terminal_checks(rows, decisions, execution, cutoff)
+    receipts: list[ExecutionReceipt] = []
+    _actions(working, rows, execution, cutoff, receipts)
+    eligible = tuple(sorted(symbol for symbol, item in decisions.items() if item.eligible))
+    context = DecisionContext(signal, execution, cutoff, eligible)
+    weights = _weights(target_weights(context), eligible)
+    nav = working.nav(_marks(working, rows))
+    desired = {
+        symbol: _lot(nav * dict(weights).get(symbol, 0) / _open(rows[symbol]), working.lot_size)
+        for symbol in eligible
+    }
+    desired.update({symbol: 0.0 for symbol in working.positions if symbol not in desired})
+    for side in ("sell", "buy"):
+        for symbol in sorted(desired):
+            current = working.positions.get(symbol, Position()).shares
+            delta = desired[symbol] - current
+            if (side == "sell" and delta >= -1e-9) or (side == "buy" and delta <= 1e-9):
+                continue
+            requested = -delta if side == "sell" else delta
+            requested = current if side == "sell" and math.isclose(
+                requested, current, abs_tol=1e-9
+            ) else _lot(requested, working.lot_size)
+            if requested:
+                _order(working, calendar, execution, cutoff, rows[symbol], side, requested,
+                       capacity_policy, slippage_bps, receipts)
+    final_nav = working.nav(_marks(working, rows))
+    identity = _identity(context, calendar, rows, portfolio, weights, capacity_policy,
+                         slippage_bps, cutoff)
+    receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, prior_stage_hash)
+    return StaticRebalanceResult(working, context, weights, tuple(receipts), identity,
+                                 receipt_hashes, stage_hash, final_nav)
+
+
+def blocked_exit_from_receipt(
+    receipt: ExecutionReceipt,
+    context: DecisionContext,
+    calendar: AcceptedSessionCalendar,
+) -> BlockedExitOrder:
+    """Turn a market-blocked sell into the existing multi-session retry object."""
+    if receipt.side != "sell" or receipt.filled_shares or receipt.reason not in BLOCKED_EXIT_REASONS:
+        raise ValueError("receipt is not a retryable market-blocked exit")
+    order = BlockedExitOrder(receipt.symbol, receipt.requested_shares,
+                             context.execution_session.session_date, calendar)
+    return advance_blocked_exit(
+        order, session=context.execution_session.session_date,
+        decision_at=context.decision_at, decision=FillDecision(False, None, receipt.reason),
+    )
+
+
+def _inputs(
+    values: tuple[ExecutionInput, ...], portfolio: Portfolio, execution: AcceptedSession
+) -> dict[str, ExecutionInput]:
+    if type(values) is not tuple or not values or any(not isinstance(row, ExecutionInput) for row in values):
+        raise TypeError("execution_inputs must be a nonempty immutable tuple")
+    rows = {row.symbol: row for row in values}
+    if len(rows) != len(values) or any(
+        not isinstance(symbol, str) or not symbol.strip() for symbol in rows
+    ):
+        raise MarketDataError("execution symbols must be unique and nonempty")
+    market, action_ids = ("us" if portfolio.us_cash_settlement else "a_share"), []
+    for row in values:
+        if not isinstance(row.source, SourceIdentity):
+            raise MarketDataError("execution source must be a SourceIdentity")
+        if row.market != market or row.source.available_at > execution.open_at:
+            raise MarketDataError("market mismatch or execution source unavailable at open")
+        if not isinstance(row.currency, str) or len(row.currency) != 3 \
+                or not row.currency.isalpha() or not row.currency.isupper():
+            raise MarketDataError("currency must be a three-letter uppercase code")
+        if type(row.status_records) is not tuple or any(
+            not isinstance(item, StatusEvidence) for item in row.status_records
+        ):
+            raise MarketDataError("status_records must be an immutable identity tuple")
+        if type(row.action_types) is not tuple or row.action_types != tuple(sorted(set(row.action_types))):
+            raise MarketDataError("action_types must be sorted and unique")
+        if set(row.action_types) - KNOWN_ACTION_TYPES:
+            raise MarketDataError("action_types contains an unknown US action")
+        if set(row.action_types) & _RAW_ACTIONS:
+            raise CorporateActionValuationError("ordinary action requires a rich identity")
+        if type(row.is_suspended) is not bool:
+            raise MarketDataError("is_suspended must be boolean")
+        if row.market == "a_share" and (row.action_types or row.corporate_actions
+                                        or row.terminal_action is not None):
+            raise MarketDataError("US action fields cannot be used for A-share inputs")
+        if row.market == "us" and (row.is_suspended or row.up_limit is not None
+                                   or row.down_limit is not None):
+            raise MarketDataError("A-share fields cannot be used for US inputs")
+        if type(row.corporate_actions) is not tuple or any(
+            not isinstance(item, CorporateActionIdentity) or item.subject_id != row.symbol
+            for item in row.corporate_actions
+        ):
+            raise MarketDataError("corporate_actions must be immutable identities for symbol")
+        action_ids.extend(item.action_id for item in row.corporate_actions)
+        if row.capacity is not None and (
+            not isinstance(row.capacity, CapacityObservation) or row.capacity.subject_id != row.symbol
+        ):
+            raise MarketDataError("capacity observation must match symbol")
+        if row.terminal_action is not None:
+            if not isinstance(row.terminal_action, TerminalAction):
+                raise MarketDataError("terminal_action has an invalid type")
+            if row.terminal_action.action_type not in row.action_types:
+                raise MarketDataError("terminal action must appear in action_types")
+            action_ids.append(row.terminal_action.event_id)
+    if len(action_ids) != len(set(action_ids)):
+        raise MarketDataError("action IDs must be globally unique")
+    return rows
+
+
+def _terminal_checks(
+    rows: Mapping[str, ExecutionInput], decisions: Mapping[str, Any],
+    execution: AcceptedSession, cutoff: datetime,
+) -> None:
+    zone = ZoneInfo(execution.exchange_timezone)
+    for symbol, row in rows.items():
+        action = row.terminal_action
+        if action is None:
+            continue
+        if action.source.available_at > cutoff:
+            raise MarketDataError("terminal action unavailable at decision_at")
+        if action.effective_at > execution.open_at:
+            raise MarketDataError("terminal action effective_at follows execution open")
+        if action.effective_at.astimezone(zone).date() != execution.session_date:
+            raise MarketDataError("terminal action effective date is not the execution session")
+        if decisions[symbol].eligible:
+            raise MarketDataError("terminal-action symbol must be PIT ineligible")
+        successor = action.successor_symbol
+        if successor and (successor not in decisions or not decisions[successor].eligible):
+            raise MarketDataError("terminal successor requires an explicit eligible input")
+
+
+def _actions(
+    portfolio: Portfolio, rows: Mapping[str, ExecutionInput], execution: AcceptedSession,
+    cutoff: datetime, receipts: list[ExecutionReceipt],
+) -> None:
+    for symbol in sorted(rows):
+        row = rows[symbol]
+        for action in sorted(row.corporate_actions, key=lambda item: item.action_id):
+            if action.source.available_at > cutoff or action.effective_at > execution.open_at:
+                raise MarketDataError("corporate action is late or effective after execution open")
+            if action.effective_date != execution.session_date:
+                raise MarketDataError("corporate action is late or effective on another session")
+            before = portfolio.positions.get(symbol, Position()).shares
+            if action.action_type in {"cash_dividend", "special_dividend"}:
+                if action.unit != "per_share" or action.currency != row.currency:
+                    raise MarketDataError("cash action has incompatible unit or currency")
+                assert action.ex_date is not None and action.pay_date is not None
+                cash_before, amount = portfolio.available_cash, float(action.cash_amount)
+                entitlement = portfolio.apply_cash_distribution(
+                    symbol, event_id=action.action_id, amount_per_share=amount,
+                    ex_date=action.ex_date, pay_date=action.pay_date,
+                )
+                _receipt(receipts, symbol, "distribution", before, before, amount, 0, 0,
+                         portfolio.available_cash - cash_before, portfolio.available_cash,
+                         f"entitlement:{entitlement:.12g}")
+            elif action.action_type in {"split", "reverse_split"}:
+                ratio = float(action.split_ratio)
+                portfolio.apply_split(symbol, ratio, event_id=action.action_id)
+                after = portfolio.positions.get(symbol, Position()).shares
+                _receipt(receipts, symbol, "split", before, after, ratio, 0, 0, 0,
+                         portfolio.available_cash, "split_applied")
+            else:
+                raise CorporateActionValuationError("symbol change lacks terminal economics")
+        terminal = row.terminal_action
+        if terminal is None or symbol not in portfolio.positions:
+            continue
+        before = portfolio.positions[symbol].shares
+        recovery = portfolio.apply_terminal_action(
+            symbol, event_id=terminal.event_id, action_type=terminal.action_type,
+            recovery_per_share=terminal.recovery_per_share,
+            successor_symbol=terminal.successor_symbol,
+            successor_shares_per_share=terminal.successor_shares_per_share,
+        )
+        _receipt(receipts, symbol, "terminal", before, before, terminal.recovery_per_share,
+                 0, 0, recovery, portfolio.available_cash, f"terminal_{terminal.action_type}")
+
+
+def _order(
+    portfolio: Portfolio, calendar: AcceptedSessionCalendar, execution: AcceptedSession,
+    cutoff: datetime, row: ExecutionInput, side: str, requested: float,
+    policy: CapacityPolicy | None, slippage_bps: float, receipts: list[ExecutionReceipt],
+) -> None:
+    decision = _fill(row, side, slippage_bps)
+    if not decision.filled:
+        _receipt(receipts, row.symbol, side, requested, 0, None, 0, 0, 0,
+                 portfolio.available_cash, decision.reason)
+        return
+    assert decision.price is not None
+    if policy is not None:
+        if row.capacity is None:
+            raise MarketDataError("capacity policy requires an observation")
+        cap = assess_capacity(row.symbol, requested, decision.price, row.currency, row.capacity,
+                              policy, decision_at=cutoff, execution_session=execution)
+        if not cap.allowed:
+            _receipt(receipts, row.symbol, side, requested, 0, None, 0, 0, 0,
+                     portfolio.available_cash, f"capacity:{cap.reason}")
+            return
+    filled = requested if side == "sell" else _affordable(portfolio, requested, decision.price)
+    if not filled:
+        _receipt(receipts, row.symbol, side, requested, 0, None, 0, 0, 0,
+                 portfolio.available_cash, "insufficient_cash")
+        return
+    if side == "buy":
+        trade = portfolio.buy(row.symbol, filled, decision.price, execution.session_date)
+        reason = "partial_cash" if filled < requested else "filled"
+    else:
+        trade = _sell(portfolio, calendar, row.symbol, filled, decision.price, execution, cutoff)
+        reason = "filled"
+    _receipt(receipts, trade.symbol, trade.side, requested, trade.shares, trade.price,
+             trade.costs.commission, trade.costs.sell_tax, trade.cash_change,
+             portfolio.available_cash, reason)
+
+
+def _weights(raw: Mapping[str, float], eligible: tuple[str, ...]) -> tuple[tuple[str, float], ...]:
+    if not isinstance(raw, Mapping):
+        raise TypeError("callback must return a mapping")
+    items = tuple(raw.items())
+    if len({symbol for symbol, _ in items}) != len(items):
+        raise ValueError("target symbols must be unique")
+    if any(isinstance(weight, bool) or not is_finite_number(weight) for _, weight in items):
+        raise ValueError("weights must be finite numeric values")
+    frozen = tuple(sorted((symbol, float(weight)) for symbol, weight in items))
+    if any(symbol not in eligible for symbol, _ in frozen):
+        raise MarketDataError("target symbol is not PIT eligible")
+    if any(not is_finite_number(weight) or not 0 <= weight <= 1 for _, weight in frozen):
+        raise ValueError("weights must be finite and in [0, 1]")
+    if math.fsum(weight for _, weight in frozen) > 1 + 1e-12:
+        raise ValueError("target weights cannot exceed one")
+    return frozen
+
+
+def _marks(portfolio: Portfolio, rows: Mapping[str, ExecutionInput]) -> dict[str, float]:
+    marks: dict[str, float] = {}
+    for symbol, position in portfolio.positions.items():
+        if symbol not in rows:
+            raise MarketDataError("holding lacks an execution input")
+        row = rows[symbol]
+        if row.market == "us":
+            marks[symbol] = resolve_mark(
+                symbol=symbol, current_price=row.open_price,
+                previous_accepted_price=position.last_accepted_mark,
+                action_types=row.action_types, data_qualified=True,
+            )
+        elif row.is_suspended and is_positive_price(position.last_accepted_mark):
+            marks[symbol] = float(position.last_accepted_mark)
+        else:
+            marks[symbol] = _open(row)
+    return marks
+
+
+def _fill(row: ExecutionInput, side: str, slippage: float) -> FillDecision:
+    if row.market == "us":
+        return us_fill(side, row.open_price, action_types=row.action_types,
+                       data_qualified=True, slippage_bps=slippage)
+    return a_share_fill(side, AShareBar(row.open_price, row.is_suspended, row.up_limit,
+                                        row.down_limit, True), slippage_bps=slippage)
+
+
+def _open(row: ExecutionInput) -> float:
+    if not is_positive_price(row.open_price):
+        raise MarketDataError(f"{row.symbol} lacks a qualified positive open")
+    return float(row.open_price)
+
+
+def _lot(shares: float, size: int) -> float:
+    return float(max(0, math.floor(shares / size)) * size)
+
+
+def _affordable(portfolio: Portfolio, requested: float, price: float) -> float:
+    gross = max(0.0, portfolio.available_cash - portfolio.costs.minimum_commission)
+    return min(requested, _lot(gross / (1 + portfolio.costs.commission_rate) / price,
+                               portfolio.lot_size))
+
+
+def _sell(
+    portfolio: Portfolio, calendar: AcceptedSessionCalendar, symbol: str, shares: float,
+    price: float, execution: AcceptedSession, cutoff: datetime,
+) -> Trade:
+    sessions: list[date] = []
+    after = execution.session_date
+    if portfolio.us_cash_settlement:
+        for _ in range(cash_settlement_lag_sessions(after)):
+            accepted = calendar.next_session(after, as_of=cutoff)
+            sessions.append(accepted.session_date)
+            after = accepted.session_date
+    return portfolio.sell(symbol, shares, price, execution.session_date,
+                          settlement_date=sessions[-1] if sessions else None,
+                          accepted_settlement_sessions=tuple(sessions) if sessions else None)
+
+
+def _receipt(
+    receipts: list[ExecutionReceipt], symbol: str, side: str, requested: float, filled: float,
+    price: float | None, commission: float, sell_tax: float, cash_change: float,
+    cash_after: float, reason: str,
+) -> None:
+    receipts.append(ExecutionReceipt(len(receipts) + 1, symbol, side, float(requested),
+                                     float(filled), None if price is None else float(price),
+                                     float(commission), float(sell_tax), float(cash_change),
+                                     float(cash_after), reason))
+
+
+def _identity(
+    context: DecisionContext, calendar: AcceptedSessionCalendar,
+    rows: Mapping[str, ExecutionInput], portfolio: Portfolio,
+    weights: tuple[tuple[str, float], ...], policy: CapacityPolicy | None,
+    slippage: float, cutoff: datetime,
+) -> str:
+    payload = {
+        "context": context,
+        "calendar": tuple(calendar.session_on(day, as_of=cutoff) for day in calendar.session_dates),
+        "inputs": tuple(rows[symbol] for symbol in sorted(rows)),
+        "portfolio": portfolio.__dict__,
+        "weights": weights,
+        "capacity_policy": policy,
+        "slippage_bps": slippage,
+    }
+    encoded = json.dumps(_normal(payload), sort_keys=True, separators=(",", ":"))
+    return hashlib.sha256(encoded.encode()).hexdigest()
+
+
+def _normal(value: Any) -> Any:
+    if is_dataclass(value) and not isinstance(value, type):
+        return {field.name: _normal(getattr(value, field.name)) for field in fields(value)}
+    if isinstance(value, Mapping):
+        return {str(key): _normal(item) for key, item in sorted(value.items())}
+    if isinstance(value, (tuple, list)):
+        return [_normal(item) for item in value]
+    if isinstance(value, (set, frozenset)):
+        return sorted(_normal(item) for item in value)
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return str(value)
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError("input identity cannot contain nonfinite values")
+    return value
+
+
+def _hashes(
+    receipts: tuple[ExecutionReceipt, ...], identity: str, prior: str,
+) -> tuple[tuple[str, ...], str]:
+    if len(prior) != 64 or any(char not in "0123456789abcdef" for char in prior):
+        raise ValueError("prior_stage_hash must be a lowercase SHA-256 digest")
+    current, hashes = hashlib.sha256(f"{prior}|{identity}".encode()).hexdigest(), []
+    for receipt in receipts:
+        payload = json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
+        current = hashlib.sha256(f"{current}|{payload}".encode()).hexdigest()
+        hashes.append(current)
+    return tuple(hashes), current
