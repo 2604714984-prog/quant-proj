@@ -1,3 +1,4 @@
+from datetime import timezone
 import os
 from pathlib import Path
 import shutil
@@ -48,6 +49,22 @@ def test_query_is_read_only_and_bounded(tmp_path: Path) -> None:
     with pytest.raises(DataReadError, match="read-only SELECT"):
         query(path, "DELETE FROM market.daily")
     assert query(path, "SELECT count(*) FROM market.daily").rows == ((2,),)
+
+
+def test_query_materializes_timestamp_with_timezone(tmp_path: Path) -> None:
+    path = _database(tmp_path / "test.duckdb")
+    with duckdb.connect(str(path)) as connection:
+        connection.execute("CREATE TABLE market.events(available_at TIMESTAMPTZ)")
+        connection.execute(
+            "INSERT INTO market.events VALUES "
+            "(TIMESTAMPTZ '2026-07-15 04:30:00+00:00')"
+        )
+
+    result = query(path, "SELECT available_at FROM market.events")
+
+    assert result.rows[0][0].astimezone(timezone.utc).isoformat() == (
+        "2026-07-15T04:30:00+00:00"
+    )
 
 
 def test_query_rejects_multi_statement_and_external_file_writes(tmp_path: Path) -> None:

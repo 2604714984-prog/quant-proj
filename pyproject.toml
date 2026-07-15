@@ -7,7 +7,7 @@ name = "quant-proj"
 version = "2.0.0"
 description = "A lightweight personal quantitative research workspace"
 requires-python = ">=3.12"
-dependencies = ["duckdb==1.5.4"]
+dependencies = ["duckdb==1.5.4", "pytz==2026.2"]
 
 [project.optional-dependencies]
 dev = ["pytest==9.1.1", "ruff==0.15.21"]
