@@ -111,6 +111,14 @@ def test_definition_freezes_lineage_data_mechanics_and_exact_48_gates() -> None:
     assert definition["lineage_and_execution_boundary"]["original_status"] == (
         "REJECTED_BY_METHODOLOGY_RECOMPUTE_GATE"
     )
+    assert definition["output_contract"] == {
+        "runtime_timestamp_in_content_addressed_result": False,
+        "false_fixed_time_permitted": False,
+        "determinism": (
+            "identical accepted definition, input bytes, and source commit must produce "
+            "byte-identical result JSON"
+        ),
+    }
 
 
 def test_default_mode_opens_no_database_socket_or_output(monkeypatch, capsys) -> None:
@@ -756,6 +764,10 @@ def test_publish_is_atomic_and_non_overwriting(tmp_path) -> None:
     digest, sidecar = module._publish({"finite": 1.0}, output)
     assert hashlib.sha256(output.read_bytes()).hexdigest() == digest
     assert sidecar.read_text(encoding="ascii") == f"{digest}  result.json\n"
+    repeated = tmp_path / "repeated.json"
+    repeated_digest, _ = module._publish({"finite": 1.0}, repeated)
+    assert repeated.read_bytes() == output.read_bytes()
+    assert repeated_digest == digest
     with pytest.raises(module.Family66ReplayError, match="already exists"):
         module._publish({"finite": 2.0}, output)
 
@@ -795,7 +807,26 @@ def test_report_preserves_exact_rejection_and_candidate_boundaries() -> None:
         source_commit="a" * 40,
         source_paths={"features_dir": "/synthetic"},
     )
+    repeated = module.build_report(
+        definition,
+        digest,
+        _full_synthetic_raw(module),
+        source_commit="a" * 40,
+        source_paths={"features_dir": "/synthetic"},
+    )
+    canonical = (
+        json.dumps(report, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    ).encode()
+    repeated_canonical = (
+        json.dumps(repeated, indent=2, sort_keys=True, allow_nan=False) + "\n"
+    ).encode()
 
+    assert report == repeated
+    assert canonical == repeated_canonical
+    assert hashlib.sha256(canonical).hexdigest() == hashlib.sha256(
+        repeated_canonical
+    ).hexdigest()
+    assert "executed_at_utc" not in report
     assert report["gate_count"] == 48
     assert report["original_status_preserved"] == (
         "REJECTED_BY_METHODOLOGY_RECOMPUTE_GATE"
