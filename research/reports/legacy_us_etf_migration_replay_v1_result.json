@@ -1,7 +1,11 @@
 {
+  "boundary_counts_exact": true,
   "classification": "RETROSPECTIVE_MIGRATION_CONSISTENCY_ONLY",
-  "coverage_exact": true,
+  "evidence_state": "FROZEN_ONE_OFF_EVIDENCE",
+  "generalization_allowed": false,
+  "generalization_policy": "NO_GENERALIZATION",
   "headline_metrics_reproduced": false,
+  "input_slice_hash_exact": true,
   "legacy_headline_drift": {
     "US31_SPY_GLD_50_50": {
       "max_drawdown": -0.0004117812516801489,
@@ -34,6 +38,7 @@
     "uses raw Sina closes and does not establish strict PIT or corporate-action completeness",
     "US31/US36/US41/US46 remain rejected and are not reopened by this replay"
   ],
+  "mismatch_reasons": [],
   "recommendation_available": false,
   "results": {
     "US31_SPY_GLD_50_50": {
@@ -65,9 +70,12 @@
       "total_return": 3.678551842893113
     }
   },
-  "schema_version": "legacy-us-etf-migration-replay-v1",
+  "schema_version": "legacy-us-etf-migration-replay-v1.1",
+  "snapshot_id_exact": true,
   "source": {
     "available_at_missing": 7542,
+    "first_session": "2016-01-04",
+    "last_session": "2025-12-31",
     "row_count": 7542,
     "session_count": 2514,
     "slice_sha256": "7183133d689717670d9b8b9caae9116e7822e5bb78ed8351ffe0f029875e8701",

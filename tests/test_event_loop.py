@@ -275,6 +275,154 @@ def test_capacity_and_suspension_leave_blocked_exit_held_and_convertible() -> No
     assert capped.portfolio.positions["AAA"].shares == 100
 
 
+def test_max_positions_counts_a_blocked_exit_before_replacement_buy() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("AAA", 100, 10, days[0])
+
+    result = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input("AAA", "a_share", execution, price=None, suspended=True),
+            _input("BBB", "a_share", execution),
+        ),
+        target_weights=lambda _: {"BBB": 0.5},
+        max_positions=1,
+    )
+
+    assert [(item.side, item.symbol, item.reason) for item in result.receipts] == [
+        ("sell", "AAA", "suspended"),
+        ("buy", "BBB", "max_positions_after_blocked_exit"),
+    ]
+    assert set(result.portfolio.positions) == {"AAA"}
+    assert result.receipts[1].filled_shares == 0
+    assert result.receipts[1].cash_change == 0
+    assert result.receipts[1].cash_after == result.receipts[0].cash_after
+
+
+def test_max_positions_allows_replacement_after_successful_exit() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("AAA", 100, 10, days[0])
+
+    result = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input("AAA", "a_share", execution),
+            _input("BBB", "a_share", execution),
+        ),
+        target_weights=lambda _: {"BBB": 0.5},
+        max_positions=1,
+    )
+
+    assert [(item.side, item.symbol, item.reason) for item in result.receipts] == [
+        ("sell", "AAA", "filled"),
+        ("buy", "BBB", "filled"),
+    ]
+    assert set(result.portfolio.positions) == {"BBB"}
+
+
+def test_max_positions_allows_existing_symbol_adjustment_at_the_cap() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("AAA", 100, 10, days[0])
+
+    result = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input("AAA", "a_share", execution),
+            _input("BBB", "a_share", execution),
+        ),
+        target_weights=lambda _: {"AAA": 0.5, "BBB": 0.5},
+        max_positions=1,
+    )
+
+    assert [(item.side, item.symbol, item.reason) for item in result.receipts] == [
+        ("buy", "AAA", "filled"),
+        ("buy", "BBB", "max_positions_after_blocked_exit"),
+    ]
+    assert result.portfolio.positions["AAA"].shares > 100
+    assert "BBB" not in result.portfolio.positions
+
+
+def test_max_positions_uses_sorted_new_symbol_order_deterministically() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("AAA", 100, 10, days[0])
+
+    result = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input("CCC", "a_share", execution),
+            _input("AAA", "a_share", execution, price=None, suspended=True),
+            _input("BBB", "a_share", execution),
+        ),
+        target_weights=lambda _: {"CCC": 0.25, "BBB": 0.25},
+        max_positions=2,
+    )
+
+    assert [(item.side, item.symbol, item.reason) for item in result.receipts] == [
+        ("sell", "AAA", "suspended"),
+        ("buy", "BBB", "filled"),
+        ("buy", "CCC", "max_positions_after_blocked_exit"),
+    ]
+    assert set(result.portfolio.positions) == {"AAA", "BBB"}
+
+
+@pytest.mark.parametrize("value", [True, 0, -1, 1.5])
+def test_max_positions_validation_and_default_identity_compatibility(value) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    inputs = (_input("AAA", "a_share", execution),)
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "execution_inputs": inputs,
+        "target_weights": lambda _: {"AAA": 0.5},
+    }
+
+    default = run_static_rebalance(portfolio, calendar, **arguments)
+    explicit_none = run_static_rebalance(portfolio, calendar, max_positions=None, **arguments)
+    nonbinding_cap = run_static_rebalance(portfolio, calendar, max_positions=10, **arguments)
+    assert default.input_identity_hash == explicit_none.input_identity_hash
+    assert default.stage_hash == explicit_none.stage_hash
+    assert default.portfolio.__dict__ == nonbinding_cap.portfolio.__dict__
+    assert default.input_identity_hash != nonbinding_cap.input_identity_hash
+    with pytest.raises(ValueError, match="positive integer or None"):
+        run_static_rebalance(portfolio, calendar, max_positions=value, **arguments)
+
+
 def test_distribution_identity_credits_prior_holder_and_raw_label_is_rejected() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
     calendar = _calendar(days, "America/New_York")
