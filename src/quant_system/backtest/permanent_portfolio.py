@@ -537,16 +537,14 @@ def _load_defensive_median_amounts_with_expected_identity(
         if tuple(reader.fieldnames or ()) != LIQUIDITY_HEADER:
             raise Family42Error("liquidity evidence header or column order changed")
         for item in reader:
+            symbol = item.get("ts_code")
+            if symbol not in DEFENSIVE_SYMBOLS:
+                continue
             if None in item or any(value is None for value in item.values()):
                 raise Family42Error("liquidity evidence row width changed")
-            symbol = item["ts_code"]
-            if symbol not in SYMBOLS:
-                raise Family42Error("liquidity evidence contains an unexpected symbol")
             if symbol in seen_symbols:
                 raise Family42Error("duplicate liquidity evidence symbol")
             seen_symbols.add(symbol)
-            if symbol not in DEFENSIVE_SYMBOLS:
-                continue
             if not item["name"].strip() or item["name"] != item["name"].strip():
                 raise Family42Error("liquidity evidence name is invalid")
             try:
