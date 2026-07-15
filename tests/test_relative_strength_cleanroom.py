@@ -124,7 +124,7 @@ def test_contract_hashes_variants_and_source_identity_are_exact() -> None:
     )
 
 
-def test_code_manifest_binds_exact_two_implementation_files_and_no_execution() -> None:
+def test_code_manifest_records_exact_prior_two_file_baseline_and_no_execution() -> None:
     manifest = json.loads(MANIFEST.read_text())
     assert manifest["accepted_source"] == {
         "commit": rs.ACCEPTED_SOURCE_COMMIT,
@@ -138,8 +138,14 @@ def test_code_manifest_binds_exact_two_implementation_files_and_no_execution() -
         "src/quant_system/research/relative_strength.py",
         "tests/test_relative_strength_cleanroom.py",
     )
-    for item in manifest["scope"]:
-        assert hashlib.sha256((ROOT / item["path"]).read_bytes()).hexdigest() == item["sha256"]
+    assert {item["path"]: item["sha256"] for item in manifest["scope"]} == {
+        "src/quant_system/research/relative_strength.py": (
+            "5efb1e906aaa56ea29e9a7062fd78aa1e4f3b3248ae66cfcfb7a5e9c1b1db6f3"
+        ),
+        "tests/test_relative_strength_cleanroom.py": (
+            "72adf9963c86e8e6d31f33d7f92aea2a3d7cb07a74b9a5b775672a9e0f1f000c"
+        ),
+    }
     assert manifest["reuse"]["new_runner_or_dsl_or_registry"] is False
     assert manifest["boundary"]["real_data_or_outcome_access"] is False
     assert manifest["boundary"]["strategy_candidate_available"] is False
@@ -392,13 +398,15 @@ def _next_month(value: date) -> date:
     return date(year, month, value.day)
 
 
-def _twelve_groups() -> tuple[
+def _groups(
+    split_ids: tuple[str, ...],
+) -> tuple[
     tuple[rs.AssignedObservation, ...], tuple[rs.GatedDecisionLedger, ...]
 ]:
     observations: list[rs.AssignedObservation] = []
     ledgers: list[rs.GatedDecisionLedger] = []
     for variant in rs.VARIANTS:
-        for split_id in rs.GATED_SPLITS:
+        for split_id in split_ids:
             split = next(item for item in rs.SPLITS if item.split_id == split_id)
             entry = date(split.start.year, split.start.month, 3)
             decisions: list[rs.DecisionAudit] = []
@@ -433,6 +441,18 @@ def _twelve_groups() -> tuple[
     return tuple(observations), tuple(ledgers)
 
 
+def _twelve_groups() -> tuple[
+    tuple[rs.AssignedObservation, ...], tuple[rs.GatedDecisionLedger, ...]
+]:
+    return _groups(rs.GATED_SPLITS)
+
+
+def _historical_eight_groups() -> tuple[
+    tuple[rs.AssignedObservation, ...], tuple[rs.GatedDecisionLedger, ...]
+]:
+    return _groups(rs.HISTORICAL_GATED_SPLITS)
+
+
 def test_exact_twelve_test_bonferroni_family_and_deterministic_report() -> None:
     observations, ledgers = _twelve_groups()
     results = rs.evaluate_twelve_tests(observations, decision_ledgers=ledgers)
@@ -458,6 +478,93 @@ def test_exact_twelve_test_bonferroni_family_and_deterministic_report() -> None:
     assert report_a["gate_counts"] == {"passed": 72, "total": 72}
     assert report_a["strategy_candidate_available"] is False
     assert report_a["status"] == "SYNTHETIC_DIAGNOSTIC_NOT_STRATEGY_EVIDENCE"
+
+
+def test_historical_eight_are_exact_and_match_the_same_twelve_test_results() -> None:
+    historical_observations, historical_ledgers = _historical_eight_groups()
+    historical = rs.evaluate_historical_eight_tests(
+        historical_observations, decision_ledgers=historical_ledgers
+    )
+    twelve_observations, twelve_ledgers = _twelve_groups()
+    twelve = rs.evaluate_twelve_tests(twelve_observations, decision_ledgers=twelve_ledgers)
+    matching_twelve = tuple(
+        result for result in twelve if result.split_id in rs.HISTORICAL_GATED_SPLITS
+    )
+
+    assert rs.BONFERRONI_ALPHA == 0.05 / 12.0
+    assert len(historical) == 8
+    assert tuple((item.variant_id, item.split_id) for item in historical) == tuple(
+        (variant.variant_id, split_id)
+        for variant in rs.VARIANTS
+        for split_id in rs.HISTORICAL_GATED_SPLITS
+    )
+    assert historical == matching_twelve
+    assert tuple(item.seed for item in historical) == (
+        20_260_816,
+        20_260_817,
+        20_260_916,
+        20_260_917,
+        20_261_016,
+        20_261_017,
+        20_261_116,
+        20_261_117,
+    )
+    assert all(item.split_id != "prospective_forward_2027_2029" for item in historical)
+
+
+def test_historical_eight_reject_nonhistorical_missing_reordered_and_subset_inputs() -> None:
+    observations, ledgers = _historical_eight_groups()
+    twelve_observations, twelve_ledgers = _twelve_groups()
+
+    with pytest.raises(rs.RelativeStrengthContractError, match="validation and retrospective"):
+        rs.evaluate_historical_eight_tests(
+            twelve_observations, decision_ledgers=twelve_ledgers
+        )
+    development = rs.AssignedObservation(
+        "RS60_BASE",
+        "development_2019_2021",
+        date(2018, 12, 31),
+        date(2019, 1, 3),
+        date(2019, 2, 3),
+        0.02,
+        0.01,
+    )
+    with pytest.raises(rs.RelativeStrengthContractError, match="validation and retrospective"):
+        rs.evaluate_historical_eight_tests(
+            (development, *observations), decision_ledgers=ledgers
+        )
+    development_split = next(
+        item for item in rs.SPLITS if item.split_id == "development_2019_2021"
+    )
+    with pytest.raises(rs.RelativeStrengthContractError, match="ledger must use a gated split"):
+        rs.GatedDecisionLedger(
+            "RS60_BASE",
+            "development_2019_2021",
+            development_split.start,
+            development_split.end,
+            ledgers[0].decisions,
+        )
+    with pytest.raises(rs.RelativeStrengthContractError, match="exact ordered 8"):
+        rs.evaluate_historical_eight_tests(
+            observations,
+            decision_ledgers=(ledgers[0], twelve_ledgers[2], *ledgers[2:]),
+        )
+    with pytest.raises(rs.RelativeStrengthContractError, match="exact ordered 8"):
+        rs.evaluate_historical_eight_tests(
+            observations, decision_ledgers=ledgers[:-1]
+        )
+    with pytest.raises(rs.RelativeStrengthContractError, match="exact ordered 8"):
+        rs.evaluate_historical_eight_tests(
+            observations, decision_ledgers=tuple(reversed(ledgers))
+        )
+    with pytest.raises(rs.RelativeStrengthContractError, match="complete ordered"):
+        rs.evaluate_historical_eight_tests(
+            observations[:-1], decision_ledgers=ledgers
+        )
+    with pytest.raises(rs.RelativeStrengthContractError, match="complete ordered"):
+        rs.evaluate_historical_eight_tests(
+            tuple(reversed(observations)), decision_ledgers=ledgers
+        )
 
 
 def test_pcg64_three_month_bootstrap_has_fixed_nonconstant_golden_output() -> None:
