@@ -1,0 +1,65 @@
+{
+  "research_id": "A_SHARE_YOUNG_CHAIRMAN_LONG_HORIZON_PIT_REPLICATION_V1_20260716",
+  "parent_research_id": "A_SHARE_YOUNG_CHAIRMAN_LONG_HORIZON_RETROSPECTIVE_V1_20260716",
+  "market": "A_SHARE",
+  "phase": "preregistration_code_only",
+  "lineage_type": "HISTORICAL_PIT_REPLICATION",
+  "status": "preregistered-not-executed",
+  "family_number": null,
+  "prior_outcome_opened": true,
+  "prior_outcome_use": "lineage and frozen economics only; prior event rows and returns are forbidden inputs; this is an outcome-informed historical replication, not an outcome-blind hypothesis",
+  "future_result_class": "HISTORICAL_PIT_REPLICATION_SECONDARY_SOURCE",
+  "economic_contract": {
+    "chairman": "exactly one active chairman; begin_date strictly before signal; vice and honorary titles excluded; conservative upper age strictly below 40",
+    "listing_age": "signal_date is on or after list_date and strictly before the third calendar-year anniversary",
+    "market_cap": "signal-date total_mv_cny strictly above 1000000000",
+    "technical": "adjusted-close MA5 crosses strictly above MA10 on signal_date and adjusted close is strictly below the arithmetic mean of exactly the latest 30 completed prior calendar-week closes; current week excluded",
+    "entry": "next accepted session open",
+    "horizon_sessions": [252, 756, 1260],
+    "event_overlap": "per symbol and horizon; every new signal_date at or before the prior fixed exit_date is excluded, including an exit-day signal",
+    "benchmark_symbol": "510300.SH",
+    "cost_bps_per_side": 50.0
+  },
+  "pit_contract": {
+    "decision_cutoff": "next accepted entry-session open",
+    "required_domains": [
+      "accepted_calendar",
+      "adjusted_bars",
+      "corporate_actions",
+      "listing_delisting",
+      "limit_status",
+      "management",
+      "market_cap",
+      "raw_bars",
+      "suspension_status"
+    ],
+    "management_fields": [
+      "ann_date",
+      "begin_date",
+      "end_date",
+      "birthday",
+      "birthday_precision",
+      "title",
+      "source_identity"
+    ],
+    "availability_rule": "every used row, coverage proof, source revision, calendar row, adjusted bar and corporate-action identity must be immutable and available no later than its frozen cutoff",
+    "missing_or_late_rule": "BLOCKED; never impute, reuse the preselected 447 events, or substitute current management state",
+    "suspension_rule": "known suspension at the next accepted entry session makes the signal ineligible",
+    "limit_rule": "known limit-up at the next accepted entry session makes the signal non-executable; exit gaps or delisting before a horizon are censored and never imputed"
+  },
+  "execution": {
+    "real_data_authorized": false,
+    "outcome_access_authorized": false,
+    "database_write_authorized": false,
+    "network_authorized": false,
+    "strict_validation_claim_allowed": false,
+    "candidate_false_regardless_of_result": true,
+    "strategy_candidate_available": false,
+    "gate_counts": null
+  },
+  "stop_rules": [
+    "stop before outcome access if any PIT domain is missing, late, mutable, incomplete or cross-snapshot-unbound",
+    "stop if chairman identity is ambiguous or birthday precision cannot prove age below 40",
+    "stop if raw and adjusted bars, accepted calendar, delisting handling or corporate-action lineage cannot be tied"
+  ]
+}
