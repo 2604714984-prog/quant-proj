@@ -62,10 +62,20 @@ REQUIRED_COLUMNS = (
     "down_limit", "list_status", "quality_status", "source", "row_hash",
     "synthetic_data",
 )
+VOLUME_UNIT = "SHARES"
+AMOUNT_UNIT = "CNY"
 
 
 class SecondaryScreenError(ValueError):
     """The secondary snapshot or frozen screen contract is unusable."""
+
+
+class PrecheckBlockedError(SecondaryScreenError):
+    """The benchmark cannot enter before strategy outcomes are opened."""
+
+    def __init__(self, preflight: "BenchmarkPreflight") -> None:
+        super().__init__("benchmark initial-entry preflight blocked")
+        self.preflight = preflight
 
 
 @dataclass(frozen=True)
@@ -117,6 +127,31 @@ class AdapterReceipt:
     filled_shares: float
     price: float | None
     reason: str
+
+
+@dataclass(frozen=True)
+class BenchmarkPreflight:
+    benchmark_initial_entry_filled: bool
+    benchmark_invested_ratio: float
+    capacity_rejection_ratio: float
+    unexpected_exception_count: int
+    benchmark_preflight_attempt_count: int
+
+    def __post_init__(self) -> None:
+        if type(self.benchmark_initial_entry_filled) is not bool:
+            raise SecondaryScreenError("benchmark fill flag must be boolean")
+        for name in ("benchmark_invested_ratio", "capacity_rejection_ratio"):
+            value = getattr(self, name)
+            if not isinstance(value, float) or not math.isfinite(value) or not 0 <= value <= 1:
+                raise SecondaryScreenError(f"{name} must be a finite ratio")
+        if type(self.unexpected_exception_count) is not int or self.unexpected_exception_count < 0:
+            raise SecondaryScreenError("unexpected exception count must be nonnegative integer")
+        if type(self.benchmark_preflight_attempt_count) is not int or self.benchmark_preflight_attempt_count <= 0:
+            raise SecondaryScreenError("benchmark preflight attempt count must be positive integer")
+
+    @property
+    def passed(self) -> bool:
+        return self.benchmark_initial_entry_filled and self.unexpected_exception_count == 0
 
 
 def _digest(value: object, label: str) -> str:
@@ -262,6 +297,8 @@ def load_data_manifest(
         "strict_pit_eligible": False,
         "strategy_outcomes_opened": False,
         "synthetic_data": False,
+        "volume_unit": VOLUME_UNIT,
+        "amount_unit": AMOUNT_UNIT,
     }
     if any(value.get(key) != item for key, item in expected.items()):
         raise SecondaryScreenError("data manifest is not accepted for this secondary run")
@@ -860,6 +897,57 @@ def _benchmark_buy(
     return AdapterReceipt("buy", requested, filled, fill_price, "filled")
 
 
+def _benchmark_preflight(
+    connection: duckdb.DuckDBPyConnection,
+    snapshot: str,
+    sessions: tuple[date, ...],
+) -> BenchmarkPreflight:
+    positions = {day: offset for offset, day in enumerate(sessions)}
+    scenarios: list[tuple[date, float]] = []
+    for split_id in rs.HISTORICAL_GATED_SPLITS:
+        intervals = _split_intervals(sessions, split_id)
+        if not intervals:
+            raise SecondaryScreenError("benchmark preflight split has no complete interval")
+        entry_date = intervals[0][1]
+        scenarios.extend((entry_date, slippage) for slippage in rs.SLIPPAGE_SCENARIOS_BPS)
+    filled_flags: list[bool] = []
+    capacity_rejections = 0
+    unexpected_exceptions = 0
+    for entry_date, slippage_bps in scenarios:
+        try:
+            bar = _benchmark_bar(
+                connection,
+                snapshot,
+                entry_date,
+                sessions[positions[entry_date] - 1],
+            )
+            portfolio = rs.new_strategy_portfolio()
+            receipt = _benchmark_buy(portfolio, bar, slippage_bps)
+            filled = (
+                receipt.reason == "filled"
+                and receipt.filled_shares > 0
+                and receipt.price is not None
+                and rs.BENCHMARK_SYMBOL in portfolio.positions
+            )
+            filled_flags.append(filled)
+            capacity_rejections += int(receipt.reason == "capacity")
+        except Exception:
+            filled_flags.append(False)
+            unexpected_exceptions += 1
+    attempts = len(scenarios)
+    return BenchmarkPreflight(
+        benchmark_initial_entry_filled=all(filled_flags),
+        benchmark_invested_ratio=float(sum(filled_flags) / attempts),
+        capacity_rejection_ratio=float(capacity_rejections / attempts),
+        unexpected_exception_count=unexpected_exceptions,
+        benchmark_preflight_attempt_count=attempts,
+    )
+
+
+def _preflight_payload(preflight: BenchmarkPreflight) -> dict[str, Any]:
+    return asdict(preflight)
+
+
 def _split_intervals(
     sessions: tuple[date, ...], split_id: str
 ) -> tuple[tuple[date, date, date], ...]:
@@ -970,6 +1058,8 @@ def _simulate_one(
         if interval_index == 0:
             receipt = _benchmark_buy(benchmark, benchmark_bar, slippage_bps)
             receipt_counts[f"benchmark:{receipt.reason}"] += 1
+            if receipt.reason != "filled" or receipt.filled_shares <= 0:
+                raise SecondaryScreenError("benchmark initial entry diverged from preflight")
         _retry_blocked_exits(
             connection,
             snapshot,
@@ -1042,6 +1132,9 @@ def execute_screen(
     with _read_only_connection(database) as connection:
         source_identity = _verify_snapshot(connection, manifest)
         sessions = _sessions(connection, manifest["snapshot_id"])
+        preflight = _benchmark_preflight(connection, manifest["snapshot_id"], sessions)
+        if not preflight.passed:
+            raise PrecheckBlockedError(preflight)
         targets = _load_targets(connection, manifest["snapshot_id"], sessions)
         gated_observations: list[rs.AssignedObservation] = []
         gated_ledgers: list[rs.GatedDecisionLedger] = []
@@ -1088,6 +1181,7 @@ def execute_screen(
             "data_manifest_sha256": manifest["_sha256"],
             "database_sha256": manifest["database"]["sha256"],
             "source_identity": source_identity,
+            **_preflight_payload(preflight),
             "historical_test_count": len(tests),
             "twenty_bps_interval_count": twenty_bps_interval_counts,
             "gate_counts": {"passed": gates_passed, "total": gates_total},
@@ -1170,6 +1264,25 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise SecondaryScreenError("database identity differs from manifest")
     try:
         report = execute_screen(args.db, manifest, execution_run_id)
+    except PrecheckBlockedError as exc:
+        report = {
+            "schema_version": "a-share-rs-historical-secondary-result-v1",
+            "run_id": execution_run_id,
+            "research_id": rs.RESEARCH_ID,
+            "status": "PRECHECK_BLOCKED",
+            "classification": CLASSIFICATION,
+            "reason_class": type(exc).__name__,
+            "amendment_sha256": AMENDMENT_SHA256,
+            "preregistration_sha256": rs.DEFINITION_SHA256,
+            "data_manifest_sha256": manifest_sha,
+            **_preflight_payload(exc.preflight),
+            "prospective_forward_outcomes_opened": False,
+            "security_identifiers_in_result": False,
+            "strict_strategy_evidence": False,
+            "strategy_candidate_available": False,
+            "provider_or_network_used": False,
+            "database_write_performed": False,
+        }
     except (SecondaryScreenError, rs.RelativeStrengthContractError, duckdb.Error, ValueError) as exc:
         report = {
             "schema_version": "a-share-rs-historical-secondary-result-v1",
@@ -1193,7 +1306,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         raise SecondaryScreenError("database bytes changed; result not published")
     _publish(args.output, report)
     print(json.dumps({"status": report["status"], "output_written": True}, sort_keys=True))
-    return 0 if report["status"] != "INPUT_BLOCKED" else 2
+    return 0 if report["status"] not in {"INPUT_BLOCKED", "PRECHECK_BLOCKED"} else 2
 
 
 if __name__ == "__main__":
