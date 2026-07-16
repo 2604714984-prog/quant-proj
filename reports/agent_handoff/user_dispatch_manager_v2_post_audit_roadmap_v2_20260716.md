@@ -174,17 +174,51 @@ The active family is stated in the current merged Manager roadmap.
 
 Do not create an active-family registry.
 
-## 5. Task file 1 — Cycle 3 conditional reversal
+## 5. Cycle 3 conditional reversal — closed at preflight
 
-The next code-writing family is:
+Controlling terminal status as of 2026-07-17:
+
+```text
+STATUS=CLOSED_PREFLIGHT_STRUCTURAL_INFEASIBLE_NO_OUTCOME
+PR_A=#66
+MERGE_COMMIT=efe44b9f61769f73be0ed60dbb499d3efb85b27b
+PREFLIGHT_STATUS=INPUT_BLOCKED
+DECISION_COUNT=89
+MINIMUM_ELIGIBLE_COUNT=1339
+MINIMUM_CANDIDATE_COUNT=1
+INVALID_DECISION_COUNT=28
+OUTCOME_RUN_CONSUMED=false
+FORWARD_STATUS=CLOSED
+STRATEGY_CANDIDATE_AVAILABLE=false
+```
+
+Twenty-five invalid decisions were caused by the frozen shock condition yielding
+fewer than 15 candidates. Three additional decisions had 15 candidates but a
+selected security was explicitly suspended at the next open. The latter is a
+known local preflight-versus-engine representation difference, but repairing it
+cannot cure the 25 structurally insufficient decisions. Changing the frozen
+shock threshold or candidate rule after these counts were observed is forbidden.
+
+Cycle 3 is therefore closed without a historical return run. Do not create a
+child lineage, tune the threshold, repair the suspension representation for this
+family, or reopen it. The exact closure record is:
+
+```text
+reports/agent_handoff/cycle_3_liquidity_shock_preflight_terminal_closure_20260717.md
+```
+
+### Preserved original task design
+
+The closed family's outcome-blind design was:
 
 ```text
 A-share liquidity-shock conditional short-term reversal
 ```
 
-It is a new economic hypothesis, not a repair of RS or low volatility.
+It was a new economic hypothesis, not a repair of RS or low volatility. This
+subsection is failure memory only and grants no current authority.
 
-### 5.1 Hypothesis
+#### 5.1 Hypothesis
 
 ```text
 short-term market-relative price decline
@@ -195,7 +229,7 @@ may represent temporary price pressure rather than permanent deterioration
 
 Do not implement plain “buy the largest losers.”
 
-### 5.2 Research freedom
+#### 5.2 Research freedom
 
 Freeze no more than four variants before any outcome access.
 
@@ -211,7 +245,7 @@ The shock formula and threshold must be fixed in PR A.
 
 No parameter grid. No later macro or regime filter.
 
-### 5.3 Reused execution contract
+#### 5.3 Reused execution contract
 
 ```text
 CNY 400,000
@@ -231,7 +265,7 @@ CNY / SHARES units
 
 No new engine or runner framework.
 
-### 5.4 Outcome-free preflight
+#### 5.4 Outcome-free preflight
 
 Prove in aggregate:
 
@@ -248,7 +282,11 @@ no embargo or prospective data are accessed
 
 Do not emit identifiers, rankings, returns, NAV, or gates.
 
-### 5.5 Outcome handling
+#### 5.5 Original outcome-handling rule
+
+The following was the pre-preflight rule. The controlling terminal adjudication
+above now supersedes its generic `INPUT_BLOCKED` repair path for Cycle 3: no
+child lineage or repair is authorized for this closed family.
 
 After preflight PASS:
 
@@ -322,7 +360,26 @@ Run through current strategy cycles before judging usefulness.
 
 ## 7. Subsequent roadmap
 
-### Cycle 4 — ETF / multi-asset trend and defensive allocation
+### Cycle 4 — A-share listed-ETF absolute trend and defensive allocation
+
+Cycle 4 is now the single active code-writing family, but it begins in a
+data-qualification stage. The controlling task file is:
+
+```text
+reports/agent_handoff/cycle_4_a_share_listed_etf_absolute_trend_defensive_allocation_task_20260717.md
+```
+
+Current state:
+
+```text
+ACTIVE_FAMILY=CYCLE_4_A_SHARE_LISTED_ETF_ABSOLUTE_TREND
+ACTIVE_STAGE=DATA_IDENTITY_QUALIFICATION
+PR_A=NOT_STARTED
+PREFLIGHT_STATUS=NOT_RUN
+OUTCOME_STATUS=NOT_RUN
+FORWARD_STATUS=CLOSED
+STRATEGY_CANDIDATE_AVAILABLE=false
+```
 
 If Cycle 3 fails, prioritize a small ETF / multi-asset family.
 
@@ -504,18 +561,19 @@ NEXT_ACTION:
 ## 12. Expected Manager state
 
 ```text
-ACTIVE_FAMILY=CYCLE_3_LIQUIDITY_SHOCK_CONDITIONAL_REVERSAL
-ACTIVE_STAGE=TASK_PUBLICATION_PENDING
-BASE_COMMIT=V2_MAIN_AFTER_PR63_AND_MANAGER_V2_DOCS
-SNAPSHOT_ID=TO_BE_BOUND_BY_CYCLE_3_TASK
+ACTIVE_FAMILY=CYCLE_4_A_SHARE_LISTED_ETF_ABSOLUTE_TREND
+ACTIVE_STAGE=DATA_IDENTITY_QUALIFICATION
+BASE_COMMIT=V2_MAIN_AFTER_CYCLE_3_PREFLIGHT_CLOSURE
+SNAPSHOT_ID=TO_BE_BOUND_BY_CYCLE_4_DATA_QUALIFICATION
 PREFLIGHT_STATUS=NOT_RUN
 OUTCOME_STATUS=NOT_RUN
 FORWARD_STATUS=CLOSED
 STRATEGY_CANDIDATE_AVAILABLE=false
 RS_STATUS=HISTORICAL_SCREENING_FAIL_CLOSED
 LOW_VOLATILITY_STATUS=HISTORICAL_GATED_FAIL_CLOSED
-YOUNG_CHAIRMAN_PR=TO_CLOSE_WITHOUT_MERGE
-NEXT_ACTION=PUBLISH_CYCLE_3_AND_MACRO_SHADOW_TASK_FILES
+LIQUIDITY_SHOCK_STATUS=CLOSED_PREFLIGHT_STRUCTURAL_INFEASIBLE_NO_OUTCOME
+YOUNG_CHAIRMAN_PR=CLOSED_WITHOUT_MERGE
+NEXT_ACTION=QUALIFY_FIXED_THREE_ETF_INPUT_IDENTITY_WITHOUT_OUTCOMES
 ```
 
 ## Final directive
@@ -525,8 +583,8 @@ The project has zero validated specialists.
 The next priority is:
 
 ```text
-Cycle 3 strategy discovery and rapid rejection
-+ read-only local Macro Risk Shadow
+Cycle 4 fixed-universe ETF data qualification and rapid rejection
++ read-only local Macro Risk Shadow when its inputs become current
 ```
 
 Do not convert partial observations into a specialist. Do not build a synthesizer. Do not add another platform or framework.
