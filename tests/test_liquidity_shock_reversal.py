@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import duckdb
 import pytest
 
 from quant_system.backtest import CapacityObservation, ExecutionInput
@@ -154,20 +155,22 @@ def _fixture() -> tuple[
     return tuple(rows), calendar, decision_date, decision_at, tuple(inputs)
 
 
-def _health(**changes: object) -> reversal.PreflightHealth:
-    values = {
-        "snapshot_id": reversal.SNAPSHOT_ID,
-        "database_sha256": reversal.DATABASE_SHA256,
-        "coverage_start": date(2018, 1, 2),
-        "coverage_end": date(2026, 6, 30),
-        "required_history_exists": True,
-        "benchmark_initial_entry_filled": True,
-        "benchmark_invested_ratio": 0.99,
-        "capacity_rejection_ratio": 0.01,
-        "unexpected_exception_count": 0,
-    }
-    values.update(changes)
-    return reversal.PreflightHealth(**values)  # type: ignore[arg-type]
+def _preflight_db(path: Path, *, quality: str = "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT") -> tuple[date, ...]:
+    decision, execution = date(2024, 12, 31), date(2025, 1, 2)
+    days = tuple(decision - timedelta(days=offset) for offset in range(252, -1, -1)) + (execution,)
+    connection = duckdb.connect(str(path))
+    connection.execute("CREATE SCHEMA a_share")
+    connection.execute("CREATE TABLE a_share.a_share_trade_calendar(trade_date VARCHAR,is_open INTEGER)")
+    connection.execute("CREATE TABLE a_share.a_share_symbol_master(ts_code VARCHAR,list_date VARCHAR,delist_date VARCHAR,ingested_at VARCHAR,snapshot_id VARCHAR)")
+    connection.execute("CREATE TABLE a_share.a_share_canonical_daily_bars(snapshot_id VARCHAR,ts_code VARCHAR,trade_date VARCHAR,open DOUBLE,qfq_open DOUBLE,qfq_close DOUBLE,vol DOUBLE,amount DOUBLE,is_st BOOLEAN,is_suspended BOOLEAN,is_limit_up BOOLEAN,is_limit_down BOOLEAN,up_limit DOUBLE,down_limit DOUBLE,list_status VARCHAR,row_hash VARCHAR,quality_status VARCHAR,synthetic_data BOOLEAN)")
+    connection.executemany("INSERT INTO a_share.a_share_trade_calendar VALUES (?,1)", [(day.strftime("%Y%m%d"),) for day in days])
+    connection.execute("INSERT INTO a_share.a_share_symbol_master SELECT lpad(i::VARCHAR,6,'0')||'.SZ',?,NULL,'2026-07-16T00:00:00Z','test-master' FROM range(500) t(i)", [days[0].strftime("%Y%m%d")])
+    connection.execute("CREATE TEMP TABLE bar_dates(trade_date VARCHAR,at_decision BOOLEAN)")
+    connection.executemany("INSERT INTO bar_dates VALUES (?,?)", [(day.strftime("%Y%m%d"), day == decision) for day in (*days[-22:-1], execution)])
+    connection.execute("INSERT INTO a_share.a_share_canonical_daily_bars SELECT ?,symbol,trade_date,10.0,10.0,CASE WHEN at_decision THEN 80.0+i*.01 ELSE 100.0 END,1000000.0,CASE WHEN at_decision AND i<20 THEN 50000000.0 ELSE 25000000.0 END,false,false,false,false,11.0,9.0,'L',sha256(symbol||'|'||trade_date),?,false FROM (SELECT i,lpad(i::VARCHAR,6,'0')||'.SZ' symbol FROM range(500) t(i)) CROSS JOIN bar_dates", [reversal.SNAPSHOT_ID, quality])
+    connection.execute("INSERT INTO a_share.a_share_canonical_daily_bars SELECT ?,'510300.SH',trade_date,10.0,10.0,100.0,100000000.0,10000000000.0,false,false,false,false,11.0,9.0,'L',sha256('510300.SH|'||trade_date),?,false FROM bar_dates", [reversal.SNAPSHOT_ID, quality])
+    connection.close()
+    return days
 
 
 def test_definition_freezes_exact_four_variants_shock_splits_gates_and_boundaries() -> None:
@@ -250,24 +253,28 @@ def test_shock_is_lagged_fixed_high_direction_and_never_changes_comparator() -> 
     assert sum(not audit.valid for audit in audits) == 2
 
 
-def test_preflight_is_repeatable_aggregate_only_and_candidate_false() -> None:
-    rows, calendar, decision, decision_at, execution = _fixture()
-    _, audits = reversal.build_decision_targets(
-        rows,
-        calendar,
-        decision_date=decision,
-        decision_at=decision_at,
-        execution_inputs=execution,
-    )
-    first = reversal.build_preflight_report(audits, _health())
-    second = reversal.build_preflight_report(audits[::-1], _health())
-    assert first == second
-    assert first["status"] == "PREFLIGHT_PASS"
-    assert first["decision_count"] == 1
-    assert first["minimum_eligible_count"] == 500
-    assert first["minimum_candidate_count"] == 20
-    assert first["invalid_decision_count"] == 0
-    assert first["execution_panels_complete"] is True
+def test_real_read_only_preflight_is_repeatable_aggregate_only_and_bound_to_db(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    database = tmp_path / "preflight.duckdb"
+    days = _preflight_db(database)
+    digest = hashlib.sha256(database.read_bytes()).hexdigest()
+    monkeypatch.setattr(reversal, "DATABASE_SHA256", digest)
+    monkeypatch.setattr(reversal, "HISTORICAL_CUTOFF", days[-1])
+    before = database.read_bytes()
+    observed_volume = []
+    rebalance = reversal.run_frozen_static_rebalance
+    def capture_volume(*args: object, **kwargs: object) -> object:
+        observed_volume.append(kwargs["execution_inputs"][0].capacity.session_volume_shares)  # type: ignore[index,union-attr]
+        return rebalance(*args, **kwargs)  # type: ignore[arg-type]
+    monkeypatch.setattr(reversal, "run_frozen_static_rebalance", capture_volume)
+    first = reversal.run_read_only_preflight(database)
+    second = reversal.run_read_only_preflight(database)
+    assert first == second and database.read_bytes() == before
+    assert first["status"] == "PREFLIGHT_PASS" and first["decision_count"] == 1
+    assert first["minimum_eligible_count"] == 500 and first["minimum_candidate_count"] == 20
+    assert first["invalid_decision_count"] == 0 and first["execution_panels_complete"] is True
+    assert first["benchmark_initial_entry_filled"] is True
+    assert observed_volume == [100_000_000.0] * 4
+    assert 0.0 < first["benchmark_invested_ratio"] <= 1.0
     assert first["strategy_candidate_available"] is False
     definition = json.loads(DEFINITION.read_text())
     assert set(first) == set(definition["preflight"]["allowed_fields"])
@@ -286,12 +293,7 @@ def test_input_failure_blocks_without_outcome_consumption_or_replacement() -> No
         execution_inputs=missing,
     )
     assert targets == ()
-    report = reversal.build_preflight_report(audits, _health())
-    assert report["status"] == "INPUT_BLOCKED"
-    assert report["invalid_decision_count"] == 1
-    assert report["post_entry_outcomes_opened"] is False
-    assert report["embargo_or_prospective_data_accessed"] is False
-    assert report["strategy_candidate_available"] is False
+    assert sum(not audit.valid for audit in audits) == 4
 
     incomplete = tuple(
         replace(row, status_records=row.status_records[:-1])
@@ -307,10 +309,10 @@ def test_input_failure_blocks_without_outcome_consumption_or_replacement() -> No
         execution_inputs=incomplete,
     )
     assert targets == ()
-    assert reversal.build_preflight_report(audits, _health())["status"] == "INPUT_BLOCKED"
+    assert sum(not audit.valid for audit in audits) == 4
 
 
-def test_duplicates_timing_units_and_future_access_fail_closed() -> None:
+def test_duplicates_timing_and_forged_preflight_health_fail_closed(tmp_path: Path) -> None:
     rows, calendar, decision, decision_at, execution = _fixture()
     with pytest.raises(reversal.LiquidityShockContractError, match="duplicate signal"):
         reversal.build_decision_targets(
@@ -328,10 +330,26 @@ def test_duplicates_timing_units_and_future_access_fail_closed() -> None:
             decision_at=decision_at - timedelta(minutes=1),
             execution_inputs=execution,
         )
-    with pytest.raises(reversal.LiquidityShockContractError, match="units"):
-        _health(position_unit="LOTS")
-    with pytest.raises(reversal.LiquidityShockContractError, match="coverage"):
-        _health(coverage_end=date(2026, 7, 1))
+    assert not hasattr(reversal, "PreflightHealth")
+    assert not hasattr(reversal, "build_preflight_report")
+    forged = tmp_path / "forged.duckdb"
+    forged.write_bytes(b"not the pinned database")
+    with pytest.raises(reversal.LiquidityShockContractError, match="SHA-256"):
+        reversal.run_read_only_preflight(forged)
+    with pytest.raises(TypeError):
+        reversal.run_read_only_preflight(forged, health={"status": "PREFLIGHT_PASS"})  # type: ignore[call-arg]
+
+
+def test_preflight_rejects_wrong_snapshot_classification_without_mutation(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    database = tmp_path / "wrong.duckdb"
+    days = _preflight_db(database, quality="FORGED_PASS")
+    digest = hashlib.sha256(database.read_bytes()).hexdigest()
+    monkeypatch.setattr(reversal, "DATABASE_SHA256", digest)
+    monkeypatch.setattr(reversal, "HISTORICAL_CUTOFF", days[-1])
+    before = database.read_bytes()
+    with pytest.raises(reversal.LiquidityShockContractError, match="classification"):
+        reversal.run_read_only_preflight(database)
+    assert database.read_bytes() == before
 
 
 def test_frozen_target_runs_through_existing_event_loop_cost_capacity_and_lot_semantics() -> None:
