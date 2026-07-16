@@ -43,5 +43,6 @@ easy to understand, test, and remove.
   parameters, normally in 100--300 lines, while reusing the shared engine.
 - Keep at most four durable run artifacts: definition, snapshot, result, and
   run receipt. Prefer Git object identity over additional sidecars.
-- Do not migrate or reopen rejected legacy strategy families. During this
-  freeze, relative-strength data qualification is the only active family.
+- Do not migrate or reopen rejected legacy strategy families.
+- Only one code-writing strategy family may be active at a time.
+  The active family is stated in the current merged Manager roadmap.
