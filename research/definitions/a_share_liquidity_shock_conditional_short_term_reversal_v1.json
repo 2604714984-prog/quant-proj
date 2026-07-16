@@ -1,0 +1,136 @@
+{
+  "schema_version": "a-share-liquidity-shock-conditional-short-term-reversal-v1",
+  "research_id": "A_SHARE_LIQUIDITY_SHOCK_CONDITIONAL_SHORT_TERM_REVERSAL_V1_20260717",
+  "market": "A_SHARE",
+  "phase": "PREREGISTRATION_CODE_ONLY",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "research_question": "Does a fixed abnormal trading-activity shock identify short-term market-relative A-share declines that subsequently reverse after costs, beyond the matched unconditioned comparator?",
+  "null_hypothesis": "For either shock-conditioned variant in either frozen historical split, net performance does not exceed both 510300.SH and its matched unconditioned comparator after multiplicity control, or another mandatory gate fails.",
+  "input_identity": {
+    "snapshot_id": "a_share_qfq_personal_research_20260716_v5",
+    "database_sha256": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "coverage_end_inclusive": "2026-06-30",
+    "classification": "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT",
+    "prospective_or_embargo_access_forbidden": true
+  },
+  "capital_and_execution": {
+    "initial_cash_cny": 400000,
+    "maximum_positions": 15,
+    "weighting": "equal weight across exactly 15 selected names",
+    "benchmark": "510300.SH",
+    "rebalance": "monthly at the final accepted session of each calendar month",
+    "decision": "D accepted-session close plus 30 minutes",
+    "entry": "D+1 accepted-session open",
+    "exit_and_holding": "hold until the next scheduled monthly D+1 open rebalance; blocked exits remain held and reserve their slots and marked capital under the existing V2 rules",
+    "primary_slippage_bps": 50,
+    "diagnostic_slippage_bps": 20,
+    "capacity": "existing V2 1 percent prior-session volume and amount caps",
+    "reuse": "existing V2 commission, stamp tax, slippage, capacity, board-lot, limit, suspension, terminal and blocked-exit semantics without modification",
+    "units": {
+      "cash_price_and_amount": "CNY",
+      "position_quantity": "SHARES"
+    }
+  },
+  "universe": {
+    "security_type": "ordinary common A shares on SSE or SZSE only",
+    "minimum_listed_accepted_sessions": 252,
+    "decision_status": "listed, not delisted, non-ST, non-suspended, not limit-up and not limit-down on D",
+    "liquidity": "median CNY amount over accepted sessions D-20 through D-1 is at least CNY 20000000",
+    "minimum_eligible_count": 500,
+    "minimum_candidate_count": 15,
+    "execution_panel": "all selected names require a positive finite CNY D+1 open, complete limits, non-suspended state, prior-session capacity fields and SHARES position units",
+    "skip_rule": "if fewer than 500 names are eligible, fewer than 15 names satisfy the variant, or any selected execution panel is incomplete, the whole decision is invalid with no replacement"
+  },
+  "feature_contract": {
+    "market_relative_return": "(stock_qfq_close(D) / stock_qfq_close(D-L)) / (510300_qfq_close(D) / 510300_qfq_close(D-L)) - 1",
+    "decline_direction": "strictly below zero",
+    "activity_input": "daily amount in CNY",
+    "activity_baseline": "median amount over the 20 accepted sessions D-20 through D-1; every value and the median must be positive and finite",
+    "activity_shock": "amount(D) / lagged_20_session_median_amount",
+    "shock_direction_and_threshold": "greater than or equal to 2.0",
+    "availability": "all signal, status, calendar and execution identities used at D must be available no later than the frozen decision or execution cutoff; missing or late identity fails closed"
+  },
+  "variants_in_exact_order": [
+    {"order": 1, "variant_id": "REV10_NO_SHOCK", "lookback_sessions": 10, "activity_shock_required": false, "role": "bounded_comparator"},
+    {"order": 2, "variant_id": "REV10_AMOUNT_SHOCK2", "lookback_sessions": 10, "activity_shock_required": true, "role": "primary_economic_variant"},
+    {"order": 3, "variant_id": "REV20_NO_SHOCK", "lookback_sessions": 20, "activity_shock_required": false, "role": "bounded_comparator"},
+    {"order": 4, "variant_id": "REV20_AMOUNT_SHOCK2", "lookback_sessions": 20, "activity_shock_required": true, "role": "primary_economic_variant"}
+  ],
+  "selection": {
+    "rank": "ascending market-relative return, then ascending ts_code",
+    "select": "first 15 only",
+    "fallback": "none",
+    "comparators": "the two unconditioned variants are bounded matched comparators and are not standalone strategy families",
+    "forbidden": [
+      "parameter grid",
+      "alternative activity input or shock threshold",
+      "macro filter",
+      "regime filter",
+      "industry filter",
+      "post-outcome repair",
+      "fifth variant"
+    ]
+  },
+  "splits": [
+    {"split_id": "development_2019_2021", "start": "2019-01-01", "end": "2021-12-31", "role": "descriptive_only"},
+    {"split_id": "validation_2022_2023", "start": "2022-01-01", "end": "2023-12-31", "role": "historical_gated", "minimum_complete_intervals": 20},
+    {"split_id": "retrospective_holdout_2024_2026h1", "start": "2024-01-01", "end": "2026-06-30", "role": "historical_gated", "minimum_complete_intervals": 24},
+    {"split_id": "embargo_2026h2", "start": "2026-07-01", "end": "2026-12-31", "role": "embargo_no_access"},
+    {"split_id": "prospective_forward_2027_2029", "start": "2027-01-01", "end": "2029-12-31", "role": "prospective_unopened", "minimum_complete_intervals": 30}
+  ],
+  "historical_test_family": {
+    "family_size": 8,
+    "order": "REV10_AMOUNT_SHOCK2 then REV20_AMOUNT_SHOCK2; within each, validation then retrospective holdout; within each split, net excess versus 510300.SH then net difference versus the matched unconditioned comparator",
+    "family_alpha": 0.05,
+    "bonferroni_alpha_per_test": 0.00625,
+    "bootstrap": {
+      "series": "chronologically ordered complete monthly paired net-return differences",
+      "method": "circular block bootstrap",
+      "block_length_months": 3,
+      "draws": 10000,
+      "seed_reset_independently_per_test": 20260717,
+      "lower_bound": "linear quantile at 0.00625 of uncentered bootstrap mean differences"
+    }
+  },
+  "gates_per_primary_variant_and_historical_split": [
+    "complete interval count meets the split minimum",
+    "invalid decisions and missing or nonfinite marks equal zero",
+    "annualized strategy net return at 50 bps is strictly positive",
+    "annualized strategy net return is strictly above 510300.SH net return",
+    "annualized strategy net return is strictly above its matched unconditioned comparator",
+    "Bonferroni-controlled bootstrap lower bound for mean monthly net excess versus 510300.SH is strictly above zero",
+    "Bonferroni-controlled bootstrap lower bound for mean monthly net difference versus the matched unconditioned comparator is strictly above zero"
+  ],
+  "family_pass_rule": "both primary shock variants must pass all seven gates in both frozen historical splits; any mandatory failure permanently closes the family",
+  "preflight": {
+    "outcome_free": true,
+    "allowed_fields": [
+      "schema_version", "research_id", "phase", "status", "snapshot_id",
+      "database_sha256", "coverage_start", "coverage_end",
+      "required_history_exists", "decision_count", "minimum_eligible_count",
+      "minimum_candidate_count", "invalid_decision_count",
+      "execution_panels_complete", "benchmark_initial_entry_filled",
+      "benchmark_invested_ratio", "capacity_rejection_ratio",
+      "unexpected_exception_count", "currency_unit", "position_unit",
+      "post_entry_outcomes_opened", "embargo_or_prospective_data_accessed",
+      "strategy_candidate_available"
+    ],
+    "forbidden_output": ["security identifiers", "rankings", "returns", "NAV", "Sharpe", "performance gates"],
+    "pass_rule": "history exists, at least one decision exists, every decision has all four valid variants, all selected execution panels are complete, benchmark initial entry fills, unexpected exceptions equal zero, units are CNY and SHARES, and neither post-entry outcomes nor embargo or prospective data are accessed"
+  },
+  "terminal_rules_for_later_one_use_outcome": {
+    "HISTORICAL_SCREENING_FAIL": "close permanently with no retune, rerun, rescue filter or specialist relabel",
+    "HISTORICAL_SCREENING_PASS": "enter prospective Shadow and remain non-candidate",
+    "INPUT_BLOCKED": "repair only the input or financial-semantic defect under a child lineage"
+  },
+  "execution": {
+    "real_data_preflight_authorized": true,
+    "historical_outcome_authorized": false,
+    "network_authorized": false,
+    "database_write_authorized": false,
+    "broker_order_paper_live_auto_authorized": false,
+    "prospective_outcomes_opened": false,
+    "gate_counts": null,
+    "strategy_candidate_available": false
+  }
+}
