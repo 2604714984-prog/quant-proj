@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from datetime import date, datetime, time, timedelta, timezone
 import hashlib
 import importlib.util
@@ -361,10 +362,163 @@ def _manifest(
         "strict_pit_eligible": False,
         "strategy_outcomes_opened": False,
         "synthetic_data": False,
+        "volume_unit": runner.VOLUME_UNIT,
+        "amount_unit": runner.AMOUNT_UNIT,
     }
     raw = runner._canonical_bytes(value)
     path.write_bytes(raw)
     return value, hashlib.sha256(raw).hexdigest()
+
+
+@pytest.mark.parametrize(
+    ("unit_name", "bad_value"),
+    (("volume_unit", "LOTS"), ("amount_unit", "THOUSAND_CNY"), ("amount_unit", None)),
+)
+def test_manifest_binds_volume_and_amount_units_before_database(
+    tmp_path, monkeypatch, unit_name: str, bad_value: str | None
+) -> None:
+    database = tmp_path / "research.duckdb"
+    rows, _ = _write_database(database)
+    os.chmod(database, 0o600)
+    manifest_path = tmp_path / "manifest.json"
+    manifest, _ = _manifest(manifest_path, database, rows)
+    manifest[unit_name] = bad_value
+    raw = runner._canonical_bytes(manifest)
+    manifest_path.write_bytes(raw)
+    monkeypatch.setattr(duckdb, "connect", lambda *_a, **_k: pytest.fail("database opened"))
+    with pytest.raises(runner.SecondaryScreenError, match="not accepted"):
+        runner.load_data_manifest(
+            manifest_path,
+            hashlib.sha256(raw).hexdigest(),
+            EXECUTION_RUN_ID,
+        )
+
+
+def _preflight_bar(day: date, *, capacity_ok: bool = True) -> runner.SecondaryBenchmarkBar:
+    return runner.SecondaryBenchmarkBar(
+        day,
+        10.0,
+        10.0,
+        False,
+        10_000_000.0 if capacity_ok else 1_000.0,
+        1_000_000_000.0 if capacity_ok else 10_000.0,
+    )
+
+
+def test_benchmark_preflight_proves_initial_fill_and_investment(monkeypatch) -> None:
+    sessions = (date(2025, 1, 2), date(2025, 1, 3), date(2025, 2, 3))
+    monkeypatch.setattr(
+        runner,
+        "_split_intervals",
+        lambda _sessions, _split: ((sessions[0], sessions[1], sessions[2]),),
+    )
+    monkeypatch.setattr(
+        runner,
+        "_benchmark_bar",
+        lambda _connection, _snapshot, entry, _prior: _preflight_bar(entry),
+    )
+    report = runner._benchmark_preflight(object(), "snapshot", sessions)
+    assert report.passed is True
+    assert report.benchmark_initial_entry_filled is True
+    assert report.benchmark_invested_ratio == 1.0
+    assert report.capacity_rejection_ratio == 0.0
+    assert report.unexpected_exception_count == 0
+    assert report.benchmark_preflight_attempt_count == (
+        len(rs.HISTORICAL_GATED_SPLITS) * len(rs.SLIPPAGE_SCENARIOS_BPS)
+    )
+
+
+def test_benchmark_preflight_measures_real_capacity_rejections(monkeypatch) -> None:
+    sessions = (date(2025, 1, 2), date(2025, 1, 3), date(2025, 2, 3))
+    monkeypatch.setattr(
+        runner,
+        "_split_intervals",
+        lambda _sessions, _split: ((sessions[0], sessions[1], sessions[2]),),
+    )
+    monkeypatch.setattr(
+        runner,
+        "_benchmark_bar",
+        lambda _connection, _snapshot, entry, _prior: _preflight_bar(entry, capacity_ok=False),
+    )
+    report = runner._benchmark_preflight(object(), "snapshot", sessions)
+    assert report.passed is False
+    assert report.benchmark_initial_entry_filled is False
+    assert report.benchmark_invested_ratio == 0.0
+    assert report.capacity_rejection_ratio == 1.0
+    assert report.unexpected_exception_count == 0
+
+
+def test_benchmark_capacity_rejection_blocks_before_target_or_outcome_access(monkeypatch) -> None:
+    sessions = (date(2025, 1, 2), date(2025, 1, 3), date(2025, 2, 3))
+    monkeypatch.setattr(runner, "_read_only_connection", lambda _path: nullcontext(object()))
+    monkeypatch.setattr(runner, "_verify_snapshot", lambda *_a: {"row_count": 1})
+    monkeypatch.setattr(runner, "_sessions", lambda *_a: sessions)
+    monkeypatch.setattr(
+        runner,
+        "_benchmark_preflight",
+        lambda *_a: runner.BenchmarkPreflight(False, 0.0, 1.0, 0, 4),
+    )
+    monkeypatch.setattr(runner, "_load_targets", lambda *_a: pytest.fail("targets opened"))
+    with pytest.raises(runner.PrecheckBlockedError) as error:
+        runner.execute_screen(
+            Path("unused.duckdb"),
+            {"run_id": EXECUTION_RUN_ID, "snapshot_id": "snapshot"},
+            EXECUTION_RUN_ID,
+        )
+    assert error.value.preflight.capacity_rejection_ratio == 1.0
+    assert error.value.preflight.benchmark_initial_entry_filled is False
+
+
+def test_benchmark_preflight_counts_unexpected_exception(monkeypatch) -> None:
+    sessions = (date(2025, 1, 2), date(2025, 1, 3), date(2025, 2, 3))
+    monkeypatch.setattr(
+        runner,
+        "_split_intervals",
+        lambda _sessions, _split: ((sessions[0], sessions[1], sessions[2]),),
+    )
+    monkeypatch.setattr(
+        runner,
+        "_benchmark_bar",
+        lambda *_a: (_ for _ in ()).throw(RuntimeError("synthetic preflight failure")),
+    )
+    report = runner._benchmark_preflight(object(), "snapshot", sessions)
+    assert report.passed is False
+    assert report.unexpected_exception_count == report.benchmark_preflight_attempt_count
+    assert report.benchmark_invested_ratio == 0.0
+
+
+def test_public_main_publishes_precheck_blocked_metrics(monkeypatch, tmp_path) -> None:
+    database = tmp_path / "research.duckdb"
+    rows, _ = _write_database(database)
+    os.chmod(database, 0o600)
+    manifest_path = tmp_path / "manifest.json"
+    _, digest = _manifest(manifest_path, database, rows)
+    output = tmp_path / "result.json"
+    preflight = runner.BenchmarkPreflight(False, 0.0, 1.0, 0, 4)
+    monkeypatch.setattr(
+        runner,
+        "execute_screen",
+        lambda *_a: (_ for _ in ()).throw(runner.PrecheckBlockedError(preflight)),
+    )
+    result = runner.main(
+        [
+            "--run-id", EXECUTION_RUN_ID,
+            "--db", str(database),
+            "--data-manifest", str(manifest_path),
+            "--expected-data-manifest-sha256", digest,
+            "--output", str(output),
+            "--execute",
+        ]
+    )
+    report = json.loads(output.read_text())
+    assert result == 2
+    assert report["status"] == "PRECHECK_BLOCKED"
+    assert report["benchmark_initial_entry_filled"] is False
+    assert report["benchmark_invested_ratio"] == 0.0
+    assert report["capacity_rejection_ratio"] == 1.0
+    assert report["unexpected_exception_count"] == 0
+    assert report["prospective_forward_outcomes_opened"] is False
+    assert report["strategy_candidate_available"] is False
 
 
 def test_manifest_snapshot_identity_and_input_blocked_publication(tmp_path) -> None:
