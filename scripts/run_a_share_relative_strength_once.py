@@ -911,6 +911,7 @@ def _benchmark_preflight(
         entry_date = intervals[0][1]
         scenarios.extend((entry_date, slippage) for slippage in rs.SLIPPAGE_SCENARIOS_BPS)
     filled_flags: list[bool] = []
+    invested_ratios: list[float] = []
     capacity_rejections = 0
     unexpected_exceptions = 0
     for entry_date, slippage_bps in scenarios:
@@ -930,14 +931,20 @@ def _benchmark_preflight(
                 and rs.BENCHMARK_SYMBOL in portfolio.positions
             )
             filled_flags.append(filled)
+            invested_ratios.append(
+                receipt.filled_shares * receipt.price / rs.INITIAL_CASH_CNY
+                if filled and receipt.price is not None
+                else 0.0
+            )
             capacity_rejections += int(receipt.reason == "capacity")
         except Exception:
             filled_flags.append(False)
+            invested_ratios.append(0.0)
             unexpected_exceptions += 1
     attempts = len(scenarios)
     return BenchmarkPreflight(
         benchmark_initial_entry_filled=all(filled_flags),
-        benchmark_invested_ratio=float(sum(filled_flags) / attempts),
+        benchmark_invested_ratio=float(min(invested_ratios)),
         capacity_rejection_ratio=float(capacity_rejections / attempts),
         unexpected_exception_count=unexpected_exceptions,
         benchmark_preflight_attempt_count=attempts,
