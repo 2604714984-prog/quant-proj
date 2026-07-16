@@ -1,71 +1,66 @@
-# User-Dispatch Manager Handoff — V2 Current State and Future Roadmap
+# User-Dispatch Manager Handoff — V2 Current State and Roadmap
 
 Date: 2026-07-16  
 Repository: `https://github.com/2604714984-prog/quant-proj`  
 Default branch: `v2-main`
 
-This document is the authoritative handoff for the single logical V2 Manager conversation. Read it before creating any new task. GitHub is the source of truth; conversation memory is not.
+This is the current-state and roadmap handoff for the single logical V2 Manager.
 
----
+Before acting, read the controlling constitution:
 
-# 1. Manager mission
+`reports/agent_handoff/manager_v2_control_constitution_v1_20260716.md`
 
-Operate one reliable, lightweight personal quantitative-research system for approximately CNY 400,000 of capital.
-
-The Manager is the only long-lived control entry point. It may open isolated subagents or fresh conversations, but must not become a second research engine or a new orchestration platform.
-
-The Manager owns:
-
-- the active strategy-family state;
-- task-file publication;
-- exact branch and commit pinning;
-- snapshot selection;
-- PR ordering;
-- CI and merge checks;
-- PASS / FAIL / BLOCKED closure;
-- external-review trigger decisions.
-
-The Manager must not:
-
-- select parameters after reading outcomes;
-- rescue a failed strategy with additional filters;
-- choose winners based on test or forward results;
-- invent a new runner, registry, dispatcher, evidence framework, or database layer;
-- implement strategy formulas in the Manager context;
-- let two writing agents edit the same files concurrently;
-- authorize broker, paper, live, order, or automatic trading paths.
-
-Use the operating principle:
+Precedence:
 
 ```text
-one logical manager
-+ one active code-writing strategy subagent
-+ at most one read-only macro-risk subagent
-+ short-lived review subagents when required
+user's latest explicit instruction
+> Manager control constitution
+> merged AGENTS.md
+> this roadmap
+> task-specific GitHub file
+> conversation memory
 ```
 
-Do not maintain multiple permanent Managers.
+This roadmap cannot expand the constitution. GitHub is the source of truth; conversation memory is not.
 
 ---
 
-# 2. Current project state
+# 1. Mission
 
-## 2.1 Architecture
+Operate one reliable, lightweight personal quantitative-research system for approximately CNY 400,000.
 
-The active system remains intentionally small:
+The project is no longer in an architecture-development phase.
+
+Primary allocation of attention:
+
+```text
+75% strategy discovery and rapid rejection
+15% input qualification and execution preflight
+10% read-only macro-risk Shadow
+0% new architecture, platform, Agent framework, or second backtest engine
+```
+
+The Manager coordinates. Isolated subagents implement. The Manager must not become a research engine, coding workstream, or orchestration platform.
+
+---
+
+# 2. Current system state
+
+## 2.1 Active architecture
 
 ```text
 one repository
 one Python package
 one quant CLI
+one configuration path
 one central DuckDB access layer
-one deterministic backtest / portfolio core
+one deterministic portfolio / backtest core
 small A-share and US market-semantics modules
 one test suite
 one CI workflow
 ```
 
-The following remain outside Git:
+Outside Git:
 
 ```text
 DuckDB databases
@@ -79,29 +74,21 @@ private manifests and run markers
 
 No new architecture is required.
 
-## 2.2 Completed shared-harness corrections
+## 2.2 Shared-harness corrections already completed
 
-The following are already merged and must not be rebuilt:
+Merged and not to be rebuilt:
 
-- PR #59 — benchmark initial-entry outcome-free precheck and explicit `SHARES` / `CNY` units;
-- PR #60 — actual benchmark invested-ratio measurement;
-- PR #55 — A-share limit/slippage crossings become conservative unfilled orders;
-- PR #56 — fresh run-ID separation and deterministic error terminalization;
-- PR #53 — architecture freeze and repeatable input qualification;
-- PR #57 — terminal Relative Strength historical failure evidence.
-
-Links:
-
-- `https://github.com/2604714984-prog/quant-proj/pull/59`
-- `https://github.com/2604714984-prog/quant-proj/pull/60`
-- `https://github.com/2604714984-prog/quant-proj/pull/55`
-- `https://github.com/2604714984-prog/quant-proj/pull/56`
-- `https://github.com/2604714984-prog/quant-proj/pull/53`
-- `https://github.com/2604714984-prog/quant-proj/pull/57`
+```text
+PR #53 architecture freeze and repeatable input qualification
+PR #55 A-share limit/slippage crossing = conservative unfilled order
+PR #56 fresh run identity and deterministic terminalization
+PR #57 terminal Relative Strength negative result
+PR #59 benchmark precheck and explicit SHARES/CNY units
+PR #60 actual benchmark invested-ratio measurement
+PR #61 defensive low-volatility preregistration and adapter
+```
 
 ## 2.3 Relative Strength status
-
-The Relative Strength / medium-term momentum family is permanently closed:
 
 ```text
 research_id:
@@ -120,21 +107,20 @@ prospective_forward_opened:
 false
 ```
 
-All eight validation / retrospective-holdout tests failed every performance and statistical gate. Do not reopen this lineage. Do not add volume, macro, regime, moving-average, or parameter changes and present the result as a repair of the same family.
+Permanent decisions:
 
-RS may only return under a genuinely different economic hypothesis, new preregistration, and new lineage after the current three-cycle freeze.
+- do not rerun or retune;
+- do not add volume, macro, regime, moving-average, or threshold filters as a repair;
+- do not use RS as a post-hoc regime specialist;
+- any future trend research requires a genuinely new economic hypothesis and lineage after the current freeze.
 
 ## 2.4 Current active family
-
-The active strategy family is:
 
 ```text
 A_SHARE_DEFENSIVE_LOW_VOLATILITY_V1_20260717
 ```
 
-PR #61 is merged:
-
-`https://github.com/2604714984-prog/quant-proj/pull/61`
+Merged definition and adapter: PR #61.
 
 Frozen variants:
 
@@ -156,235 +142,82 @@ signal: D after close
 execution: D+1 accepted-session open
 benchmark: 510300.SH
 units: CNY / SHARES
-existing costs, limits, suspension, capacity and board-lot rules
+existing costs, capacity, limits, suspension and board-lot rules
 ```
 
-No outcomes have been opened by the preregistration / adapter merge.
+No real-data outcomes have been opened for this family.
 
-## 2.5 Young-chairman Draft PR
+## 2.5 Young-chairman Draft PR #58
 
-PR #58 is not an active new strategy family:
+PR:
 
 `https://github.com/2604714984-prog/quant-proj/pull/58`
 
-It is an outcome-informed historical PIT replication, adds approximately 938 lines, requires nine PIT domains, and is inconsistent with the current strategy-priority and lightweight process.
+Status:
 
-Required Manager action:
+```text
+outcome-informed historical PIT replication
+not an active outcome-blind family
+approximately 938 added lines
+requires nine PIT data domains
+not eligible for a result phase under the current roadmap
+```
+
+Required action:
 
 ```text
 close PR #58 without merge
-preserve branch/commit as optional historical research material
-record: NOT_ACTIVE_NOT_ELIGIBLE_FOR_RESULT_PHASE
+preserve its exact branch/commit only as optional historical material
+record NOT_ACTIVE_NOT_ELIGIBLE_FOR_RESULT_PHASE
 ```
 
-Do not build a management-data pipeline for this replication unless a future independent, outcome-blind hypothesis and multiple approved uses justify it.
+Do not build a management-data pipeline for this idea unless the user later approves a genuinely new outcome-blind hypothesis with multiple justified data uses.
 
 ---
 
-# 3. Immediate action checklist
+# 3. Immediate Manager actions
 
-Execute in this order.
+Execute in order.
 
-## 3.1 Repository housekeeping
+## 3.1 Housekeeping
 
-- [ ] Verify the current `v2-main` HEAD and record it before dispatch.
-- [ ] Confirm PR #61 merge is present on `v2-main`.
-- [ ] Run one full CI suite on the final `v2-main` state after PR #61.
-- [ ] Close PR #58 without merge and preserve its exact head as historical material only.
-- [ ] Update the stale final sentence in `AGENTS.md`.
+- Verify and record the current `v2-main` HEAD.
+- Confirm PR #61 merge is present.
+- Run one complete CI suite on the current `v2-main` state.
+- Close PR #58 without merge.
+- Update the stale final sentence in `AGENTS.md`.
 
-Replace:
-
-```text
-During this freeze, relative-strength data qualification is the only active family.
-```
-
-With a minimal rule such as:
+Replace the RS-specific active-family sentence with:
 
 ```text
 During this freeze, only one strategy family may be active at a time.
-The active family is the latest merged preregistered family on v2-main.
+The active family is the latest user-approved, merged preregistered family on v2-main.
 ```
 
 Do not add an active-family registry.
 
-## 3.2 Low-volatility Cycle 2
+## 3.2 Publish two task files
 
-- [ ] Create one task file for the strategy subagent in `reports/agent_handoff/`.
-- [ ] Bind the exact merged low-volatility definition and module identities.
-- [ ] Run a repeatable, outcome-free real-data preflight.
-- [ ] Confirm every hard preflight condition before consuming any outcome run.
-- [ ] Only after preflight PASS, create one fresh run ID and one outcome lineage.
-- [ ] Publish only the final aggregate result and one run receipt.
-- [ ] Close the family permanently on FAIL; enter prospective Shadow on PASS.
+After housekeeping, create these independent files under `reports/agent_handoff/`:
 
-## 3.3 Macro-risk Shadow
+```text
+1. Low-volatility Cycle 2 preflight and historical-outcome task
+2. Local-market Macro Risk Shadow task
+```
 
-- [ ] Create a separate read-only task file after the low-volatility task is dispatched.
-- [ ] Allow only local-market risk features in phase 1.
-- [ ] Do not let macro-risk output change portfolio weights or strategy selection.
-- [ ] Publish at most one aggregate weekly Shadow record.
+The user should only need the two GitHub links.
+
+Only the low-volatility task may write strategy code. Macro Risk remains read-only and cannot edit strategy files.
 
 ---
 
-# 4. Three-cycle architecture freeze
+# 4. Cycle 2 — defensive low volatility
 
-For the next three active strategy families, the following are prohibited:
+## 4.1 Objective
 
-```text
-new CLI
-new database layer
-new event loop
-new portfolio core
-new runner framework
-new evidence framework
-new manifest schema
-new strategy registry
-new dispatcher
-new agent framework
-new provider aggregation framework
-second formal backtest engine
-broker / paper / live / automatic execution
-```
+Test whether a CNY 400,000, 15-name low-risk A-share portfolio can achieve positive net return while improving volatility, drawdown, Calmar and downside-risk efficiency versus 510300.SH.
 
-Only concrete defects in the existing shared path may be fixed.
-
-A new strategy adapter should normally be 100–300 runtime lines. A larger adapter requires an explicit Manager stop and user approval.
-
-Each strategy family should normally require no more than two PRs:
-
-```text
-PR A:
-definition + adapter + focused tests + repeatable outcome-free preflight
-
-PR B:
-terminal aggregate result + run receipt
-```
-
-Do not reproduce the multi-PR Relative Strength process.
-
-Durable artifacts per family are limited to:
-
-```text
-definition
-snapshot / qualification identity
-result
-run receipt
-```
-
-Prefer Git commit/blob identities over extra sidecars.
-
----
-
-# 5. Standard strategy-cycle contract
-
-## Stage 1 — outcome-blind preregistration
-
-Freeze before outcome access:
-
-```text
-economic hypothesis
-universe
-required fields
-signal formula
-variant count and exact order
-capital and position count
-rebalance and execution timing
-costs and capacity
-benchmark
-historical splits
-statistical family size
-gates
-forward boundary
-```
-
-Maximum variants per family:
-
-```text
-4–6
-```
-
-No parameter grid.
-
-## Stage 2 — repeatable outcome-free preflight
-
-The preflight may be rerun and repaired. It must not output:
-
-```text
-security identifiers
-rankings
-returns
-NAV
-Sharpe
-performance gates
-forward outcomes
-```
-
-It may output only aggregate health fields such as:
-
-```text
-coverage dates
-decision count
-minimum / maximum eligible count
-minimum / maximum candidate count
-invalid-decision count
-benchmark initial-entry filled
-benchmark invested ratio
-capacity rejection ratio
-unexpected exception count
-currency and position units
-```
-
-Hard requirements before outcome access:
-
-```text
-benchmark_initial_entry_filled = true
-unexpected_exception_count = 0
-currency_unit = CNY
-position_unit = SHARES
-all required execution panels complete
-no prospective data access
-```
-
-Input failures must not consume the first outcome run.
-
-## Stage 3 — one historical outcome
-
-Use one fresh run ID. The historical result may be:
-
-```text
-HISTORICAL_SCREENING_PASS
-HISTORICAL_SCREENING_FAIL
-INPUT_BLOCKED
-```
-
-Rules:
-
-```text
-FAIL -> permanently close; no retuning or rescue filters
-PASS -> enter prospective Shadow; not an automatic candidate
-INPUT_BLOCKED -> repair only the input or financial semantic defect; use a new child lineage
-```
-
-Never change variants, thresholds, costs, benchmark, or holding count after reading outcomes.
-
-## Stage 4 — prospective Shadow
-
-A historical PASS remains research-only.
-
-Prospective results must use data accumulated after preregistration, with immutable availability identities. Forward results must not be used to tune the strategy.
-
-Only a future separately reviewed prospective PASS may open a strategy-intake decision.
-
----
-
-# 6. Research roadmap
-
-## Cycle 2 — defensive low volatility
-
-Current active family. Complete it before starting another code-writing strategy family.
-
-Frozen variants:
+## 4.2 Frozen variants
 
 ```text
 LV60: lowest 60-session realized volatility
@@ -393,23 +226,84 @@ DSV60: lowest 60-session downside semideviation
 DSV120: lowest 120-session downside semideviation
 ```
 
-The family must remain free of:
+Do not add:
 
 ```text
 relative-strength filters
 macro filters
-moving-average filters
+moving averages
 volume confirmation
-quality or industry optimization
+quality filters
+industry optimization
+additional windows
+parameter grids
 ```
 
-Primary research question:
+## 4.3 Outcome-free real-data preflight
+
+The preflight is repeatable and must run before any historical return access.
+
+It may output only aggregate health information:
 
 ```text
-Can a CNY 400,000, 15-name low-risk A-share portfolio achieve positive net return while improving volatility, drawdown, Calmar and downside-risk efficiency versus 510300.SH?
+coverage start/end
+decision-date count
+minimum/maximum eligible count
+minimum/maximum candidate count
+invalid-decision count
+benchmark initial-entry filled
+benchmark invested ratio
+capacity rejection ratio
+unexpected exception count
+CNY / SHARES unit confirmation
 ```
 
-## Cycle 3 — conditional short-term reversal
+Hard conditions:
+
+```text
+benchmark_initial_entry_filled = true
+unexpected_exception_count = 0
+currency_unit = CNY
+position_unit = SHARES
+all required execution panels complete
+no embargo or prospective data access
+```
+
+Input failures do not consume the historical outcome.
+
+## 4.4 Historical outcome
+
+Only after preflight PASS:
+
+- create one fresh Run ID;
+- use the frozen four variants and no others;
+- run one historical outcome;
+- publish only one aggregate result and one run receipt.
+
+Terminal handling:
+
+```text
+HISTORICAL_SCREENING_FAIL
+→ close permanently
+→ no rescue, retune or filter addition
+
+HISTORICAL_SCREENING_PASS
+→ enter prospective Shadow
+→ candidate remains false
+
+INPUT_BLOCKED
+→ repair only the proven input or financial-semantic defect
+→ preserve the consumed lineage
+→ use a new child lineage
+```
+
+Ordinary FAIL does not require a full external audit. CI + Manager scope check + terminal merge is sufficient.
+
+A first historical PASS requires external review.
+
+---
+
+# 5. Cycle 3 — conditional short-term reversal
 
 Start only after Cycle 2 has a terminal result.
 
@@ -417,13 +311,13 @@ New economic hypothesis:
 
 ```text
 short-term abnormal price decline
-+ explicit liquidity / volume shock
++ explicit liquidity or volume shock
 + normal trading state
 + no ST, suspension, locked limit-down or terminal risk
 may represent temporary price pressure rather than permanent deterioration
 ```
 
-Maximum four frozen variants:
+Maximum four variants:
 
 ```text
 10-session residual reversal
@@ -433,49 +327,49 @@ each with / without one fixed volume-shock condition
 
 Do not implement plain “buy the largest losers.”
 
-Do not use the macro-risk Shadow to make this family pass.
+Do not use Macro Risk to make this family pass.
 
-## Cycle 4 — ETF / multi-asset trend and defensive allocation
+Apply the same two-PR and one-outcome limits as Cycle 2.
 
-If Cycle 2 and Cycle 3 both fail, prioritize a small ETF / multi-asset family rather than additional A-share indicator variations.
+---
+
+# 6. Cycle 4 — ETF / multi-asset trend and defensive allocation
+
+If Cycle 2 and Cycle 3 both fail, prioritize a small ETF / multi-asset family rather than more A-share technical-indicator variations.
 
 Reasons:
 
 ```text
 smaller universe
 simpler survivorship and corporate-action handling
-better fit for 400k capital
+better fit for CNY 400,000
 natural stock / bond / gold / cash diversification
 better compatibility with a future macro-risk cap
 ```
 
 Freeze the investable universe only after data availability and execution semantics are qualified.
 
-Do not immediately add RSI, MACD, Bollinger Bands, OBV, KDJ, CCI, or fifteen separate technical-indicator families.
+Do not create separate RSI, MACD, Bollinger, OBV, KDJ, CCI or fifteen-indicator strategy families.
 
-## Deferred idea — Swing Count / volume-confirmed trend
-
-This is not active during the three-cycle freeze.
-
-It may be considered later only as a genuinely new trend-persistence hypothesis, not as a rescue of failed RS.
+Swing Count or volume-confirmed trend remains deferred and must be a genuinely new hypothesis, not a rescue of failed RS.
 
 ---
 
-# 7. Macro-risk Shadow roadmap
+# 7. Macro Risk Shadow
 
-Use a separate read-only subagent. Do not let it edit strategy files.
+Use one separate read-only subagent.
 
-## Phase 1 — local-market stress only
+## 7.1 Phase 1 — local market only
 
-Use already available market data:
+Inputs:
 
 ```text
 510300 120-session trend
-20 / 60-session realized volatility
+20/60-session realized volatility
 120-session drawdown
 share of stocks with positive 60-session return
 share above a medium-term moving average
-market turnover / amount breadth
+market amount breadth
 limit-down share
 suspension share
 ```
@@ -490,292 +384,244 @@ component contributions
 stale components
 ```
 
-Boundary:
+Hard boundary:
 
 ```text
 SHADOW_ONLY
 NO_POSITION_EFFECT
 NO_STRATEGY_SELECTION
+NO_GATE_CHANGE
 NO_ORDER_OR_SIGNAL
 ```
 
-Run through at least the three active strategy cycles before judging usefulness.
+Run through at least the current three strategy cycles before judging usefulness.
 
-## Phase 2 — one global financial-stress input
+## 7.2 Deferred phases
 
-Only after local Shadow is stable, consider one primary external measure such as OFR Financial Stress Index.
+After the local Shadow is stable, the user may approve one global financial-stress input.
 
-Do not add many overlapping macro indicators.
-
-## Phase 3 — narrative / policy context
-
-News sentiment, policy uncertainty, or LLM-generated explanations are deferred.
-
-If later added, they may explain risk-score changes but must not directly control position weights.
+News sentiment, policy uncertainty and LLM explanations are deferred. If later approved, they may explain risk-score changes but must not directly control positions.
 
 ---
 
-# 8. Strategy-combination roadmap
+# 8. Strategy combination
 
 Do not develop a strategy synthesizer now.
 
-Minimum activation gate:
+Activation requires all of:
 
 ```text
 at least two independently historically passing strategy families
 different economic return sources
 shared-account executable targets
 at least one prospective Shadow record per family
-static combination fully implemented and tested
+static combination implemented and tested
 ```
 
-Required benchmark order:
+Required comparison order:
 
 ```text
-B0: best single strategy
-B1: equal-weight static ensemble
-B2: fixed-risk-budget static ensemble
-B3: static ensemble + macro total-risk cap
-B4: soft strategy synthesizer
+B0 best single strategy
+B1 equal-weight static ensemble
+B2 fixed-risk-budget static ensemble
+B3 static ensemble + macro total-risk cap
+B4 soft strategy synthesizer
 ```
 
-The default expected solution is:
+Default expected solution:
 
 ```text
 STATIC_ENSEMBLE + MACRO_RISK_CAP
 ```
 
-Dynamic allocation must prove incremental benefit after costs, lag, state errors and turnover.
-
-First dynamic version, if eventually permitted:
+A first dynamic version, if later authorized, uses only:
 
 ```text
-three states only: TREND / NEUTRAL / STRESS
+TREND / NEUTRAL / STRESS
 soft bounded weight changes
 low confidence returns to static weights
 no winner-takes-all hard switching
 ```
 
-A failed strategy cannot be included as a regime specialist based on post-hoc episode analysis.
+A failed family can never enter the combination as a post-hoc specialist.
 
 ---
 
-# 9. Data roadmap
+# 9. Data policy
 
-## 9.1 Long-term PIT objective
-
-Accumulate immutable prospective data with:
+Long-term strict PIT objective:
 
 ```text
 raw OHLC
 adjustment factors
 corporate actions
 accepted calendar
-ST / suspension / limit / listing / delisting state
+ST / suspension / limit / listing / delisting status
 available_at
 source identity
 revision identity
 ```
 
-Retrospective provider-hindsight qfq data may be used only for secondary historical screening, not final candidate evidence.
+Retrospective provider-hindsight qfq data supports secondary historical screening only.
 
-## 9.2 Provider policy
-
-Each dataset has:
+Provider rule:
 
 ```text
-one canonical provider
+one canonical provider per dataset
 at most one read-only cross-check provider
+no automatic source selection or fusion
 ```
 
-No automatic multi-source selection or fusion.
-
-Recommended future positioning:
+Potential future positioning:
 
 ```text
 Tushare: canonical A-share provider candidate
-AKShare: exploratory / secondary cross-check
-BaoStock: bounded status or historical cross-check where explicitly qualified
+AKShare: exploratory or cross-check
+BaoStock: bounded status/historical cross-check when explicitly qualified
 ```
 
-Tushare unit conversion must occur at ingestion:
+Tushare conversions at ingestion:
 
 ```text
-volume_shares = tushare vol * 100
-amount_cny = tushare amount * 1000
+volume_shares = tushare vol × 100
+amount_cny = tushare amount × 1000
 ```
 
-Tushare daily missing rows during suspension must be reconciled with a separate qualified suspension-status source; do not treat absence as an ordinary data gap or silently delete the status row.
+A missing Tushare daily row during suspension must be reconciled with a qualified suspension-status source. Do not silently delete it or treat it as an ordinary provider gap.
 
-## 9.3 Add data only for an approved hypothesis
-
-Do not build full management, news, macro, options, fundamentals, or event domains speculatively.
-
-A new data domain requires:
-
-```text
-an approved current hypothesis
-an exact field list
-availability semantics
-source and revision identity
-at least two expected uses, unless the user explicitly approves one-off research
-```
+Add a data domain only for an approved active hypothesis, with exact fields, units, availability, source and revision identity. Do not speculatively build management, news, macro, options, fundamentals or event domains.
 
 ---
 
-# 10. External tools policy
+# 10. External tools
 
-## Reference-only
+Reference only:
 
 ```text
 RQAlpha: A-share market-semantics differential oracle
-Lean: US corporate-action, settlement and order-lifecycle reference
+Lean: US company-action, settlement and order-lifecycle reference
 AKShare / efinance: exploratory cross-check only
 AI Berkshire / daily_stock_analysis: research-template inspiration only
 ```
 
-Do not make any of them a runtime dependency.
-
-## Deferred isolated experiments
+Deferred isolated experiment:
 
 ```text
-Qlib: future read-only factor / ML sandbox after three cycles
+Qlib read-only factor / ML sandbox after the three-cycle freeze
 ```
 
 Any Qlib output must return to the V2 event loop for validation.
 
-## Rejected from the active project
+Rejected from the active runtime:
 
 ```text
 RD-Agent
 LangGraph research orchestration
 FinceptTerminal-style platform
-multi-agent buy/sell decision systems
-full financial desktop terminal
+multi-agent buy/sell systems
+full financial terminal
 multi-provider automatic fusion
 second formal backtest engine
 ```
 
 ---
 
-# 11. Manager / subagent operating model
+# 11. Subagent operating model
 
-## 11.1 Task publication
+One logical Manager controls:
 
-For every new subagent or fresh conversation, create a self-contained task file under:
+```text
+one active code-writing strategy subagent
+at most one read-only Macro Risk subagent
+one short-lived review subagent when required
+```
+
+For each new subagent or fresh conversation, create a self-contained task file under:
 
 ```text
 reports/agent_handoff/
 ```
 
-The user should only need the GitHub link.
-
-Each task file must include:
+Every task file includes:
 
 ```text
 mission
 exact base branch and commit
+active family and stage
 allowed files
 forbidden files and scope
-frozen research definition
+frozen definition
 input and outcome boundary
+line and PR budgets
 acceptance tests
-PR requirements
+review trigger
 terminal callback
 ```
 
-Do not rely on oral corrections outside the task file.
+No oral correction may expand scope. Material changes require a replacement GitHub task file.
 
-## 11.2 Concurrency
-
-Maximum normal concurrency:
-
-```text
-one code-writing strategy subagent
-one read-only macro-risk subagent
-one temporary review subagent when needed
-```
-
-No nested subagent trees for implementation.
-
-Subagents do not coordinate directly. Cross-task dependencies return to the Manager and are republished as a new GitHub task file.
-
-## 11.3 File ownership
-
-No two writing agents may edit the same files at the same time.
-
-Manager must not “help” by editing an active subagent branch.
+No nested implementation-agent trees. No concurrent file ownership. The Manager does not edit an active subagent branch.
 
 ---
 
 # 12. External-review policy
 
-Full independent external review is required only for:
+Full independent review is required only for:
 
 ```text
-changes to Event Loop or Portfolio accounting
-changes to market execution, settlement, corporate-action or cost semantics
-changes to PIT, availability, data-unit or snapshot contracts
-first historical PASS of a strategy family
-any prospective-forward result
+Event Loop or Portfolio-accounting changes
+market execution, settlement, corporate-action or cost-semantic changes
+PIT, availability, data-unit or snapshot-contract changes
+first historical PASS
+any prospective result
 first static ensemble result
 first macro-risk position effect
 first dynamic synthesizer result
-any broker, paper, live or trading-stage opening
+any trading-stage opening
 ```
 
 Full external review is not required for:
 
 ```text
-ordinary outcome-blind strategy adapter PRs
+ordinary preregistered adapters
 aggregate preflight PASS
-ordinary HISTORICAL_SCREENING_FAIL
-Shadow macro records that cannot affect positions
-document-only result publication
+ordinary historical FAIL
+read-only Macro Shadow records
+document-only terminal result PRs
 ```
-
-For normal negative strategy results:
-
-```text
-CI
-+ Manager scope check
-+ terminal merge
-```
-
-is sufficient.
 
 ---
 
-# 13. Stop conditions
+# 13. Mandatory stop conditions
 
-Stop immediately and return to the user if any task proposes:
+Stop and return `SCOPE_EXPANSION_REQUIRES_USER_APPROVAL` if a task proposes:
 
 ```text
-a new repository
-a new CLI or database layer
-a new runner / registry / evidence framework
-a second event or backtest engine
+new repository, CLI, database layer, writer, event loop or backtest engine
+new runner, registry, dispatcher, evidence or manifest framework
 more than one active strategy family
-parameter changes after outcome access
-opening embargo or prospective outcomes early
-rescuing a failed family with a new filter
+more than one code-writing subagent
+strategy adapter above 300 runtime lines
+more than two implementation PRs for a family
+more than six variants
+parameter or gate changes after outcome access
+early embargo or prospective access
+rescuing a failed strategy
 using a failed strategy as a regime specialist
-automatic multi-source data selection
-broker, order, paper, live or automatic execution
-committing database, credential, raw payload or large private artifacts
+speculative data-domain construction
+macro position effect without approval
+strategy synthesizer before its activation gate
+broker, order, paper, live, automatic or production trading
+committing a database, credential, raw payload or large private artifact
 ```
 
-Return:
-
-```text
-SCOPE_EXPANSION_REQUIRES_USER_APPROVAL
-```
+Do not partially implement while waiting for approval.
 
 ---
 
-# 14. Manager status model
+# 14. Manager state
 
-Maintain only this small logical state, preferably in the Manager response rather than a new registry:
+Maintain only this logical state; do not create a registry:
 
 ```text
 ACTIVE_FAMILY
@@ -791,7 +637,7 @@ NEXT_ACTION
 BLOCKERS
 ```
 
-Current expected state after housekeeping:
+Expected state after housekeeping:
 
 ```text
 ACTIVE_FAMILY=A_SHARE_DEFENSIVE_LOW_VOLATILITY_V1_20260717
@@ -800,14 +646,14 @@ OUTCOME_STATUS=NOT_RUN
 FORWARD_STATUS=CLOSED
 STRATEGY_CANDIDATE_AVAILABLE=false
 YOUNG_CHAIRMAN_PR=TO_CLOSE_WITHOUT_MERGE
-NEXT_ACTION=DISPATCH_LOW_VOLATILITY_PREFLIGHT_AND_OUTCOME_TASK
+NEXT_ACTION=DISPATCH_LOW_VOLATILITY_AND_MACRO_SHADOW_TASK_FILES
 ```
 
 ---
 
-# 15. Required Manager callbacks
+# 15. Required callbacks
 
-## Callback A — housekeeping complete
+## Housekeeping
 
 ```text
 STATUS:
@@ -816,11 +662,12 @@ FULL_CI_STATUS:
 PR_58_STATUS:
 AGENTS_ACTIVE_FAMILY_TEXT_STATUS:
 ACTIVE_FAMILY:
-NEXT_TASK_FILE_URL:
+LOW_VOL_TASK_FILE_URL:
+MACRO_SHADOW_TASK_FILE_URL:
 BLOCKERS:
 ```
 
-## Callback B — low-volatility preflight
+## Low-volatility preflight
 
 ```text
 STATUS:
@@ -841,7 +688,7 @@ OUTCOME_RUN_AUTHORIZED:
 NEXT_ACTION:
 ```
 
-## Callback C — low-volatility terminal outcome
+## Low-volatility terminal result
 
 ```text
 STATUS:
@@ -857,7 +704,7 @@ NEXT_ACTIVE_FAMILY:
 NEXT_ACTION:
 ```
 
-## Callback D — macro-risk Shadow start
+## Macro Shadow start
 
 ```text
 STATUS:
@@ -874,15 +721,6 @@ NEXT_ACTION:
 
 # Final directive
 
-The system is no longer in an architecture-development phase.
+Complete low volatility first. Then conditional reversal. If both fail, prioritize a small ETF / multi-asset family. Run macro risk only as a read-only Shadow. Do not develop a strategy synthesizer until at least two economically distinct families have passed and static-combination baselines exist.
 
-The governing priority is:
-
-```text
-75% strategy discovery and rapid rejection
-15% input qualification and execution preflight
-10% macro-risk Shadow research
-0% new architecture, platform, Agent or backtest-engine development
-```
-
-Complete low volatility, then conditional reversal, then ETF / multi-asset trend. Start macro-risk as a read-only Shadow. Do not build a strategy synthesizer until at least two independent strategy families have genuinely passed and static combination baselines exist.
+Success is measured by economically distinct families reaching trustworthy terminal decisions per unit of code, time and complexity—not by the number of files, tests, tasks, agents, reports or abstractions.
