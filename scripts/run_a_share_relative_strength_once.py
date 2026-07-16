@@ -35,7 +35,13 @@ from quant_system.markets.a_share import AShareBar, decide_fill  # noqa: E402
 from quant_system.research import relative_strength as rs  # noqa: E402
 
 
-RUN_ID = "A_SHARE_RELATIVE_STRENGTH_HISTORICAL_SECONDARY_SCREEN_V1_20260716"
+AMENDMENT_RUN_ID = "A_SHARE_RELATIVE_STRENGTH_HISTORICAL_SECONDARY_SCREEN_V1_20260716"
+CONSUMED_EXECUTION_RUN_IDS = frozenset(
+    {
+        AMENDMENT_RUN_ID,
+        "A_SHARE_RELATIVE_STRENGTH_HISTORICAL_SECONDARY_SCREEN_V2_20260716",
+    }
+)
 CLASSIFICATION = "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT"
 AMENDMENT = ROOT / (
     "research/definitions/a_share_relative_strength_historical_secondary_screen_v1.json"
@@ -118,6 +124,21 @@ def _digest(value: object, label: str) -> str:
     if len(text) != 64 or any(char not in HEX for char in text):
         raise SecondaryScreenError(f"{label} must be lowercase SHA-256")
     return text
+
+
+def _execution_run_id(value: object) -> str:
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        or len(value) > 128
+        or not value.isascii()
+        or any(not (char.isalnum() or char in "_-") for char in value)
+    ):
+        raise SecondaryScreenError("execution run_id must be nonempty canonical ASCII")
+    if value in CONSUMED_EXECUTION_RUN_IDS:
+        raise SecondaryScreenError("execution run_id has already been consumed")
+    return value
 
 
 def _finite(value: object, label: str, *, positive: bool = False) -> float:
@@ -216,17 +237,25 @@ def load_amendment() -> dict[str, Any]:
     prereg_raw, _ = _capture(PREREGISTRATION)
     if hashlib.sha256(prereg_raw).hexdigest() != rs.DEFINITION_SHA256:
         raise SecondaryScreenError("parent preregistration bytes changed")
-    if amendment.get("run_id") != RUN_ID or amendment.get("classification") != CLASSIFICATION:
+    if (
+        amendment.get("run_id") != AMENDMENT_RUN_ID
+        or amendment.get("classification") != CLASSIFICATION
+    ):
         raise SecondaryScreenError("amendment identity mismatch")
     return amendment
 
 
-def load_data_manifest(path: Path, expected_sha256: str) -> dict[str, Any]:
+def load_data_manifest(
+    path: Path,
+    expected_sha256: str,
+    execution_run_id: str,
+) -> dict[str, Any]:
+    run_id = _execution_run_id(execution_run_id)
     value = _bound_json(path, expected_sha256, "data manifest")
     expected = {
         "schema_version": "a-share-rs-secondary-data-manifest-v1",
         "research_id": rs.RESEARCH_ID,
-        "run_id": RUN_ID,
+        "run_id": run_id,
         "status": "ACCEPTED_RETROSPECTIVE_SECONDARY_SNAPSHOT",
         "classification": CLASSIFICATION,
         "table": TABLE,
@@ -1005,7 +1034,11 @@ def _simulate_one(
 def execute_screen(
     database: Path,
     manifest: Mapping[str, Any],
+    execution_run_id: str,
 ) -> dict[str, Any]:
+    run_id = _execution_run_id(execution_run_id)
+    if manifest.get("run_id") != run_id:
+        raise SecondaryScreenError("execution run_id differs from data manifest")
     with _read_only_connection(database) as connection:
         source_identity = _verify_snapshot(connection, manifest)
         sessions = _sessions(connection, manifest["snapshot_id"])
@@ -1046,7 +1079,7 @@ def execute_screen(
         )
         return {
             "schema_version": "a-share-rs-historical-secondary-result-v1",
-            "run_id": RUN_ID,
+            "run_id": run_id,
             "research_id": rs.RESEARCH_ID,
             "status": status,
             "classification": CLASSIFICATION,
@@ -1089,6 +1122,7 @@ def _publish(path: Path, report: Mapping[str, Any]) -> None:
 
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--run-id", required=True)
     parser.add_argument("--db", type=Path)
     parser.add_argument("--data-manifest", type=Path)
     parser.add_argument("--expected-data-manifest-sha256")
@@ -1099,13 +1133,14 @@ def _parser() -> argparse.ArgumentParser:
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
+    execution_run_id = _execution_run_id(args.run_id)
     load_amendment()
     if not args.execute:
         print(
             json.dumps(
                 {
                     "status": "DRY_RUN_PLAN",
-                    "run_id": RUN_ID,
+                    "run_id": execution_run_id,
                     "classification": CLASSIFICATION,
                     "amendment_sha256": AMENDMENT_SHA256,
                     "database_opened": False,
@@ -1123,7 +1158,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     if args.output.exists() or args.output.is_symlink():
         raise SecondaryScreenError("output must not preexist")
     manifest_sha = _digest(args.expected_data_manifest_sha256, "data manifest SHA-256")
-    manifest = load_data_manifest(args.data_manifest, manifest_sha)
+    manifest = load_data_manifest(args.data_manifest, manifest_sha, execution_run_id)
     manifest["_sha256"] = manifest_sha
     before = _database_identity(args.db)
     expected_database = manifest["database"]
@@ -1134,11 +1169,11 @@ def main(argv: Sequence[str] | None = None) -> int:
     ):
         raise SecondaryScreenError("database identity differs from manifest")
     try:
-        report = execute_screen(args.db, manifest)
+        report = execute_screen(args.db, manifest, execution_run_id)
     except (SecondaryScreenError, rs.RelativeStrengthContractError, duckdb.Error, ValueError) as exc:
         report = {
             "schema_version": "a-share-rs-historical-secondary-result-v1",
-            "run_id": RUN_ID,
+            "run_id": execution_run_id,
             "research_id": rs.RESEARCH_ID,
             "status": "INPUT_BLOCKED",
             "classification": CLASSIFICATION,

@@ -16,6 +16,7 @@ import pytest
 
 from quant_system.backtest import CapacityObservation, ExecutionInput
 from quant_system.data import AcceptedSession, AcceptedSessionCalendar, SourceIdentity
+from quant_system.markets.common import MarketDataError
 from quant_system.markets.universe import StatusEvidence
 from quant_system.research import relative_strength as rs
 
@@ -31,6 +32,7 @@ runner = importlib.util.module_from_spec(SPEC)
 sys.modules[SPEC.name] = runner
 SPEC.loader.exec_module(runner)
 UTC = timezone.utc
+EXECUTION_RUN_ID = "A_SHARE_RELATIVE_STRENGTH_HISTORICAL_SECONDARY_SCREEN_V3_20260716"
 
 
 def _sha(text: str) -> str:
@@ -101,23 +103,28 @@ def test_frozen_amendment_and_parent_preregistration_are_exact() -> None:
     assert hashlib.sha256(runner.AMENDMENT.read_bytes()).hexdigest() == runner.AMENDMENT_SHA256
     assert hashlib.sha256(runner.PREREGISTRATION.read_bytes()).hexdigest() == rs.DEFINITION_SHA256
     assert amendment["classification"] == runner.CLASSIFICATION
+    assert amendment["run_id"] == runner.AMENDMENT_RUN_ID
     assert amendment["outcome_window"]["lifetime_family_size_remains"] == 12
     assert amendment["outcome_window"]["prospective_forward_2027_2029_outcomes_opened"] is False
     assert amendment["output_contract"]["strategy_candidate_available"] is False
 
 
-def test_code_manifest_binds_exact_narrow_scope() -> None:
+def test_code_manifest_records_exact_accepted_v1_baseline() -> None:
     manifest = json.loads(CODE_MANIFEST.read_text())
-    actual = {
-        item["path"]: hashlib.sha256((ROOT / item["path"]).read_bytes()).hexdigest()
-        for item in manifest["scope"]
-    }
-    assert actual == {item["path"]: item["sha256"] for item in manifest["scope"]}
-    assert tuple(actual) == (
-        "research/definitions/a_share_relative_strength_historical_secondary_screen_v1.json",
-        "scripts/run_a_share_relative_strength_once.py",
-        "tests/test_run_a_share_relative_strength_once.py",
-    )
+    assert manifest["scope"] == [
+        {
+            "path": "research/definitions/a_share_relative_strength_historical_secondary_screen_v1.json",
+            "sha256": runner.AMENDMENT_SHA256,
+        },
+        {
+            "path": "scripts/run_a_share_relative_strength_once.py",
+            "sha256": "d16e8264f400eaf70be6accbf022c5a5e62b35d76d3494b2762cf16d67ce019b",
+        },
+        {
+            "path": "tests/test_run_a_share_relative_strength_once.py",
+            "sha256": "d755b191a437d73dcb5db321491b1c6d329466ac6bf456337df7ab40d64f5afe",
+        },
+    ]
     assert manifest["mechanical_proof"]["prospective_forward_fixture_created"] is False
     assert manifest["boundary"]["strategy_candidate_available"] is False
 
@@ -126,12 +133,26 @@ def test_default_is_no_database_no_socket_no_output(monkeypatch, capsys) -> None
     monkeypatch.setattr(duckdb, "connect", lambda *a, **k: pytest.fail("database opened"))
     monkeypatch.setattr(socket, "socket", lambda *a, **k: pytest.fail("socket opened"))
     monkeypatch.setattr(runner, "_publish", lambda *a, **k: pytest.fail("output written"))
-    assert runner.main([]) == 0
+    assert runner.main(["--run-id", EXECUTION_RUN_ID]) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["status"] == "DRY_RUN_PLAN"
     assert report["database_opened"] is False
     assert report["output_written"] is False
+    assert report["run_id"] == EXECUTION_RUN_ID
     assert report["strategy_candidate_available"] is False
+
+
+def test_public_main_requires_explicit_run_id(monkeypatch) -> None:
+    monkeypatch.setattr(runner, "load_amendment", lambda: pytest.fail("amendment opened"))
+    with pytest.raises(SystemExit) as error:
+        runner.main([])
+    assert error.value.code == 2
+
+
+@pytest.mark.parametrize("run_id", sorted(runner.CONSUMED_EXECUTION_RUN_IDS))
+def test_consumed_execution_run_ids_are_rejected(run_id: str) -> None:
+    with pytest.raises(runner.SecondaryScreenError, match="already been consumed"):
+        runner._execution_run_id(run_id)
 
 
 def test_secondary_selection_matches_strict_target_builder() -> None:
@@ -303,7 +324,13 @@ def _write_database(path: Path) -> tuple[list[tuple[str, str, str]], str]:
     return ordered, runner._database_identity(path)[0]
 
 
-def _manifest(path: Path, database: Path, rows: list[tuple[str, str, str]]) -> tuple[dict, str]:
+def _manifest(
+    path: Path,
+    database: Path,
+    rows: list[tuple[str, str, str]],
+    *,
+    run_id: str = EXECUTION_RUN_ID,
+) -> tuple[dict, str]:
     partitions = []
     for month in sorted({day[:6] for day, _, _ in rows}):
         values = [row_hash for day, _, row_hash in rows if day[:6] == month]
@@ -314,7 +341,7 @@ def _manifest(path: Path, database: Path, rows: list[tuple[str, str, str]]) -> t
     value = {
         "schema_version": "a-share-rs-secondary-data-manifest-v1",
         "research_id": rs.RESEARCH_ID,
-        "run_id": runner.RUN_ID,
+        "run_id": run_id,
         "status": "ACCEPTED_RETROSPECTIVE_SECONDARY_SNAPSHOT",
         "classification": runner.CLASSIFICATION,
         "table": runner.TABLE,
@@ -346,13 +373,14 @@ def test_manifest_snapshot_identity_and_input_blocked_publication(tmp_path) -> N
     os.chmod(database, 0o600)
     manifest_path = tmp_path / "manifest.json"
     manifest, digest = _manifest(manifest_path, database, rows)
-    loaded = runner.load_data_manifest(manifest_path, digest)
+    loaded = runner.load_data_manifest(manifest_path, digest, EXECUTION_RUN_ID)
     with runner._read_only_connection(database) as connection:
         observed = runner._verify_snapshot(connection, loaded)
     assert observed["row_count"] == 4
     output = tmp_path / "result.json"
     result = runner.main(
         [
+            "--run-id", EXECUTION_RUN_ID,
             "--db", str(database),
             "--data-manifest", str(manifest_path),
             "--expected-data-manifest-sha256", digest,
@@ -363,10 +391,135 @@ def test_manifest_snapshot_identity_and_input_blocked_publication(tmp_path) -> N
     assert result == 2
     report = json.loads(output.read_text())
     assert report["status"] == "INPUT_BLOCKED"
+    assert report["run_id"] == EXECUTION_RUN_ID
     assert report["security_identifiers_in_result"] is False
     assert report["strategy_candidate_available"] is False
     assert "600000.SH" not in output.read_text()
     assert runner._database_identity(database)[0] == manifest["database"]["sha256"]
+
+
+def test_v3_manifest_run_id_succeeds_through_public_main(monkeypatch, tmp_path) -> None:
+    database = tmp_path / "research.duckdb"
+    rows, _ = _write_database(database)
+    os.chmod(database, 0o600)
+    manifest_path = tmp_path / "manifest.json"
+    _, digest = _manifest(manifest_path, database, rows)
+    output = tmp_path / "result.json"
+
+    def synthetic_execution(
+        observed_database: Path,
+        observed_manifest: dict,
+        observed_run_id: str,
+    ) -> dict:
+        assert observed_database == database
+        assert observed_manifest["run_id"] == EXECUTION_RUN_ID
+        assert observed_run_id == EXECUTION_RUN_ID
+        return {
+            "schema_version": "synthetic-public-runner-proof-v1",
+            "run_id": observed_run_id,
+            "status": "SYNTHETIC_NO_OUTCOME_TERMINAL",
+            "strategy_candidate_available": False,
+        }
+
+    monkeypatch.setattr(runner, "execute_screen", synthetic_execution)
+    result = runner.main(
+        [
+            "--run-id", EXECUTION_RUN_ID,
+            "--db", str(database),
+            "--data-manifest", str(manifest_path),
+            "--expected-data-manifest-sha256", digest,
+            "--output", str(output),
+            "--execute",
+        ]
+    )
+
+    assert result == 0
+    assert json.loads(output.read_text()) == {
+        "schema_version": "synthetic-public-runner-proof-v1",
+        "run_id": EXECUTION_RUN_ID,
+        "status": "SYNTHETIC_NO_OUTCOME_TERMINAL",
+        "strategy_candidate_available": False,
+    }
+
+
+def test_manifest_and_cli_run_id_mismatch_fails_before_database(monkeypatch, tmp_path) -> None:
+    database = tmp_path / "research.duckdb"
+    rows, _ = _write_database(database)
+    os.chmod(database, 0o600)
+    manifest_path = tmp_path / "manifest.json"
+    _, digest = _manifest(manifest_path, database, rows)
+    output = tmp_path / "result.json"
+    monkeypatch.setattr(
+        runner,
+        "_database_identity",
+        lambda *_: pytest.fail("database identity inspected after run-id mismatch"),
+    )
+
+    with pytest.raises(runner.SecondaryScreenError, match="data manifest is not accepted"):
+        runner.main(
+            [
+                "--run-id", "A_SHARE_RELATIVE_STRENGTH_HISTORICAL_SECONDARY_SCREEN_V4_20260716",
+                "--db", str(database),
+                "--data-manifest", str(manifest_path),
+                "--expected-data-manifest-sha256", digest,
+                "--output", str(output),
+                "--execute",
+            ]
+        )
+    assert not output.exists()
+
+
+@pytest.mark.parametrize(
+    "execution_error",
+    [MarketDataError("synthetic market-data failure"), ValueError("synthetic value failure")],
+    ids=("market-data-error", "value-error"),
+)
+def test_execution_value_errors_publish_deterministic_input_blocked(
+    monkeypatch,
+    tmp_path,
+    execution_error: ValueError,
+) -> None:
+    database = tmp_path / "research.duckdb"
+    rows, _ = _write_database(database)
+    os.chmod(database, 0o600)
+    manifest_path = tmp_path / "manifest.json"
+    _, digest = _manifest(manifest_path, database, rows)
+    output = tmp_path / "result.json"
+
+    def blocked_execution(*_args) -> dict:
+        raise execution_error
+
+    monkeypatch.setattr(runner, "execute_screen", blocked_execution)
+    result = runner.main(
+        [
+            "--run-id", EXECUTION_RUN_ID,
+            "--db", str(database),
+            "--data-manifest", str(manifest_path),
+            "--expected-data-manifest-sha256", digest,
+            "--output", str(output),
+            "--execute",
+        ]
+    )
+
+    expected = {
+        "schema_version": "a-share-rs-historical-secondary-result-v1",
+        "run_id": EXECUTION_RUN_ID,
+        "research_id": rs.RESEARCH_ID,
+        "status": "INPUT_BLOCKED",
+        "classification": runner.CLASSIFICATION,
+        "reason_class": type(execution_error).__name__,
+        "amendment_sha256": runner.AMENDMENT_SHA256,
+        "preregistration_sha256": rs.DEFINITION_SHA256,
+        "data_manifest_sha256": digest,
+        "prospective_forward_outcomes_opened": False,
+        "security_identifiers_in_result": False,
+        "strict_strategy_evidence": False,
+        "strategy_candidate_available": False,
+        "provider_or_network_used": False,
+        "database_write_performed": False,
+    }
+    assert result == 2
+    assert output.read_bytes() == runner._canonical_bytes(expected)
 
 
 def test_real_varchar_dates_reject_malformed_or_mixed_values(tmp_path) -> None:
@@ -411,7 +564,11 @@ def test_manifest_symlink_and_preexisting_output_fail_closed(tmp_path) -> None:
     link = tmp_path / "link.json"
     link.symlink_to(target)
     with pytest.raises(runner.SecondaryScreenError, match="cannot open"):
-        runner.load_data_manifest(link, hashlib.sha256(target.read_bytes()).hexdigest())
+        runner.load_data_manifest(
+            link,
+            hashlib.sha256(target.read_bytes()).hexdigest(),
+            EXECUTION_RUN_ID,
+        )
     output = tmp_path / "result.json"
     output.write_text("existing")
     with pytest.raises(runner.SecondaryScreenError, match="preexist"):

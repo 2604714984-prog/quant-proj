@@ -123,6 +123,7 @@ def test_public_runner_terminalizes_slippage_cross_without_child_crash(
     monkeypatch,
     tmp_path,
 ) -> None:
+    run_id = "A_SHARE_RELATIVE_STRENGTH_HISTORICAL_SECONDARY_SCREEN_V3_20260716"
     bar = rs_runner.SecondaryExecutionBar(
         "600000.SH",
         date(2026, 7, 16),
@@ -137,6 +138,7 @@ def test_public_runner_terminalizes_slippage_cross_without_child_crash(
     published = {}
     database_identity = ("1" * 64, 1, "0600")
     manifest = {
+        "run_id": run_id,
         "database": {
             "sha256": database_identity[0],
             "size_bytes": database_identity[1],
@@ -144,7 +146,8 @@ def test_public_runner_terminalizes_slippage_cross_without_child_crash(
         }
     }
 
-    def synthetic_execution(_database, _manifest):
+    def synthetic_execution(_database, _manifest, execution_run_id):
+        assert execution_run_id == run_id
         receipt = rs_runner._trade(
             Portfolio.a_share(400_000.0),
             bar,
@@ -154,6 +157,7 @@ def test_public_runner_terminalizes_slippage_cross_without_child_crash(
         )
         assert receipt.reason == "slippage_crosses_up_limit"
         return {
+            "run_id": execution_run_id,
             "status": "SYNTHETIC_NO_OUTCOME_TERMINAL",
             "slippage_crosses_up_limit": 1,
             "unexpected_exception_count": 0,
@@ -171,6 +175,8 @@ def test_public_runner_terminalizes_slippage_cross_without_child_crash(
 
     return_code = rs_runner.main(
         [
+            "--run-id",
+            run_id,
             "--db",
             str(tmp_path / "unused.duckdb"),
             "--data-manifest",
@@ -187,6 +193,7 @@ def test_public_runner_terminalizes_slippage_cross_without_child_crash(
     assert published == {
         "path": output,
         "report": {
+            "run_id": run_id,
             "status": "SYNTHETIC_NO_OUTCOME_TERMINAL",
             "slippage_crosses_up_limit": 1,
             "unexpected_exception_count": 0,
