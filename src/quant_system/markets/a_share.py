@@ -100,10 +100,20 @@ def decide_fill(
             return FillDecision(False, None, "limit_down_sell_rejected")
 
     fill_price = apply_slippage(execution_price, normalized_side, slippage_bps)
-    if up_limit is not None and fill_price > up_limit:
-        raise MarketDataError("slippage-adjusted fill exceeds the qualified up_limit")
-    if down_limit is not None and fill_price < down_limit:
-        raise MarketDataError("slippage-adjusted fill is below the qualified down_limit")
+    if up_limit is not None and fill_price > up_limit and not math.isclose(
+        fill_price,
+        up_limit,
+        rel_tol=1e-6,
+        abs_tol=0.001,
+    ):
+        return FillDecision(False, None, "slippage_crosses_up_limit")
+    if down_limit is not None and fill_price < down_limit and not math.isclose(
+        fill_price,
+        down_limit,
+        rel_tol=1e-6,
+        abs_tol=0.001,
+    ):
+        return FillDecision(False, None, "slippage_crosses_down_limit")
     return FillDecision(True, fill_price, "filled")
 
 

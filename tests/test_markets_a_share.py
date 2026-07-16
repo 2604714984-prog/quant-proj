@@ -2,6 +2,7 @@ from datetime import date
 
 import pytest
 
+from scripts import run_a_share_relative_strength_once as rs_runner
 from quant_system.backtest.costs import TransactionCostModel
 from quant_system.backtest.portfolio import InsufficientSharesError, Portfolio
 from quant_system.markets.a_share import (
@@ -84,19 +85,113 @@ def test_suspended_bar_is_an_explicit_explanation_for_missing_open() -> None:
     assert (decision.filled, decision.reason) == (False, "suspended")
 
 
-def test_slippage_cannot_cross_qualified_daily_limits() -> None:
-    with pytest.raises(MarketDataError, match="slippage-adjusted fill exceeds"):
-        decide_fill(
+def test_slippage_crossing_qualified_daily_limits_is_an_unfilled_order() -> None:
+    buy = decide_fill(
+        "buy",
+        AShareBar(9.99, up_limit=10.0, data_qualified=True),
+        slippage_bps=20.0,
+    )
+    sell = decide_fill(
+        "sell",
+        AShareBar(9.01, down_limit=9.0, data_qualified=True),
+        slippage_bps=20.0,
+    )
+
+    assert buy == type(buy)(False, None, "slippage_crosses_up_limit")
+    assert sell == type(sell)(False, None, "slippage_crosses_down_limit")
+
+
+def test_slippage_inside_limit_tolerance_remains_fillable_without_capping() -> None:
+    buy = decide_fill(
+        "buy",
+        AShareBar(9.9989, up_limit=10.0, data_qualified=True),
+        slippage_bps=1.2,
+    )
+    sell = decide_fill(
+        "sell",
+        AShareBar(9.0011, down_limit=9.0, data_qualified=True),
+        slippage_bps=1.3,
+    )
+
+    assert buy.filled is True
+    assert buy.price == pytest.approx(10.000099868)
+    assert sell.filled is True
+    assert sell.price == pytest.approx(8.999929857)
+
+
+def test_public_runner_terminalizes_slippage_cross_without_child_crash(
+    monkeypatch,
+    tmp_path,
+) -> None:
+    bar = rs_runner.SecondaryExecutionBar(
+        "600000.SH",
+        date(2026, 7, 16),
+        9.99,
+        9.99,
+        False,
+        10.0,
+        8.0,
+        10_000_000.0,
+        1_000_000_000.0,
+    )
+    published = {}
+    database_identity = ("1" * 64, 1, "0600")
+    manifest = {
+        "database": {
+            "sha256": database_identity[0],
+            "size_bytes": database_identity[1],
+            "mode": database_identity[2],
+        }
+    }
+
+    def synthetic_execution(_database, _manifest):
+        receipt = rs_runner._trade(
+            Portfolio.a_share(400_000.0),
+            bar,
             "buy",
-            AShareBar(9.99, up_limit=10.0, data_qualified=True),
-            slippage_bps=20.0,
+            100.0,
+            20.0,
         )
-    with pytest.raises(MarketDataError, match="slippage-adjusted fill is below"):
-        decide_fill(
-            "sell",
-            AShareBar(9.01, down_limit=9.0, data_qualified=True),
-            slippage_bps=20.0,
-        )
+        assert receipt.reason == "slippage_crosses_up_limit"
+        return {
+            "status": "SYNTHETIC_NO_OUTCOME_TERMINAL",
+            "slippage_crosses_up_limit": 1,
+            "unexpected_exception_count": 0,
+        }
+
+    monkeypatch.setattr(rs_runner, "load_data_manifest", lambda *_: dict(manifest))
+    monkeypatch.setattr(rs_runner, "_database_identity", lambda *_: database_identity)
+    monkeypatch.setattr(rs_runner, "execute_screen", synthetic_execution)
+    monkeypatch.setattr(
+        rs_runner,
+        "_publish",
+        lambda path, report: published.update(path=path, report=report),
+    )
+    output = tmp_path / "synthetic-terminal.json"
+
+    return_code = rs_runner.main(
+        [
+            "--db",
+            str(tmp_path / "unused.duckdb"),
+            "--data-manifest",
+            str(tmp_path / "unused-manifest.json"),
+            "--expected-data-manifest-sha256",
+            "2" * 64,
+            "--output",
+            str(output),
+            "--execute",
+        ]
+    )
+
+    assert return_code == 0
+    assert published == {
+        "path": output,
+        "report": {
+            "status": "SYNTHETIC_NO_OUTCOME_TERMINAL",
+            "slippage_crosses_up_limit": 1,
+            "unexpected_exception_count": 0,
+        },
+    }
 
 
 @pytest.mark.parametrize(
