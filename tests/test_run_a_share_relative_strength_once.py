@@ -394,11 +394,13 @@ def test_manifest_binds_volume_and_amount_units_before_database(
         )
 
 
-def _preflight_bar(day: date, *, capacity_ok: bool = True) -> runner.SecondaryBenchmarkBar:
+def _preflight_bar(
+    day: date, *, capacity_ok: bool = True, opened: float = 10.0
+) -> runner.SecondaryBenchmarkBar:
     return runner.SecondaryBenchmarkBar(
         day,
-        10.0,
-        10.0,
+        opened,
+        opened,
         False,
         10_000_000.0 if capacity_ok else 1_000.0,
         1_000_000_000.0 if capacity_ok else 10_000.0,
@@ -420,7 +422,7 @@ def test_benchmark_preflight_proves_initial_fill_and_investment(monkeypatch) -> 
     report = runner._benchmark_preflight(object(), "snapshot", sessions)
     assert report.passed is True
     assert report.benchmark_initial_entry_filled is True
-    assert report.benchmark_invested_ratio == 1.0
+    assert report.benchmark_invested_ratio > 0.99
     assert report.capacity_rejection_ratio == 0.0
     assert report.unexpected_exception_count == 0
     assert report.benchmark_preflight_attempt_count == (
@@ -446,6 +448,27 @@ def test_benchmark_preflight_measures_real_capacity_rejections(monkeypatch) -> N
     assert report.benchmark_invested_ratio == 0.0
     assert report.capacity_rejection_ratio == 1.0
     assert report.unexpected_exception_count == 0
+
+
+def test_benchmark_invested_ratio_is_minimum_actual_capital_fraction(monkeypatch) -> None:
+    sessions = (date(2025, 1, 2), date(2025, 1, 3), date(2025, 2, 3))
+    monkeypatch.setattr(
+        runner,
+        "_split_intervals",
+        lambda _sessions, _split: ((sessions[0], sessions[1], sessions[2]),),
+    )
+    monkeypatch.setattr(
+        runner,
+        "_benchmark_bar",
+        lambda _connection, _snapshot, entry, _prior: _preflight_bar(entry, opened=3500.0),
+    )
+    report = runner._benchmark_preflight(object(), "snapshot", sessions)
+    expected_minimum = 100.0 * 3500.0 * (1.0 + min(rs.SLIPPAGE_SCENARIOS_BPS) / 10_000.0)
+    assert report.passed is True
+    assert report.benchmark_invested_ratio == pytest.approx(
+        expected_minimum / rs.INITIAL_CASH_CNY
+    )
+    assert report.benchmark_invested_ratio < 0.9
 
 
 def test_benchmark_capacity_rejection_blocks_before_target_or_outcome_access(monkeypatch) -> None:
