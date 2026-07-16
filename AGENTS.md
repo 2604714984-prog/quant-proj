@@ -31,3 +31,17 @@ easy to understand, test, and remove.
 - Do not add broker, order, paper, live, or automatic trading paths.
 - Do not present an unvalidated strategy as a candidate or recommendation.
 - Legacy research results are evidence, not executable dependencies.
+
+## Three-cycle architecture freeze
+
+- For the next three strategy cycles, do not add a CLI, database layer, event
+  loop, evidence framework, manifest schema, registry, agent, or runner
+  framework. Fix concrete defects in the existing path only.
+- Run repeatable, outcome-free data qualification before consuming a one-use
+  strategy result. Input failures must not consume the first outcome run.
+- A strategy adapter should contain only its feature, selection, and fixed
+  parameters, normally in 100--300 lines, while reusing the shared engine.
+- Keep at most four durable run artifacts: definition, snapshot, result, and
+  run receipt. Prefer Git object identity over additional sidecars.
+- Do not migrate or reopen rejected legacy strategy families. During this
+  freeze, relative-strength data qualification is the only active family.
