@@ -33,6 +33,27 @@ user's latest explicit instruction
 
 This file records current state and authorized next work. It cannot expand the constitution.
 
+## Current terminal-state update — 2026-07-17
+
+This update records the accepted repository state after Cycle 4 closure and the
+shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
+later in this file without creating another roadmap or control layer.
+
+```text
+V2_MAIN_HEAD=58c721095df62558a3c20df7defcff551ca25888
+ACTIVE_FAMILY=NONE
+CYCLE_4=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
+SOURCE_MATRIX_COMPLETE=false
+H3=CLOSED_ACCEPTED_STRICT_PREOPEN
+M1=DEFERRED
+STRATEGY_CANDIDATE_AVAILABLE=false
+```
+
+No closed strategy family may be rerun or reinterpreted because of the H3
+repair. Listed-fund distribution semantics, cross-type corporate-action IDs,
+and mixed US terminal consideration remain future activation gates rather than
+current implementation work.
+
 ## 1. Accepted project baseline
 
 The architecture is accepted as reliable and lightweight enough:
@@ -360,10 +381,10 @@ Run through current strategy cycles before judging usefulness.
 
 ## 7. Subsequent roadmap
 
-### Cycle 4 — A-share listed-ETF absolute trend and defensive allocation
+### Cycle 4 — terminally closed without outcome
 
-Cycle 4 is now the single active code-writing family, but it begins in a
-data-qualification stage. The controlling task file is:
+Cycle 4 is no longer active. Its controlling task file remains historical
+failure memory:
 
 ```text
 reports/agent_handoff/cycle_4_a_share_listed_etf_absolute_trend_defensive_allocation_task_20260717.md
@@ -372,34 +393,40 @@ reports/agent_handoff/cycle_4_a_share_listed_etf_absolute_trend_defensive_alloca
 Current state:
 
 ```text
-ACTIVE_FAMILY=CYCLE_4_A_SHARE_LISTED_ETF_ABSOLUTE_TREND
-ACTIVE_STAGE=DATA_IDENTITY_QUALIFICATION
-PR_A=NOT_STARTED
-PREFLIGHT_STATUS=NOT_RUN
+CYCLE_4=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
+SOURCE_MATRIX_COMPLETE=false
+COMMON_QUALIFIED_DATE_COUNT=0
 OUTCOME_STATUS=NOT_RUN
 FORWARD_STATUS=CLOSED
 STRATEGY_CANDIDATE_AVAILABLE=false
 ```
 
-If Cycle 3 fails, prioritize a small ETF / multi-asset family.
+Do not reopen this lineage by changing the fixed ETFs, trend rule, cash rule,
+costs, source contract, or data threshold. Any future ETF data work must use a
+new frozen task and cannot be presented as a Cycle 4 repair.
 
-Reasons:
+Future activation gates remain:
 
 ```text
-smaller universe
-simpler survivor and corporate-action handling
-better fit for CNY 400,000
-natural equity / bond / gold / cash diversification
-better compatibility with a future Macro Risk cap
+LISTED_FUND_DATES=ALLOW_MARKET_VALID_RECORD_EX_PAY_ORDERING
+LISTED_FUND_IDENTITY=REQUIRE_SOURCE_BOUND_PRODUCT_TYPE
+CORPORATE_ACTION_IDS=REQUIRE_GLOBAL_CROSS_TYPE_UNIQUENESS
+US_MIXED_CONSIDERATION=REQUIRE_EXPLICIT_BASIS_ALLOCATION_OR_FAIL_CLOSED
 ```
 
 Do not launch RSI, MACD, Bollinger Bands, OBV, KDJ, CCI, or separate indicator families.
 
-### Deferred — Swing Count / volume-confirmed trend
+### Next family — feasibility proposal only
 
-May be considered only after the current freeze.
+No strategy family is active. Before selecting the next family, the Manager
+must present a candidate slate to the user. The previously preserved direction
+is Swing Count / volume-confirmed trend.
 
-It must be a new trend-persistence hypothesis, not a rescue of failed RS.
+It must be a new trend-persistence hypothesis, not a rescue of failed RS. The
+first authorized phase is limited to one frozen hypothesis page and one
+aggregate, outcome-free feasibility scan. No adapter, return, NAV, ranking,
+identifier output, or performance gate is authorized unless that scan passes
+and the user selects the family.
 
 ## 8. Strategy combination remains blocked
 
@@ -561,10 +588,10 @@ NEXT_ACTION:
 ## 12. Expected Manager state
 
 ```text
-ACTIVE_FAMILY=CYCLE_4_A_SHARE_LISTED_ETF_ABSOLUTE_TREND
-ACTIVE_STAGE=DATA_IDENTITY_QUALIFICATION
-BASE_COMMIT=V2_MAIN_AFTER_CYCLE_3_PREFLIGHT_CLOSURE
-SNAPSHOT_ID=TO_BE_BOUND_BY_CYCLE_4_DATA_QUALIFICATION
+ACTIVE_FAMILY=NONE
+ACTIVE_STAGE=NEXT_FAMILY_FEASIBILITY_PROPOSAL
+BASE_COMMIT=58c721095df62558a3c20df7defcff551ca25888
+SNAPSHOT_ID=NOT_BOUND
 PREFLIGHT_STATUS=NOT_RUN
 OUTCOME_STATUS=NOT_RUN
 FORWARD_STATUS=CLOSED
@@ -572,8 +599,11 @@ STRATEGY_CANDIDATE_AVAILABLE=false
 RS_STATUS=HISTORICAL_SCREENING_FAIL_CLOSED
 LOW_VOLATILITY_STATUS=HISTORICAL_GATED_FAIL_CLOSED
 LIQUIDITY_SHOCK_STATUS=CLOSED_PREFLIGHT_STRUCTURAL_INFEASIBLE_NO_OUTCOME
+CYCLE_4_STATUS=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
+H3_STATUS=CLOSED_ACCEPTED_STRICT_PREOPEN
+M1_STATUS=DEFERRED
 YOUNG_CHAIRMAN_PR=CLOSED_WITHOUT_MERGE
-NEXT_ACTION=QUALIFY_FIXED_THREE_ETF_INPUT_IDENTITY_WITHOUT_OUTCOMES
+NEXT_ACTION=RETURN_NEXT_FAMILY_SLATE_TO_USER_BEFORE_OUTCOME_FREE_FEASIBILITY
 ```
 
 ## Final directive
@@ -583,8 +613,10 @@ The project has zero validated specialists.
 The next priority is:
 
 ```text
-Cycle 4 fixed-universe ETF data qualification and rapid rejection
-+ read-only local Macro Risk Shadow when its inputs become current
+Manager terminal-state sync
+-> user selection from the next-family slate
+-> one outcome-free feasibility scan
++ read-only local Macro Risk Shadow after its separate start gates pass
 ```
 
 Do not convert partial observations into a specialist. Do not build a synthesizer. Do not add another platform or framework.
