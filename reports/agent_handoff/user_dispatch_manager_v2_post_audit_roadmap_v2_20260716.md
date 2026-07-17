@@ -40,9 +40,9 @@ shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=9377d193de3f41ded226628478af158e8644f463
-ACTIVE_FAMILY=NONE
-ACTIVE_STAGE=SWING_COUNT_TERMINAL_FAIL_CLOSED_EXECUTION_ERROR
+V2_MAIN_HEAD=16f14edb6306360b1a720a888250a6450b06a2c3
+ACTIVE_FAMILY=A_SHARE_SALIENT_RETURN_MISPRICING_V1_20260718
+ACTIVE_STAGE=SALIENT_RETURN_OUTCOME_BLIND_PR_A_CODE_ACCEPTANCE_PENDING
 SWING_COUNT_RUN_ID=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_HISTORICAL_20260718_001
 SWING_COUNT_RESULT=HISTORICAL_SCREENING_FAIL_CLOSED_EXECUTION_ERROR
 SWING_COUNT_GATE_COUNTS=null
@@ -61,6 +61,12 @@ fail-closed state, so this lineage is permanently closed: no rerun, retuning,
 rescue filter, regime relabel, prospective Shadow or candidate promotion is
 permitted. A future active family must use a genuinely new economic hypothesis,
 new lineage and outcome-blind preregistration.
+
+The owner-selected successor is the independent low-salience-return hypothesis
+named above. Its current authorization is limited to one frozen definition, one
+small pure research adapter, one aggregate outcome-free preflight and focused
+tests. No real preflight, holding-period outcome, run ID, candidate status,
+provider call or database write is authorized before fresh code acceptance.
 
 No closed strategy family may be rerun or reinterpreted because of the H3
 repair. Listed-fund distribution semantics, cross-type corporate-action IDs,
@@ -605,11 +611,11 @@ NEXT_ACTION:
 ## 12. Expected Manager state
 
 ```text
-ACTIVE_FAMILY=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_20260718
-ACTIVE_STAGE=OUTCOME_BLIND_PR_A_PREFLIGHT_PASS_AWAITING_INDEPENDENT_ACCEPTANCE
-BASE_COMMIT=6967c2819a27ae11de0410cbffc65e575b519343
+ACTIVE_FAMILY=A_SHARE_SALIENT_RETURN_MISPRICING_V1_20260718
+ACTIVE_STAGE=SALIENT_RETURN_OUTCOME_BLIND_PR_A_CODE_ACCEPTANCE_PENDING
+BASE_COMMIT=16f14edb6306360b1a720a888250a6450b06a2c3
 SNAPSHOT_ID=a_share_qfq_personal_research_20260716_v5
-PREFLIGHT_STATUS=LOCAL_PASS_AWAITING_INDEPENDENT_ACCEPTANCE
+PREFLIGHT_STATUS=NOT_RUN
 OUTCOME_STATUS=NOT_RUN
 FORWARD_STATUS=CLOSED
 STRATEGY_CANDIDATE_AVAILABLE=false
@@ -620,7 +626,7 @@ CYCLE_4_STATUS=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
 H3_STATUS=CLOSED_ACCEPTED_STRICT_PREOPEN
 M1_STATUS=DEFERRED
 YOUNG_CHAIRMAN_PR=CLOSED_WITHOUT_MERGE
-NEXT_ACTION=INDEPENDENTLY_ACCEPT_AND_PRESERVE_SWING_COUNT_PR_A_WITHOUT_OUTCOMES
+NEXT_ACTION=INDEPENDENTLY_ACCEPT_SALIENT_RETURN_PR_A_CODE_WITHOUT_REAL_PREFLIGHT
 ```
 
 ## Final directive
@@ -631,8 +637,9 @@ The next priority is:
 
 ```text
 Manager terminal-state sync
--> owner selected Swing Count
--> one outcome-free feasibility scan
+-> Swing Count terminally closed
+-> owner selected the new salient-return mispricing hypothesis
+-> code acceptance before one outcome-free feasibility scan
 + read-only local Macro Risk Shadow after its separate start gates pass
 ```
 
