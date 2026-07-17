@@ -1,0 +1,146 @@
+{
+  "schema_version": "macro-risk-shadow-definition-v1",
+  "research_id": "A_SHARE_MACRO_RISK_SHADOW_PHASE1_V1_20260718",
+  "date": "2026-07-18",
+  "market": "A_SHARE",
+  "phase": "CODE_ONLY_DEFINITION",
+  "status": "SHADOW_ONLY_NOT_COMPUTED",
+  "purpose": "Describe broad A-share risk conditions with nine fixed local-market aggregates without affecting any strategy or position.",
+  "input_identity": {
+    "database_filename": "quant_research.duckdb",
+    "database_sha256": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "snapshot_id": "a_share_qfq_personal_research_20260716_v5",
+    "table": "a_share.a_share_canonical_daily_bars",
+    "classification": "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT",
+    "available_at_status": "UNKNOWN_NOT_PIT_QUALIFIED",
+    "provider_or_network_access": false,
+    "database_write": false
+  },
+  "time_and_alignment_contract": {
+    "accepted_session_dates": "exactly 121 strictly increasing Monday-through-Friday dates",
+    "as_of": "15:00:00 Asia/Shanghai on the final accepted_session_date",
+    "stock_price_session_dates": "exactly accepted_session_dates[-61:]",
+    "stock_amount_session_dates": "exactly accepted_session_dates[-21:]",
+    "flag_session_date": "exactly accepted_session_dates[-1]",
+    "ordered_universe_count": "positive exact integer equal to every anonymous outer-row and flag count",
+    "ordered_universe_digests": "prices, amount, limit-down and suspension each carry a lowercase 64-hex digest; all four must be identical",
+    "digest_meaning": "hash of the exact anonymous ordered-universe identity held outside the module; the module never receives constituent identifiers",
+    "mismatch_behavior": "block all nine components without a score"
+  },
+  "input_shape": {
+    "benchmark_history": "exactly 121 ordered accepted-session positive qfq_close values bound one-to-one to accepted_session_dates",
+    "stock_price_history": "same anonymous ordered universe, each row exactly 61 positive qfq_close values bound to stock_price_session_dates",
+    "stock_amount_history": "same anonymous ordered universe, each row exactly 21 nonnegative CNY amount values bound to stock_amount_session_dates; prior 20 values must be positive",
+    "flags": "same anonymous ordered universe, one exact boolean is_limit_down and is_suspended value bound to flag_session_date",
+    "security_identifiers": "forbidden in module input and output"
+  },
+  "components_in_exact_order": [
+    {
+      "component_id": "trend_120",
+      "formula": "expm1(log(benchmark_close_t) - log(benchmark_close_t_minus_120))",
+      "risk_direction": "lower is riskier",
+      "scaling_to_unit_risk": "clip((0.10 - value) / 0.30, 0, 1)"
+    },
+    {
+      "component_id": "realized_volatility_20",
+      "formula": "sample standard deviation ddof=1 of the latest 20 benchmark log differences multiplied by sqrt(252)",
+      "risk_direction": "higher is riskier",
+      "scaling_to_unit_risk": "clip((value - 0.10) / 0.30, 0, 1)"
+    },
+    {
+      "component_id": "realized_volatility_60",
+      "formula": "sample standard deviation ddof=1 of the latest 60 benchmark log differences multiplied by sqrt(252)",
+      "risk_direction": "higher is riskier",
+      "scaling_to_unit_risk": "clip((value - 0.10) / 0.30, 0, 1)"
+    },
+    {
+      "component_id": "drawdown_120",
+      "formula": "expm1(log(benchmark_close_t) - log(maximum benchmark close over t-120 through t))",
+      "risk_direction": "more negative is riskier",
+      "scaling_to_unit_risk": "clip((-value) / 0.30, 0, 1)"
+    },
+    {
+      "component_id": "positive_return_breadth_60",
+      "formula": "share of anonymous stocks where log(stock_close_t) - log(stock_close_t_minus_60) is greater than 0",
+      "risk_direction": "lower is riskier",
+      "scaling_to_unit_risk": "1 - value"
+    },
+    {
+      "component_id": "above_moving_average_breadth_60",
+      "formula": "share of anonymous stocks with stock_close_t strictly above the overflow-safe arithmetic mean of the prior 60 closes excluding t",
+      "risk_direction": "lower is riskier",
+      "scaling_to_unit_risk": "1 - value"
+    },
+    {
+      "component_id": "amount_breadth_20",
+      "formula": "share of anonymous stocks with amount_t greater than or equal to the median of the prior 20 positive CNY amounts excluding t",
+      "risk_direction": "lower is riskier",
+      "scaling_to_unit_risk": "1 - value"
+    },
+    {
+      "component_id": "limit_down_share",
+      "formula": "share of anonymous stocks with is_limit_down true at as_of",
+      "risk_direction": "higher is riskier",
+      "scaling_to_unit_risk": "clip(value / 0.10, 0, 1)"
+    },
+    {
+      "component_id": "suspension_share",
+      "formula": "share of anonymous stocks with is_suspended true at as_of",
+      "risk_direction": "higher is riskier",
+      "scaling_to_unit_risk": "clip(value / 0.05, 0, 1)"
+    }
+  ],
+  "aggregation": {
+    "weights": "equal 1/9 weight in the exact component order",
+    "component_contribution_points": "100 * finite unit_risk / 9",
+    "risk_score": "round(finite sum of nine finite component contribution points, 6)",
+    "finite_gate": "every raw value, log difference, volatility, ratio-equivalent return, unit risk, contribution and score must be finite before SHADOW_READY",
+    "risk_levels": {
+      "GREEN": "risk_score < 33.333333",
+      "AMBER": "33.333333 <= risk_score < 66.666667",
+      "RED": "risk_score >= 66.666667"
+    },
+    "confidence": "1.0 only when every component is complete, aligned, finite and current; otherwise 0.0 and no score or level"
+  },
+  "staleness_and_missing_behavior": {
+    "generated_at": "timezone-aware computation timestamp not earlier than as_of",
+    "maximum_staleness": "7 calendar days in Asia/Shanghai",
+    "stale_behavior": "list all nine components as stale and emit no score, level or contributions",
+    "missing_behavior": "list every unavailable component and emit no score, level or contributions",
+    "nonfinite_derived_behavior": "mark the affected component unavailable and block the whole record",
+    "temporal_or_digest_mismatch": "list all nine components as unavailable and block the whole record",
+    "imputation": "forbidden"
+  },
+  "output": {
+    "maximum_frequency": "one aggregate record per ISO week",
+    "allowed": [
+      "status",
+      "risk_score",
+      "risk_level",
+      "confidence",
+      "component_contributions",
+      "stale_components",
+      "missing_components",
+      "as_of",
+      "generated_at",
+      "input_snapshot_identity"
+    ],
+    "forbidden": [
+      "security identifiers",
+      "rankings",
+      "strategy returns",
+      "NAV",
+      "orders",
+      "signals"
+    ]
+  },
+  "boundaries": {
+    "shadow_only": true,
+    "position_effect_enabled": false,
+    "strategy_selection_enabled": false,
+    "order_or_signal_enabled": false,
+    "use_as_strategy_gate": false,
+    "strategy_candidate_available": false,
+    "real_weekly_record_computation_authorized_by_this_artifact": false
+  }
+}
