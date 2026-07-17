@@ -13,86 +13,69 @@ Read:
 3. `reports/agent_handoff/manager_repository_wide_audit_followup_task_20260717.md`
 4. `AGENTS.md`
 
-Do not start until the Manager confirms:
+Do not start until:
 
 ```text
 PR_69=CLOSED_WITHOUT_MERGE
 CYCLE_4=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
 ```
 
-Start from the then-current `v2-main` and record the exact base commit and tree.
+Start from the then-current `v2-main` and record its exact commit and tree.
 
-## Mandatory fix
+## Mandatory correction
 
-The shared Event Loop currently permits a decision timestamp equal to the next execution-session open. Change the boundary so the decision satisfies:
-
-```text
-signal.close_at <= decision_at < execution.open_at
-```
-
-The exact execution-open timestamp must fail closed.
-
-Required tests:
+Four shared paths currently accept a decision timestamp equal to the relevant session open:
 
 ```text
-one microsecond before signal close -> rejected
-signal close exactly -> accepted
-one microsecond before next open -> accepted
-next open exactly -> rejected
-one microsecond after next open -> rejected
+Event Loop
+capacity assessment
+universe evaluation
+blocked-exit validation
 ```
 
-Do not alter any frozen strategy timestamp.
+All four must require a timestamp strictly earlier than the relevant open.
 
-## Optional small hardening
+Required boundary cases:
 
-The Portfolio currently keeps separate applied-ID sets for distributions, splits, and terminal actions. If it remains a small change, enforce event-ID uniqueness across action types and add cross-type collision tests.
+```text
+one microsecond before open: accepted
+open exactly: rejected
+one microsecond after open: rejected
+```
 
-If this would require a registry, serialization migration, or broad refactor, report it as deferred.
+Where the path also owns a signal-close lower bound, preserve acceptance at the close and reject a timestamp before it.
+
+Do not change any frozen strategy timestamp.
 
 ## Allowed files
 
-Mandatory scope:
-
 ```text
 src/quant_system/backtest/event_loop.py
-tests/test_event_loop.py
+src/quant_system/backtest/capacity.py
+src/quant_system/backtest/blocked_orders.py
+src/quant_system/markets/universe.py
+focused existing test modules for those four paths
 ```
 
-Optional action-ID scope:
-
-```text
-src/quant_system/backtest/portfolio.py
-tests/test_backtest_core.py
-```
-
-No other runtime files are authorized.
+No other runtime file is authorized.
 
 ## Forbidden scope
 
 ```text
-listed-fund distribution implementation
-CorporateActionIdentity date-rule changes
-new product identity type
+listed-fund distribution support
+corporate-action date changes
+product identity changes
 strategy logic
-new framework or database layer
 data access or database mutation
-historical or prospective result access
+historical or prospective results
+new framework or service
 ```
 
 ## Validation
 
-```text
-focused tests
-full repository tests
-Ruff
-git diff --check
-wheel build
-installed CLI smoke
-small runtime line delta
-```
+Run focused tests, the full suite, Ruff, `git diff --check`, wheel build, and installed CLI smoke. Keep runtime growth minimal.
 
-Keep the PR unmerged pending independent external review because the execution-time boundary is shared financial semantics.
+Keep the PR unmerged pending independent external review.
 
 ## Callback
 
@@ -103,9 +86,10 @@ PR_URL:
 HEAD_SHA:
 CHANGED_FILES:
 RUNTIME_NET_LINE_DELTA:
-STRICT_PREOPEN_TESTS:
-GLOBAL_ACTION_ID_FIX:INCLUDED|DEFERRED
-GLOBAL_ACTION_ID_TESTS:
+EVENT_LOOP_BOUNDARY_TESTS:
+CAPACITY_BOUNDARY_TESTS:
+UNIVERSE_BOUNDARY_TESTS:
+BLOCKED_EXIT_BOUNDARY_TESTS:
 FULL_TEST_COUNT:
 CI_STATUS:
 OUTCOME_OR_DB_ACCESS:false
