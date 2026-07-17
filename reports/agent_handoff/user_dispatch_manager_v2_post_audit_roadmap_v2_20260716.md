@@ -40,15 +40,27 @@ shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=6967c2819a27ae11de0410cbffc65e575b519343
-ACTIVE_FAMILY=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_20260718
-ACTIVE_STAGE=OUTCOME_BLIND_PR_A_PREFLIGHT_PASS_AWAITING_INDEPENDENT_ACCEPTANCE
+V2_MAIN_HEAD=9377d193de3f41ded226628478af158e8644f463
+ACTIVE_FAMILY=NONE
+ACTIVE_STAGE=SWING_COUNT_TERMINAL_FAIL_CLOSED_EXECUTION_ERROR
+SWING_COUNT_RUN_ID=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_HISTORICAL_20260718_001
+SWING_COUNT_RESULT=HISTORICAL_SCREENING_FAIL_CLOSED_EXECUTION_ERROR
+SWING_COUNT_GATE_COUNTS=null
+SWING_COUNT_FORWARD=CLOSED
 CYCLE_4=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
 SOURCE_MATRIX_COMPLETE=false
 H3=CLOSED_ACCEPTED_STRICT_PREOPEN
 M1=DEFERRED
 STRATEGY_CANDIDATE_AVAILABLE=false
 ```
+
+The Swing Count Run ID above was consumed exactly once. Its aggregate result
+contains no performance cells and therefore is not evidence that a performance
+gate passed or failed. The run nevertheless reached the preregistered terminal
+fail-closed state, so this lineage is permanently closed: no rerun, retuning,
+rescue filter, regime relabel, prospective Shadow or candidate promotion is
+permitted. A future active family must use a genuinely new economic hypothesis,
+new lineage and outcome-blind preregistration.
 
 No closed strategy family may be rerun or reinterpreted because of the H3
 repair. Listed-fund distribution semantics, cross-type corporate-action IDs,
