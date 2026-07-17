@@ -6,6 +6,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+import quant_system.backtest.event_loop as event_loop_module
 from quant_system.backtest import (
     CapacityObservation,
     CapacityPolicy,
@@ -675,6 +676,54 @@ def test_a_share_distribution_scope_and_identity_fail_closed() -> None:
             record_date=days[1], pay_date=days[2], cash_amount=Decimal("0.5"),
             currency="CNY", unit="per_share",
         )
+
+
+def test_a_share_distribution_rejects_matching_usd_before_any_mutation(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 8, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = _listed_fund_portfolio()
+    portfolio.start_session(days[0])
+    portfolio.buy("510300.SH", 100, 10, days[0])
+    before = deepcopy(portfolio.__dict__)
+    action = _listed_fund_cash_action(
+        "510300.SH", "510300-usd-v1", "cash_dividend", execution,
+        signal.close_at, days[2], currency="USD",
+    )
+    base_row = _input(
+        "510300.SH", "a_share", execution, corporate_actions=(action,),
+    )
+    usd_row = ExecutionInput(**{**base_row.__dict__, "currency": "USD"})
+    distribution_calls: list[str] = []
+    receipt_calls: list[str] = []
+    original_distribution = Portfolio.apply_cash_distribution
+    original_receipt = event_loop_module._receipt
+
+    def observe_distribution(self, symbol, **kwargs):
+        distribution_calls.append(symbol)
+        return original_distribution(self, symbol, **kwargs)
+
+    def observe_receipt(receipts, symbol, *args, **kwargs):
+        receipt_calls.append(symbol)
+        return original_receipt(receipts, symbol, *args, **kwargs)
+
+    monkeypatch.setattr(Portfolio, "apply_cash_distribution", observe_distribution)
+    monkeypatch.setattr(event_loop_module, "_receipt", observe_receipt)
+    with pytest.raises(MarketDataError, match="unit or currency"):
+        run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(usd_row,),
+            target_weights=lambda _: {},
+        )
+    assert distribution_calls == []
+    assert receipt_calls == []
+    assert portfolio.__dict__ == before
 
 
 def test_ordinary_a_share_input_remains_receipt_equivalent() -> None:

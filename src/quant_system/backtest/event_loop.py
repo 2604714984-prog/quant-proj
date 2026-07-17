@@ -313,7 +313,11 @@ def _corporate_action_checks(
                     "corporate action is late or effective on another session"
                 )
             if action.action_type in _A_SHARE_LISTED_FUND_ACTIONS:
-                if action.unit != "per_share" or action.currency != row.currency:
+                if (
+                    action.unit != "per_share"
+                    or action.currency != row.currency
+                    or (row.market == "a_share" and row.currency != "CNY")
+                ):
                     raise MarketDataError("cash action has incompatible unit or currency")
                 if not is_finite_number(action.cash_amount):
                     raise MarketDataError("cash action amount must be finite")
