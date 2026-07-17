@@ -406,3 +406,92 @@ def test_cash_distribution_and_split_validation_fail_before_mutation() -> None:
     with pytest.raises(ValueError, match="already been applied"):
         portfolio.apply_split("MISSING", 2.0, event_id="missing-split-v1")
     assert portfolio.positions["MISSING"].shares == 1.0
+
+
+def test_zero_tax_a_share_listed_fund_distribution_freezes_and_settles_once() -> None:
+    portfolio = Portfolio(
+        10_000.0,
+        TransactionCostModel(sell_tax_rate=0.0),
+        lot_size=100,
+        share_t_plus_one=True,
+        us_cash_settlement=False,
+        a_share_stamp_tax_schedule=False,
+    )
+    prior_date = date(2026, 7, 10)
+    ex_date = date(2026, 7, 13)
+    pay_date = date(2026, 7, 15)
+    portfolio.start_session(prior_date)
+    portfolio.buy("510300.SH", 100, 10.0, prior_date)
+    portfolio.start_session(ex_date)
+
+    assert portfolio.supports_a_share_listed_fund_distributions is True
+    assert portfolio.apply_cash_distribution(
+        "510300.SH",
+        event_id="510300-20260713-cash-v1",
+        amount_per_share=0.5,
+        ex_date=ex_date,
+        pay_date=pay_date,
+    ) == pytest.approx(50.0)
+    sale = portfolio.sell("510300.SH", 100, 10.0, ex_date)
+    assert sale.costs.sell_tax == 0.0
+    assert portfolio.pending_cash_total == pytest.approx(50.0)
+    with pytest.raises(ValueError, match="already been applied"):
+        portfolio.apply_cash_distribution(
+            "510300.SH",
+            event_id="510300-20260713-cash-v1",
+            amount_per_share=0.5,
+            ex_date=ex_date,
+            pay_date=pay_date,
+        )
+
+    portfolio.start_session(pay_date)
+    settled_once = portfolio.available_cash
+    assert settled_once == pytest.approx(10_050.0)
+    portfolio.start_session(pay_date)
+    assert portfolio.available_cash == settled_once
+
+
+def test_a_share_listed_fund_ex_date_buy_has_no_prior_entitlement() -> None:
+    portfolio = Portfolio(
+        10_000.0,
+        TransactionCostModel(),
+        lot_size=100,
+        share_t_plus_one=True,
+        a_share_stamp_tax_schedule=False,
+    )
+    ex_date = date(2026, 7, 13)
+    portfolio.start_session(ex_date)
+    portfolio.buy("510300.SH", 100, 10.0, ex_date)
+
+    assert portfolio.apply_cash_distribution(
+        "510300.SH",
+        event_id="510300-20260713-buyer-cash-v1",
+        amount_per_share=0.5,
+        ex_date=ex_date,
+        pay_date=date(2026, 7, 15),
+    ) == 0.0
+    assert portfolio.pending_cash_total == 0.0
+
+
+def test_a_share_stock_portfolio_still_rejects_cash_distribution() -> None:
+    portfolio = Portfolio.a_share(10_000.0, costs=TransactionCostModel())
+    prior_date = date(2026, 7, 10)
+    ex_date = date(2026, 7, 13)
+    portfolio.start_session(prior_date)
+    portfolio.buy("600000.SH", 100, 10.0, prior_date)
+    portfolio.start_session(ex_date)
+    before_cash = portfolio.available_cash
+    before_position = portfolio.positions["600000.SH"].shares
+
+    assert portfolio.supports_a_share_listed_fund_distributions is False
+    with pytest.raises(ValueError, match="zero-tax A-share listed-fund"):
+        portfolio.apply_cash_distribution(
+            "600000.SH",
+            event_id="600000-20260713-cash-v1",
+            amount_per_share=0.5,
+            ex_date=ex_date,
+            pay_date=date(2026, 7, 15),
+        )
+    assert portfolio.available_cash == before_cash
+    assert portfolio.positions["600000.SH"].shares == before_position
+    assert portfolio.pending_cash == []

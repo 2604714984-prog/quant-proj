@@ -112,6 +112,44 @@ def _input(
     )
 
 
+def _listed_fund_portfolio(initial_cash: float = 10_000.0) -> Portfolio:
+    return Portfolio(
+        initial_cash,
+        TransactionCostModel(sell_tax_rate=0.0),
+        lot_size=100,
+        share_t_plus_one=True,
+        us_cash_settlement=False,
+        a_share_stamp_tax_schedule=False,
+    )
+
+
+def _listed_fund_cash_action(
+    symbol: str,
+    action_id: str,
+    action_type: str,
+    execution: AcceptedSession,
+    available_at: datetime,
+    pay_date: date,
+    *,
+    currency: str = "CNY",
+    unit: str = "per_share",
+) -> CorporateActionIdentity:
+    return CorporateActionIdentity(
+        symbol,
+        action_id,
+        action_type,  # type: ignore[arg-type]
+        execution.open_at,
+        _source(f"{action_id}-source", available_at),
+        "Asia/Shanghai",
+        ex_date=execution.session_date,
+        record_date=execution.session_date,
+        pay_date=pay_date,
+        cash_amount=Decimal("0.5"),
+        currency=currency,
+        unit=unit,
+    )
+
+
 def test_static_rebalance_uses_frozen_callback_and_is_deterministic() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14))
     calendar = _calendar(days, "Asia/Shanghai")
@@ -466,6 +504,203 @@ def test_distribution_identity_credits_prior_holder_and_raw_label_is_rejected() 
             execution_inputs=(_input("ABC", "us", execution, action_types=("dividend",)),),
             target_weights=lambda _: {},
         )
+
+
+@pytest.mark.parametrize("action_type", ["cash_dividend", "special_dividend"])
+def test_a_share_listed_fund_distribution_full_event_loop_path(
+    action_type: str,
+) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 8, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = _listed_fund_portfolio()
+    portfolio.start_session(days[0])
+    portfolio.buy("510300.SH", 100, 10, days[0])
+    action = _listed_fund_cash_action(
+        "510300.SH",
+        f"510300-{action_type}-v1",
+        action_type,
+        execution,
+        signal.close_at,
+        days[2],
+    )
+
+    result = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input(
+                "510300.SH",
+                "a_share",
+                execution,
+                corporate_actions=(action,),
+            ),
+        ),
+        target_weights=lambda _: {},
+    )
+
+    assert [(item.side, item.symbol) for item in result.receipts] == [
+        ("distribution", "510300.SH"),
+        ("sell", "510300.SH"),
+    ]
+    assert result.receipts[0].reason == "entitlement:50"
+    assert result.receipts[1].sell_tax == 0.0
+    assert result.portfolio.positions == {}
+    assert result.portfolio.pending_cash_total == pytest.approx(50.0)
+    result.portfolio.start_session(days[2])
+    cash_after_pay_date = result.portfolio.available_cash
+    assert cash_after_pay_date == pytest.approx(10_050.0)
+    result.portfolio.start_session(days[2])
+    assert result.portfolio.available_cash == cash_after_pay_date
+
+
+def test_a_share_action_set_is_prevalidated_before_any_distribution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 8, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = _listed_fund_portfolio(20_000)
+    portfolio.start_session(days[0])
+    portfolio.buy("510300.SH", 100, 10, days[0])
+    portfolio.buy("511010.SH", 100, 10, days[0])
+    valid = _listed_fund_cash_action(
+        "510300.SH", "510300-valid-v1", "cash_dividend", execution,
+        signal.close_at, days[2],
+    )
+    late = _listed_fund_cash_action(
+        "511010.SH", "511010-late-v1", "cash_dividend", execution,
+        execution.open_at, days[2],
+    )
+    before = deepcopy(portfolio.__dict__)
+    calls: list[str] = []
+    original = Portfolio.apply_cash_distribution
+
+    def observe(self, symbol, **kwargs):
+        calls.append(symbol)
+        return original(self, symbol, **kwargs)
+
+    monkeypatch.setattr(Portfolio, "apply_cash_distribution", observe)
+    with pytest.raises(MarketDataError, match="late"):
+        run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(
+                _input("510300.SH", "a_share", execution, corporate_actions=(valid,)),
+                _input("511010.SH", "a_share", execution, corporate_actions=(late,)),
+            ),
+            target_weights=lambda _: {},
+        )
+    assert calls == []
+    assert portfolio.__dict__ == before
+
+
+def test_a_share_distribution_scope_and_identity_fail_closed() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 8, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    action = _listed_fund_cash_action(
+        "510300.SH", "510300-cash-v1", "cash_dividend", execution,
+        signal.close_at, days[2],
+    )
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "target_weights": lambda _: {},
+    }
+
+    with pytest.raises(MarketDataError, match="zero-tax listed-fund"):
+        run_static_rebalance(
+            Portfolio.a_share(10_000, costs=TransactionCostModel()),
+            calendar,
+            execution_inputs=(
+                _input("510300.SH", "a_share", execution, corporate_actions=(action,)),
+            ),
+            **arguments,
+        )
+    with pytest.raises(MarketDataError, match="for symbol"):
+        run_static_rebalance(
+            _listed_fund_portfolio(),
+            calendar,
+            execution_inputs=(
+                _input("511010.SH", "a_share", execution, corporate_actions=(action,)),
+            ),
+            **arguments,
+        )
+    for currency, unit in (("USD", "per_share"), ("CNY", "per_unit")):
+        incompatible = _listed_fund_cash_action(
+            "510300.SH", f"bad-{currency}-{unit}", "cash_dividend", execution,
+            signal.close_at, days[2], currency=currency, unit=unit,
+        )
+        with pytest.raises(MarketDataError, match="unit or currency"):
+            run_static_rebalance(
+                _listed_fund_portfolio(),
+                calendar,
+                execution_inputs=(
+                    _input(
+                        "510300.SH",
+                        "a_share",
+                        execution,
+                        corporate_actions=(incompatible,),
+                    ),
+                ),
+                **arguments,
+            )
+
+    split = CorporateActionIdentity(
+        "510300.SH", "510300-split-v1", "split", execution.open_at,
+        _source("510300-split-source", signal.close_at), "Asia/Shanghai",
+        ex_date=days[1], split_ratio=Decimal("2"),
+    )
+    with pytest.raises(MarketDataError, match="only cash distributions"):
+        run_static_rebalance(
+            _listed_fund_portfolio(),
+            calendar,
+            execution_inputs=(
+                _input("510300.SH", "a_share", execution, corporate_actions=(split,)),
+            ),
+            **arguments,
+        )
+    with pytest.raises(ValueError, match="effective_at.*ex_date"):
+        CorporateActionIdentity(
+            "510300.SH", "missing-ex-date", "cash_dividend", execution.open_at,
+            _source("missing-ex-date-source", signal.close_at), "Asia/Shanghai",
+            record_date=days[1], pay_date=days[2], cash_amount=Decimal("0.5"),
+            currency="CNY", unit="per_share",
+        )
+
+
+def test_ordinary_a_share_input_remains_receipt_equivalent() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 8, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    row = _input("600000.SH", "a_share", execution)
+    explicit_empty = ExecutionInput(**{**row.__dict__, "corporate_actions": ()})
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "target_weights": lambda _: {"600000.SH": 1.0},
+    }
+
+    default = run_static_rebalance(
+        portfolio, calendar, execution_inputs=(row,), **arguments,
+    )
+    explicit = run_static_rebalance(
+        portfolio, calendar, execution_inputs=(explicit_empty,), **arguments,
+    )
+    assert default.receipts == explicit.receipts
+    assert default.receipt_hashes == explicit.receipt_hashes
+    assert default.input_identity_hash == explicit.input_identity_hash
+    assert default.portfolio.__dict__ == explicit.portfolio.__dict__
 
 
 def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None:

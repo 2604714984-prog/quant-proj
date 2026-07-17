@@ -33,6 +33,7 @@ from .portfolio import Portfolio, Position, Trade
 Market = Literal["a_share", "us"]
 TargetWeightCallback = Callable[["DecisionContext"], Mapping[str, float]]
 _RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
+_A_SHARE_LISTED_FUND_ACTIONS = {"cash_dividend", "special_dividend"}
 
 
 @dataclass(frozen=True)
@@ -136,6 +137,7 @@ def run_static_rebalance(
     ):
         raise ValueError("max_positions must be a positive integer or None")
     rows = _inputs(execution_inputs, portfolio, execution)
+    _corporate_action_checks(rows, execution, cutoff)
     working = deepcopy(portfolio)
     working.start_session(execution.session_date)
     if set(working.positions) - rows.keys():
@@ -253,8 +255,9 @@ def _inputs(
             raise CorporateActionValuationError("ordinary action requires a rich identity")
         if type(row.is_suspended) is not bool:
             raise MarketDataError("is_suspended must be boolean")
-        if row.market == "a_share" and (row.action_types or row.corporate_actions
-                                        or row.terminal_action is not None):
+        if row.market == "a_share" and (
+            row.action_types or row.terminal_action is not None
+        ):
             raise MarketDataError("US action fields cannot be used for A-share inputs")
         if row.market == "us" and (row.is_suspended or row.up_limit is not None
                                    or row.down_limit is not None):
@@ -264,6 +267,18 @@ def _inputs(
             for item in row.corporate_actions
         ):
             raise MarketDataError("corporate_actions must be immutable identities for symbol")
+        if row.market == "a_share" and row.corporate_actions:
+            if not portfolio.supports_a_share_listed_fund_distributions:
+                raise MarketDataError(
+                    "A-share corporate actions require a zero-tax listed-fund portfolio"
+                )
+            if any(
+                item.action_type not in _A_SHARE_LISTED_FUND_ACTIONS
+                for item in row.corporate_actions
+            ):
+                raise MarketDataError(
+                    "A-share listed-fund inputs accept only cash distributions"
+                )
         action_ids.extend(item.action_id for item in row.corporate_actions)
         if row.capacity is not None and (
             not isinstance(row.capacity, CapacityObservation) or row.capacity.subject_id != row.symbol
@@ -278,6 +293,34 @@ def _inputs(
     if len(action_ids) != len(set(action_ids)):
         raise MarketDataError("action IDs must be globally unique")
     return rows
+
+
+def _corporate_action_checks(
+    rows: Mapping[str, ExecutionInput],
+    execution: AcceptedSession,
+    cutoff: datetime,
+) -> None:
+    """Validate the complete rich-action set before portfolio state can change."""
+
+    for row in rows.values():
+        for action in row.corporate_actions:
+            if action.source.available_at > cutoff or action.effective_at > execution.open_at:
+                raise MarketDataError(
+                    "corporate action is late or effective after execution open"
+                )
+            if action.effective_date != execution.session_date:
+                raise MarketDataError(
+                    "corporate action is late or effective on another session"
+                )
+            if action.action_type in _A_SHARE_LISTED_FUND_ACTIONS:
+                if action.unit != "per_share" or action.currency != row.currency:
+                    raise MarketDataError("cash action has incompatible unit or currency")
+                if not is_finite_number(action.cash_amount):
+                    raise MarketDataError("cash action amount must be finite")
+            elif row.market == "a_share":
+                raise MarketDataError(
+                    "A-share listed-fund inputs accept only cash distributions"
+                )
 
 
 def _terminal_checks(

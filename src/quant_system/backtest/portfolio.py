@@ -130,6 +130,18 @@ class Portfolio:
             total = self._finite_result(total + item.amount, "pending cash total")
         return total
 
+    @property
+    def supports_a_share_listed_fund_distributions(self) -> bool:
+        """Whether this portfolio is the explicit zero-tax listed-fund shape."""
+
+        return (
+            not self.us_cash_settlement
+            and self.lot_size == 100
+            and self.share_t_plus_one
+            and not self.a_share_stamp_tax_schedule
+            and self.costs.sell_tax_rate == 0.0
+        )
+
     def start_session(self, as_of: date) -> None:
         if self.current_session is not None and as_of < self.current_session:
             raise ValueError("sessions must be processed chronologically")
@@ -363,8 +375,13 @@ class Portfolio:
     ) -> float:
         """Freeze ex-date entitlement and settle one cash action exactly once."""
 
-        if not self.us_cash_settlement:
-            raise ValueError("cash distributions are supported only for US portfolios")
+        if not (
+            self.us_cash_settlement
+            or self.supports_a_share_listed_fund_distributions
+        ):
+            raise ValueError(
+                "cash distributions require a US or zero-tax A-share listed-fund portfolio"
+            )
         self._require_stable_identity(symbol, "symbol")
         self._require_stable_identity(event_id, "event_id")
         if event_id in self._applied_distribution_action_ids:
