@@ -173,10 +173,42 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
             portfolio,
             calendar,
             signal_session=days[0],
-            decision_at=signal.close_at - timedelta(seconds=1),
+            decision_at=signal.close_at - timedelta(microseconds=1),
             execution_inputs=(input_row,),
             target_weights=lambda _: {},
         )
+    accepted_at_close = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(input_row,),
+        target_weights=lambda _: {},
+    )
+    assert accepted_at_close.context.decision_at == signal.close_at
+    accepted = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=execution.open_at - timedelta(microseconds=1),
+        execution_inputs=(input_row,),
+        target_weights=lambda _: {},
+    )
+    assert accepted.context.decision_at == execution.open_at - timedelta(microseconds=1)
+
+    for decision_at in (
+        execution.open_at,
+        execution.open_at + timedelta(microseconds=1),
+    ):
+        with pytest.raises(MarketDataError, match="strictly before next-session open"):
+            run_static_rebalance(
+                portfolio,
+                calendar,
+                signal_session=days[0],
+                decision_at=decision_at,
+                execution_inputs=(input_row,),
+                target_weights=lambda _: {},
+            )
     late = ExecutionInput(
         **{**input_row.__dict__, "source": _source("late", execution.open_at + timedelta(seconds=1))}
     )

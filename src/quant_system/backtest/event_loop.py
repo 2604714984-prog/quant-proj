@@ -127,8 +127,10 @@ def run_static_rebalance(
     cutoff = require_aware_datetime(decision_at, "decision_at")
     signal = calendar.session_on(signal_session, as_of=cutoff)
     execution = calendar.next_session(signal_session, as_of=cutoff)
-    if cutoff < signal.close_at or cutoff > execution.open_at:
-        raise MarketDataError("decision_at must be between signal close and next-session open")
+    if cutoff < signal.close_at or cutoff >= execution.open_at:
+        raise MarketDataError(
+            "decision_at must be between signal close and strictly before next-session open"
+        )
     if not is_finite_number(slippage_bps) or not 0 <= float(slippage_bps) < 10_000:
         raise ValueError("slippage_bps must be finite and in [0, 10000)")
     if max_positions is not None and (

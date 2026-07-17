@@ -114,8 +114,8 @@ def assess_capacity(
     if not isinstance(execution_session, AcceptedSession):
         raise MarketDataError("execution_session must be an AcceptedSession")
     cutoff = require_aware_datetime(decision_at, "decision_at")
-    if cutoff > execution_session.open_at:
-        raise MarketDataError("decision_at cannot follow the execution-session open")
+    if cutoff >= execution_session.open_at:
+        raise MarketDataError("decision_at cannot follow or equal the execution-session open")
     observed_session = observation.observed_session
     if observed_session.session_date >= execution_session.session_date:
         raise MarketDataError("capacity observation must use an earlier accepted session")

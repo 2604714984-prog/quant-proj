@@ -187,7 +187,7 @@ def test_capacity_cannot_treat_one_hundred_lots_as_one_hundred_shares() -> None:
         "CNY",
         observation,
         CapacityPolicy(0.10, 1.0, "CNY"),
-        decision_at=execution.open_at,
+        decision_at=execution.open_at - timedelta(microseconds=1),
         execution_session=execution,
     )
 
@@ -196,11 +196,45 @@ def test_capacity_cannot_treat_one_hundred_lots_as_one_hundred_shares() -> None:
     assert decision.reason == "exceeds_volume_cap"
 
 
+def test_capacity_requires_decision_strictly_before_execution_open() -> None:
+    calendar = _calendar()
+    observed = calendar.session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 14, tzinfo=UTC),
+    )
+    execution = calendar.session_on(
+        date(2026, 7, 14),
+        as_of=datetime(2026, 7, 14, tzinfo=UTC),
+    )
+    arguments = {
+        "subject_id": "000001.SZ",
+        "order_shares": 100,
+        "execution_price_per_share": 10,
+        "execution_price_currency": "CNY",
+        "observation": _capacity_observation(observed),
+        "policy": CapacityPolicy(0.1, 0.1, "CNY"),
+        "execution_session": execution,
+    }
+
+    accepted = assess_capacity(
+        **arguments,
+        decision_at=execution.open_at - timedelta(microseconds=1),
+    )
+    assert accepted.allowed is True
+
+    for decision_at in (
+        execution.open_at,
+        execution.open_at + timedelta(microseconds=1),
+    ):
+        with pytest.raises(MarketDataError, match="cannot follow"):
+            assess_capacity(**arguments, decision_at=decision_at)
+
+
 def test_capacity_fails_closed_on_identity_time_currency_and_unit_mismatch() -> None:
     calendar = _calendar()
     observed = calendar.session_on(date(2026, 7, 13), as_of=datetime(2026, 7, 14, tzinfo=UTC))
     execution = calendar.session_on(date(2026, 7, 14), as_of=datetime(2026, 7, 14, tzinfo=UTC))
-    cutoff = execution.open_at
+    cutoff = execution.open_at - timedelta(microseconds=1)
     observation = _capacity_observation(observed)
     policy = CapacityPolicy(0.1, 0.1, "CNY")
 
@@ -310,7 +344,7 @@ def test_capacity_rejects_cross_timezone_session_reuse_and_nonfinite_values() ->
             "CNY",
             _capacity_observation(ny_observed),
             CapacityPolicy(0.1, 0.1, "CNY"),
-            decision_at=execution.open_at,
+            decision_at=execution.open_at - timedelta(microseconds=1),
             execution_session=execution,
         )
     for bad in (float("nan"), float("inf"), -1.0, 1.5):
@@ -335,7 +369,7 @@ def test_zero_observed_liquidity_is_valid_evidence_but_zero_capacity() -> None:
         "CNY",
         _capacity_observation(observed, volume_shares=0, amount=0),
         CapacityPolicy(0.1, 0.1, "CNY"),
-        decision_at=execution.open_at,
+        decision_at=execution.open_at - timedelta(microseconds=1),
         execution_session=execution,
     )
     assert decision.allowed is False
@@ -379,7 +413,11 @@ def _portfolio_snapshot(portfolio: Portfolio) -> object:
 
 
 def _decision_time(order: BlockedExitOrder, session: date) -> datetime:
-    return order.calendar.session_on(session, as_of=datetime(2026, 7, 15, tzinfo=UTC)).open_at
+    accepted = order.calendar.session_on(
+        session,
+        as_of=datetime(2026, 7, 15, tzinfo=UTC),
+    )
+    return accepted.open_at - timedelta(microseconds=1)
 
 
 def test_blocked_exit_attempts_require_an_immutable_typed_tuple() -> None:
@@ -408,7 +446,7 @@ def test_blocked_exit_attempts_require_an_immutable_typed_tuple() -> None:
     )
     valid = ExitAttempt(
         session,
-        session.open_at,
+        session.open_at - timedelta(microseconds=1),
         False,
         None,
         "suspended",
@@ -420,6 +458,29 @@ def test_blocked_exit_attempts_require_an_immutable_typed_tuple() -> None:
         calendar,
         attempts=(valid,),
     ).attempts == (valid,)
+
+
+def test_exit_attempt_requires_decision_strictly_before_session_open() -> None:
+    calendar = _calendar()
+    session = calendar.session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 13, tzinfo=UTC),
+    )
+    accepted = ExitAttempt(
+        session,
+        session.open_at - timedelta(microseconds=1),
+        False,
+        None,
+        "suspended",
+    )
+    assert accepted.decision_at == session.open_at - timedelta(microseconds=1)
+
+    for decision_at in (
+        session.open_at,
+        session.open_at + timedelta(microseconds=1),
+    ):
+        with pytest.raises(MarketDataError, match="cannot follow"):
+            ExitAttempt(session, decision_at, False, None, "suspended")
 
 
 def test_blocked_exit_normalizes_stateful_numbers_once_before_sale() -> None:
@@ -712,7 +773,7 @@ def test_universe_uses_accepted_session_and_complete_pit_statuses() -> None:
         date(2026, 7, 13),
         as_of=datetime(2026, 7, 13, tzinfo=UTC),
     )
-    decision_at = session.open_at
+    decision_at = session.open_at - timedelta(microseconds=1)
     eligible = evaluate_universe("000001.SZ", session, decision_at, _status_records())
     excluded = evaluate_universe(
         "000001.SZ",
@@ -758,7 +819,12 @@ def test_universe_selects_one_valid_linear_status_revision() -> None:
         )
     )
 
-    decision = evaluate_universe("000001.SZ", session, session.open_at, records)
+    decision = evaluate_universe(
+        "000001.SZ",
+        session,
+        session.open_at - timedelta(microseconds=1),
+        records,
+    )
 
     assert decision.eligible is False
     assert decision.reasons == ("st",)
@@ -770,7 +836,7 @@ def test_universe_rejects_missing_overlapping_branched_and_late_statuses() -> No
         date(2026, 7, 13),
         as_of=datetime(2026, 7, 13, tzinfo=UTC),
     )
-    cutoff = session.open_at
+    cutoff = session.open_at - timedelta(microseconds=1)
     with pytest.raises(MarketDataError, match="missing effective suspended"):
         evaluate_universe("000001.SZ", session, cutoff, _status_records()[:-1])
 
@@ -856,13 +922,20 @@ def test_universe_rejects_future_cutoff_calendar_unavailability_and_timezone_reu
         date(2026, 7, 13),
         as_of=datetime(2026, 7, 13, tzinfo=UTC),
     )
-    with pytest.raises(MarketDataError, match="cannot follow"):
-        evaluate_universe(
-            "000001.SZ",
-            session,
-            session.open_at + timedelta(microseconds=1),
-            _status_records(),
-        )
+    accepted = evaluate_universe(
+        "000001.SZ",
+        session,
+        session.open_at - timedelta(microseconds=1),
+        _status_records(),
+    )
+    assert accepted.eligible is True
+
+    for decision_at in (
+        session.open_at,
+        session.open_at + timedelta(microseconds=1),
+    ):
+        with pytest.raises(MarketDataError, match="cannot follow"):
+            evaluate_universe("000001.SZ", session, decision_at, _status_records())
 
     late_session = _session(
         date(2026, 7, 13),
@@ -871,12 +944,17 @@ def test_universe_rejects_future_cutoff_calendar_unavailability_and_timezone_reu
         source_available_at=session.open_at + timedelta(minutes=1),
     )
     with pytest.raises(MarketDataError, match="session source was unavailable"):
-        evaluate_universe("000001.SZ", late_session, session.open_at, _status_records())
+        evaluate_universe(
+            "000001.SZ",
+            late_session,
+            session.open_at - timedelta(microseconds=1),
+            _status_records(),
+        )
 
     with pytest.raises(MarketDataError, match="different exchange timezone"):
         evaluate_universe(
             "000001.SZ",
             session,
-            session.open_at,
+            session.open_at - timedelta(microseconds=1),
             _status_records(exchange_timezone="America/New_York"),
         )

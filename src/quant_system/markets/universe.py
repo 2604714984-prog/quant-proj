@@ -82,8 +82,8 @@ def evaluate_universe(
     if not isinstance(session, AcceptedSession):
         raise MarketDataError("session must be an AcceptedSession")
     cutoff = require_aware_datetime(decision_at, "decision_at")
-    if cutoff > session.open_at:
-        raise MarketDataError("decision_at cannot follow the accepted-session open")
+    if cutoff >= session.open_at:
+        raise MarketDataError("decision_at cannot follow or equal the accepted-session open")
     if session.source.available_at > cutoff:
         raise MarketDataError("accepted-session source was unavailable at decision_at")
     frozen = tuple(records)
