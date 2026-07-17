@@ -207,6 +207,27 @@ def _git_object_id(value: object, label: str) -> str:
     return value
 
 
+def _legacy_symbol_master_identity(
+    value: object,
+    *,
+    source: object,
+    snapshot_id: object,
+    symbol: object,
+) -> str:
+    components = (source, snapshot_id, symbol)
+    if any(
+        not isinstance(component, str)
+        or not component
+        or "|" in component
+        for component in components
+    ):
+        raise HistoricalRunError("legacy symbol-master components are invalid")
+    expected = f"{source}|{snapshot_id}|symbol_master|{symbol}|"
+    if not isinstance(value, str) or value.count("|") != 4 or value != expected:
+        raise HistoricalRunError("legacy symbol-master row identity differs")
+    return value
+
+
 def _status_records(row: PanelRow, decision_at: datetime) -> tuple[StatusEvidence, ...]:
     source = SourceIdentity(
         "https://local.invalid/swing/status",
@@ -322,17 +343,23 @@ def _intervals(
 
 def _masters(connection: Any) -> dict[str, tuple[date, date | None]]:
     rows = connection.execute(
-        "SELECT ts_code,nullif(list_date,''),nullif(delist_date,''),row_hash,synthetic_data "
+        "SELECT ts_code,nullif(list_date,''),nullif(delist_date,''),"
+        "source,snapshot_id,row_hash,synthetic_data "
         "FROM a_share.a_share_symbol_master QUALIFY row_number() OVER "
         "(PARTITION BY ts_code ORDER BY ingested_at DESC,snapshot_id DESC)=1"
     ).fetchall()
     result: dict[str, tuple[date, date | None]] = {}
-    for symbol, listed, delisted, row_hash, synthetic in rows:
+    for symbol, listed, delisted, source, snapshot_id, row_hash, synthetic in rows:
         if not preflight._common_symbol(symbol):
             continue
         if not listed or synthetic is not False:
             raise HistoricalRunError("symbol-master identity is incomplete")
-        _row_hash(row_hash, "symbol-master row_hash")
+        _legacy_symbol_master_identity(
+            row_hash,
+            source=source,
+            snapshot_id=snapshot_id,
+            symbol=symbol,
+        )
         result[symbol] = (
             preflight._parse_day(listed),
             None if not delisted else preflight._parse_day(delisted),

@@ -30,6 +30,17 @@ def _git_hash(character: str) -> str:
     return character * 40
 
 
+def _legacy_master_hash(
+    *,
+    source: str = "wsl2_chain_repair_20260706",
+    snapshot_id: str = "wsl2_chain_repair_20260706_195210",
+    symbol: str = "600000.SH",
+    table: str = "symbol_master",
+    tail: str = "",
+) -> str:
+    return f"{source}|{snapshot_id}|{table}|{symbol}|{tail}"
+
+
 def _sessions() -> tuple[date, ...]:
     return (
         date(2021, 12, 29),
@@ -125,6 +136,77 @@ def test_git_identity_rejects_wrong_length_nonhex_and_uppercase(
     )
     with pytest.raises(runner.HistoricalRunError, match="lowercase Git SHA-1"):
         runner._git_identity()
+
+
+def test_legacy_symbol_master_identity_is_exact_and_not_a_content_hash() -> None:
+    value = _legacy_master_hash()
+    assert len(value) == 85
+    assert runner._legacy_symbol_master_identity(
+        value,
+        source="wsl2_chain_repair_20260706",
+        snapshot_id="wsl2_chain_repair_20260706_195210",
+        symbol="600000.SH",
+    ) == value
+    with pytest.raises(runner.HistoricalRunError, match="lowercase SHA-256"):
+        runner._row_hash(value, "content row_hash")
+    assert runner._row_hash(_hash("a"), "content row_hash") == _hash("a")
+
+
+@pytest.mark.parametrize(
+    ("value", "source", "snapshot_id", "symbol"),
+    (
+        ("x" * 85, "source", "snapshot", "600000.SH"),
+        (_legacy_master_hash(source="other"), "source", "wsl2_chain_repair_20260706_195210", "600000.SH"),
+        (_legacy_master_hash(snapshot_id="other"), "wsl2_chain_repair_20260706", "snapshot", "600000.SH"),
+        (_legacy_master_hash(table="a_share_symbol_master"), "wsl2_chain_repair_20260706", "wsl2_chain_repair_20260706_195210", "600000.SH"),
+        (_legacy_master_hash(symbol="600001.SH"), "wsl2_chain_repair_20260706", "wsl2_chain_repair_20260706_195210", "600000.SH"),
+        (_legacy_master_hash(tail="20260101"), "wsl2_chain_repair_20260706", "wsl2_chain_repair_20260706_195210", "600000.SH"),
+        (_legacy_master_hash(), "", "wsl2_chain_repair_20260706_195210", "600000.SH"),
+        (_legacy_master_hash(), "wsl2|repair", "wsl2_chain_repair_20260706_195210", "600000.SH"),
+        (_legacy_master_hash(), "wsl2_chain_repair_20260706", "", "600000.SH"),
+        (_legacy_master_hash(), "wsl2_chain_repair_20260706", "snapshot|id", "600000.SH"),
+        (_legacy_master_hash(), "wsl2_chain_repair_20260706", "wsl2_chain_repair_20260706_195210", ""),
+        (_legacy_master_hash(), "wsl2_chain_repair_20260706", "wsl2_chain_repair_20260706_195210", "600000|SH"),
+    ),
+)
+def test_legacy_symbol_master_identity_rejects_arbitrary_and_drifted_values(
+    value: str, source: str, snapshot_id: str, symbol: str
+) -> None:
+    with pytest.raises(runner.HistoricalRunError, match="legacy symbol-master"):
+        runner._legacy_symbol_master_identity(
+            value,
+            source=source,
+            snapshot_id=snapshot_id,
+            symbol=symbol,
+        )
+
+
+def test_masters_reads_and_validates_legacy_identity_components() -> None:
+    class Result:
+        def fetchall(self):
+            return [
+                (
+                    "600000.SH",
+                    "20100101",
+                    None,
+                    "wsl2_chain_repair_20260706",
+                    "wsl2_chain_repair_20260706_195210",
+                    _legacy_master_hash(),
+                    False,
+                )
+            ]
+
+    class Connection:
+        def __init__(self) -> None:
+            self.sql = ""
+
+        def execute(self, sql):
+            self.sql = sql
+            return Result()
+
+    connection = Connection()
+    assert runner._masters(connection) == {"600000.SH": (date(2010, 1, 1), None)}
+    assert "source,snapshot_id,row_hash" in connection.sql
 
 
 def test_split_intervals_reset_and_purge_crossing_labels() -> None:
@@ -369,6 +451,59 @@ def test_post_preflight_preparation_failure_does_not_consume_run(
     )
     output = tmp_path / "prepare-blocked.json"
     with pytest.raises(runner.HistoricalRunError, match="lowercase Git SHA-1"):
+        runner.main(
+            [
+                "--run-id",
+                runner.RUN_ID,
+                "--execute",
+                "--db",
+                str(database),
+                "--output",
+                str(output),
+                "--run-marker",
+                str(marker),
+            ]
+        )
+    assert not marker.exists()
+    assert not output.exists()
+
+
+def test_malformed_legacy_master_prepare_writes_no_marker_or_result(
+    monkeypatch, tmp_path
+) -> None:
+    class Result:
+        def fetchall(self):
+            return [
+                (
+                    "600000.SH",
+                    "20100101",
+                    None,
+                    "wsl2_chain_repair_20260706",
+                    "wsl2_chain_repair_20260706_195210",
+                    "x" * 85,
+                    False,
+                )
+            ]
+
+    class Connection:
+        def execute(self, _sql):
+            return Result()
+
+    database = tmp_path / "input.duckdb"
+    database.write_bytes(b"frozen")
+    output = tmp_path / "malformed-master.json"
+    marker = tmp_path / "malformed-master.run.json"
+    monkeypatch.setattr(
+        runner.preflight,
+        "run_read_only_preflight",
+        lambda _: {"status": "PREFLIGHT_PASS"},
+    )
+    monkeypatch.setattr(
+        runner,
+        "prepare_historical",
+        lambda *_: runner._masters(Connection()),
+    )
+    with pytest.raises(runner.HistoricalRunError, match="row identity differs"):
         runner.main(
             [
                 "--run-id",
