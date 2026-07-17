@@ -47,8 +47,8 @@ class ExitAttempt:
         if not isinstance(self.session, AcceptedSession):
             raise MarketDataError("session must be an AcceptedSession")
         cutoff = require_aware_datetime(self.decision_at, "decision_at")
-        if cutoff > self.session.open_at:
-            raise MarketDataError("decision_at cannot follow the attempted-session open")
+        if cutoff >= self.session.open_at:
+            raise MarketDataError("decision_at cannot follow or equal the attempted-session open")
         if self.session.source.available_at > cutoff:
             raise MarketDataError("attempted-session source was unavailable at decision_at")
         require_nonempty_text(self.reason, "reason")
