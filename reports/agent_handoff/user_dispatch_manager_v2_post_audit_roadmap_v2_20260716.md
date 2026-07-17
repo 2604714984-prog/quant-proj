@@ -40,9 +40,16 @@ shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=9377d193de3f41ded226628478af158e8644f463
+V2_MAIN_HEAD=a19bcb9898d075a38bcb03aef760c788d643cd02
 ACTIVE_FAMILY=NONE
-ACTIVE_STAGE=SWING_COUNT_TERMINAL_FAIL_CLOSED_EXECUTION_ERROR
+ACTIVE_STAGE=SALIENT_RETURN_PREFLIGHT_STRUCTURAL_FAIL_CLOSED
+SALIENT_RETURN_RESULT=STRUCTURAL_FAIL
+SALIENT_RETURN_DECISION_COUNT=77
+SALIENT_RETURN_INVALID_DECISION_COUNT=1
+SALIENT_RETURN_MINIMUM_ELIGIBLE_COUNT=0
+SALIENT_RETURN_MINIMUM_CANDIDATE_COUNT=0
+SALIENT_RETURN_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
+SALIENT_RETURN_FORWARD=CLOSED
 SWING_COUNT_RUN_ID=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_HISTORICAL_20260718_001
 SWING_COUNT_RESULT=HISTORICAL_SCREENING_FAIL_CLOSED_EXECUTION_ERROR
 SWING_COUNT_GATE_COUNTS=null
@@ -61,6 +68,14 @@ fail-closed state, so this lineage is permanently closed: no rerun, retuning,
 rescue filter, regime relabel, prospective Shadow or candidate promotion is
 permitted. A future active family must use a genuinely new economic hypothesis,
 new lineage and outcome-blind preregistration.
+
+The owner-selected low-salience-return successor completed its accepted
+aggregate-only preflight. One frozen calendar month had only 14 accepted-session
+returns against the preregistered minimum of 15, so that decision was retained
+as a deterministic 0/0 structural failure. The accepted stop rule therefore
+closed the lineage before any holding-period outcome, historical Run ID,
+candidate status, provider call or database write. It may not be rerun, retuned,
+rescued by skipping the short month, relabelled by regime, or promoted.
 
 No closed strategy family may be rerun or reinterpreted because of the H3
 repair. Listed-fund distribution semantics, cross-type corporate-action IDs,
@@ -605,11 +620,11 @@ NEXT_ACTION:
 ## 12. Expected Manager state
 
 ```text
-ACTIVE_FAMILY=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_20260718
-ACTIVE_STAGE=OUTCOME_BLIND_PR_A_PREFLIGHT_PASS_AWAITING_INDEPENDENT_ACCEPTANCE
-BASE_COMMIT=6967c2819a27ae11de0410cbffc65e575b519343
+ACTIVE_FAMILY=A_SHARE_SALIENT_RETURN_MISPRICING_V1_20260718
+ACTIVE_STAGE=SALIENT_RETURN_OUTCOME_BLIND_PR_A_CODE_ACCEPTANCE_PENDING
+BASE_COMMIT=16f14edb6306360b1a720a888250a6450b06a2c3
 SNAPSHOT_ID=a_share_qfq_personal_research_20260716_v5
-PREFLIGHT_STATUS=LOCAL_PASS_AWAITING_INDEPENDENT_ACCEPTANCE
+PREFLIGHT_STATUS=NOT_RUN
 OUTCOME_STATUS=NOT_RUN
 FORWARD_STATUS=CLOSED
 STRATEGY_CANDIDATE_AVAILABLE=false
@@ -620,7 +635,7 @@ CYCLE_4_STATUS=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
 H3_STATUS=CLOSED_ACCEPTED_STRICT_PREOPEN
 M1_STATUS=DEFERRED
 YOUNG_CHAIRMAN_PR=CLOSED_WITHOUT_MERGE
-NEXT_ACTION=INDEPENDENTLY_ACCEPT_AND_PRESERVE_SWING_COUNT_PR_A_WITHOUT_OUTCOMES
+NEXT_ACTION=INDEPENDENTLY_ACCEPT_SALIENT_RETURN_PR_A_CODE_WITHOUT_REAL_PREFLIGHT
 ```
 
 ## Final directive
@@ -631,8 +646,9 @@ The next priority is:
 
 ```text
 Manager terminal-state sync
--> owner selected Swing Count
--> one outcome-free feasibility scan
+-> Swing Count terminally closed
+-> owner selected the new salient-return mispricing hypothesis
+-> code acceptance before one outcome-free feasibility scan
 + read-only local Macro Risk Shadow after its separate start gates pass
 ```
 
