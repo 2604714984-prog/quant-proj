@@ -40,9 +40,16 @@ shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=16f14edb6306360b1a720a888250a6450b06a2c3
-ACTIVE_FAMILY=A_SHARE_SALIENT_RETURN_MISPRICING_V1_20260718
-ACTIVE_STAGE=SALIENT_RETURN_OUTCOME_BLIND_PR_A_CODE_ACCEPTANCE_PENDING
+V2_MAIN_HEAD=a19bcb9898d075a38bcb03aef760c788d643cd02
+ACTIVE_FAMILY=NONE
+ACTIVE_STAGE=SALIENT_RETURN_PREFLIGHT_STRUCTURAL_FAIL_CLOSED
+SALIENT_RETURN_RESULT=STRUCTURAL_FAIL
+SALIENT_RETURN_DECISION_COUNT=77
+SALIENT_RETURN_INVALID_DECISION_COUNT=1
+SALIENT_RETURN_MINIMUM_ELIGIBLE_COUNT=0
+SALIENT_RETURN_MINIMUM_CANDIDATE_COUNT=0
+SALIENT_RETURN_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
+SALIENT_RETURN_FORWARD=CLOSED
 SWING_COUNT_RUN_ID=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_HISTORICAL_20260718_001
 SWING_COUNT_RESULT=HISTORICAL_SCREENING_FAIL_CLOSED_EXECUTION_ERROR
 SWING_COUNT_GATE_COUNTS=null
@@ -62,11 +69,13 @@ rescue filter, regime relabel, prospective Shadow or candidate promotion is
 permitted. A future active family must use a genuinely new economic hypothesis,
 new lineage and outcome-blind preregistration.
 
-The owner-selected successor is the independent low-salience-return hypothesis
-named above. Its current authorization is limited to one frozen definition, one
-small pure research adapter, one aggregate outcome-free preflight and focused
-tests. No real preflight, holding-period outcome, run ID, candidate status,
-provider call or database write is authorized before fresh code acceptance.
+The owner-selected low-salience-return successor completed its accepted
+aggregate-only preflight. One frozen calendar month had only 14 accepted-session
+returns against the preregistered minimum of 15, so that decision was retained
+as a deterministic 0/0 structural failure. The accepted stop rule therefore
+closed the lineage before any holding-period outcome, historical Run ID,
+candidate status, provider call or database write. It may not be rerun, retuned,
+rescued by skipping the short month, relabelled by regime, or promoted.
 
 No closed strategy family may be rerun or reinterpreted because of the H3
 repair. Listed-fund distribution semantics, cross-type corporate-action IDs,
