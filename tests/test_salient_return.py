@@ -461,6 +461,66 @@ def test_monthly_scanner_rejects_duplicate_symbol_date_rows(
         )
 
 
+def test_fourteen_session_month_is_structural_audit_and_fifteen_uses_ordinary_path(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    january = tuple(date(2025, 1, 2) + timedelta(days=index) for index in range(14))
+    february = tuple(date(2025, 2, 1) + timedelta(days=index) for index in range(15))
+    calendar = _calendar(january + february + (date(2025, 3, 1),))
+
+    class Result:
+        def fetchall(self) -> list[tuple[object, ...]]:
+            return []
+
+    class Connection:
+        def execute(self, *_: object) -> Result:
+            return Result()
+
+    ordinary_calls: list[date] = []
+
+    def monthly_signals(
+        _connection: object,
+        days: tuple[date, ...],
+        position: int,
+        _masters: object,
+    ) -> tuple[tuple[salient.MonthlySignal, ...], dict[str, tuple[float, float, str]]]:
+        ordinary_calls.append(days[position])
+        return (), {}
+
+    def ordinary_target(
+        _signals: object,
+        _calendar_value: object,
+        *,
+        decision_date: date,
+        decision_at: datetime,
+        execution_inputs: object,
+    ) -> tuple[None, salient.DecisionAudit]:
+        assert decision_at.tzinfo is not None
+        assert execution_inputs == ()
+        return None, salient.DecisionAudit(salient.VARIANT_ID, decision_date, 500, 500, True, True)
+
+    monkeypatch.setattr(preflight, "MIN_LISTED_SESSIONS", 0)
+    monkeypatch.setattr(preflight, "_monthly_signals", monthly_signals)
+    monkeypatch.setattr(preflight, "build_monthly_target", ordinary_target)
+    audits, decisions = preflight._database_audits(Connection(), calendar)
+    assert decisions == (january[-1], february[-1])
+    assert audits[0] == salient.DecisionAudit(salient.VARIANT_ID, january[-1], 0, 0, False, False)
+    assert audits[1] == salient.DecisionAudit(
+        salient.VARIANT_ID, february[-1], 500, 500, True, True
+    )
+    assert ordinary_calls == [february[-1]]
+    report = preflight._preflight_report(
+        audits,
+        (january[0], february[-1]),
+        (True, 0.9, 0.0, 0),
+    )
+    aggregate = report["variant_aggregates"][salient.VARIANT_ID]
+    assert report["status"] == "STRUCTURAL_FAIL"
+    assert aggregate["minimum_eligible_count"] == 0
+    assert aggregate["minimum_candidate_count"] == 0
+    assert aggregate["invalid_decision_count"] == 1
+
+
 def _tiny_read_only_database(root: Path) -> tuple[Path, tuple[date, ...]]:
     import duckdb
 

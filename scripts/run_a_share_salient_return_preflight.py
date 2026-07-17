@@ -373,6 +373,12 @@ def _database_audits(
     zone = ZoneInfo("Asia/Shanghai")
     for decision in decisions:
         position = days.index(decision)
+        return_count = sum(
+            (day.year, day.month) == (decision.year, decision.month) for day in days[: position + 1]
+        )
+        if return_count < MIN_DAILY_RETURNS:
+            audits.append(DecisionAudit(VARIANT_ID, decision, 0, 0, False, False))
+            continue
         signal_session = calendar.session_on(decision, as_of=datetime(2030, 1, 1, tzinfo=zone))
         decision_at = signal_session.close_at + timedelta(minutes=30)
         execution_session = calendar.next_session(decision, as_of=decision_at)
