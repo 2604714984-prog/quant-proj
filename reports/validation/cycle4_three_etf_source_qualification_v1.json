@@ -1,0 +1,172 @@
+{
+  "schema_version": "cycle4-three-etf-source-qualification-v1",
+  "research_id": "CYCLE4_THREE_ETF_SOURCE_QUALIFICATION_20260717",
+  "date": "2026-07-17",
+  "market": "CN_ETF_A_SHARE",
+  "phase": "READ_ONLY_SOURCE_QUALIFICATION",
+  "status": "SOURCE_QUALIFICATION_INCOMPLETE_CLOSE_CYCLE4",
+  "fixed_symbols": ["510300.SH", "511010.SH", "518880.SH"],
+  "cutoff": "2026-06-30",
+  "repository": {
+    "base_commit": "e4e0c1538ad73eca5a6900aabd903e9fba8ed15a",
+    "base_tree": "205dceb4fd29d3a7676762d6b5c9bef7580245d6",
+    "worktree": "/home/rongyu/workspace/.wt-cycle4-three-etf-source-qualification-20260717",
+    "branch": "codex/cycle4-three-etf-source-qualification-20260717"
+  },
+  "database": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "snapshot_id": "a_share_qfq_personal_research_20260716_v5",
+    "table": "a_share.a_share_canonical_daily_bars",
+    "sha256_before": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "sha256_after": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "size": 4671156224,
+    "mode": "0600",
+    "uid": 1000,
+    "nlink": 1,
+    "wal_present": false,
+    "read_only_open": true,
+    "database_write": false
+  },
+  "observation": {
+    "observed_at": "2026-07-17T12:30:37+08:00",
+    "provider_network_calls": 0,
+    "raw_payloads_written_to_git": false,
+    "credentials_accessed": false,
+    "automatic_source_selection_or_fusion": false
+  },
+  "central_snapshot_coverage": {
+    "510300.SH": {
+      "rows": 2058,
+      "distinct_dates": 2058,
+      "date_start": "20180102",
+      "date_end": "20260630",
+      "duplicate_keys": 0,
+      "ohlc_null_rows": 0,
+      "volume_null_rows": 0,
+      "amount_null_rows": 0,
+      "adjustment_null_rows": 0,
+      "suspension_null_rows": 0,
+      "limit_null_rows": 2058,
+      "row_hash_null_rows": 0,
+      "snapshot_count": 1,
+      "source_count": 1,
+      "quality_status_count": 1,
+      "source": "AKSHARE_FUND_ETF_HIST_EM+SINA_510300_QFQ_JS",
+      "quality_status": "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT"
+    },
+    "511010.SH": {
+      "rows": 0,
+      "distinct_dates": 0,
+      "date_start": null,
+      "date_end": null,
+      "duplicate_keys": 0,
+      "status": "MISSING_FROM_CENTRAL_SNAPSHOT"
+    },
+    "518880.SH": {
+      "rows": 0,
+      "distinct_dates": 0,
+      "date_start": null,
+      "date_end": null,
+      "duplicate_keys": 0,
+      "status": "MISSING_FROM_CENTRAL_SNAPSHOT"
+    },
+    "common_qualified_date_count": 0,
+    "calendar": {
+      "source": "AKSHARE_TOOL_TRADE_DATE_HIST_SINA",
+      "snapshot_id": "akshare_sina_calendar_1d5ff82a6718fc4e19b95c98",
+      "rows": 2058,
+      "open_rows": 2058,
+      "date_start": "20180102",
+      "date_end": "20260630",
+      "status": "PASS_FOR_ACCEPTED_SESSION_IDENTITY"
+    },
+    "symbol_master_fixed_symbol_rows": 0,
+    "adj_factor_fixed_symbol_rows": 0,
+    "limit_status_fixed_symbol_rows": 0
+  },
+  "local_crosscheck_evidence": {
+    "path": "/home/rongyu/workspace/quant-data/recovery/legacy-local/A_Share_Monitor/data/cache/etf_rotation_e1_20260707/etf_daily_qfq_tencent_20260707.csv",
+    "sha256": "c5f37bc0ad3a086ab24c50e84ebc1333ef716effd397bd46972f36d9d8b7c1b6",
+    "size": 8730091,
+    "use": "CROSSCHECK_ONLY_REJECTED_FOR_CANONICAL_IMPORT",
+    "cutoff_coverage": {
+      "510300.SH": {"rows": 2058, "distinct_dates": 2058, "duplicate_keys": 0, "ohlc_nonnull": 2058, "volume_nonnull": 2058, "amount_nonnull": 0, "adjustment_nonnull": 2058, "nav_available_nonnull": 2058},
+      "511010.SH": {"rows": 2058, "distinct_dates": 2058, "duplicate_keys": 0, "ohlc_nonnull": 2058, "volume_nonnull": 2058, "amount_nonnull": 0, "adjustment_nonnull": 2058, "nav_available_nonnull": 2058},
+      "518880.SH": {"rows": 2058, "distinct_dates": 2058, "duplicate_keys": 0, "ohlc_nonnull": 2058, "volume_nonnull": 2058, "amount_nonnull": 0, "adjustment_nonnull": 2058, "nav_available_nonnull": 2058}
+    },
+    "rejection_reasons": [
+      "amount is blank for all fixed-symbol cutoff rows",
+      "no product/listing identity contract",
+      "no available_at or revision identity",
+      "no qualified suspension/non-trading evidence",
+      "no authoritative daily limits",
+      "no cash-distribution event identity",
+      "not imported and not promoted to canonical evidence"
+    ]
+  },
+  "source_candidates_not_qualified": [
+    {"dataset": "fund_daily", "source": "Tushare official documentation", "url": "https://tushare.pro/document/2?doc_id=127", "status": "NOT_MATERIALIZED_IN_THIS_READ_ONLY_LANE"},
+    {"dataset": "fund_basic_or_etf_basic", "source": "Tushare official documentation", "url": "https://tushare.pro/document/1?doc_id=19", "status": "NOT_MATERIALIZED_IN_THIS_READ_ONLY_LANE"},
+    {"dataset": "fund_adj", "source": "Tushare official documentation", "url": "https://tushare.pro/document/2?doc_id=199", "status": "NOT_MATERIALIZED_IN_THIS_READ_ONLY_LANE"},
+    {"dataset": "fund_nav", "source": "Tushare official documentation", "url": "https://tushare.pro/document/2?doc_id=119", "status": "NOT_MATERIALIZED_IN_THIS_READ_ONLY_LANE"},
+    {"dataset": "cash_distribution_510300", "source": "SSE announcement evidence", "url": "https://www.sse.com.cn/assortment/options/disclo/update/c/c_20250611_10781544.shtml", "status": "EXTERNAL_EVIDENCE_NOT_BOUND_TO_MATERIALIZED_EVENT_ROWS"},
+    {"dataset": "cash_distribution_510300", "source": "SSE announcement evidence", "url": "https://www.sse.com.cn/assortment/options/disclo/update/c/c_20260112_10804960.shtml", "status": "EXTERNAL_EVIDENCE_NOT_BOUND_TO_MATERIALIZED_EVENT_ROWS"}
+  ],
+  "dataset_matrix": {
+    "510300.SH": {
+      "product_identity_and_listing": {"status": "MISSING", "evidence": "central symbol-master rows=0; no qualified listing date"},
+      "accepted_trade_calendar": {"status": "PASS", "source": "AKSHARE_TOOL_TRADE_DATE_HIST_SINA", "rows": 2058, "historical_availability": "SESSION_IDENTITY_ONLY"},
+      "raw_daily_ohlc_cny": {"status": "PASS", "source_snapshot": "a_share_qfq_personal_research_20260716_v5", "rows": 2058, "historical_availability": "UNKNOWN_NOT_PIT_QUALIFIED"},
+      "daily_volume_shares": {"status": "PASS", "source_receipt": "/home/rongyu/workspace/quant-data/receipts/a_share_volume_unit_shares_v5_20260717.json", "receipt_sha256": "241be32158b9ab5cebbe92dfceeec2a889f3b56e681a1f764d7b6d257f21f17f", "rows": 2058, "unit": "SHARES", "historical_availability": "UNKNOWN_NOT_PIT_QUALIFIED"},
+      "daily_amount_cny": {"status": "PASS", "source_receipt": "/home/rongyu/workspace/quant-data/receipts/a_share_volume_unit_shares_v5_20260717.json", "receipt_sha256": "241be32158b9ab5cebbe92dfceeec2a889f3b56e681a1f764d7b6d257f21f17f", "rows": 2058, "unit": "CNY", "historical_availability": "UNKNOWN_NOT_PIT_QUALIFIED"},
+      "adjustment_identity": {"status": "PASS", "source": "AKSHARE_FUND_ETF_HIST_EM+SINA_510300_QFQ_JS", "rows": 2058, "identity": "retrospective qfq reconstruction; not account-level cash entitlement"},
+      "suspension_handling": {"status": "MISSING", "reason": "non-null stored flag is not qualified suspension evidence"},
+      "price_limit_rule_or_daily_limits": {"status": "MISSING", "reason": "all 2058 stored upper/lower limit values are null"},
+      "cash_distribution_events": {"status": "MISSING", "observed_external_evidence_count": 2, "reason": "announcement references are not materialized event identities with full dates/amount/availability"},
+      "other_corporate_actions": {"status": "MISSING", "reason": "no complete split/symbol-change/termination contract"},
+      "source_retrieval_revision_row_identity": {"status": "PASS_FOR_RETROSPECTIVE_ROW_IDENTITY", "snapshot_id": "a_share_qfq_personal_research_20260716_v5", "row_hash_null_rows": 0, "historical_availability": "UNKNOWN_NOT_PIT_QUALIFIED"}
+    },
+    "511010.SH": {
+      "product_identity_and_listing": {"status": "MISSING"},
+      "accepted_trade_calendar": {"status": "PASS", "source": "AKSHARE_TOOL_TRADE_DATE_HIST_SINA", "rows": 2058},
+      "raw_daily_ohlc_cny": {"status": "MISSING", "central_rows": 0},
+      "daily_volume_shares": {"status": "MISSING", "central_rows": 0},
+      "daily_amount_cny": {"status": "MISSING", "central_rows": 0},
+      "adjustment_identity": {"status": "MISSING", "central_rows": 0},
+      "suspension_handling": {"status": "MISSING"},
+      "price_limit_rule_or_daily_limits": {"status": "MISSING"},
+      "cash_distribution_events": {"status": "MISSING"},
+      "other_corporate_actions": {"status": "MISSING"},
+      "source_retrieval_revision_row_identity": {"status": "MISSING", "central_rows": 0}
+    },
+    "518880.SH": {
+      "product_identity_and_listing": {"status": "MISSING"},
+      "accepted_trade_calendar": {"status": "PASS", "source": "AKSHARE_TOOL_TRADE_DATE_HIST_SINA", "rows": 2058},
+      "raw_daily_ohlc_cny": {"status": "MISSING", "central_rows": 0},
+      "daily_volume_shares": {"status": "MISSING", "central_rows": 0},
+      "daily_amount_cny": {"status": "MISSING", "central_rows": 0},
+      "adjustment_identity": {"status": "MISSING", "central_rows": 0},
+      "suspension_handling": {"status": "MISSING"},
+      "price_limit_rule_or_daily_limits": {"status": "MISSING"},
+      "cash_distribution_events": {"status": "MISSING"},
+      "other_corporate_actions": {"status": "MISSING"},
+      "source_retrieval_revision_row_identity": {"status": "MISSING", "central_rows": 0}
+    }
+  },
+  "historical_availability_classification": "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT",
+  "source_matrix_complete": false,
+  "decisive_gaps": [
+    "511010.SH and 518880.SH have no qualified raw OHLC, SHARES volume, CNY amount, adjustment, listing, suspension, limit, distribution, or corporate-action rows",
+    "510300.SH has no product/listing identity in the central symbol master",
+    "510300.SH has structurally null daily upper/lower limits for all 2058 rows",
+    "no fixed ETF has a complete qualified suspension/non-trading contract",
+    "the only local three-symbol cross-check has blank amount and cannot prove CNY amount",
+    "cash-distribution references for 510300.SH are not materialized with the required event identity and availability contract",
+    "retrieved historical rows cannot be treated as strict PIT without archived publication identity"
+  ],
+  "recommended_closure": "CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME",
+  "strategy_candidate_available": false,
+  "strategy_outcome_access": false,
+  "prospective_forward_access": false,
+  "next_action": "Return to Quant Manager; complete Lane A semantic review and obtain a qualified per-dataset source matrix before any import or outcome-free preflight."
+}
