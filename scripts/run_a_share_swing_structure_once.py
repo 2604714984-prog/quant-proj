@@ -142,7 +142,7 @@ def _git_identity() -> tuple[str, str]:
         ).strip()
     except (OSError, subprocess.CalledProcessError) as exc:
         raise HistoricalRunError("cannot bind the execution code commit") from exc
-    return _row_hash(commit, "code commit"), _row_hash(tree, "code tree")
+    return _git_object_id(commit, "code commit"), _git_object_id(tree, "code tree")
 
 
 def _canonical(value: Mapping[str, Any]) -> bytes:
@@ -194,6 +194,16 @@ def _row_hash(value: object, label: str) -> str:
         or any(character not in "0123456789abcdef" for character in value)
     ):
         raise HistoricalRunError(f"{label} must be lowercase SHA-256")
+    return value
+
+
+def _git_object_id(value: object, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or len(value) != 40
+        or any(character not in "0123456789abcdef" for character in value)
+    ):
+        raise HistoricalRunError(f"{label} must be lowercase Git SHA-1")
     return value
 
 

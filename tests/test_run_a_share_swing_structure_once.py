@@ -26,6 +26,10 @@ def _hash(character: str) -> str:
     return character * 64
 
 
+def _git_hash(character: str) -> str:
+    return character * 40
+
+
 def _sessions() -> tuple[date, ...]:
     return (
         date(2021, 12, 29),
@@ -84,6 +88,43 @@ def test_default_is_no_database_socket_or_output(monkeypatch, capsys) -> None:
 def test_only_exact_authorized_run_id_is_accepted() -> None:
     with pytest.raises(runner.HistoricalRunError, match="single authorized"):
         runner.main(["--run-id", f"{runner.RUN_ID}-RETRY"])
+
+
+def test_git_identity_accepts_exact_lowercase_sha1_commit_and_tree(
+    monkeypatch,
+) -> None:
+    values = iter((_git_hash("a"), _git_hash("b")))
+    monkeypatch.setattr(
+        runner.subprocess,
+        "check_output",
+        lambda *_args, **_kwargs: next(values),
+    )
+    assert runner._git_identity() == (_git_hash("a"), _git_hash("b"))
+
+
+@pytest.mark.parametrize(
+    "invalid",
+    (
+        "a" * 39,
+        "a" * 41,
+        "g" * 40,
+        "A" * 40,
+    ),
+)
+@pytest.mark.parametrize("position", (0, 1))
+def test_git_identity_rejects_wrong_length_nonhex_and_uppercase(
+    monkeypatch, invalid: str, position: int
+) -> None:
+    values = [_git_hash("a"), _git_hash("b")]
+    values[position] = invalid
+    outputs = iter(values)
+    monkeypatch.setattr(
+        runner.subprocess,
+        "check_output",
+        lambda *_args, **_kwargs: next(outputs),
+    )
+    with pytest.raises(runner.HistoricalRunError, match="lowercase Git SHA-1"):
+        runner._git_identity()
 
 
 def test_split_intervals_reset_and_purge_crossing_labels() -> None:
@@ -233,7 +274,7 @@ def test_execute_claims_before_outcomes_and_finalizes_once(monkeypatch, tmp_path
         "run_read_only_preflight",
         lambda _: {"status": "PREFLIGHT_PASS"},
     )
-    prepared = SimpleNamespace(code_commit=_hash("c"), code_tree=_hash("d"))
+    prepared = SimpleNamespace(code_commit=_git_hash("c"), code_tree=_git_hash("d"))
     monkeypatch.setattr(runner, "prepare_historical", lambda *_: prepared)
     monkeypatch.setattr(runner, "close_prepared", lambda value: value is prepared)
 
@@ -317,11 +358,17 @@ def test_post_preflight_preparation_failure_does_not_consume_run(
         lambda _: {"status": "PREFLIGHT_PASS"},
     )
     monkeypatch.setattr(
+        runner.subprocess,
+        "check_output",
+        lambda *_args, **_kwargs: "a" * 39,
+    )
+    monkeypatch.setattr(
         runner,
         "prepare_historical",
-        lambda *_: (_ for _ in ()).throw(runner.HistoricalRunError("target drift")),
+        lambda *_: runner._git_identity(),
     )
-    with pytest.raises(runner.HistoricalRunError, match="target drift"):
+    output = tmp_path / "prepare-blocked.json"
+    with pytest.raises(runner.HistoricalRunError, match="lowercase Git SHA-1"):
         runner.main(
             [
                 "--run-id",
@@ -330,12 +377,13 @@ def test_post_preflight_preparation_failure_does_not_consume_run(
                 "--db",
                 str(database),
                 "--output",
-                str(tmp_path / "prepare-blocked.json"),
+                str(output),
                 "--run-marker",
                 str(marker),
             ]
         )
     assert not marker.exists()
+    assert not output.exists()
 
 
 def test_panel_query_is_bounded_at_historical_cutoff() -> None:
