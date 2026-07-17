@@ -23,19 +23,19 @@
   "terminal_adjudication": {
     "source_matrix_complete": false,
     "common_qualified_date_count": 0,
-    "reason": "The configured seller routes were inaccessible, while the owner-approved Eastmoney raw fqt=0 route supplied only aggregate route and coverage shape for all three symbols. Null, duplicate, unit, adjustment, calendar, suspension, limit, distribution, other-action, revision, and deterministic row semantics remain unqualified, so the matrix is incomplete without an access-blocked conclusion.",
+    "reason": "The corrected seller POST contracts are accessible: both relay schemes returned HTTP 200/application code 0 daily samples, and the Replay POST route returned the required field sets for short 510300.SH fund_basic, fund_daily, and fund_adj observations. The fund_nav sample timed out once without retry. Non-retained inline probe code makes these route observations noncontrolling; three-symbol historical coverage, unique product identity, factor construction, calendar, suspension, limit, distribution, other-action, revision, and deterministic snapshot semantics remain unqualified, so the matrix is still incomplete.",
     "closure_recommendation": "CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME",
     "weaker_source_substitution_performed": false,
     "recovery_csv_imported": false,
     "automatic_source_selection_or_fusion": false,
-    "next_action": "Close Cycle 4 without import or outcome access. Any future line requires a new frozen source qualification rather than repair of this result."
+    "next_action": "Close Cycle 4 without import or outcome access. The corrected POST contracts may be reused only by a separately frozen future acquisition task; this smoke does not authorize bulk retrieval or database publication."
   },
   "network_observations": {
     "lane_b_request_count": 15,
     "lane_b_replay_fund_basic_request_count": 3,
     "lane_b_public_document_get_count": 12,
-    "manager_source_switch_request_count": 5,
-    "combined_observed_request_count": 20,
+    "manager_source_switch_request_count": 11,
+    "combined_observed_request_count": 26,
     "canonical_provider_rows_persisted": 0,
     "credential_record_opened_by_probe": true,
     "credential_material_injected_into_request_header": true,
@@ -113,6 +113,151 @@
           "contract_role": "OUT_OF_CONTRACT_NONCONTROLLING_DIAGNOSTIC"
         }
       ],
+      "corrected_post_smoke": {
+        "completed_before_utc": "2026-07-17T05:26:42Z",
+        "timestamp_classification": "BATCH_COMPLETION_TIME_ONLY_NOT_ACTUAL_PER_REQUEST_RETRIEVAL_TIMESTAMP",
+        "execution_environment": "WINDOWS_PYTHON_WITH_SYSTEM_PROXY_ENVIRONMENT",
+        "provider_classification": "THIRD_PARTY_RELAY_SECONDARY_NOT_PRIMARY_EXCHANGE_EVIDENCE",
+        "request_count": 6,
+        "retry_count": 0,
+        "redirect_count": 0,
+        "database_cache_or_raw_payload_write": false,
+        "result_json_updated_after_smoke": true,
+        "raw_response_body_retained": false,
+        "credential_value_logged_or_committed": false,
+        "response_size_limit_status": "NOT_ENFORCED_IN_THIS_SMOKE",
+        "duplicate_key_definitions": {
+          "daily_fund_daily_fund_adj": ["ts_code", "trade_date"],
+          "fund_basic": ["ts_code", "list_date"]
+        },
+        "observations": [
+          {
+            "scheme_id": "SELLER_SCHEME_FASTAPIC_CORRECTED_POST",
+            "api_name": "daily",
+            "method": "POST",
+            "url": "https://fastapic.stockai888.top/",
+            "query_identity": "000001.SZ|20260101|20260110",
+            "http_status": 200,
+            "elapsed_ms": 1928,
+            "response_bytes": 687,
+            "response_sha256": "f2d0b9d19d4cd3d887a065ee144dce01107647d065cea716db23b394267ad198",
+            "application_code": 0,
+            "response_content_type": "application/json",
+            "json_valid": true,
+            "json_duplicate_key_check_performed": false,
+            "row_count": 5,
+            "date_start": "20260105",
+            "date_end": "20260109",
+            "field_names": ["ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "change", "pct_chg", "vol", "amount"],
+            "required_fields_present": true,
+            "null_cell_count": 0,
+            "duplicate_symbol_date_count": 0,
+            "contract_role": "CORRECTED_ROUTE_HEALTH_AND_SCHEMA_OBSERVATION_NOT_ETF_DATA_QUALIFICATION"
+          },
+          {
+            "scheme_id": "SELLER_SCHEME_REPLAY_CORRECTED_POST_SYSTEM_PROXY",
+            "api_name": "daily",
+            "method": "POST",
+            "url": "https://ai-tool.indevs.in/tushare/pro",
+            "query_identity": "000001.SZ|20260101|20260110",
+            "http_status": 200,
+            "elapsed_ms": 2303,
+            "response_bytes": 721,
+            "response_sha256": "568f55e069e35b18cafb2ad15f48d9c4db76e7a7f198970c711d1441a46b3829",
+            "application_code": 0,
+            "response_content_type": "application/json",
+            "json_valid": true,
+            "json_duplicate_key_check_performed": false,
+            "row_count": 5,
+            "date_start": "20260105",
+            "date_end": "20260109",
+            "field_names": ["ts_code", "trade_date", "open", "high", "low", "close", "pre_close", "change", "pct_chg", "vol", "amount"],
+            "required_fields_present": true,
+            "null_cell_count": 0,
+            "duplicate_symbol_date_count": 0,
+            "contract_role": "CORRECTED_ROUTE_HEALTH_AND_SCHEMA_OBSERVATION_NOT_ETF_DATA_QUALIFICATION"
+          },
+          {
+            "scheme_id": "SELLER_SCHEME_REPLAY_CORRECTED_POST_SYSTEM_PROXY",
+            "api_name": "fund_basic",
+            "method": "POST",
+            "url": "https://ai-tool.indevs.in/tushare/pro",
+            "query_identity": "510300.SH|market=E",
+            "http_status": 200,
+            "elapsed_ms": 817,
+            "response_bytes": 1030,
+            "response_sha256": "27d21784a68f454510c02989b8456113205d91c4616d91293605018563794808",
+            "application_code": 0,
+            "response_content_type": "application/json",
+            "json_valid": true,
+            "json_duplicate_key_check_performed": false,
+            "row_count": 2,
+            "field_names": ["ts_code", "name", "management", "custodian", "fund_type", "found_date", "due_date", "list_date", "issue_date", "delist_date", "issue_amount", "m_fee", "c_fee", "duration_year", "p_value", "min_amount", "exp_return", "benchmark", "status", "invest_type", "type", "trustee", "purc_startdate", "redm_startdate", "market"],
+            "required_fields_present": true,
+            "null_cell_count": 0,
+            "duplicate_ts_code_list_date_count": 1,
+            "observed_list_date": "20120528",
+            "contract_role": "SHORT_PRODUCT_SCHEMA_OBSERVATION_DUPLICATE_IDENTITY_UNRESOLVED"
+          },
+          {
+            "scheme_id": "SELLER_SCHEME_REPLAY_CORRECTED_POST_SYSTEM_PROXY",
+            "api_name": "fund_daily",
+            "method": "POST",
+            "url": "https://ai-tool.indevs.in/tushare/pro",
+            "query_identity": "510300.SH|20260622|20260630",
+            "http_status": 200,
+            "elapsed_ms": 767,
+            "response_bytes": 932,
+            "response_sha256": "41f97169ef2a1a5f7530210845bd6c9ce25e7d93824b89ab6f3d02c1755116ab",
+            "application_code": 0,
+            "response_content_type": "application/json",
+            "json_valid": true,
+            "json_duplicate_key_check_performed": false,
+            "row_count": 7,
+            "date_start": "20260622",
+            "date_end": "20260630",
+            "field_names": ["ts_code", "trade_date", "pre_close", "open", "high", "low", "close", "change", "pct_chg", "vol", "amount"],
+            "required_fields_present": true,
+            "null_cell_count": 0,
+            "duplicate_symbol_date_count": 0,
+            "contract_role": "SHORT_ETF_DAILY_SCHEMA_AND_UNIT_CONTRACT_OBSERVATION"
+          },
+          {
+            "scheme_id": "SELLER_SCHEME_REPLAY_CORRECTED_POST_SYSTEM_PROXY",
+            "api_name": "fund_adj",
+            "method": "POST",
+            "url": "https://ai-tool.indevs.in/tushare/pro",
+            "query_identity": "510300.SH|20260622|20260630",
+            "http_status": 200,
+            "elapsed_ms": 685,
+            "response_bytes": 460,
+            "response_sha256": "2bf2300caf9ec1adc24c03b19b15cd01a6519cc3ed4dfcc13e05e988759010a0",
+            "application_code": 0,
+            "response_content_type": "application/json",
+            "json_valid": true,
+            "json_duplicate_key_check_performed": false,
+            "row_count": 7,
+            "date_start": "20260622",
+            "date_end": "20260630",
+            "field_names": ["ts_code", "trade_date", "adj_factor"],
+            "required_fields_present": true,
+            "null_cell_count": 0,
+            "duplicate_symbol_date_count": 0,
+            "contract_role": "SHORT_ETF_FACTOR_SCHEMA_OBSERVATION_CONSTRUCTION_BASE_UNQUALIFIED"
+          },
+          {
+            "scheme_id": "SELLER_SCHEME_REPLAY_CORRECTED_POST_SYSTEM_PROXY",
+            "api_name": "fund_nav",
+            "method": "POST",
+            "url": "https://ai-tool.indevs.in/tushare/pro",
+            "query_identity": "510300.SH|market=E|20260622|20260630",
+            "elapsed_ms": 60013,
+            "transport_error": "ReadTimeout",
+            "retry": false,
+            "contract_role": "FAILED_SINGLE_ATTEMPT_NOT_QUALIFIED"
+          }
+        ]
+      },
       "eastmoney_candidate_route": [
         {
           "symbol": "510300.SH",
@@ -186,7 +331,7 @@
     "files_retained": false,
     "controlling_evidence": false,
     "auditable_controlling_evidence_claimed": false,
-    "reason": "The historical temporary scripts are absent. Their aggregate observations remain provenance notes only; the secret-free reproduction contract below is the auditable contract for the owner-approved source switch."
+    "reason": "The historical temporary scripts and the current inline smoke code are absent. Their aggregate observations remain noncontrolling route notes only. The secret-free contract below records the request shape, but it is not a code hash or independently replayable qualification artifact."
   },
   "secret_free_reproduction_contract": {
     "seller_scheme_fastapic_post": {
@@ -235,6 +380,47 @@
       "retries": 0,
       "persistence": false,
       "parser_and_retention": "Retain only HTTP status, content type, response byte count, and SHA256; do not retain body or secret."
+    },
+    "corrected_seller_post_smoke": {
+      "scheme_fast": {
+        "method": "POST",
+        "scheme": "https",
+        "host": "fastapic.stockai888.top",
+        "path": "/",
+        "header_shape": {
+          "User-Agent": "quant-proj-cycle4-smoke/1.0"
+        },
+        "body_shape": {
+          "api_name": "<frozen-api-name>",
+          "token": "<runtime-redacted-trimmed>",
+          "params": "<frozen-params-object>"
+        }
+      },
+      "scheme_replay": {
+        "method": "POST",
+        "scheme": "https",
+        "host": "ai-tool.indevs.in",
+        "path": "/tushare/pro",
+        "header_shape": {
+          "X-API-Key": "<runtime-redacted>",
+          "User-Agent": "quant-proj-cycle4-smoke/1.0"
+        },
+        "body_shape": {
+          "api_name": "<frozen-api-name>",
+          "params": "<frozen-params-object>"
+        },
+        "trust_env": true,
+        "routing": "WINDOWS_SYSTEM_PROXY_ENVIRONMENT"
+      },
+      "request_contract": {
+        "connect_timeout_seconds": 10,
+        "read_timeout_seconds": 60,
+        "allow_redirects": false,
+        "total_attempts": 6,
+        "retries": 0,
+        "persistence": false,
+        "parser_and_retention": "Parse JSON in memory without duplicate-key enforcement; retain only endpoint identity, transport/application status, elapsed time, field names, aggregate row/date/null/duplicate counts, response byte count, and SHA256; never retain response body, row values, or credential material."
+      }
     },
     "eastmoney_push2his_candidate": {
       "method": "GET",
@@ -426,17 +612,17 @@
       "share_t_plus_one": true,
       "share_t_plus_one_basis": "FROZEN_CONSERVATIVE_CYCLE4_MODEL_CONSTRAINT_NOT_UNIVERSAL_EXCHANGE_FACT",
       "dataset_matrix": [
-        {"domain_id": 1, "domain": "PRODUCT_IDENTITY_AND_LISTING_DATE", "canonical_source": "SSE_510300_PAGE_BYTES_WITHOUT_RETAINED_MARKER_PROOF", "canonical_source_url": "https://www.sse.com.cn/disclosure/fund/announcement/c/new/2023-06-02/510300_20230602_I47A.pdf", "optional_cross_check_source": null, "optional_cross_check_source_url": null, "coverage_start": null, "coverage_end": null, "row_or_event_count": null, "null_count": null, "duplicate_count": null, "unit": "PRODUCT_IDENTITY", "actual_retrieval_timestamp_utc": "2026-07-17T04:25:05.337873Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "finding": "A URL and response hash are retained, but no current auditable marker extraction proves product and listing-date semantics."},
+        {"domain_id": 1, "domain": "PRODUCT_IDENTITY_AND_LISTING_DATE", "canonical_source": "SSE_510300_PAGE_BYTES_WITHOUT_RETAINED_MARKER_PROOF", "canonical_source_url": "https://www.sse.com.cn/disclosure/fund/announcement/c/new/2023-06-02/510300_20230602_I47A.pdf", "optional_cross_check_source": "TUSHARE_REPLAY_POST_FUND_BASIC_SHORT_SMOKE", "optional_cross_check_source_url": "https://ai-tool.indevs.in/tushare/pro", "coverage_start": null, "coverage_end": null, "row_or_event_count": 2, "null_count": 0, "duplicate_count": 1, "unit": "PRODUCT_IDENTITY", "actual_retrieval_timestamp_utc": null, "batch_completion_before_utc": "2026-07-17T05:26:42Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "CONFLICT", "candidate_response_sha256": "27d21784a68f454510c02989b8456113205d91c4616d91293605018563794808", "finding": "The corrected Replay POST route exposed the documented fund_basic field set and an observed list date, but two rows shared the same ts_code/list_date key. Aggregate-only retention cannot adjudicate the duplicate, the per-request retrieval timestamp was not captured, and official primary marker proof remains absent."},
         {"domain_id": 2, "domain": "ACCEPTED_TRADE_CALENDAR", "canonical_source": "LOCAL_CALENDAR_SNAPSHOT_UNQUALIFIED_AS_OFFICIAL_SSE", "canonical_source_url": null, "optional_cross_check_source": null, "optional_cross_check_source_url": null, "coverage_start": "2018-01-02", "coverage_end": "2026-06-30", "row_or_event_count": 2058, "null_count": 0, "duplicate_count": 0, "unit": "OPEN_SESSION", "actual_retrieval_timestamp_utc": "2026-07-17T04:28:23.266953031Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "CONFLICT", "finding": "Observed source label is AKSHARE_TOOL_TRADE_DATE_HIST_SINA, not accepted official SSE identity."},
-        {"domain_id": 3, "domain": "RAW_DAILY_OHLC_CNY", "canonical_source": "EASTMONEY_PUSH2HIS_FQT0_CANDIDATE_PARTIAL", "canonical_source_url": "https://push2his.eastmoney.com/api/qt/stock/kline/get", "optional_cross_check_source": "CENTRAL_QFQ_SNAPSHOT_UNQUALIFIED_AS_RAW", "optional_cross_check_source_url": null, "coverage_start": "2018-01-02", "coverage_end": "2026-06-30", "row_or_event_count": 2058, "null_count": null, "duplicate_count": null, "unit": "CNY_PER_FUND_SHARE_EXPECTED_NOT_VERIFIED", "actual_retrieval_timestamp_utc": null, "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "candidate_response_sha256": "50156d86947c56033031ff7d92d3c2fdf8db9481a0c486daa4675900f392aa80", "finding": "Route and 11-field coverage shape only; OHLC field semantics, nulls, duplicates, and units were not qualified. The qfq cross-check is not raw execution price evidence."},
-        {"domain_id": 4, "domain": "DAILY_VOLUME_SHARES", "canonical_source": "EASTMONEY_PUSH2HIS_FQT0_CANDIDATE_PARTIAL", "canonical_source_url": "https://push2his.eastmoney.com/api/qt/stock/kline/get", "optional_cross_check_source": null, "optional_cross_check_source_url": null, "coverage_start": "2018-01-02", "coverage_end": "2026-06-30", "row_or_event_count": 2058, "null_count": null, "duplicate_count": null, "unit": "PROVIDER_NATIVE_VOLUME_UNIT_UNVERIFIED", "actual_retrieval_timestamp_utc": null, "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "candidate_response_sha256": "50156d86947c56033031ff7d92d3c2fdf8db9481a0c486daa4675900f392aa80", "finding": "Route shape does not prove SHARES units or conversion semantics."},
-        {"domain_id": 5, "domain": "DAILY_AMOUNT_CNY", "canonical_source": "EASTMONEY_PUSH2HIS_FQT0_CANDIDATE_PARTIAL", "canonical_source_url": "https://push2his.eastmoney.com/api/qt/stock/kline/get", "optional_cross_check_source": null, "optional_cross_check_source_url": null, "coverage_start": "2018-01-02", "coverage_end": "2026-06-30", "row_or_event_count": 2058, "null_count": null, "duplicate_count": null, "unit": "PROVIDER_NATIVE_AMOUNT_UNIT_UNVERIFIED", "actual_retrieval_timestamp_utc": null, "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "candidate_response_sha256": "50156d86947c56033031ff7d92d3c2fdf8db9481a0c486daa4675900f392aa80", "finding": "Route shape does not prove CNY amount units or conversion semantics."},
-        {"domain_id": 6, "domain": "ADJUSTMENT_FACTOR_AND_CONSTRUCTION_IDENTITY", "canonical_source": "TUSHARE_FUND_ADJUSTMENT_VIA_CONFIGURED_REPLAY", "canonical_source_url": "https://ai-tool.indevs.in/tushare/pro/fund_adj", "optional_cross_check_source": "TUSHARE_FUND_NAV_CROSSCHECK_CONTRACT", "optional_cross_check_source_url": "https://tushare.pro/document/2?doc_id=119", "coverage_start": null, "coverage_end": null, "row_or_event_count": null, "null_count": null, "duplicate_count": null, "unit": "DIMENSIONLESS_FACTOR", "actual_retrieval_timestamp_utc": null, "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "finding": "A qfq label is not separate factor plus construction identity."},
+        {"domain_id": 3, "domain": "RAW_DAILY_OHLC_CNY", "canonical_source": "TUSHARE_REPLAY_POST_FUND_DAILY_SHORT_SMOKE", "canonical_source_url": "https://ai-tool.indevs.in/tushare/pro", "optional_cross_check_source": "EASTMONEY_PUSH2HIS_FQT0_CANDIDATE_PARTIAL", "optional_cross_check_source_url": "https://push2his.eastmoney.com/api/qt/stock/kline/get", "coverage_start": "2026-06-22", "coverage_end": "2026-06-30", "row_or_event_count": 7, "null_count": 0, "duplicate_count": 0, "unit": "CNY_PER_FUND_SHARE_BY_CURRENT_TUSHARE_CONTRACT", "actual_retrieval_timestamp_utc": null, "batch_completion_before_utc": "2026-07-17T05:26:42Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "candidate_response_sha256": "41f97169ef2a1a5f7530210845bd6c9ce25e7d93824b89ab6f3d02c1755116ab", "finding": "The corrected Replay POST route exposed seven rows with the required fields, no observed null cells, and no duplicate symbol/date keys; the current official contract defines OHLC in CNY. Full 2018-2026 three-symbol coverage, retained row identity, per-request retrieval time, and historical available_at remain absent."},
+        {"domain_id": 4, "domain": "DAILY_VOLUME_SHARES", "canonical_source": "TUSHARE_REPLAY_POST_FUND_DAILY_SHORT_SMOKE", "canonical_source_url": "https://ai-tool.indevs.in/tushare/pro", "optional_cross_check_source": "TUSHARE_FUND_DAILY_CONTRACT", "optional_cross_check_source_url": "https://tushare.pro/document/2?doc_id=127", "coverage_start": "2026-06-22", "coverage_end": "2026-06-30", "row_or_event_count": 7, "null_count": 0, "duplicate_count": 0, "unit": "SHARES_AFTER_VOL_LOTS_TIMES_100", "actual_retrieval_timestamp_utc": null, "batch_completion_before_utc": "2026-07-17T05:26:42Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "candidate_response_sha256": "41f97169ef2a1a5f7530210845bd6c9ce25e7d93824b89ab6f3d02c1755116ab", "finding": "The current official contract defines vol as lots and the short field-set observation contained no null cells, but full history, retained deterministic rows, and per-request retrieval time were not collected."},
+        {"domain_id": 5, "domain": "DAILY_AMOUNT_CNY", "canonical_source": "TUSHARE_REPLAY_POST_FUND_DAILY_SHORT_SMOKE", "canonical_source_url": "https://ai-tool.indevs.in/tushare/pro", "optional_cross_check_source": "TUSHARE_FUND_DAILY_CONTRACT", "optional_cross_check_source_url": "https://tushare.pro/document/2?doc_id=127", "coverage_start": "2026-06-22", "coverage_end": "2026-06-30", "row_or_event_count": 7, "null_count": 0, "duplicate_count": 0, "unit": "CNY_AFTER_AMOUNT_THOUSAND_CNY_TIMES_1000", "actual_retrieval_timestamp_utc": null, "batch_completion_before_utc": "2026-07-17T05:26:42Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "candidate_response_sha256": "41f97169ef2a1a5f7530210845bd6c9ce25e7d93824b89ab6f3d02c1755116ab", "finding": "The current official contract defines amount as thousand CNY and the short field-set observation contained no null cells, but full history, retained deterministic rows, and per-request retrieval time were not collected."},
+        {"domain_id": 6, "domain": "ADJUSTMENT_FACTOR_AND_CONSTRUCTION_IDENTITY", "canonical_source": "TUSHARE_REPLAY_POST_FUND_ADJ_SHORT_SMOKE", "canonical_source_url": "https://ai-tool.indevs.in/tushare/pro", "optional_cross_check_source": "TUSHARE_FUND_ADJUSTMENT_CONTRACT", "optional_cross_check_source_url": "https://tushare.pro/document/2?doc_id=199", "coverage_start": "2026-06-22", "coverage_end": "2026-06-30", "row_or_event_count": 7, "null_count": 0, "duplicate_count": 0, "unit": "DIMENSIONLESS_FACTOR", "actual_retrieval_timestamp_utc": null, "batch_completion_before_utc": "2026-07-17T05:26:42Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "candidate_response_sha256": "2bf2300caf9ec1adc24c03b19b15cd01a6519cc3ed4dfcc13e05e988759010a0", "finding": "The corrected Replay POST route exposed seven rows with the required factor fields, no observed null cells, and no duplicate symbol/date keys, but the official document does not freeze factor base, construction formula, or underlying cash-distribution event identity; fund_nav timed out and no full history or per-request retrieval time was retained."},
         {"domain_id": 7, "domain": "SUSPENSION_OR_NON_TRADING_HANDLING", "canonical_source": "NO_CANONICAL_SOURCE_QUALIFIED", "canonical_source_url": null, "optional_cross_check_source": null, "optional_cross_check_source_url": null, "coverage_start": null, "coverage_end": null, "row_or_event_count": null, "null_count": null, "duplicate_count": null, "unit": "SESSION_STATE", "actual_retrieval_timestamp_utc": null, "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "finding": "An absent accepted-session bar cannot prove suspension."},
         {"domain_id": 8, "domain": "PRICE_LIMIT_SEMANTICS", "canonical_source": "SSE_ETF_TRADING_RULES", "canonical_source_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/fund/trading/c/c_20250606_10781071.shtml", "optional_cross_check_source": "SSE_2023_TRADING_RULES", "optional_cross_check_source_url": "https://www.sse.com.cn/lawandrules/sselawsrules2025/repeal/rules/c/c_20250612_10824490.shtml", "coverage_start": null, "coverage_end": null, "row_or_event_count": null, "null_count": null, "duplicate_count": null, "unit": "CNY_PER_FUND_SHARE", "actual_retrieval_timestamp_utc": "2026-07-17T04:25:06.035387Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "finding": "LIMIT_SEMANTICS_INCOMPLETE: no complete effective-dated rule, exact prior-close/rounding chain, or authoritative daily limits."},
         {"domain_id": 9, "domain": "CASH_DISTRIBUTION_EVENT_IDENTITY", "canonical_source": "SSE_510300_DISTRIBUTION_DOCUMENTS", "canonical_source_url": "https://www.sse.com.cn/assortment/options/disclo/update/c/c_20250611_10781544.shtml", "optional_cross_check_source": "TUSHARE_FUND_NAV_CROSSCHECK_CONTRACT", "optional_cross_check_source_url": "https://tushare.pro/document/2?doc_id=119", "coverage_start": null, "coverage_end": null, "row_or_event_count": null, "null_count": null, "duplicate_count": null, "unit": "CNY_PER_FUND_SHARE", "actual_retrieval_timestamp_utc": "2026-07-17T04:25:04.324512Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "observed_partial_document_count": 2, "finding": "Selected documents do not prove complete 2018-2026 event enumeration with all required dates, amount, and revision identity."},
         {"domain_id": 10, "domain": "OTHER_CORPORATE_ACTION_PRESENCE_OR_ABSENCE", "canonical_source": "SSE_AND_FUND_MANAGER_ANNOUNCEMENTS_NOT_ENUMERATED", "canonical_source_url": "https://www.sse.com.cn/disclosure/fund/announcement/c/new/2023-06-02/510300_20230602_I47A.pdf", "optional_cross_check_source": null, "optional_cross_check_source_url": null, "coverage_start": null, "coverage_end": null, "row_or_event_count": null, "null_count": null, "duplicate_count": null, "unit": "CORPORATE_ACTION_EVENT", "actual_retrieval_timestamp_utc": "2026-07-17T04:25:05.337873Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING"},
-        {"domain_id": 11, "domain": "SOURCE_URL_HASH_REVISION_AND_RETRIEVAL_IDENTITY", "canonical_source": "PUBLIC_DOCUMENT_REGISTRY_PLUS_UNOBTAINED_PROVIDER_ROWS", "canonical_source_url": "https://tushare.pro/document/2?doc_id=127", "optional_cross_check_source": "SSE_OFFICIAL_DOCUMENTS", "optional_cross_check_source_url": "https://www.sse.com.cn/disclosure/fund/announcement/c/new/2023-06-02/510300_20230602_I47A.pdf", "coverage_start": null, "coverage_end": null, "row_or_event_count": null, "null_count": null, "duplicate_count": null, "unit": "CONTENT_IDENTITY", "actual_retrieval_timestamp_utc": "2026-07-17T04:25:03.527769Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "finding": "Public document bytes are hashed; complete provider row bytes and revision chains are absent."},
+        {"domain_id": 11, "domain": "SOURCE_URL_HASH_REVISION_AND_RETRIEVAL_IDENTITY", "canonical_source": "PUBLIC_DOCUMENT_REGISTRY_PLUS_AGGREGATE_ONLY_RELAY_RESPONSE_HASHES", "canonical_source_url": "https://tushare.pro/document/2?doc_id=127", "optional_cross_check_source": "SSE_OFFICIAL_DOCUMENTS", "optional_cross_check_source_url": "https://www.sse.com.cn/disclosure/fund/announcement/c/new/2023-06-02/510300_20230602_I47A.pdf", "coverage_start": "2026-06-22", "coverage_end": "2026-06-30", "row_or_event_count": 7, "null_count": 0, "duplicate_count": 0, "unit": "CONTENT_IDENTITY", "actual_retrieval_timestamp_utc": null, "batch_completion_before_utc": "2026-07-17T05:26:42Z", "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING", "finding": "Current public contracts and aggregate-only response hashes are recorded, but response rows and per-request retrieval times were deliberately not retained and no full historical revision or snapshot chain exists."},
         {"domain_id": 12, "domain": "DETERMINISTIC_ROW_AND_SNAPSHOT_IDENTITY", "canonical_source": "NO_CANONICAL_PROVIDER_ROWS_OBTAINED", "canonical_source_url": null, "optional_cross_check_source": null, "optional_cross_check_source_url": null, "coverage_start": null, "coverage_end": null, "row_or_event_count": null, "null_count": null, "duplicate_count": null, "unit": "ROW_AND_SNAPSHOT_HASH", "actual_retrieval_timestamp_utc": null, "historical_available_at": "UNKNOWN_NOT_PIT_QUALIFIED", "status": "MISSING"}
       ]
     },
@@ -484,17 +670,17 @@
     }
   ],
   "aggregate_domain_status": {
-    "product_identity": "MISSING_RETAINED_MARKER_PROOF_3_OF_3",
+    "product_identity": "CONFLICT_510300_RELAY_DUPLICATE_AND_MISSING_PRIMARY_MARKER_PROOF_ALL_3",
     "accepted_trade_calendar": "CONFLICT_UNQUALIFIED_OFFICIAL_IDENTITY_3_OF_3",
-    "raw_ohlc": "CANDIDATE_PARTIAL_ROUTE_AND_COVERAGE_SHAPE_UNQUALIFIED_3_OF_3",
-    "volume_shares": "CANDIDATE_PARTIAL_UNIT_AND_ROW_SEMANTICS_UNQUALIFIED_3_OF_3",
-    "amount_cny": "CANDIDATE_PARTIAL_UNIT_AND_ROW_SEMANTICS_UNQUALIFIED_3_OF_3",
-    "adjustment_identity": "MISSING_SEPARATE_FACTOR_AND_CONSTRUCTION_IDENTITY_3_OF_3",
+    "raw_ohlc": "SHORT_FIELD_SET_OBSERVED_510300_ONLY_FULL_THREE_SYMBOL_HISTORY_MISSING",
+    "volume_shares": "SHORT_FIELD_SET_AND_CURRENT_UNIT_CONTRACT_OBSERVED_510300_ONLY_FULL_THREE_SYMBOL_HISTORY_MISSING",
+    "amount_cny": "SHORT_FIELD_SET_AND_CURRENT_UNIT_CONTRACT_OBSERVED_510300_ONLY_FULL_THREE_SYMBOL_HISTORY_MISSING",
+    "adjustment_identity": "SHORT_FACTOR_FIELD_SET_OBSERVED_510300_ONLY_CONSTRUCTION_IDENTITY_MISSING_3_OF_3",
     "suspension_handling": "MISSING_3_OF_3",
     "limit_semantics": "LIMIT_SEMANTICS_INCOMPLETE_3_OF_3",
     "distribution_events": "MISSING_COMPLETE_ENUMERATION_3_OF_3",
     "other_corporate_actions": "MISSING_COMPLETE_ENUMERATION_3_OF_3",
-    "source_revision_retrieval_identity": "MISSING_COMPLETE_DATASET_IDENTITY_3_OF_3",
+    "source_revision_retrieval_identity": "AGGREGATE_RESPONSE_HASHES_OBSERVED_510300_SHORT_SLICE_COMPLETE_DATASET_IDENTITY_MISSING_3_OF_3",
     "deterministic_row_snapshot_identity": "MISSING_3_OF_3"
   },
   "validation_boundaries": {
@@ -504,8 +690,12 @@
     "all_nonnull_source_urls_https": true,
     "credentials_in_artifact": false,
     "raw_payloads_tracked": false,
-    "new_network_request_performed_by_this_final_rework": false,
-    "owner_supplied_source_switch_evidence_only": true,
+    "new_network_request_performed_by_this_final_rework": true,
+    "owner_supplied_source_switch_evidence_only": false,
+    "manager_executed_corrected_post_smoke": true,
+    "manager_corrected_post_smoke_request_count": 6,
+    "manager_corrected_post_smoke_retry_count": 0,
+    "manager_corrected_post_smoke_raw_body_retained": false,
     "database_write": false,
     "strategy_outcome_access": false,
     "prospective_forward_access": false,
