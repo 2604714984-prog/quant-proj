@@ -40,8 +40,9 @@ shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=58c721095df62558a3c20df7defcff551ca25888
-ACTIVE_FAMILY=NONE
+V2_MAIN_HEAD=6967c2819a27ae11de0410cbffc65e575b519343
+ACTIVE_FAMILY=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_20260718
+ACTIVE_STAGE=OUTCOME_BLIND_PR_A_PREFLIGHT_PASS_AWAITING_INDEPENDENT_ACCEPTANCE
 CYCLE_4=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
 SOURCE_MATRIX_COMPLETE=false
 H3=CLOSED_ACCEPTED_STRICT_PREOPEN
@@ -416,17 +417,21 @@ US_MIXED_CONSIDERATION=REQUIRE_EXPLICIT_BASIS_ALLOCATION_OR_FAIL_CLOSED
 
 Do not launch RSI, MACD, Bollinger Bands, OBV, KDJ, CCI, or separate indicator families.
 
-### Next family — feasibility proposal only
+### Next family — Swing Count selected for PR A
 
-No strategy family is active. Before selecting the next family, the Manager
-must present a candidate slate to the user. The previously preserved direction
-is Swing Count / volume-confirmed trend.
+The owner selected Swing Count / volume-confirmed trend on 2026-07-18. It must
+remain a new trend-persistence hypothesis, not a rescue of failed RS. The first
+authorized implementation phase is one frozen definition, one small adapter and
+one aggregate outcome-free preflight. No return, NAV, identifier output or
+performance gate is authorized until that preflight passes.
 
-It must be a new trend-persistence hypothesis, not a rescue of failed RS. The
-first authorized phase is limited to one frozen hypothesis page and one
-aggregate, outcome-free feasibility scan. No adapter, return, NAV, ranking,
-identifier output, or performance gate is authorized unless that scan passes
-and the user selects the family.
+The local read-only preflight completed on 2026-07-18 without opening outcomes
+or changing the database. It evaluated 89 historical month-end decisions for
+both frozen variants. Minimum eligible counts were 1,212 for SWING20 and 1,210
+for SWING60; minimum candidate counts were 56 and 89 respectively. All selected
+next-open panels were complete, the benchmark probe filled, and the unexpected
+exception count was zero. This remains a local `PREFLIGHT_PASS` pending fresh
+independent read-only acceptance; it is not historical strategy evidence.
 
 ## 8. Strategy combination remains blocked
 
@@ -588,11 +593,11 @@ NEXT_ACTION:
 ## 12. Expected Manager state
 
 ```text
-ACTIVE_FAMILY=NONE
-ACTIVE_STAGE=NEXT_FAMILY_FEASIBILITY_PROPOSAL
-BASE_COMMIT=58c721095df62558a3c20df7defcff551ca25888
-SNAPSHOT_ID=NOT_BOUND
-PREFLIGHT_STATUS=NOT_RUN
+ACTIVE_FAMILY=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_20260718
+ACTIVE_STAGE=OUTCOME_BLIND_PR_A_PREFLIGHT_PASS_AWAITING_INDEPENDENT_ACCEPTANCE
+BASE_COMMIT=6967c2819a27ae11de0410cbffc65e575b519343
+SNAPSHOT_ID=a_share_qfq_personal_research_20260716_v5
+PREFLIGHT_STATUS=LOCAL_PASS_AWAITING_INDEPENDENT_ACCEPTANCE
 OUTCOME_STATUS=NOT_RUN
 FORWARD_STATUS=CLOSED
 STRATEGY_CANDIDATE_AVAILABLE=false
@@ -603,7 +608,7 @@ CYCLE_4_STATUS=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
 H3_STATUS=CLOSED_ACCEPTED_STRICT_PREOPEN
 M1_STATUS=DEFERRED
 YOUNG_CHAIRMAN_PR=CLOSED_WITHOUT_MERGE
-NEXT_ACTION=RETURN_NEXT_FAMILY_SLATE_TO_USER_BEFORE_OUTCOME_FREE_FEASIBILITY
+NEXT_ACTION=INDEPENDENTLY_ACCEPT_AND_PRESERVE_SWING_COUNT_PR_A_WITHOUT_OUTCOMES
 ```
 
 ## Final directive
@@ -614,7 +619,7 @@ The next priority is:
 
 ```text
 Manager terminal-state sync
--> user selection from the next-family slate
+-> owner selected Swing Count
 -> one outcome-free feasibility scan
 + read-only local Macro Risk Shadow after its separate start gates pass
 ```
