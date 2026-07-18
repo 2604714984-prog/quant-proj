@@ -1,0 +1,127 @@
+{
+  "schema_version": "strategy-definition-v1",
+  "research_id": "A_SHARE_RELATIVE_VARIANCE_MANAGED_LIQUID_EQUITY_V1_20260718",
+  "market": "A_SHARE",
+  "phase": "OUTCOME_BLIND_PREREGISTRATION_PR_A",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "research_question": "Does monthly variance-managed exposure to the same high-liquidity 30-stock basket improve net outcomes versus full exposure?",
+  "null_hypothesis": "Mean monthly net active return of variance-managed exposure versus the same fully exposed basket is not positive.",
+  "economic_prior": {
+    "direction": "negative_prior_requires_strict_validation",
+    "sources": [
+      "Moreira and Muir 2017, Journal of Finance, DOI 10.1111/jofi.12513",
+      "Cederburg et al. 2020, Journal of Financial Economics, DOI 10.1016/j.jfineco.2020.04.015"
+    ],
+    "distinction": "Time-series variance management of a basket fixed within each decision/holding interval and identical for managed/comparator; it may change only at scheduled monthly top-30 rebalance and is not cross-sectional low-volatility selection or ETF inverse-volatility allocation.",
+    "limitation": "The baseline/current windows and capped exposure are preregistered design choices, not a literal replication or causal claim."
+  },
+  "input_identity": {
+    "snapshot_id": "a_share_qfq_personal_research_20260716_v5",
+    "snapshot_digest": "da6160ddad3f5fcb21151dd0d3128ea7786be2a2014872a14f85635e783dba6b",
+    "database_sha256": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "snapshot_receipt": "a_share_volume_unit_shares_v5_20260717.json",
+    "snapshot_receipt_sha256": "241be32158b9ab5cebbe92dfceeec2a889f3b56e681a1f764d7b6d257f21f17f",
+    "calendar_snapshot_id": "akshare_sina_calendar_1d5ff82a6718fc4e19b95c98",
+    "calendar_digest": "ea7557ee994893ab6719a20ef0de10c60c5087e8637c0771f11c1e6ddc4cee71",
+    "classification": "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT",
+    "available_at": "UNKNOWN_NOT_PIT_QUALIFIED",
+    "strict_pit_eligible": false
+  },
+  "universe": {
+    "ordinary_share_filter": "existing frozen exchange-aware ordinary-A regex",
+    "observed_snapshot_cohort_only": true,
+    "boards": ["Main", "ChiNext", "STAR"],
+    "decision_date": "last accepted session of each calendar month",
+    "entry": "next accepted session",
+    "minimum_listing_history": "274 accepted sessions before and including decision date",
+    "selection_identity": "full accepted non-synthetic hashed qfq_close identity for all 274 sessions plus exact 20-row amount formation identity",
+    "amount_rule": "20 complete finite nonnegative amount rows",
+    "ranking": "median 20-session amount descending, then opaque ts_code ascending",
+    "basket_size": 30,
+    "replacement": false,
+    "insufficient_basket_rule": "interval is structurally invalid",
+    "candidate_exclusions": "allowed before ranking and reported only as aggregate counts"
+  },
+  "mechanism": {
+    "variant_count": 1,
+    "parameter_grid": false,
+    "close_sessions": 274,
+    "daily_return_count": 273,
+    "observation_grid": "all 274 closes and the last 20 amounts use the same consecutive accepted-session grid ending at the decision close",
+    "basket_daily_return": "equal mean of simple qfq_close returns across the same 30 stocks; estimation index only, not realized portfolio performance",
+    "baseline_variance": "mean(r^2) over first 252 basket daily returns",
+    "current_variance": "mean(r^2) over last 21 basket daily returns",
+    "window_partition": "the 273 returns are exhausted by non-overlapping first-252 and last-21 windows",
+    "invalid_variance": "zero or nonfinite baseline/current variance fails closed",
+    "exposure": "min(1, baseline_variance/current_variance)",
+    "leverage": false,
+    "remaining_cash_return": 0.0,
+    "comparator": "same 30 stocks at full exposure",
+    "one_way_cost_bps": 50
+  },
+  "shared_execution_binding": {
+    "base_commit": "1713f8ea2051ebee8f516c9a7830e4e2d7c8bcdb",
+    "modules_sha256": {
+      "quant_system.backtest.event_loop": "39a0bdad8715364d1af1a662a4b08e4b349aecaf78ab696523f9f52e5385bab2",
+      "quant_system.backtest.portfolio": "58dd483c2621ffde54e040c5814e7d812eb51af8f5260857e72324f3a0a286d5",
+      "quant_system.backtest.blocked_orders": "afcffcefa53fc4cee3e9682abecc524807b395ff2c6fb8014bfd7c97c7ec208a",
+      "quant_system.backtest.capacity": "9dcaade876870a34a6a070b935ed0d08973547be4d66a8e41725c5ff94d1708b",
+      "quant_system.backtest.permanent_portfolio": "11874465320c71218e89bad9bdf6ad543aa74dd3335a7571cc8ca2cc97ac6ffe",
+      "quant_system.markets.a_share": "ecb528e9de4b7422cb5c919d57237208b4039089e3e64c87352c4dd08a31872d"
+    },
+    "accounts": "symmetric independent managed and comparator accounts with identical starting NAV",
+    "targets": "managed exposure/30 per stock; comparator 1/30 per stock",
+    "cash_and_blocks": "unfilled buys remain cash; blocked sells remain held and marked; corporate actions are shared",
+    "monthly_return": "pre-current-rebalance NAV through next-open pre-next-orders NAV, including current rebalance trade costs",
+    "terminal_interval": "liquidate at split exit open including costs; any residual or blocked terminal holding invalid"
+  },
+  "splits": {
+    "development": "2020-01-01..2021-12-31 diagnostic_only",
+    "validation": "2022-01-01..2023-12-31",
+    "retrospective_holdout": "2024-01-01..2026-06-30 opened only after accepted validation pass",
+    "forbidden": "2026-07-01..2026-12-31",
+    "prospective_forward": "2027-01-01..2029-12-31 CLOSED",
+    "cross_boundary_rule": "purge intervals whose entry and exit do not remain in one split"
+  },
+  "retained_interval_counts": {
+    "development_2020_2021": 23,
+    "validation_2022_2023": 23,
+    "holdout_2024_2026h1": 29
+  },
+  "validation_inference": {
+    "dependency": "quant_system.backtest.permanent_portfolio.circular_block_start_indices",
+    "generator": "numpy.random.PCG64",
+    "block_length_months": 3,
+    "draws": 10000,
+    "seeds": {"validation": 20260731, "holdout": 20260801, "forward_closed": 20260802},
+    "one_sided_alpha": 0.016666666666666666,
+    "alpha_policy": "fixed conservative project-level ceiling; validation and conditional holdout each preassigned 1/60 without recycling and both must pass; not claimed as controller allocation",
+    "active_return": "managed monthly net return minus comparator monthly net return",
+    "annualized_volatility": "sample standard deviation with ddof=1 times sqrt(12)",
+    "annualized_net": "exp(sum(log1p(monthly_net))*12/N)-1",
+    "bootstrap": "PCG64 circular blocks of length 3; draw ceil(N/3) starts, wrap, concatenate and truncate to N",
+    "p_value": "(1 + count(centered bootstrap mean >= observed mean)) / 10001",
+    "lower_bound": "observed mean minus linearly interpolated (1-alpha) quantile of centered bootstrap means"
+  },
+  "strict_gates": [
+    "exact retained interval count, exactly 30 selected stocks per interval and zero invalid intervals",
+    "mean monthly net active return is positive",
+    "one-sided centered bootstrap p-value is at most 1/60",
+    "centered bootstrap lower confidence bound is positive",
+    "managed annualized volatility is lower than comparator annualized volatility",
+    "managed annualized net return is positive"
+  ],
+  "preflight": {
+    "outcomes_opened": false,
+    "status_precedence": "INPUT_BLOCKED then STRUCTURAL_FAIL then PREFLIGHT_PASS",
+    "aggregate_only": true
+  },
+  "execution_state": {
+    "historical_outcome_authorized": false,
+    "holdout_authorized": false,
+    "forward_authorized": false,
+    "network_or_provider_authorized": false,
+    "database_write_authorized": false,
+    "strategy_candidate_available": false
+  }
+}
