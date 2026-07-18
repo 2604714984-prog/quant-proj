@@ -1,0 +1,136 @@
+{
+  "schema_version": "us-large-cap-trend-selection-adjudication-v1",
+  "research_id": "US_LARGE_CAP_TREND_PARTICIPATION_V1_SELECTION_REVIEW_20260719",
+  "date": "2026-07-19",
+  "market": "US",
+  "phase": "OUTCOME_FREE_SELECTION_ADJUDICATION",
+  "status": "DO_NOT_REGISTER_MATERIAL_LEGACY_OVERLAP_AND_INPUT_BLOCKED",
+  "current_status": "rejected",
+  "repository": {
+    "base_commit": "c289b1d66752f71cdd2f2d829b60941c2f4554ea",
+    "base_tree": "bcc2b017a960343656c439feb08d1ad9285f5320",
+    "branch": "codex/us-large-cap-trend-selection-adjudication-20260719"
+  },
+  "controlling_inputs": [
+    {
+      "path": "reports/validation/us_market_state_data_qualification_v1_20260718.json",
+      "sha256": "96e8462eccaeace3b7720e7424a519e562c112d516b70f6f53bba2065cd916ee"
+    },
+    {
+      "path": "reports/validation/us_regime_specialist_candidate_slate_v1_20260718.md",
+      "sha256": "bca56a1f7170c4af59cb2d0104369804731fb0bd487fd48d6506fa26090c44fe"
+    },
+    {
+      "path": "research/definitions/us_four_cleanroom_replication_v1.json",
+      "sha256": "0e235072fc3d440cd4e5c457d74b0f73741856dbcc46b39f60fafcadba0f08ce"
+    }
+  ],
+  "owner_selected_proposal": {
+    "proposed_id": "US_LARGE_CAP_TREND_PARTICIPATION_V1",
+    "account_capital_usd": 40000,
+    "direction": "LONG_ONLY",
+    "leverage": false,
+    "fractional_shares": false,
+    "position_count": 8,
+    "rebalance": "MONTHLY",
+    "decision_time": "MONTH_END_CLOSE",
+    "earliest_execution": "NEXT_ACCEPTED_SESSION_OPEN",
+    "inactive_state": "CASH",
+    "primary_one_way_cost_bps": 15,
+    "stress_one_way_cost_bps": 30,
+    "minimum_price_usd": 10,
+    "minimum_60_session_median_dollar_volume_usd": 20000000,
+    "universe_size": 300,
+    "signal": "12_1_TOTAL_RETURN_MOMENTUM",
+    "activation": "SPY_ABOVE_200DMA_AND_AT_LEAST_50_PERCENT_ELIGIBLE_STOCKS_ABOVE_200DMA"
+  },
+  "legacy_contamination": {
+    "verdict": "MATERIAL_OVERLAP",
+    "us31_us36_us41_us46_exact_reuse": false,
+    "us31_us36_us41_us46_reason": "The four rejected lines are signal-free fixed-weight SPY/QQQ/GLD portfolios rebalanced every 63 sessions, unlike the proposed stock-selection strategy.",
+    "material_predecessors": [
+      {
+        "path": "legacy-local://us_stock_30w/config/strategies/momentum_41k.yaml",
+        "sha256": "abb4b6b03086a25130ae8f168dbedeb80e0f57a87cd1c3f50dbc4907e33a417d",
+        "overlap": "12-1 momentum, top-N equal weight, after-close decision, next-open execution, approximately USD 40k account"
+      },
+      {
+        "path": "legacy-local://us_stock_30w/config/strategies/market_regime_41k.yaml",
+        "sha256": "31a6a8c6beb35b854de0b99cfd70214cc6d8ed1994aa343fce700060016fb1aa",
+        "overlap": "momentum top-N gated by fraction of symbols above a 200-day SMA using threshold 0.5"
+      },
+      {
+        "path": "legacy-local://us_stock_30w/TODO.md",
+        "sha256": "99f7d89d2dd4a62027d3bae1192eccfacdd6c4cdfc3df2ac2c42b5c808e6d6d5",
+        "overlap": "large-cap momentum and breadth-filtered momentum were explicit legacy research families"
+      },
+      {
+        "path": "legacy-local://.wt-us-c2-r2-lineage-conflict-hold-20260713/reports/planning/us_c2_r2_lineage_conflict_hold_20260713.json",
+        "sha256": "ba5c4a2f693497aa00b85cc666025bfe5a69a510a45843df11416ba4eac1bb62",
+        "overlap": "C2 A3 already recorded a breadth-confirmed momentum line without accepted pre-outcome freeze"
+      }
+    ],
+    "adjudication": "Changing top 5 to top 8, USD 41k to USD 40k, or adding another 200-day condition does not create a new economic mechanism. The proposal cannot be registered as a new independent family or run as a fresh historical discovery."
+  },
+  "local_data_qualification": {
+    "warehouse_path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "warehouse_sha256_before_after": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "status": "INPUT_BLOCKED",
+    "nasdaq_security_metadata_rows": 270,
+    "nasdaq_equity_rows": 240,
+    "nasdaq_etf_rows": 30,
+    "historically_active_only": true,
+    "nasdaq_daily_bar_rows": 559959,
+    "nasdaq_daily_bar_symbols": 270,
+    "nasdaq_daily_bar_start": "2018-01-02",
+    "nasdaq_daily_bar_end": "2026-07-06",
+    "available_at_nonnull_rows": 0,
+    "canonical_eligible_rows": 0,
+    "qualified_us_calendar_rows": 0,
+    "survivor_complete_membership": false,
+    "broad_delisting_terminal_value_table": false,
+    "broad_equity_corporate_actions": false,
+    "top_300_liquidity_universe_possible": false,
+    "integer_share_preflight_possible": false,
+    "decisive_gaps": [
+      "Only 240 current active equities are identified, fewer than the frozen top-300 universe and without historical lifecycle intervals.",
+      "Per-stock available_at, revision identity, adjusted prices, broad dividends/splits, delistings and terminal values are absent or unqualified.",
+      "The accepted-session calendar and market-breadth inputs are not PIT-qualified.",
+      "No immutable survivor-complete input snapshot exists for an outcome-free USD 40,000 whole-share preflight."
+    ]
+  },
+  "provider_candidate_adjudication": {
+    "norgate": {
+      "status": "PRIMARY_CANDIDATE_BUT_LICENSE_AND_PIT_BLOCKED",
+      "official_pages": [
+        "https://norgatedata.com/stockmarketpackages.php",
+        "https://norgatedata.com/data-content-tables.php",
+        "https://norgatedata.com/subscribe/eula.php"
+      ],
+      "finding": "Platinum or Diamond is the closest survivor-controlled candidate, but official access is Windows-oriented, strict historical available_at and delisting recovery are unresolved, and the EULA requires data destruction after subscription lapse."
+    },
+    "tiingo": {
+      "status": "READ_ONLY_CROSSCHECK_CANDIDATE_ONLY",
+      "official_pages": [
+        "https://www.tiingo.com/documentation/end-of-day",
+        "https://www.tiingo.com/documentation/corporate-actions/dividends",
+        "https://www.tiingo.com/documentation/corporate-actions/splits"
+      ],
+      "finding": "Raw and adjusted OHLCV plus cash-dividend and split fields are documented, but complete delisted-universe, terminal-value, historical-membership and revision-vintage coverage is not established."
+    }
+  },
+  "decision": {
+    "active_family": null,
+    "active_stage": "US_FIRST_SELECTION_ADJUDICATION_COMPLETE",
+    "new_lineage_registered": false,
+    "strategy_definition_created": false,
+    "strategy_adapter_created": false,
+    "historical_outcome_authorized": false,
+    "historical_outcome_opened": false,
+    "provider_or_network_call_performed": false,
+    "database_write_performed": false,
+    "strategy_candidate_available": false,
+    "next_action": "External review of this contamination and input-blocked adjudication, then select a genuinely different economic mechanism before any new family registration."
+  },
+  "boundary_result": "PASS_OUTCOME_FREE_SELECTION_ADJUDICATION_NO_STRATEGY_NO_OUTCOME_NO_NETWORK_NO_DB_WRITE"
+}

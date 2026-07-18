@@ -352,3 +352,37 @@ VALIDATED_SPECIALISTS=0
 STRATEGY_CANDIDATE_AVAILABLE=false
 NEXT_ACTION=US_STATE_AND_SPECIALIST_DATA_FEASIBILITY
 ```
+
+## 12. 2026-07-19 first-family selection adjudication
+
+The owner selected the proposed `US_LARGE_CAP_TREND_PARTICIPATION_V1` shape for
+a USD 40,000, eight-position, monthly, long-only account. Outcome-free legacy
+inspection then found material overlap with the archived `us_momentum_41k` and
+`us_regime_41k` definitions: 12-1 momentum, top-N equal weighting, next-open
+execution, and a 0.5 breadth threshold above a 200-day average were already
+present together. Changing position count, account size, or adding another
+200-day filter does not create a new economic mechanism.
+
+The current warehouse is independently `INPUT_BLOCKED`: it identifies only 240
+current active equities, has no survivor-complete lifecycle, no broad delisting
+terminal values or corporate actions, no qualified historical `available_at`,
+and no qualified US calendar. Therefore no strategy definition, adapter,
+preflight ranking, or historical outcome is created.
+
+The controlling detail is:
+
+```text
+reports/validation/us_large_cap_trend_participation_v1_selection_adjudication_20260719.json
+```
+
+Current state:
+
+```text
+PRIMARY_RESEARCH_MARKET=US
+ACCOUNT_CAPITAL_USD=40000
+ACTIVE_FAMILY=NONE
+ACTIVE_STAGE=US_FIRST_SELECTION_ADJUDICATION_COMPLETE
+VALIDATED_SPECIALISTS=0
+STRATEGY_CANDIDATE_AVAILABLE=false
+NEXT_ACTION=EXTERNAL_REVIEW_THEN_SELECT_GENUINELY_NEW_ECONOMIC_MECHANISM
+```
