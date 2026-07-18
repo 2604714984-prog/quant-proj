@@ -1,0 +1,48 @@
+{
+  "schema_version": "historical-validation-result-v1",
+  "research_id": "A_SHARE_POST_IPO_AGE_UNDERPERFORMANCE_AVOIDANCE_V1_20260718",
+  "phase": "HISTORICAL_VALIDATION_ONLY",
+  "status": "VALIDATION_FAIL",
+  "source_commit": "b465c5b278f0dc8f193da8c4eae6ac00b4ccaa53",
+  "base_commit": "4922362ee5cdef9e244f949c3325ad80d46ed07f",
+  "definition_sha256": "22ede826e4ce0dc3bf93fbdc902b9b9b6a4146c5d601a96cee2aab03bb6f8559",
+  "adapter_sha256": "1e32ff55c7b68555f84d0521d025e72f2562862c5b2bf81deffa6a11f9727a63",
+  "preflight_code_sha256": "449c1cae3b30c808d520da92d8fbf6a558e7b6406dc93946c7e7aece051d4f2a",
+  "preflight_result_sha256": "0b1eda369ae8191b28f0a349c28270342632331db6399ee30ee619c308cb0cce",
+  "database_sha256": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+  "snapshot_receipt_sha256": "241be32158b9ab5cebbe92dfceeec2a889f3b56e681a1f764d7b6d257f21f17f",
+  "validation_interval_count": 23,
+  "invalid_interval_count": 0,
+  "mean_active_return": -0.0019839744002454825,
+  "centered_bootstrap_p_value": 0.5532446755324467,
+  "centered_bootstrap_lower_bound": -0.025175954400198805,
+  "seasoned_annualized_net_return": -0.35217733469087986,
+  "young_annualized_net_return": -0.32683400483445046,
+  "gates": {
+    "interval_count_20_to_23": true,
+    "zero_invalid_and_50_pairs_each": true,
+    "mean_active_positive": false,
+    "centered_bootstrap_p_value_lte_1_60": false,
+    "centered_bootstrap_lower_bound_positive": false,
+    "seasoned_annualized_exceeds_young": false
+  },
+  "gates_passed": 2,
+  "gates_total": 6,
+  "first_pre_outcome_attempt": {
+    "status": "BINDER_FAILURE_REPAIRED",
+    "marker_created": false,
+    "qfq_open_accessed": false
+  },
+  "one_use_marker": {
+    "sha256": "35e9bb4bb6e1bf54a0dd058c99aded7a0b6fc51219a682f63f35f178de05b434",
+    "mode": "0600",
+    "execution_completed": true,
+    "reuse_allowed": false
+  },
+  "database_write_performed": false,
+  "security_identifiers_in_report": false,
+  "holdout_closed": true,
+  "forward_closed": true,
+  "strategy_candidate_available": false,
+  "next_action": "CLOSE_LINEAGE_NO_RETUNING_NO_HOLDOUT_ACCESS"
+}
