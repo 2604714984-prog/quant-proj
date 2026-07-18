@@ -40,9 +40,16 @@ shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=a19bcb9898d075a38bcb03aef760c788d643cd02
+V2_MAIN_HEAD=3a2109e0562a85978f311c2bbb34d4e65f1ca5b5
 ACTIVE_FAMILY=NONE
-ACTIVE_STAGE=SALIENT_RETURN_PREFLIGHT_STRUCTURAL_FAIL_CLOSED
+ACTIVE_STAGE=UPPER_LIMIT_DELAY_PREFLIGHT_INPUT_BLOCKED
+UPPER_LIMIT_DELAY_VARIANT=NON_ONE_PRICE_UPPER_LIMIT_HOLD_1_SESSION
+UPPER_LIMIT_DELAY_PREFLIGHT=INPUT_BLOCKED
+UPPER_LIMIT_DELAY_SIGNAL_MISSING_COUNT=2815128
+UPPER_LIMIT_DELAY_SIGNAL_NONFINITE_COUNT=388938
+UPPER_LIMIT_DELAY_EXIT_PANELS_COMPLETE=false
+UPPER_LIMIT_DELAY_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
+UPPER_LIMIT_DELAY_FORWARD=CLOSED
 SALIENT_RETURN_RESULT=STRUCTURAL_FAIL
 SALIENT_RETURN_DECISION_COUNT=77
 SALIENT_RETURN_INVALID_DECISION_COUNT=1
@@ -68,6 +75,18 @@ fail-closed state, so this lineage is permanently closed: no rerun, retuning,
 rescue filter, regime relabel, prospective Shadow or candidate promotion is
 permitted. A future active family must use a genuinely new economic hypothesis,
 new lineage and outcome-blind preregistration.
+
+The non-one-price upper-limit delayed-price-discovery successor completed its
+single aggregate-only preflight without opening any return or identifier. The
+frozen snapshot contained ample interval and eligible-security counts, but the
+required signal universe had 2,815,128 missing rows and 388,938 nonfinite rows,
+and at least one selected D+2 exit panel was incomplete. The accepted precedence
+rule therefore returned `INPUT_BLOCKED`; no historical Run ID was allocated and
+no validation or holdout return was calculated. This exact lineage remains
+closed to outcomes. It may only be superseded by a new outcome-blind lineage
+after a genuinely qualified input snapshot fixes the identified data defects;
+the event, holding period, execution, reference, costs and gates may not be
+relaxed or retuned.
 
 The owner-selected low-salience-return successor completed its accepted
 aggregate-only preflight. One frozen calendar month had only 14 accepted-session
