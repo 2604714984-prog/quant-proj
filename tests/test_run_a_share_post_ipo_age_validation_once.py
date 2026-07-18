@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib.util, json, sys
 from pathlib import Path
 import pytest
+import duckdb
 
 ROOT = Path(__file__).resolve().parents[1]
 SPEC = importlib.util.spec_from_file_location(
@@ -114,3 +115,21 @@ def test_precheck_failure_does_not_claim_or_open_outcomes(tmp_path: Path, monkey
     with pytest.raises(runner.ValidationError):
         runner.run_once(database, marker, "a" * 40)
     assert not marker.exists()
+
+
+def test_real_duckdb_precheck_binds_before_structural_rejection(tmp_path: Path) -> None:
+    database = tmp_path / "empty.duckdb"
+    connection = duckdb.connect(str(database))
+    connection.execute("CREATE SCHEMA a_share")
+    connection.execute(
+        "CREATE TABLE a_share.a_share_trade_calendar(snapshot_id VARCHAR,exchange VARCHAR,source VARCHAR,is_open BOOLEAN,synthetic_data BOOLEAN,trade_date VARCHAR)"
+    )
+    connection.execute(
+        "CREATE TABLE a_share.a_share_symbol_master(ts_code VARCHAR,market VARCHAR,list_date VARCHAR,ingested_at VARCHAR,snapshot_id VARCHAR)"
+    )
+    connection.execute(
+        "CREATE TABLE a_share.a_share_canonical_daily_bars(ts_code VARCHAR,trade_date VARCHAR,snapshot_id VARCHAR,amount DOUBLE,adj_factor DOUBLE,quality_status VARCHAR,synthetic_data BOOLEAN,row_hash VARCHAR)"
+    )
+    with pytest.raises(runner.ValidationError, match="23x50"):
+        runner._prepare(connection, database, runner._sha(database))
+    connection.close()
