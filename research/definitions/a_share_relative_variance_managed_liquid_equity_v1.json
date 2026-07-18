@@ -40,7 +40,30 @@
     "basket_size": 30,
     "replacement": false,
     "insufficient_basket_rule": "interval is structurally invalid",
-    "candidate_exclusions": "allowed before ranking and reported only as aggregate counts"
+    "candidate_exclusions": {
+      "exhaustive": true,
+      "allowed_before_ranking": [
+        "ts_code fails the frozen exchange-aware ordinary-A regex or board is not Main, ChiNext, or STAR",
+        "list_date is missing, malformed, or later than the decision date",
+        "fewer than 274 accepted sessions exist from list_date through the decision date",
+        "the 274-session row identity has a duplicate key, wrong snapshot, non-accepted quality, synthetic row, or invalid row_hash",
+        "the consecutive 274-session qfq_close window is incomplete, nonfinite, or nonpositive",
+        "the consecutive 20-session amount window is incomplete, nonfinite, or negative"
+      ],
+      "forbidden_additional_filters": [
+        "ST or other name-status filters",
+        "suspension or price-limit filters",
+        "volatility filters",
+        "momentum filters",
+        "industry filters",
+        "market-cap filters",
+        "future listing, delisting, or security-status filters",
+        "quality filters beyond the frozen snapshot and row-identity checks",
+        "result-derived or discretionary filters"
+      ],
+      "reporting": "aggregate excluded counts only",
+      "post_top_30_replacement": false
+    }
   },
   "mechanism": {
     "variant_count": 1,
@@ -59,21 +82,27 @@
     "comparator": "same 30 stocks at full exposure",
     "one_way_cost_bps": 50
   },
-  "shared_execution_binding": {
-    "base_commit": "1713f8ea2051ebee8f516c9a7830e4e2d7c8bcdb",
-    "modules_sha256": {
-      "quant_system.backtest.event_loop": "39a0bdad8715364d1af1a662a4b08e4b349aecaf78ab696523f9f52e5385bab2",
-      "quant_system.backtest.portfolio": "58dd483c2621ffde54e040c5814e7d812eb51af8f5260857e72324f3a0a286d5",
-      "quant_system.backtest.blocked_orders": "afcffcefa53fc4cee3e9682abecc524807b395ff2c6fb8014bfd7c97c7ec208a",
-      "quant_system.backtest.capacity": "9dcaade876870a34a6a070b935ed0d08973547be4d66a8e41725c5ff94d1708b",
-      "quant_system.backtest.permanent_portfolio": "11874465320c71218e89bad9bdf6ad543aa74dd3335a7571cc8ca2cc97ac6ffe",
-      "quant_system.markets.a_share": "ecb528e9de4b7422cb5c919d57237208b4039089e3e64c87352c4dd08a31872d"
-    },
-    "accounts": "symmetric independent managed and comparator accounts with identical starting NAV",
-    "targets": "managed exposure/30 per stock; comparator 1/30 per stock",
-    "cash_and_blocks": "unfilled buys remain cash; blocked sells remain held and marked; corporate actions are shared",
-    "monthly_return": "pre-current-rebalance NAV through next-open pre-next-orders NAV, including current rebalance trade costs",
-    "terminal_interval": "liquidate at split exit open including costs; any residual or blocked terminal holding invalid"
+  "historical_return_representation": {
+    "classification": "RETROSPECTIVE_SECONDARY_QFQ_ECONOMIC_SCREEN_NOT_ACCOUNT_EVIDENCE",
+    "single_representation_only": true,
+    "signal_prices": "qfq_close through the decision close",
+    "holding_period_prices": "qfq_open from the next accepted session after the decision through the next scheduled rebalance accepted-session open",
+    "stock_return_proxy": "next scheduled rebalance qfq_open divided by current entry qfq_open minus one",
+    "targets": "managed target is exposure/30 per selected stock and comparator target is 1/30 per selected stock",
+    "pretrade_proxy_weight": "the prior target stock weights drifted only by the frozen qfq_open proxy returns through the current rebalance open and renormalized with cash",
+    "turnover": "sum(abs(target_stock_weight-pretrade_proxy_stock_weight)) across the union of old and new stock baskets",
+    "cost": "0.005 times turnover; first entry from cash and terminal split liquidation to cash are included",
+    "cash_return": 0.0,
+    "corporate_action_handling": "no separate dividend or corporate-action cash flow is added because qfq prices are the sole secondary economic proxy",
+    "capacity_limit_status_use": "aggregate feasibility and execution-stress diagnostics only; they do not alter proxy returns, fills, targets, or weights",
+    "account_level_event_loop_claim": false,
+    "strict_pit_claim": false,
+    "candidate_eligibility": false,
+    "allowed_validation_results": [
+      "VALIDATION_PASS_TO_EXTERNAL_REVIEW",
+      "VALIDATION_FAIL"
+    ],
+    "input_blocked_rule": "INPUT_BLOCKED creates no strategy result"
   },
   "splits": {
     "development": "2020-01-01..2021-12-31 diagnostic_only",
@@ -89,7 +118,7 @@
     "holdout_2024_2026h1": 29
   },
   "validation_inference": {
-    "dependency": "quant_system.backtest.permanent_portfolio.circular_block_start_indices",
+    "dependency": "quant_system.research.relative_variance_management._circular_block_start_indices",
     "generator": "numpy.random.PCG64",
     "block_length_months": 3,
     "draws": 10000,

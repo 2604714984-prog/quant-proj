@@ -6,10 +6,10 @@ import math
 from numbers import Real
 from statistics import median, stdev
 
-from quant_system.backtest.permanent_portfolio import circular_block_start_indices
+import numpy as np
 
 RESEARCH_ID = "A_SHARE_RELATIVE_VARIANCE_MANAGED_LIQUID_EQUITY_V1_20260718"
-DEFINITION_SHA256 = "90bbcb03ce527b69c83ddb24587dea0feb0a6d7dab44c26fdac44fee704008f3"
+DEFINITION_SHA256 = "a4c29d96b3baa5820e8860e53a4e692bff6a3a2b3bd3c479ba100c720f6a7e07"
 SNAPSHOT_ID = "a_share_qfq_personal_research_20260716_v5"
 SNAPSHOT_DIGEST = "da6160ddad3f5fcb21151dd0d3128ea7786be2a2014872a14f85635e783dba6b"
 DATABASE_SHA256 = "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0"
@@ -21,6 +21,7 @@ CLASSIFICATION = "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT
 BOARD_LABELS = ("Main", "ChiNext", "STAR")
 BASKET_SIZE, CLOSE_SESSIONS, RETURN_COUNT = 30, 274, 273
 BASELINE_DAYS, CURRENT_DAYS = 252, 21
+BOOTSTRAP_BLOCK_MONTHS = 3
 
 
 class RelativeVarianceContractError(ValueError):
@@ -122,6 +123,24 @@ def annualized_volatility(values: Sequence[float]) -> float:
     return _finite(stdev(frozen) * math.sqrt(12), "annualized volatility")
 
 
+def _circular_block_start_indices(
+    sample_size: int, *, draws: int, seed: int
+) -> tuple[tuple[int, ...], ...]:
+    if (
+        type(sample_size) is not int
+        or sample_size < BOOTSTRAP_BLOCK_MONTHS
+        or type(draws) is not int
+        or draws < 1
+        or type(seed) is not int
+        or seed < 0
+    ):
+        raise RelativeVarianceContractError("bootstrap index inputs are invalid")
+    blocks = math.ceil(sample_size / BOOTSTRAP_BLOCK_MONTHS)
+    generator = np.random.Generator(np.random.PCG64(seed))
+    starts = generator.integers(0, sample_size, size=(draws, blocks), endpoint=False)
+    return tuple(tuple(int(value) for value in row) for row in starts)
+
+
 def centered_bootstrap(
     values: Sequence[float], *, seed: int, draws: int = 10_000, alpha: float = 1 / 60
 ) -> tuple[float, float, float]:
@@ -129,6 +148,7 @@ def centered_bootstrap(
     if (
         not frozen
         or type(seed) is not int
+        or seed < 0
         or type(draws) is not int
         or draws < 1
         or not 0 < alpha < 1
@@ -136,11 +156,13 @@ def centered_bootstrap(
         raise RelativeVarianceContractError("bootstrap inputs are invalid")
     observed = math.fsum(frozen) / len(frozen)
     centered = tuple(value - observed for value in frozen)
-    starts = circular_block_start_indices(len(frozen), draws=draws, seed=seed)
+    starts = _circular_block_start_indices(len(frozen), draws=draws, seed=seed)
     means = []
     for row in starts:
         sample = tuple(
-            centered[(start + offset) % len(centered)] for start in row for offset in range(3)
+            centered[(start + offset) % len(centered)]
+            for start in row
+            for offset in range(BOOTSTRAP_BLOCK_MONTHS)
         )[: len(centered)]
         means.append(math.fsum(sample) / len(sample))
     p_value = (1 + sum(value >= observed for value in means)) / (draws + 1)

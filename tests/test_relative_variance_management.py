@@ -13,6 +13,26 @@ from scripts import run_a_share_relative_variance_management_preflight as prefli
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFINITION = ROOT / "research/definitions/a_share_relative_variance_managed_liquid_equity_v1.json"
+MODULE = ROOT / "src/quant_system/research/relative_variance_management.py"
+ALLOWED_CANDIDATE_EXCLUSIONS = [
+    "ts_code fails the frozen exchange-aware ordinary-A regex or board is not Main, ChiNext, or STAR",
+    "list_date is missing, malformed, or later than the decision date",
+    "fewer than 274 accepted sessions exist from list_date through the decision date",
+    "the 274-session row identity has a duplicate key, wrong snapshot, non-accepted quality, synthetic row, or invalid row_hash",
+    "the consecutive 274-session qfq_close window is incomplete, nonfinite, or nonpositive",
+    "the consecutive 20-session amount window is incomplete, nonfinite, or negative",
+]
+FORBIDDEN_ADDITIONAL_FILTERS = [
+    "ST or other name-status filters",
+    "suspension or price-limit filters",
+    "volatility filters",
+    "momentum filters",
+    "industry filters",
+    "market-cap filters",
+    "future listing, delisting, or security-status filters",
+    "quality filters beyond the frozen snapshot and row-identity checks",
+    "result-derived or discretionary filters",
+]
 
 
 def _stock(
@@ -56,21 +76,41 @@ def test_definition_is_frozen_one_variant_negative_prior_and_closed() -> None:
         "validation_2022_2023": 23,
         "holdout_2024_2026h1": 29,
     }
-    binding = frozen["shared_execution_binding"]
-    assert binding["base_commit"] == "1713f8ea2051ebee8f516c9a7830e4e2d7c8bcdb"
-    assert set(binding["modules_sha256"]) == {
-        "quant_system.backtest.event_loop",
-        "quant_system.backtest.portfolio",
-        "quant_system.backtest.blocked_orders",
-        "quant_system.backtest.capacity",
-        "quant_system.backtest.permanent_portfolio",
-        "quant_system.markets.a_share",
+    exclusions = frozen["universe"]["candidate_exclusions"]
+    assert exclusions == {
+        "exhaustive": True,
+        "allowed_before_ranking": ALLOWED_CANDIDATE_EXCLUSIONS,
+        "forbidden_additional_filters": FORBIDDEN_ADDITIONAL_FILTERS,
+        "reporting": "aggregate excluded counts only",
+        "post_top_30_replacement": False,
     }
-    assert binding["modules_sha256"]["quant_system.backtest.permanent_portfolio"] == (
-        "11874465320c71218e89bad9bdf6ad543aa74dd3335a7571cc8ca2cc97ac6ffe"
+    assert "shared_execution_binding" not in frozen
+    representation = frozen["historical_return_representation"]
+    assert representation["classification"] == (
+        "RETROSPECTIVE_SECONDARY_QFQ_ECONOMIC_SCREEN_NOT_ACCOUNT_EVIDENCE"
     )
-    assert "pre-current-rebalance NAV" in binding["monthly_return"]
-    assert "residual or blocked terminal holding invalid" in binding["terminal_interval"]
+    assert representation["single_representation_only"] is True
+    assert representation["holding_period_prices"].endswith(
+        "next scheduled rebalance accepted-session open"
+    )
+    assert representation["turnover"].startswith("sum(abs(target_stock_weight")
+    assert representation["cost"] == (
+        "0.005 times turnover; first entry from cash and terminal split liquidation to cash are included"
+    )
+    assert representation["cash_return"] == 0.0
+    assert representation["account_level_event_loop_claim"] is False
+    assert representation["strict_pit_claim"] is False
+    assert representation["candidate_eligibility"] is False
+    assert representation["allowed_validation_results"] == [
+        "VALIDATION_PASS_TO_EXTERNAL_REVIEW",
+        "VALIDATION_FAIL",
+    ]
+    assert representation["input_blocked_rule"] == "INPUT_BLOCKED creates no strategy result"
+    assert inference["dependency"] == (
+        "quant_system.research.relative_variance_management._circular_block_start_indices"
+    )
+    assert b"permanent_portfolio" not in raw
+    assert b"permanent_portfolio" not in MODULE.read_bytes()
     assert frozen["input_identity"]["available_at"] == "UNKNOWN_NOT_PIT_QUALIFIED"
     assert frozen["mechanism"]["one_way_cost_bps"] == 50
     assert "roundtrip_friction" not in frozen["mechanism"]
@@ -128,7 +168,28 @@ def test_exact_daily_basket_variance_and_capped_exposure() -> None:
         rvm.variance_exposure((0.0,) * 273)
 
 
-def test_monthly_metrics_and_centered_bootstrap_truncate_exact_n(monkeypatch) -> None:
+def test_private_pcg64_start_sequence_is_frozen_by_golden_vector() -> None:
+    assert rvm._circular_block_start_indices(5, draws=3, seed=123) == (
+        (0, 3),
+        (2, 0),
+        (4, 1),
+    )
+
+
+@pytest.mark.parametrize(
+    ("sample_size", "draws", "seed"),
+    ((2, 1, 0), (5, 0, 0), (5, 1, -1), (True, 1, 0), (5, True, 0), (5, 1, True)),
+)
+def test_private_pcg64_start_sequence_rejects_invalid_inputs(
+    sample_size: object, draws: object, seed: object
+) -> None:
+    with pytest.raises(rvm.RelativeVarianceContractError, match="bootstrap index"):
+        rvm._circular_block_start_indices(  # type: ignore[arg-type]
+            sample_size, draws=draws, seed=seed
+        )
+
+
+def test_monthly_metrics_and_centered_bootstrap_wrap_and_truncate_exact_n(monkeypatch) -> None:
     assert rvm.annualized_net((0.01,) * 12) == pytest.approx(1.01**12 - 1)
     assert rvm.annualized_volatility((0.01, 0.03)) == pytest.approx(0.02 * math.sqrt(6))
     observed: dict[str, int] = {}
@@ -137,7 +198,7 @@ def test_monthly_metrics_and_centered_bootstrap_truncate_exact_n(monkeypatch) ->
         observed.update(size=size, draws=draws, seed=seed)
         return ((0, 3),)
 
-    monkeypatch.setattr(rvm, "circular_block_start_indices", starts)
+    monkeypatch.setattr(rvm, "_circular_block_start_indices", starts)
     result = rvm.centered_bootstrap(
         (0.01, -0.02, 0.03, 0.04, -0.01), seed=20260731, draws=1, alpha=0.2
     )
@@ -215,6 +276,22 @@ def test_scan_is_parameter_bound_identity_only_and_has_no_identifier_output() ->
     )
     assert (
         "row_number() OVER(PARTITION BY d ORDER BY med_amount DESC,ts_code)" in preflight.SCAN_SQL
+    )
+    qualified = preflight.SCAN_SQL.split("), qualified AS (", 1)[1].split(
+        "), ranked AS (", 1
+    )[0]
+    assert all(
+        forbidden not in qualified.lower()
+        for forbidden in (
+            "is_st",
+            "is_suspended",
+            "up_limit",
+            "down_limit",
+            "total_mv",
+            "industry",
+            "momentum",
+            "volatility",
+        )
     )
     with pytest.raises(preflight.PreflightError, match="duplicate"):
         preflight._strict_json(b'{"x":1,"x":2}', "probe")
