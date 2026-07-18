@@ -104,6 +104,43 @@
     ],
     "input_blocked_rule": "INPUT_BLOCKED creates no strategy result"
   },
+  "capital_feasibility": {
+    "classification": "FORMATION_ONLY_LIVE_FEASIBILITY_NOT_ACCOUNT_OR_OUTCOME_EVIDENCE",
+    "historical_initial_cash_cny": 400000,
+    "intended_pilot_scale_ceiling_cny_planning_only": 400000,
+    "basket_size": 30,
+    "lot_size_shares": 100,
+    "leverage": false,
+    "remaining_cash_return": 0.0,
+    "entry_price": "qualified raw open on the next accepted session; qfq_open is forbidden for CNY lot, commission, capacity, and limit arithmetic",
+    "target_weights": "managed intended exposure/30 and comparator 1/30, with the selected basket unchanged and no replacement",
+    "target_shares": "100*floor(400000*target_weight/(100*raw_open))",
+    "cash_clipping": "opaque ts_code ascending; affordable shares use 100*floor(max(0,cash-5)/(1.0003*raw_open*100)); filled shares are min(target,affordable)",
+    "commission": "buy commission is max(gross*0.0003,CNY5); zero shares incur zero commission",
+    "minimum_commission_drag": "sum(commission-gross*0.0003)/400000*10000 bps",
+    "sell_stamp_tax": "accepted dated A-share schedule remains frozen but is not charged in this entry-only scan",
+    "slippage": "zero for formation feasibility; the separate frozen 50 bps economic-screen cost is unchanged",
+    "capacity": "after market checks and before cash clipping, requested shares and requested raw-open notional must each be at most 1% of prior accepted-session volume and amount",
+    "market_rule_order": "list status, ST and suspension; raw open bounds and locked up-limit buy; capacity; cash affordability",
+    "status_use": "post-selection execution diagnostic only; never changes ranking, basket membership, replacement, or later QFQ proxy returns",
+    "minimum_faithful_capital": "maximum across intended positions of 100*raw_open/target_weight; one-lot target threshold only and excludes commission",
+    "interval_gate": {
+      "comparator_filled_positions": 30,
+      "comparator_invested_ratio_minimum": 0.9,
+      "managed_filled_positions_minimum": 24,
+      "managed_invested_ratio_minimum": "max(0.80*intended_exposure,intended_exposure-0.10)"
+    },
+    "failure_status": "LIVE_FEASIBILITY_FAIL_NO_OUTCOME",
+    "historical_outcome_authorized": false,
+    "forbidden_repairs": [
+      "reduce basket size",
+      "change capital or intended pilot scale",
+      "alter the exposure formula",
+      "remove expensive stocks",
+      "add replacement stocks",
+      "change commission, capacity, lot, or market rules"
+    ]
+  },
   "splits": {
     "development": "2020-01-01..2021-12-31 diagnostic_only",
     "validation": "2022-01-01..2023-12-31",
@@ -142,7 +179,7 @@
   ],
   "preflight": {
     "outcomes_opened": false,
-    "status_precedence": "INPUT_BLOCKED then STRUCTURAL_FAIL then PREFLIGHT_PASS",
+    "status_precedence": "INPUT_BLOCKED then STRUCTURAL_FAIL then LIVE_FEASIBILITY_FAIL_NO_OUTCOME then CAPITAL_FEASIBILITY_PASS_NO_OUTCOME",
     "aggregate_only": true
   },
   "execution_state": {

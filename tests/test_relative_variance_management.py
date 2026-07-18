@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from datetime import date, timedelta
 import hashlib
 import json
@@ -44,6 +45,23 @@ def _stock(
         274,
         (amount,) * 20,
         closes or tuple(100.0 + day for day in range(274)),
+    )
+
+
+def _capital_rows(*, expensive_first: bool = False) -> tuple[rvm.CapitalFormationRow, ...]:
+    return tuple(
+        rvm.CapitalFormationRow(
+            symbol=f"opaque-{index:03d}",
+            raw_open=200.0 if expensive_first and index == 0 else 10.0,
+            prior_volume_shares=1_000_000.0,
+            prior_amount_cny=10_000_000.0,
+            is_suspended=False,
+            is_st=False,
+            up_limit=220.0 if expensive_first and index == 0 else 11.0,
+            down_limit=180.0 if expensive_first and index == 0 else 9.0,
+            list_status="L",
+        )
+        for index in range(30)
     )
 
 
@@ -114,6 +132,26 @@ def test_definition_is_frozen_one_variant_negative_prior_and_closed() -> None:
     assert frozen["input_identity"]["available_at"] == "UNKNOWN_NOT_PIT_QUALIFIED"
     assert frozen["mechanism"]["one_way_cost_bps"] == 50
     assert "roundtrip_friction" not in frozen["mechanism"]
+    capital = frozen["capital_feasibility"]
+    assert capital["historical_initial_cash_cny"] == 400_000
+    assert capital["intended_pilot_scale_ceiling_cny_planning_only"] == 400_000
+    assert (capital["basket_size"], capital["lot_size_shares"]) == (30, 100)
+    assert capital["target_shares"] == (
+        "100*floor(400000*target_weight/(100*raw_open))"
+    )
+    assert capital["interval_gate"] == {
+        "comparator_filled_positions": 30,
+        "comparator_invested_ratio_minimum": 0.9,
+        "managed_filled_positions_minimum": 24,
+        "managed_invested_ratio_minimum": (
+            "max(0.80*intended_exposure,intended_exposure-0.10)"
+        ),
+    }
+    assert capital["failure_status"] == "LIVE_FEASIBILITY_FAIL_NO_OUTCOME"
+    assert capital["historical_outcome_authorized"] is False
+    assert frozen["preflight"]["status_precedence"].endswith(
+        "CAPITAL_FEASIBILITY_PASS_NO_OUTCOME"
+    )
 
 
 def test_selection_is_exact_thirty_median_amount_then_opaque_id() -> None:
@@ -168,6 +206,50 @@ def test_exact_daily_basket_variance_and_capped_exposure() -> None:
         rvm.variance_exposure((0.0,) * 273)
 
 
+def test_capital_feasibility_uses_raw_open_lots_cash_commission_and_exact_gate() -> None:
+    audit = rvm.capital_interval_feasibility(_capital_rows(), intended_exposure=0.5)
+    assert audit.gate_pass is True
+    assert audit.managed.minimum_faithful_capital_cny == pytest.approx(60_000.0)
+    assert audit.managed.target_nonzero_positions == 30
+    assert audit.managed.filled_positions == 30
+    assert audit.managed.invested_ratio == pytest.approx(0.45)
+    assert audit.managed.total_commission_drag_bps == pytest.approx(3.75)
+    assert audit.managed.minimum_commission_drag_bps == pytest.approx(2.4)
+    assert audit.comparator.minimum_faithful_capital_cny == pytest.approx(30_000.0)
+    assert audit.comparator.filled_positions == 30
+    assert audit.comparator.invested_ratio == pytest.approx(0.975)
+    assert audit.comparator.minimum_commission_drag_bps == pytest.approx(0.825)
+
+
+def test_capital_feasibility_fails_expensive_target_without_replacement() -> None:
+    audit = rvm.capital_interval_feasibility(
+        _capital_rows(expensive_first=True), intended_exposure=0.5
+    )
+    assert audit.gate_pass is False
+    assert audit.managed.minimum_faithful_capital_cny == pytest.approx(1_200_000.0)
+    assert audit.managed.target_nonzero_positions == 29
+    assert audit.comparator.target_nonzero_positions == 29
+    assert audit.managed.filled_positions == 29
+    assert audit.comparator.filled_positions == 29
+
+
+def test_capital_market_rejection_precedes_capacity_and_rows_fail_closed() -> None:
+    rows = list(_capital_rows())
+    rows[0] = replace(rows[0], raw_open=11.0)
+    rows[1] = replace(rows[1], prior_volume_shares=100.0, prior_amount_cny=1_000.0)
+    audit = rvm.capital_interval_feasibility(tuple(reversed(rows)), intended_exposure=1.0)
+    assert audit.managed.market_rule_rejection_count == 1
+    assert audit.managed.capacity_rejection_count == 1
+    assert audit.managed.filled_positions == 28
+    assert audit.gate_pass is False
+    with pytest.raises(rvm.RelativeVarianceContractError, match="30 unique"):
+        rvm.capital_interval_feasibility(rows[:-1], intended_exposure=1.0)
+    with pytest.raises(rvm.RelativeVarianceContractError, match="raw open"):
+        replace(rows[2], raw_open=math.nan)
+    with pytest.raises(rvm.RelativeVarianceContractError, match="prior volume"):
+        replace(rows[2], prior_volume_shares=1.5)
+
+
 def test_private_pcg64_start_sequence_is_frozen_by_golden_vector() -> None:
     assert rvm._circular_block_start_indices(5, draws=3, seed=123) == (
         (0, 3),
@@ -208,13 +290,16 @@ def test_monthly_metrics_and_centered_bootstrap_wrap_and_truncate_exact_n(monkey
 
 def _audits(selected: int = 30) -> tuple[preflight.IntervalAudit, ...]:
     rows = []
+    capital = rvm.capital_interval_feasibility(_capital_rows(), intended_exposure=1.0)
     for split, start, count in (
         ("development_2020_2021", date(2020, 1, 1), 23),
         ("validation_2022_2023", date(2022, 1, 1), 23),
         ("holdout_2024_2026h1", date(2024, 1, 1), 29),
     ):
         rows.extend(
-            preflight.IntervalAudit(start + timedelta(days=index), split, selected, 40, 7)
+            preflight.IntervalAudit(
+                start + timedelta(days=index), split, selected, 40, 7, capital=capital
+            )
             for index in range(count)
         )
     return tuple(rows)
@@ -222,10 +307,14 @@ def _audits(selected: int = 30) -> tuple[preflight.IntervalAudit, ...]:
 
 def test_report_is_aggregate_only_candidate_exclusions_allowed_and_precedence() -> None:
     report = preflight._report(_audits())
-    assert report["status"] == "PREFLIGHT_PASS"
+    assert report["status"] == "CAPITAL_FEASIBILITY_PASS_NO_OUTCOME"
     assert report["candidate_excluded_counts"]["validation_2022_2023"] == 23 * 7
     assert report["holding_returns_opened"] is False
     assert report["strategy_candidate_available"] is False
+    assert report["historical_outcome_authorized"] is False
+    assert report["invalid_capital_interval_count"] == 0
+    assert report["minimum_nonzero_comparator_positions"] == 30
+    assert report["minimum_comparator_invested_ratio"] == pytest.approx(0.975)
     assert set(report).isdisjoint({"symbols", "rankings", "returns", "exposures", "pairs"})
     assert preflight._report(_audits(29))["status"] == "STRUCTURAL_FAIL"
     assert preflight._report(_audits()[:-1])["status"] == "STRUCTURAL_FAIL"
@@ -238,8 +327,19 @@ def test_report_is_aggregate_only_candidate_exclusions_allowed_and_precedence() 
         40,
         7,
         invalid_variance_count=1,
+        capital=variance_blocked[0].capital,
     )
     assert preflight._report(variance_blocked)["status"] == "INPUT_BLOCKED"
+    live_fail = list(_audits())
+    live_fail[0] = replace(
+        live_fail[0],
+        capital=rvm.capital_interval_feasibility(
+            _capital_rows(expensive_first=True), intended_exposure=0.5
+        ),
+    )
+    failed_report = preflight._report(live_fail)
+    assert failed_report["status"] == "LIVE_FEASIBILITY_FAIL_NO_OUTCOME"
+    assert failed_report["invalid_capital_interval_count"] == 1
 
 
 def test_default_is_dry_run_without_database(monkeypatch, capsys) -> None:
@@ -265,6 +365,10 @@ def test_scan_is_parameter_bound_identity_only_and_has_no_identifier_output() ->
     assert "excluded_count" in preflight.SCAN_SQL
     assert "baseline_variance" in preflight.SCAN_SQL
     assert "invalid_execution_panel_count" in preflight.SCAN_SQL
+    assert "capital_payload AS" in preflight.SCAN_SQL
+    assert "e.open exec_open" in preflight.SCAN_SQL
+    assert "p.vol prior_vol" in preflight.SCAN_SQL
+    assert "least(1.0,v.baseline_variance/v.current_variance) exposure" in preflight.SCAN_SQL
     assert "lead(d) OVER(ORDER BY d) next_d" in preflight.SCAN_SQL
     assert "entry_d exec_d,d prior_d" in preflight.SCAN_SQL
     assert "exit_d,next_d" in preflight.SCAN_SQL

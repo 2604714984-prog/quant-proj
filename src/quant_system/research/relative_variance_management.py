@@ -9,7 +9,7 @@ from statistics import median, stdev
 import numpy as np
 
 RESEARCH_ID = "A_SHARE_RELATIVE_VARIANCE_MANAGED_LIQUID_EQUITY_V1_20260718"
-DEFINITION_SHA256 = "a4c29d96b3baa5820e8860e53a4e692bff6a3a2b3bd3c479ba100c720f6a7e07"
+DEFINITION_SHA256 = "e3d80a6d1febb8f88cfb2f341ddb0cb4b3e27ae7708d719df2c5229c7713219e"
 SNAPSHOT_ID = "a_share_qfq_personal_research_20260716_v5"
 SNAPSHOT_DIGEST = "da6160ddad3f5fcb21151dd0d3128ea7786be2a2014872a14f85635e783dba6b"
 DATABASE_SHA256 = "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0"
@@ -22,6 +22,11 @@ BOARD_LABELS = ("Main", "ChiNext", "STAR")
 BASKET_SIZE, CLOSE_SESSIONS, RETURN_COUNT = 30, 274, 273
 BASELINE_DAYS, CURRENT_DAYS = 252, 21
 BOOTSTRAP_BLOCK_MONTHS = 3
+HISTORICAL_INITIAL_CASH_CNY = 400_000.0
+LOT_SIZE_SHARES = 100
+COMMISSION_RATE = 0.0003
+MINIMUM_COMMISSION_CNY = 5.0
+CAPACITY_FRACTION = 0.01
 
 
 class RelativeVarianceContractError(ValueError):
@@ -65,6 +70,207 @@ class QualifiedStock:
     @property
     def median_amount_cny(self) -> float:
         return float(median(self.trailing_amounts_cny))
+
+
+@dataclass(frozen=True)
+class CapitalFormationRow:
+    symbol: str
+    raw_open: float
+    prior_volume_shares: float
+    prior_amount_cny: float
+    is_suspended: bool
+    is_st: bool
+    up_limit: float
+    down_limit: float
+    list_status: str
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.symbol, str) or not self.symbol:
+            raise RelativeVarianceContractError("capital row symbol is invalid")
+        for value, label in (
+            (self.raw_open, "raw open"),
+            (self.up_limit, "up limit"),
+            (self.down_limit, "down limit"),
+        ):
+            _finite(value, label, positive=True)
+        volume = _finite(self.prior_volume_shares, "prior volume")
+        if volume < 0 or not math.isclose(volume, round(volume), abs_tol=1e-6):
+            raise RelativeVarianceContractError("prior volume must be nonnegative whole shares")
+        if _finite(self.prior_amount_cny, "prior amount") < 0:
+            raise RelativeVarianceContractError("prior amount must be nonnegative")
+        if type(self.is_suspended) is not bool or type(self.is_st) is not bool:
+            raise RelativeVarianceContractError("capital row status flags must be boolean")
+        if not isinstance(self.list_status, str) or not self.list_status:
+            raise RelativeVarianceContractError("capital row list status is invalid")
+
+
+@dataclass(frozen=True)
+class CapitalPathAudit:
+    minimum_faithful_capital_cny: float
+    target_nonzero_positions: int
+    filled_positions: int
+    invested_ratio: float
+    total_commission_drag_bps: float
+    minimum_commission_drag_bps: float
+    capacity_rejection_count: int
+    market_rule_rejection_count: int
+
+    def __post_init__(self) -> None:
+        faithful = _finite(
+            self.minimum_faithful_capital_cny,
+            "minimum faithful capital",
+            positive=True,
+        )
+        invested = _finite(self.invested_ratio, "invested ratio")
+        total_drag = _finite(self.total_commission_drag_bps, "commission drag")
+        minimum_drag = _finite(
+            self.minimum_commission_drag_bps, "minimum commission drag"
+        )
+        counts = (
+            self.target_nonzero_positions,
+            self.filled_positions,
+            self.capacity_rejection_count,
+            self.market_rule_rejection_count,
+        )
+        if (
+            faithful <= 0
+            or not 0 <= invested <= 1
+            or total_drag < 0
+            or minimum_drag < 0
+            or minimum_drag > total_drag + 1e-12
+            or any(type(value) is not int or not 0 <= value <= BASKET_SIZE for value in counts)
+            or self.filled_positions > self.target_nonzero_positions
+            or self.filled_positions
+            + self.capacity_rejection_count
+            + self.market_rule_rejection_count
+            > self.target_nonzero_positions
+        ):
+            raise RelativeVarianceContractError("capital path audit is invalid")
+
+
+@dataclass(frozen=True)
+class CapitalIntervalAudit:
+    intended_exposure: float
+    managed: CapitalPathAudit
+    comparator: CapitalPathAudit
+    gate_pass: bool
+
+    def __post_init__(self) -> None:
+        exposure = _finite(self.intended_exposure, "intended exposure", positive=True)
+        if (
+            exposure > 1
+            or not isinstance(self.managed, CapitalPathAudit)
+            or not isinstance(self.comparator, CapitalPathAudit)
+            or type(self.gate_pass) is not bool
+        ):
+            raise RelativeVarianceContractError("capital interval audit is invalid")
+
+
+def _capital_path(
+    rows: tuple[CapitalFormationRow, ...], total_exposure: float
+) -> CapitalPathAudit:
+    exposure = _finite(total_exposure, "capital path exposure", positive=True)
+    if exposure > 1:
+        raise RelativeVarianceContractError("capital path exposure cannot exceed one")
+    target_weight = exposure / BASKET_SIZE
+    cash = HISTORICAL_INITIAL_CASH_CNY
+    faithful = gross_total = commission_total = minimum_excess = 0.0
+    target_nonzero = filled_positions = capacity_rejections = market_rejections = 0
+    for row in rows:
+        price = float(row.raw_open)
+        faithful = max(faithful, LOT_SIZE_SHARES * price / target_weight)
+        requested = (
+            math.floor(
+                HISTORICAL_INITIAL_CASH_CNY
+                * target_weight
+                / price
+                / LOT_SIZE_SHARES
+            )
+            * LOT_SIZE_SHARES
+        )
+        if requested <= 0:
+            continue
+        target_nonzero += 1
+        market_rejected = (
+            row.list_status != "L"
+            or row.is_st
+            or row.is_suspended
+            or row.down_limit > row.up_limit
+            or price < row.down_limit - 0.001
+            or price > row.up_limit + 0.001
+            or math.isclose(price, row.up_limit, rel_tol=1e-6, abs_tol=0.001)
+        )
+        if market_rejected:
+            market_rejections += 1
+            continue
+        capacity_rejected = (
+            requested > CAPACITY_FRACTION * row.prior_volume_shares
+            or requested * price > CAPACITY_FRACTION * row.prior_amount_cny
+        )
+        if capacity_rejected:
+            capacity_rejections += 1
+            continue
+        affordable = (
+            math.floor(
+                max(0.0, cash - MINIMUM_COMMISSION_CNY)
+                / (1.0 + COMMISSION_RATE)
+                / price
+                / LOT_SIZE_SHARES
+            )
+            * LOT_SIZE_SHARES
+        )
+        filled = min(requested, affordable)
+        if filled <= 0:
+            continue
+        gross = filled * price
+        commission = max(MINIMUM_COMMISSION_CNY, COMMISSION_RATE * gross)
+        cash -= gross + commission
+        if cash < -1e-6:
+            raise RelativeVarianceContractError("capital path cash became negative")
+        gross_total += gross
+        commission_total += commission
+        minimum_excess += commission - COMMISSION_RATE * gross
+        filled_positions += 1
+    return CapitalPathAudit(
+        minimum_faithful_capital_cny=faithful,
+        target_nonzero_positions=target_nonzero,
+        filled_positions=filled_positions,
+        invested_ratio=gross_total / HISTORICAL_INITIAL_CASH_CNY,
+        total_commission_drag_bps=(
+            commission_total / HISTORICAL_INITIAL_CASH_CNY * 10_000
+        ),
+        minimum_commission_drag_bps=(
+            minimum_excess / HISTORICAL_INITIAL_CASH_CNY * 10_000
+        ),
+        capacity_rejection_count=capacity_rejections,
+        market_rule_rejection_count=market_rejections,
+    )
+
+
+def capital_interval_feasibility(
+    rows: Sequence[CapitalFormationRow], *, intended_exposure: float
+) -> CapitalIntervalAudit:
+    frozen = tuple(rows)
+    if (
+        len(frozen) != BASKET_SIZE
+        or any(not isinstance(row, CapitalFormationRow) for row in frozen)
+        or len({row.symbol for row in frozen}) != BASKET_SIZE
+    ):
+        raise RelativeVarianceContractError("capital scan requires 30 unique formation rows")
+    exposure = _finite(intended_exposure, "intended exposure", positive=True)
+    if exposure > 1:
+        raise RelativeVarianceContractError("intended exposure cannot exceed one")
+    ordered = tuple(sorted(frozen, key=lambda row: row.symbol))
+    managed = _capital_path(ordered, exposure)
+    comparator = _capital_path(ordered, 1.0)
+    managed_threshold = max(0.80 * exposure, exposure - 0.10)
+    gate_pass = (
+        comparator.filled_positions == BASKET_SIZE
+        and comparator.invested_ratio >= 0.90
+        and managed.filled_positions >= 24
+        and managed.invested_ratio >= managed_threshold
+    )
+    return CapitalIntervalAudit(exposure, managed, comparator, gate_pass)
 
 
 def select_basket(rows: Sequence[QualifiedStock]) -> tuple[QualifiedStock, ...]:

@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from datetime import date, datetime
 import hashlib
 import json
+import math
 from pathlib import Path
 import sys
 
@@ -34,6 +35,7 @@ class IntervalAudit:
     excluded_count: int
     invalid_variance_count: int = 0
     invalid_execution_panel_count: int = 0
+    capital: rvm.CapitalIntervalAudit | None = None
 
     def __post_init__(self) -> None:
         if type(self.decision_date) is not date or self.split_id not in SPLITS:
@@ -47,6 +49,10 @@ class IntervalAudit:
         )
         if any(type(value) is not int or value < 0 for value in values):
             raise PreflightError("interval aggregate is invalid")
+        if self.capital is not None and not isinstance(
+            self.capital, rvm.CapitalIntervalAudit
+        ):
+            raise PreflightError("capital interval aggregate is invalid")
 
 
 def _capture(path: Path, label: str) -> bytes:
@@ -106,6 +112,9 @@ def _report(
         type(value) is not int or value < 0 for value in (input_failure_count, duplicate_key_count)
     ):
         raise PreflightError("failure counts are invalid")
+    if any(row.capital is None for row in rows):
+        raise PreflightError("capital feasibility is required before outcomes")
+    capital = tuple(row.capital for row in rows if row.capital is not None)
     counts = {split: sum(row.split_id == split for row in rows) for split in SPLITS}
     minimum_selected = {
         split: min((row.selected_count for row in rows if row.split_id == split), default=0)
@@ -137,15 +146,42 @@ def _report(
         "validation_2022_2023": 23,
         "holdout_2024_2026h1": 29,
     }
+    invalid_capital = sum(not item.gate_pass for item in capital)
+    minimum_faithful = max(
+        max(
+            item.managed.minimum_faithful_capital_cny,
+            item.comparator.minimum_faithful_capital_cny,
+        )
+        for item in capital
+    )
+    minimum_managed_margin = min(
+        item.managed.invested_ratio
+        - max(0.80 * item.intended_exposure, item.intended_exposure - 0.10)
+        for item in capital
+    )
+    capital_status = (
+        "LIVE_FEASIBILITY_FAIL_NO_OUTCOME"
+        if invalid_capital
+        else "CAPITAL_FEASIBILITY_PASS_NO_OUTCOME"
+    )
+    status = (
+        "INPUT_BLOCKED"
+        if blocked
+        else "STRUCTURAL_FAIL"
+        if structural
+        else capital_status
+    )
+
+    def metric(value: float) -> float:
+        if not math.isfinite(value):
+            raise PreflightError("capital aggregate must be finite")
+        return round(float(value), 12)
+
     return {
         "schema_version": "a-share-relative-variance-preflight-v1",
         "research_id": rvm.RESEARCH_ID,
         "phase": "OUTCOME_FREE_PREFLIGHT",
-        "status": "INPUT_BLOCKED"
-        if blocked
-        else "STRUCTURAL_FAIL"
-        if structural
-        else "PREFLIGHT_PASS",
+        "status": status,
         "snapshot_id": rvm.SNAPSHOT_ID,
         "snapshot_digest": rvm.SNAPSHOT_DIGEST,
         "database_sha256": rvm.DATABASE_SHA256,
@@ -153,6 +189,7 @@ def _report(
         "calendar_digest": rvm.CALENDAR_DIGEST,
         "available_at_status": "UNKNOWN_NOT_PIT_QUALIFIED",
         "split_interval_counts": counts,
+        "retained_interval_count_by_split": counts,
         "split_minimum_selected_counts": minimum_selected,
         "split_invalid_interval_counts": invalid,
         "candidate_excluded_counts": excluded,
@@ -161,7 +198,68 @@ def _report(
         "input_failure_count": input_failure_count,
         "duplicate_key_count": duplicate_key_count,
         "basket_size": rvm.BASKET_SIZE,
+        "historical_initial_cash_cny": int(rvm.HISTORICAL_INITIAL_CASH_CNY),
+        "lot_size_shares": rvm.LOT_SIZE_SHARES,
+        "maximum_minimum_faithful_capital_cny": metric(minimum_faithful),
+        "minimum_target_nonzero_managed_positions": min(
+            item.managed.target_nonzero_positions for item in capital
+        ),
+        "minimum_target_nonzero_comparator_positions": min(
+            item.comparator.target_nonzero_positions for item in capital
+        ),
+        "minimum_nonzero_managed_positions": min(
+            item.managed.filled_positions for item in capital
+        ),
+        "minimum_nonzero_comparator_positions": min(
+            item.comparator.filled_positions for item in capital
+        ),
+        "minimum_managed_invested_ratio": metric(
+            min(item.managed.invested_ratio for item in capital)
+        ),
+        "minimum_comparator_invested_ratio": metric(
+            min(item.comparator.invested_ratio for item in capital)
+        ),
+        "minimum_managed_invested_ratio_gate_margin": metric(minimum_managed_margin),
+        "maximum_total_commission_drag_bps": metric(
+            max(
+                max(
+                    item.managed.total_commission_drag_bps,
+                    item.comparator.total_commission_drag_bps,
+                )
+                for item in capital
+            )
+        ),
+        "maximum_minimum_commission_drag_bps": metric(
+            max(
+                max(
+                    item.managed.minimum_commission_drag_bps,
+                    item.comparator.minimum_commission_drag_bps,
+                )
+                for item in capital
+            )
+        ),
+        "capacity_rejection_count": sum(
+            item.managed.capacity_rejection_count
+            + item.comparator.capacity_rejection_count
+            for item in capital
+        ),
+        "capacity_rejection_count_by_path": {
+            "managed": sum(item.managed.capacity_rejection_count for item in capital),
+            "comparator": sum(item.comparator.capacity_rejection_count for item in capital),
+        },
+        "market_rule_rejection_count": sum(
+            item.managed.market_rule_rejection_count
+            + item.comparator.market_rule_rejection_count
+            for item in capital
+        ),
+        "market_rule_rejection_count_by_path": {
+            "managed": sum(item.managed.market_rule_rejection_count for item in capital),
+            "comparator": sum(item.comparator.market_rule_rejection_count for item in capital),
+        },
+        "invalid_capital_interval_count": invalid_capital,
+        "capital_feasibility_status": capital_status,
         "qfq_close_sessions_required": rvm.CLOSE_SESSIONS,
+        "historical_outcome_authorized": False,
         "holding_returns_opened": False,
         "holdout_outcomes_opened": False,
         "forward_outcomes_opened": False,
@@ -244,8 +342,19 @@ SELECT s.d,s.split_id,count(q.ts_code)::INTEGER qualified_count,
  CASE WHEN p.exec_count=60 AND p.prior_count=60 AND p.panel_ok THEN 0 ELSE 1 END::INTEGER invalid_execution_panel_count
  FROM scope s LEFT JOIN ranked q USING(d,split_id) LEFT JOIN variance_audit v USING(d) LEFT JOIN panel_audit p USING(d)
  WHERE s.split_id IS NOT NULL GROUP BY s.d,s.split_id,v.return_count,v.minimum_stock_count,v.baseline_variance,v.current_variance,p.exec_count,p.prior_count,p.panel_ok
+), capital_payload AS (
+ SELECT s.d,s.split_id,s.ts_code,
+ least(1.0,v.baseline_variance/v.current_variance) exposure,
+ e.open exec_open,e.is_suspended,e.is_st,e.up_limit,e.down_limit,e.list_status,
+ p.vol prior_vol,p.amount prior_amount
+ FROM selected s LEFT JOIN variance_audit v USING(d)
+ LEFT JOIN bu e ON e.ts_code=s.ts_code AND e.trade_date=s.entry_d
+ LEFT JOIN bu p ON p.ts_code=s.ts_code AND p.trade_date=s.d
 )
-SELECT d,split_id,selected_count,qualified_count,excluded_count,invalid_variance_count,invalid_execution_panel_count FROM totals ORDER BY d
+SELECT t.d,t.split_id,t.selected_count,t.qualified_count,t.excluded_count,
+t.invalid_variance_count,t.invalid_execution_panel_count,c.ts_code,c.exposure,c.exec_open,
+c.is_suspended,c.is_st,c.up_limit,c.down_limit,c.list_status,c.prior_vol,c.prior_amount
+FROM totals t LEFT JOIN capital_payload c USING(d,split_id) ORDER BY t.d,c.ts_code
 """
 
 
@@ -278,23 +387,93 @@ def run_read_only_preflight(database_path: str | Path) -> dict[str, object]:
             rvm.CLASSIFICATION,
         ]
         rows = connection.execute(SCAN_SQL, parameters).fetchall()
-        audits = tuple(
-            IntervalAudit(
-                datetime.strptime(str(day), "%Y%m%d").date(),
-                str(split),
-                int(selected),
-                int(qualified),
-                int(excluded),
-                int(invalid_variance),
-                int(invalid_panel),
+        grouped: dict[
+            tuple[date, str],
+            tuple[tuple[int, int, int, int, int], list[rvm.CapitalFormationRow], float],
+        ] = {}
+        for raw in rows:
+            if len(raw) != 17:
+                raise PreflightError("capital scan row shape is invalid")
+            (
+                day,
+                split,
+                selected,
+                qualified,
+                excluded,
+                invalid_variance,
+                invalid_panel,
+                symbol,
+                exposure,
+                exec_open,
+                is_suspended,
+                is_st,
+                up_limit,
+                down_limit,
+                list_status,
+                prior_vol,
+                prior_amount,
+            ) = raw
+            key = (datetime.strptime(str(day), "%Y%m%d").date(), str(split))
+            totals = tuple(
+                int(value)
+                for value in (
+                    selected,
+                    qualified,
+                    excluded,
+                    invalid_variance,
+                    invalid_panel,
+                )
             )
-            for day, split, selected, qualified, excluded, invalid_variance, invalid_panel in rows
-        )
+            if symbol is None or exposure is None:
+                raise PreflightError("capital scan payload is incomplete")
+            if type(is_suspended) is not bool or type(is_st) is not bool:
+                raise PreflightError("capital scan status flags are invalid")
+            row = rvm.CapitalFormationRow(
+                symbol=str(symbol),
+                raw_open=float(exec_open),
+                prior_volume_shares=float(prior_vol),
+                prior_amount_cny=float(prior_amount),
+                is_suspended=is_suspended,
+                is_st=is_st,
+                up_limit=float(up_limit),
+                down_limit=float(down_limit),
+                list_status=str(list_status),
+            )
+            if key not in grouped:
+                grouped[key] = (totals, [row], float(exposure))
+                continue
+            prior_totals, formation_rows, prior_exposure = grouped[key]
+            if prior_totals != totals or not math.isclose(
+                prior_exposure, float(exposure), rel_tol=0.0, abs_tol=1e-15
+            ):
+                raise PreflightError("capital scan repeated aggregates disagree")
+            formation_rows.append(row)
+
+        audits = []
+        for (day, split), (totals, formation_rows, exposure) in sorted(grouped.items()):
+            selected, qualified, excluded, invalid_variance, invalid_panel = totals
+            if len({row.symbol for row in formation_rows}) != len(formation_rows):
+                raise PreflightError("capital scan has duplicate selected identifiers")
+            capital = rvm.capital_interval_feasibility(
+                formation_rows, intended_exposure=exposure
+            )
+            audits.append(
+                IntervalAudit(
+                    day,
+                    split,
+                    selected,
+                    qualified,
+                    excluded,
+                    invalid_variance,
+                    invalid_panel,
+                    capital,
+                )
+            )
         duplicate = connection.execute(
             "SELECT coalesce(sum(n-1),0)::INTEGER FROM (SELECT count(*) n FROM a_share.a_share_canonical_daily_bars WHERE snapshot_id=? AND trade_date<='20260630' GROUP BY ts_code,trade_date HAVING count(*)>1)",
             [rvm.SNAPSHOT_ID],
         ).fetchone()[0]
-        report = _report(audits, duplicate_key_count=duplicate)
+        report = _report(tuple(audits), duplicate_key_count=duplicate)
     finally:
         connection.close()
     if _digest(path) != before:
