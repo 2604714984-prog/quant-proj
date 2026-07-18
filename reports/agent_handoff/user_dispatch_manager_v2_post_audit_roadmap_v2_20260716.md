@@ -8,7 +8,8 @@ This is the only active Manager roadmap. It is an operating summary, not a
 constitution, registry, dispatcher, task framework, or second research system.
 
 ```text
-precedence=latest user instruction > merged AGENTS.md > this roadmap > accepted task artifact
+precedence=latest user instruction > Manager Control Constitution V2 > merged AGENTS.md > this roadmap > accepted task artifact
+controlling_constitution=reports/agent_handoff/manager_v2_control_constitution_v2_20260716.md
 architecture_rebuild_required=false
 one_repository=true
 one_python_package=true
@@ -121,17 +122,21 @@ have prospective Shadow evidence.
 ## Stop budget and review triggers
 
 ```text
-budget_start=2026-07-18
-maximum_new_high_prior_families=4
-families_consumed=2
-families_remaining=2
-maximum_calendar_duration=6_months
-stop_when=first_limit_reached
+budget_effective_from=PR_85_MERGE_COMMIT
+maximum_additional_research_lanes=2
+consumed_after_effective_commit=0
+remaining_additional_research_lanes=2
+counting_rule=every_new_economic_hypothesis_lane_regardless_of_terminal_stage
+excluded=Macro_Risk_Shadow_and_pure_data_maintenance
+maximum_calendar_duration_from_effective_commit=6_months
+stop_when=first_of_lane_or_calendar_limit
 ```
 
-Relative Variance and the closed price-volume lane each consume one slot. At the
-stop point: two or more Shadow families allow static-combination research; one
-continues alone; zero leaves a passive core plus Macro Risk Shadow.
+The budget is wholly prospective and cannot be bypassed by labeling a lane
+low-prior or closing it at feasibility/preflight. At zero remaining lanes, start
+no new economic hypothesis; retain any accepted Shadow work and the passive core.
+Relative Variance and price-volume predate the effective commit and do not consume
+this future budget.
 
 External review is required for shared financial semantics, PIT/availability or
 unit-contract changes, a family's first historical PASS, any prospective result,
