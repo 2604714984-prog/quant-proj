@@ -1,0 +1,238 @@
+{
+  "schema_version": "outcome-blind-preregistration-v1",
+  "research_id": "A_SHARE_CHRONOLOGICAL_RETURN_ORDERING_MONTHLY_V1_20260718",
+  "lineage_id": "A_SHARE_CHRONOLOGICAL_RETURN_ORDERING_MONTHLY_V1",
+  "family_number": null,
+  "date": "2026-07-18",
+  "market": "A_SHARE",
+  "phase": "PREREGISTRATION",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "repository_identity": {
+    "base_commit": "78f36d6912bf42f53011f36c6920b5d47d3ec1d1",
+    "base_tree": "23f03f5decc86cbea37d60b7f410d5dbd2b101e3",
+    "branch": "agent/a-share-cro-pr-a-20260718"
+  },
+  "research_question": "Within the observed same-snapshot ordinary-A cohort, do stocks whose complete-month daily returns are less positively ordered through time outperform an identical-universe equal-weight benchmark over the next independent monthly interval?",
+  "null_hypothesis": "For each gated split, the population mean monthly net return difference between the frozen low-CRO basket and identical eligible-universe benchmark is less than or equal to zero.",
+  "economic_mechanism": "Chronological return ordering measures whether formation-month gains are concentrated late rather than distributed or reversed; the single frozen direction tests low ordering as a simple path-shape mispricing hypothesis without adding momentum, reversal, regime or accounting filters.",
+  "lineage_separation": {
+    "new_research_id": true,
+    "one_variant_only": true,
+    "forbidden_repairs": [
+      "reverse the CRO direction or change the quantile",
+      "change the formation month, holding interval, liquidity floor, costs, splits, inference or gates",
+      "add momentum, reversal, regime, industry, size, volatility, quality or valuation filters",
+      "infer, cross-join or backfill an unobserved ordinary security"
+    ]
+  },
+  "input_identity": {
+    "database_filename": "quant_research.duckdb",
+    "database_sha256": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "snapshot_id": "a_share_qfq_personal_research_20260716_v5",
+    "snapshot_receipt": "receipts/a_share_volume_unit_shares_v5_20260717.json",
+    "snapshot_receipt_resolution": "relative to the parent directory of the frozen database",
+    "snapshot_receipt_sha256": "241be32158b9ab5cebbe92dfceeec2a889f3b56e681a1f764d7b6d257f21f17f",
+    "snapshot_digest": "da6160ddad3f5fcb21151dd0d3128ea7786be2a2014872a14f85635e783dba6b",
+    "calendar_snapshot_id": "akshare_sina_calendar_1d5ff82a6718fc4e19b95c98",
+    "calendar_exchange": "SSE",
+    "calendar_source": "AKSHARE_TOOL_TRADE_DATE_HIST_SINA",
+    "calendar_row_count": 2058,
+    "calendar_digest": "ea7557ee994893ab6719a20ef0de10c60c5087e8637c0771f11c1e6ddc4cee71",
+    "coverage_start": "2018-01-02",
+    "historical_cutoff": "2026-06-30",
+    "classification": "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT",
+    "available_at_status": "UNKNOWN_NOT_PIT_QUALIFIED",
+    "historical_is_st_status": "UNKNOWN_NOT_USED_AS_FILTER",
+    "observed_snapshot_cohort_only": true,
+    "strict_pit_eligible": false
+  },
+  "cohort_coverage_disclosure": {
+    "master_ordinary_count_expected": 5208,
+    "observed_snapshot_ordinary_count_expected": 2909,
+    "unobserved_master_ordinary_count_expected": 2299,
+    "runtime_rule": "recompute the observed snapshot set and exact master set difference; never cross join the full master into the signal universe",
+    "interpretation": "retrospective evidence for the observed cohort only, not full-universe or PIT evidence"
+  },
+  "required_fields": {
+    "bar_fields": [
+      "snapshot_id",
+      "ts_code",
+      "trade_date",
+      "qfq_close",
+      "qfq_open",
+      "amount",
+      "adj_factor",
+      "quality_status",
+      "row_hash",
+      "synthetic_data"
+    ],
+    "formation_rule": "all accepted sessions in calendar month M plus the immediately prior accepted qfq_close; M must contain at least 14 accepted sessions",
+    "complete_identity_rule": "every required row is unique, finite where numeric, positive where required, non-synthetic, hash-valid and has the frozen quality classification",
+    "missing_or_nonfinite_formation": "exclude the security before ranking and publish aggregate exclusion counts only",
+    "missing_or_invalid_entry_exit_panel": "the interval is invalid; no replacement or silent benchmark shrinkage",
+    "cross_split_interval": "count once as a purged interval candidate and exclude before valid-split interval gates; a purge is not an invalid interval"
+  },
+  "universe_and_feature": {
+    "scope": "observed frozen-snapshot common A-shares only",
+    "boards": {
+      "SH": ["600", "601", "603", "605", "688"],
+      "SZ": ["000", "001", "002", "003", "300", "301"]
+    },
+    "decision_date": "D, final accepted session of calendar month M",
+    "daily_return": "qfq_close_t / qfq_close_t_minus_1 - 1 for every accepted session in M",
+    "cro": "Pearson correlation between the complete daily-return vector and ordinal 1 through N",
+    "variance_rule": "zero or nonfinite return variance, a nonfinite CRO, or fewer than 14 formation sessions excludes the security before ranking",
+    "liquidity": "median formation-month amount must be at least CNY 50,000,000",
+    "minimum_eligible": 1000,
+    "ranking": "CRO ascending then ts_code ascending",
+    "selection": "first floor(0.10 * eligible_count), at least 100; no tie expansion or replacement",
+    "benchmark": "equal weight across the identical complete eligible universe"
+  },
+  "synthetic_interval": {
+    "account_type": "INDEPENDENT_EQUAL_WEIGHT_MEASUREMENT_NOT_EXECUTABLE_PORTFOLIO",
+    "entry": "qfq_open on first accepted session after D",
+    "exit": "qfq_open on first accepted session after the following calendar month-end",
+    "split_rule": "entry and exit must remain in one split",
+    "panel_scope": "entry and exit panels must be complete for every benchmark-eligible security, including every selected security",
+    "strategy_gross": "arithmetic mean selected simple qfq open-to-open returns",
+    "benchmark_gross": "arithmetic mean identical eligible-universe simple qfq open-to-open returns",
+    "all_in_roundtrip_friction": 0.01,
+    "strategy_net": "strategy_gross minus 0.0100",
+    "benchmark_net": "benchmark_gross minus 0.0100",
+    "active": "strategy_net minus benchmark_net",
+    "forbidden_claims": "no cash, shares, lots, capacity, fills, blocked orders, tradability, corporate-action execution or PIT claims; qfq is retrospective adjusted measurement only"
+  },
+  "splits": [
+    {
+      "split_id": "development_2020_2021",
+      "entry_start": "2020-01-01",
+      "exit_end": "2021-12-31",
+      "gated": false,
+      "permitted_use": "implementation diagnosis only"
+    },
+    {
+      "split_id": "validation_2022_2023",
+      "entry_start": "2022-01-01",
+      "exit_end": "2023-12-31",
+      "gated": true,
+      "minimum_complete_intervals": 20,
+      "maximum_complete_intervals": 23
+    },
+    {
+      "split_id": "retrospective_holdout_2024_2026m4",
+      "entry_start": "2024-01-01",
+      "exit_end": "2026-04-30",
+      "gated": true,
+      "minimum_complete_intervals": 24,
+      "access": "closed until independently accepted validation PASS"
+    },
+    {
+      "split_id": "forbidden_2026m5_2026m12",
+      "entry_start": "2026-05-01",
+      "exit_end": "2026-12-31",
+      "access": "forbidden"
+    },
+    {
+      "split_id": "prospective_forward_2027_2029",
+      "entry_start": "2027-01-01",
+      "exit_end": "2029-12-31",
+      "access": "closed"
+    }
+  ],
+  "historical_sequential_access": "Adjudicate validation first. Any validation failure closes the family without calculating holdout returns. Only independently accepted validation PASS may authorize one holdout calculation.",
+  "inference": {
+    "implementation_dependency": "quant_system.backtest.permanent_portfolio.circular_block_start_indices",
+    "block_length_months": 3,
+    "draws": 10000,
+    "prng": "NumPy Generator PCG64 through the frozen dependency",
+    "seeds": {
+      "validation_2022_2023": 20260725,
+      "retrospective_holdout_2024_2026m4": 20260726,
+      "prospective_forward_2027_2029": 20260727
+    },
+    "bonferroni_one_sided_alpha": 0.016666666666666666,
+    "p_value": "(1 + count(centered bootstrap mean >= observed uncentered mean)) / 10001",
+    "lower_bound": "observed minus the linearly interpolated 0.9833333333333333 quantile of centered bootstrap means",
+    "annualized_net_return": "exp(sum(log1p(net)) * 12 / N) - 1"
+  },
+  "gates_per_gated_split": [
+    "complete interval count is within the frozen split bounds",
+    "zero invalid or incomplete intervals",
+    "mean active return is positive",
+    "one-sided Bonferroni p-value is at or below 1/60",
+    "Bonferroni lower confidence bound is positive",
+    "strategy geometric annualized net return exceeds benchmark"
+  ],
+  "outcome_free_preflight": {
+    "authorized": true,
+    "historical_outcome_authorized": false,
+    "allowed_fields": [
+      "schema_version",
+      "research_id",
+      "phase",
+      "status",
+      "snapshot_id",
+      "database_sha256",
+      "snapshot_digest",
+      "snapshot_receipt_sha256",
+      "calendar_snapshot_id",
+      "calendar_digest",
+      "classification",
+      "available_at_status",
+      "historical_is_st_status",
+      "coverage_start",
+      "coverage_end",
+      "master_ordinary_count",
+      "observed_ordinary_count",
+      "unobserved_ordinary_count",
+      "split_interval_counts",
+      "split_minimum_eligible_counts",
+      "split_maximum_eligible_counts",
+      "split_minimum_selected_counts",
+      "split_maximum_selected_counts",
+      "split_invalid_interval_counts",
+      "split_minimum_formation_session_counts",
+      "cross_boundary_purged_interval_count",
+      "formation_missing_count",
+      "formation_nonfinite_count",
+      "formation_identity_failure_count",
+      "zero_variance_or_nonfinite_cro_count",
+      "below_liquidity_floor_count",
+      "benchmark_panel_missing_count",
+      "benchmark_panel_nonfinite_count",
+      "benchmark_panel_identity_failure_count",
+      "duplicate_key_count",
+      "unexpected_exception_count",
+      "post_entry_outcomes_opened",
+      "forbidden_or_prospective_data_accessed",
+      "security_identifiers_in_report",
+      "strategy_candidate_available"
+    ],
+    "status_rule": "INPUT_BLOCKED for frozen database, definition, receipt, calendar, master, duplicate-key or entry/exit panel identity failures; otherwise STRUCTURAL_FAIL for any post-purge invalid interval, eligible/selected minimum failure, or split-count failure; cross-boundary purges are counted but excluded from the zero-invalid gate; otherwise PREFLIGHT_PASS",
+    "prohibited_publication": "no CRO, rank, security identifier, post-entry return, active return, statistic, NAV or performance gate",
+    "input_failure_does_not_consume_historical_run": true
+  },
+  "stop_rules": [
+    "Do not repair exclusions, ranking, holding interval, friction, splits, inference or gates after aggregate or outcome observation.",
+    "After accepted PREFLIGHT_PASS, execute validation exactly once.",
+    "Validation failure closes without opening holdout.",
+    "Historical PASS remains non-candidate and stops for external review.",
+    "No entry on or after 2026-05-01 and no prospective observation may be accessed."
+  ],
+  "execution_state": {
+    "preflight_authorized": true,
+    "historical_outcome_authorized": false,
+    "retrospective_holdout_outcome_authorized": false,
+    "provider_or_network_authorized": false,
+    "database_write_authorized": false,
+    "gate_counts": null,
+    "strategy_candidate_available": false
+  },
+  "boundary": {
+    "research_only": true,
+    "no_recommendation_or_actionable_ranking": true,
+    "no_candidate_readiness_or_product_route": true,
+    "no_broker_order_paper_live_or_auto": true,
+    "strategy_candidate_available": false
+  }
+}

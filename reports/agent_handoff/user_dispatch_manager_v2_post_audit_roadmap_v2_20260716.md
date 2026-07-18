@@ -40,9 +40,13 @@ shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=cb603b181cdc0fb72803173b69c0f4761e9ce7a8
-ACTIVE_FAMILY=NONE
-ACTIVE_STAGE=POST_IPO_NUMEROLOGY_TERMINAL_PREFLIGHT_INPUT_BLOCKED
+V2_MAIN_HEAD=78f36d6912bf42f53011f36c6920b5d47d3ec1d1
+ACTIVE_FAMILY=A_SHARE_CHRONOLOGICAL_RETURN_ORDERING_MONTHLY_V1_20260718
+ACTIVE_STAGE=CRO_OUTCOME_BLIND_PR_A_CODE_AND_PREFLIGHT
+CRO_STATUS=PREREGISTERED_NOT_EXECUTED
+CRO_INPUT_SCOPE=OBSERVED_SNAPSHOT_COHORT_RETROSPECTIVE_SECONDARY_ONLY
+CRO_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
+CRO_FORWARD=CLOSED
 POST_IPO_NUMEROLOGY_VARIANT=POST_IPO_LUCKY_CODE_AVOIDANCE_MATCHED_15
 POST_IPO_NUMEROLOGY_STATUS=CLOSED_PREFLIGHT_INPUT_BLOCKED_NO_OUTCOME
 POST_IPO_NUMEROLOGY_COHORT_AUDIT=MASTER_ORDINARY_5208_OBSERVED_2909_UNOBSERVED_2299
@@ -78,6 +82,14 @@ H3=CLOSED_ACCEPTED_STRICT_PREOPEN
 M1=DEFERRED
 STRATEGY_CANDIDATE_AVAILABLE=false
 ```
+
+The sole active family is now the chronological-return-ordering monthly screen.
+This PR-A is limited to one frozen feature, deterministic selection, synthetic
+tests and an aggregate-only preflight. It does not authorize a historical
+return run, holdout access, provider call, database write or candidate state.
+The 5,208/2,909/2,299 master/observed/unobserved gap and unknown historical
+availability/ST identity remain explicit limitations; no full-master join is
+permitted.
 
 The post-IPO lucky-code avoidance successor completed its single aggregate-only
 preflight on the observed secondary snapshot cohort. It preserved the
