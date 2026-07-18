@@ -33,16 +33,27 @@ user's latest explicit instruction
 
 This file records current state and authorized next work. It cannot expand the constitution.
 
-## Current terminal-state update — 2026-07-17
+## Current terminal-state update — 2026-07-18
 
 This update records the accepted repository state after Cycle 4 closure and the
 shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=3a2109e0562a85978f311c2bbb34d4e65f1ca5b5
+V2_MAIN_HEAD=cb603b181cdc0fb72803173b69c0f4761e9ce7a8
 ACTIVE_FAMILY=NONE
-ACTIVE_STAGE=UPPER_LIMIT_DELAY_PREFLIGHT_INPUT_BLOCKED
+ACTIVE_STAGE=POST_IPO_NUMEROLOGY_TERMINAL_PREFLIGHT_INPUT_BLOCKED
+POST_IPO_NUMEROLOGY_VARIANT=POST_IPO_LUCKY_CODE_AVOIDANCE_MATCHED_15
+POST_IPO_NUMEROLOGY_STATUS=CLOSED_PREFLIGHT_INPUT_BLOCKED_NO_OUTCOME
+POST_IPO_NUMEROLOGY_COHORT_AUDIT=MASTER_ORDINARY_5208_OBSERVED_2909_UNOBSERVED_2299
+POST_IPO_NUMEROLOGY_PREFLIGHT=INPUT_BLOCKED
+POST_IPO_NUMEROLOGY_WINDOW_MISSING_COUNT=27398
+POST_IPO_NUMEROLOGY_WINDOW_PANELS_COMPLETE=false
+POST_IPO_NUMEROLOGY_QFQ_PANELS_COMPLETE=true
+POST_IPO_NUMEROLOGY_MINIMUM_PAIR_COUNTS=DEVELOPMENT_36_VALIDATION_116_HOLDOUT_43
+POST_IPO_NUMEROLOGY_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
+POST_IPO_NUMEROLOGY_FORWARD=CLOSED
+UPPER_LIMIT_DELAY_STAGE=TERMINAL_PREFLIGHT_INPUT_BLOCKED
 UPPER_LIMIT_DELAY_VARIANT=NON_ONE_PRICE_UPPER_LIMIT_HOLD_1_SESSION
 UPPER_LIMIT_DELAY_PREFLIGHT=INPUT_BLOCKED
 UPPER_LIMIT_DELAY_SIGNAL_MISSING_COUNT=2815128
@@ -67,6 +78,16 @@ H3=CLOSED_ACCEPTED_STRICT_PREOPEN
 M1=DEFERRED
 STRATEGY_CANDIDATE_AVAILABLE=false
 ```
+
+The post-IPO lucky-code avoidance successor completed its single aggregate-only
+preflight on the observed secondary snapshot cohort. It preserved the
+5,208/2,909/2,299 master, observed and unobserved ordinary-security counts and
+found adequate matched-pair counts in every historical split, but the required
+20-session amount windows contained 27,398 missing rows. The frozen stop rule
+therefore returned `INPUT_BLOCKED`; no return, Run ID, holdout access,
+executable/PIT claim or candidate state was opened. Historical ST identity
+remains unknown and was not used as a filter. This exact lineage is closed and
+must not be repaired by dropping incomplete rows or relaxing its input contract.
 
 The Swing Count Run ID above was consumed exactly once. Its aggregate result
 contains no performance cells and therefore is not evidence that a performance

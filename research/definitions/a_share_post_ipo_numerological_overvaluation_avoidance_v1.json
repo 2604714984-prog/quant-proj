@@ -1,0 +1,277 @@
+{
+  "schema_version": "outcome-blind-preregistration-v1",
+  "research_id": "A_SHARE_POST_IPO_NUMEROLOGICAL_OVERVALUATION_AVOIDANCE_V1_20260718",
+  "lineage_id": "A_SHARE_POST_IPO_NUMEROLOGICAL_OVERVALUATION_AVOIDANCE_V1",
+  "family_number": null,
+  "date": "2026-07-18",
+  "market": "A_SHARE",
+  "phase": "PREREGISTRATION",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "classification": "NEW_POST_IPO_NUMEROLOGICAL_OVERVALUATION_AVOIDANCE_HYPOTHESIS",
+  "repository_identity": {
+    "base_commit": "cb603b181cdc0fb72803173b69c0f4761e9ce7a8",
+    "base_tree": "fcacf83415672b7f4e9647920c6def0d1bed36e8",
+    "branch": "agent/a-share-post-ipo-numerology-pr-a-20260718"
+  },
+  "research_question": "Within matched post-IPO board and absolute listing-quarter cohorts, do non-lucky-code A-shares outperform lucky-code peers over the next independent monthly open-to-open interval after fixed round-trip friction?",
+  "null_hypothesis": "For each gated split, the population mean monthly net return difference between the frozen NOT_LUCKY and paired LUCKY baskets is less than or equal to zero.",
+  "economic_mechanism": "Numerologically attractive security codes may attract attention and optimistic demand around young listings; exact board, absolute listing quarter and liquidity-ordinal matching asks whether avoiding that attribute improves the following independent monthly return without treating the code as causal proof.",
+  "lineage_separation": {
+    "new_research_id": true,
+    "one_variant_only": true,
+    "not_a_relative_strength_low_volatility_swing_salience_or_limit_retest": true,
+    "forbidden_repairs": [
+      "change lucky digits, forbidden digit, suffix length or exchange rule",
+      "change board, absolute listing-quarter, liquidity pairing or pair count",
+      "change IPO-age bounds, decision, entry, exit, friction, splits, inference or gates",
+      "add ST, regime, industry, size, momentum, volatility, quality or valuation filters",
+      "infer or backfill an unobserved ordinary security"
+    ]
+  },
+  "input_identity": {
+    "database_filename": "quant_research.duckdb",
+    "database_sha256": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "snapshot_id": "a_share_qfq_personal_research_20260716_v5",
+    "snapshot_receipt": "receipts/a_share_volume_unit_shares_v5_20260717.json",
+    "snapshot_receipt_resolution": "relative to the parent directory of the frozen database",
+    "snapshot_receipt_sha256": "241be32158b9ab5cebbe92dfceeec2a889f3b56e681a1f764d7b6d257f21f17f",
+    "snapshot_digest": "da6160ddad3f5fcb21151dd0d3128ea7786be2a2014872a14f85635e783dba6b",
+    "calendar_snapshot_id": "akshare_sina_calendar_1d5ff82a6718fc4e19b95c98",
+    "calendar_exchange": "SSE",
+    "calendar_source": "AKSHARE_TOOL_TRADE_DATE_HIST_SINA",
+    "calendar_row_count": 2058,
+    "calendar_digest": "ea7557ee994893ab6719a20ef0de10c60c5087e8637c0771f11c1e6ddc4cee71",
+    "calendar_coverage": "2018-01-02 through 2026-06-30, exact date-set parity with the frozen canonical snapshot",
+    "table": "a_share.a_share_canonical_daily_bars",
+    "master_table": "a_share.a_share_symbol_master",
+    "coverage_start": "2018-01-02",
+    "historical_cutoff": "2026-06-30",
+    "classification": "RETROSPECTIVE_PERSONAL_RESEARCH_GRADE_SECONDARY_NOT_STRICT_PIT",
+    "available_at_status": "UNKNOWN_NOT_PIT_QUALIFIED",
+    "historical_is_st_status": "UNKNOWN_NOT_USED_AS_FILTER",
+    "strict_pit_eligible": false,
+    "historical_secondary_screen_only": true,
+    "observed_snapshot_cohort_only": true,
+    "mutable_database_hash_mismatch": "fail closed before cohort formation"
+  },
+  "cohort_coverage_disclosure": {
+    "frozen_aggregate_audit_only": true,
+    "master_ordinary_count_expected": 5208,
+    "observed_snapshot_ordinary_count_expected": 2909,
+    "unobserved_master_ordinary_count_expected": 2299,
+    "runtime_rule": "recompute all three counts from independently validated master and snapshot sets; unobserved equals exact master set difference and is never inferred",
+    "interpretation": "the screen describes only the observed snapshot cohort and is neither PIT-complete nor full-universe evidence"
+  },
+  "required_fields_and_units": {
+    "master_fields": [
+      "ts_code",
+      "list_date",
+      "source",
+      "snapshot_id",
+      "row_hash",
+      "synthetic_data"
+    ],
+    "bar_fields": [
+      "snapshot_id",
+      "ts_code",
+      "trade_date",
+      "amount",
+      "adj_factor",
+      "qfq_open",
+      "quality_status",
+      "row_hash",
+      "synthetic_data"
+    ],
+    "adjusted_price_unit": "CNY_PER_SHARE_QFQ",
+    "amount_unit": "CNY"
+  },
+  "universe": {
+    "scope": "observed frozen-snapshot SSE/SZSE ordinary A-shares on Main, STAR and ChiNext boards only",
+    "boards": {
+      "SH_MAIN": ["600", "601", "603", "605"],
+      "STAR": ["688"],
+      "SZ_MAIN": ["000", "001", "002", "003"],
+      "CHINEXT": ["300", "301"]
+    },
+    "ipo_age_accepted_sessions_inclusive": {
+      "minimum": 60,
+      "maximum": 756,
+      "definition": "count from the first accepted session on or after list_date through D, inclusive"
+    },
+    "historical_st": "unknown and deliberately not a filter",
+    "complete_input_rule": "master identity, D and its prior 19 consecutive accepted-session amount rows, and all selected entry/exit qfq rows must be unique, finite where numeric, positive where required, non-synthetic, hash-valid and carry the exact frozen quality classification; adj_factor must be positive on every required bar row",
+    "missing_or_conflicting_input": "INPUT_BLOCKED; never infer, fill, silently drop or replace after observing aggregates"
+  },
+  "feature_contract": {
+    "variant_id": "POST_IPO_LUCKY_CODE_AVOIDANCE_MATCHED_15",
+    "variant_count": 1,
+    "decision_date": "D, the final accepted session of each calendar month",
+    "trailing_liquidity": "median amount over D and its prior 19 consecutive accepted sessions",
+    "listing_cohort": "board crossed with absolute list_date calendar YYYYQ; cohorts are never relative-age buckets",
+    "lucky_code": {
+      "SH": "last three numeric code digits contain at least one of 6, 8 or 9 and contain no 4",
+      "SZ": "last four numeric code digits contain at least one of 6, 8 or 9 and contain no 4",
+      "other": "excluded"
+    },
+    "within_side_ranking": "within each board x absolute list YYYYQ x LUCKY/NOT_LUCKY side, prior-20 median amount descending then ts_code ascending",
+    "pairing": "pair LUCKY and NOT_LUCKY rows at the same zero-based within-side ordinal; unmatched rows are not replaced",
+    "pair_pool_ranking": "minimum of the two side median amounts descending, then NOT_LUCKY ts_code ascending, then LUCKY ts_code ascending; no tolerance or tie expansion",
+    "selection": "exactly first 15 pairs",
+    "incomplete_month": "retain as invalid; fewer than 15 pairs forces STRUCTURAL_FAIL"
+  },
+  "synthetic_interval": {
+    "account_type": "INDEPENDENT_EQUAL_WEIGHT_MEASUREMENT_NOT_EXECUTABLE_PORTFOLIO",
+    "entry": "qfq_open on the first accepted session after D",
+    "exit": "qfq_open on the first accepted session after the next calendar month-end",
+    "split_rule": "entry and exit must belong to the same split; crossing intervals are purged",
+    "strategy_gross": "arithmetic mean of the 15 NOT_LUCKY simple qfq open-to-open returns",
+    "benchmark_gross": "arithmetic mean of the 15 ordinal-paired LUCKY simple qfq open-to-open returns",
+    "all_in_roundtrip_friction": 0.01,
+    "strategy_net": "strategy_gross minus 0.0100",
+    "benchmark_net": "benchmark_gross minus 0.0100",
+    "active": "strategy_net minus benchmark_net",
+    "forbidden_claims": "no cash, shares, lots, capacity, fills, blocked orders, tradability or corporate-action execution claims; qfq is adjusted research measurement only",
+    "future_executable_or_pit_use": "requires a separate shared-engine and corporate-action identity packet"
+  },
+  "splits": [
+    {
+      "order": 1,
+      "split_id": "development_2020_2021",
+      "entry_start": "2020-01-01",
+      "exit_end": "2021-12-31",
+      "gated": false,
+      "permitted_use": "implementation diagnosis only"
+    },
+    {
+      "order": 2,
+      "split_id": "validation_2022_2023",
+      "entry_start": "2022-01-01",
+      "exit_end": "2023-12-31",
+      "gated": true,
+      "minimum_complete_intervals": 20
+    },
+    {
+      "order": 3,
+      "split_id": "retrospective_holdout_2024_2026h1",
+      "entry_start": "2024-01-01",
+      "exit_end": "2026-06-30",
+      "gated": true,
+      "minimum_complete_intervals": 24
+    },
+    {
+      "order": 4,
+      "split_id": "embargo_2026h2",
+      "entry_start": "2026-07-01",
+      "exit_end": "2026-12-31",
+      "gated": false,
+      "access": "forbidden"
+    },
+    {
+      "order": 5,
+      "split_id": "prospective_forward_2027_2029",
+      "entry_start": "2027-01-01",
+      "exit_end": "2029-12-31",
+      "gated": true,
+      "access": "closed"
+    }
+  ],
+  "historical_sequential_access": "Compute and adjudicate validation first. If any validation gate fails, close permanently without reading or calculating retrospective-holdout returns or statistics. Only an independently accepted validation PASS may authorize the one-time retrospective-holdout calculation; outcome-free preflight may inspect aggregates for both.",
+  "inference": {
+    "implementation_dependency": "quant_system.backtest.permanent_portfolio.circular_block_start_indices",
+    "block_length_months": 3,
+    "draws": 10000,
+    "prng": "NumPy Generator PCG64 through the frozen dependency",
+    "seeds": {
+      "validation_2022_2023": 20260722,
+      "retrospective_holdout_2024_2026h1": 20260723,
+      "prospective_forward_2027_2029": 20260724
+    },
+    "lifetime_primary_test_count": 3,
+    "bonferroni_one_sided_alpha": 0.016666666666666666,
+    "p_value": "(1 + count(centered bootstrap mean >= observed uncentered mean)) / 10001",
+    "lower_bound": "observed mean minus the linearly interpolated 0.9833333333333333 quantile of centered bootstrap means",
+    "annualized_net_return": "exp(sum(log1p(net_return)) * 12 / N) - 1; a nonfinite value or any return at or below -1 fails closed",
+    "alpha_recycling": false
+  },
+  "gates_per_gated_split": [
+    "minimum complete interval count is met",
+    "zero invalid or incomplete intervals",
+    "mean active return is positive",
+    "one-sided Bonferroni p-value is at or below 0.016666666666666666",
+    "Bonferroni lower confidence bound is positive",
+    "strategy geometric annualized net return exceeds paired LUCKY benchmark geometric annualized net return"
+  ],
+  "historical_pass": "The sole variant passes all six gates in validation and, only after accepted validation PASS, retrospective holdout.",
+  "outcome_free_preflight": {
+    "authorized": true,
+    "historical_outcome_authorized": false,
+    "retrospective_holdout_outcome_authorized": false,
+    "allowed_fields": [
+      "schema_version",
+      "research_id",
+      "phase",
+      "status",
+      "snapshot_id",
+      "database_sha256",
+      "snapshot_digest",
+      "snapshot_receipt_sha256",
+      "calendar_snapshot_id",
+      "calendar_digest",
+      "classification",
+      "available_at_status",
+      "historical_is_st_status",
+      "coverage_start",
+      "coverage_end",
+      "master_ordinary_count",
+      "observed_ordinary_count",
+      "unobserved_ordinary_count",
+      "split_interval_counts",
+      "split_minimum_pair_counts",
+      "split_maximum_pair_counts",
+      "split_incomplete_interval_counts",
+      "window_panels_complete",
+      "qfq_panels_complete",
+      "adj_factor_panels_complete",
+      "master_identity_failure_count",
+      "window_missing_count",
+      "window_nonfinite_count",
+      "window_identity_failure_count",
+      "qfq_panel_missing_count",
+      "qfq_panel_nonfinite_count",
+      "qfq_panel_identity_failure_count",
+      "duplicate_key_count",
+      "unexpected_exception_count",
+      "post_entry_outcomes_opened",
+      "embargo_or_prospective_data_accessed",
+      "security_identifiers_in_report",
+      "strategy_candidate_available"
+    ],
+    "status_rule": "INPUT_BLOCKED takes precedence for master, calendar, definition, receipt, window, qfq, adj-factor, duplicate or selected-panel identity failure; otherwise STRUCTURAL_FAIL when any interval has fewer than 15 pairs or a gated split misses its minimum interval count; otherwise PREFLIGHT_PASS",
+    "prohibited_computation": "No security identifier, pair, ranking, qfq return, strategy or benchmark interval return, active return, annualized return, bootstrap statistic, performance gate, NAV or signal may be calculated or published.",
+    "input_failure_does_not_consume_historical_run": true
+  },
+  "stop_rules": [
+    "Any retained month below 15 complete pairs closes the family at preflight; do not relax or skip it.",
+    "Do not change cohort, code digits, pairing, ranking, count, holding interval, friction, splits, inference or gates after aggregates or outcomes are observed.",
+    "After independently accepted PREFLIGHT_PASS, execute exactly one validation run with a fresh Run ID.",
+    "Validation FAIL closes permanently without opening retrospective holdout.",
+    "Historical PASS remains non-candidate and stops for external review before any prospective phase.",
+    "No entry on or after 2026-07-01 and no prospective observation may be accessed in this phase."
+  ],
+  "execution_state": {
+    "preflight_authorized": true,
+    "historical_outcome_authorized": false,
+    "retrospective_holdout_outcome_authorized": false,
+    "provider_or_network_authorized": false,
+    "database_write_authorized": false,
+    "gate_counts": null,
+    "strategy_candidate_available": false
+  },
+  "boundary": {
+    "research_only": true,
+    "no_recommendation_or_actionable_ranking": true,
+    "no_candidate_readiness_or_product_route": true,
+    "no_broker_order_paper_live_or_auto": true,
+    "strategy_candidate_available": false
+  }
+}
