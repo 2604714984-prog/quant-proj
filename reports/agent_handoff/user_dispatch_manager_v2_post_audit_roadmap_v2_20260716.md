@@ -40,9 +40,19 @@ shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
 later in this file without creating another roadmap or control layer.
 
 ```text
-V2_MAIN_HEAD=cb603b181cdc0fb72803173b69c0f4761e9ce7a8
+V2_MAIN_HEAD=78f36d6912bf42f53011f36c6920b5d47d3ec1d1
 ACTIVE_FAMILY=NONE
-ACTIVE_STAGE=POST_IPO_NUMEROLOGY_TERMINAL_PREFLIGHT_INPUT_BLOCKED
+ACTIVE_STAGE=CRO_TERMINAL_PREFLIGHT_INPUT_BLOCKED
+CRO_STATUS=CLOSED_PREFLIGHT_INPUT_BLOCKED_NO_OUTCOME
+CRO_INPUT_SCOPE=OBSERVED_SNAPSHOT_COHORT_RETROSPECTIVE_SECONDARY_ONLY
+CRO_PREFLIGHT=INPUT_BLOCKED
+CRO_FORMATION_MISSING_COUNT=28128
+CRO_ZERO_VARIANCE_OR_NONFINITE_COUNT=28167
+CRO_BENCHMARK_PANEL_MISSING_COUNT=2
+CRO_BENCHMARK_PANEL_IDENTITY_FAILURE_COUNT=2
+CRO_SPLIT_INVALID_INTERVAL_COUNTS=DEVELOPMENT_0_VALIDATION_1_HOLDOUT_1
+CRO_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
+CRO_FORWARD=CLOSED
 POST_IPO_NUMEROLOGY_VARIANT=POST_IPO_LUCKY_CODE_AVOIDANCE_MATCHED_15
 POST_IPO_NUMEROLOGY_STATUS=CLOSED_PREFLIGHT_INPUT_BLOCKED_NO_OUTCOME
 POST_IPO_NUMEROLOGY_COHORT_AUDIT=MASTER_ORDINARY_5208_OBSERVED_2909_UNOBSERVED_2299
@@ -78,6 +88,16 @@ H3=CLOSED_ACCEPTED_STRICT_PREOPEN
 M1=DEFERRED
 STRATEGY_CANDIDATE_AVAILABLE=false
 ```
+
+The chronological-return-ordering monthly screen completed its single
+aggregate-only preflight without opening a holding-period return. Historical
+split counts and selection breadth were structurally sufficient, but formation
+inputs contained 28,128 missing rows, validation and holdout each retained one
+invalid interval, and the equal-weight benchmark panels contained two missing
+and two identity-failing rows. The frozen precedence rule therefore returned
+`INPUT_BLOCKED`. The 5,208/2,909/2,299 master/observed/unobserved gap and unknown
+historical availability/ST identity remain explicit limitations. This lineage
+is closed; incomplete rows or months may not be skipped to reopen it.
 
 The post-IPO lucky-code avoidance successor completed its single aggregate-only
 preflight on the observed secondary snapshot cohort. It preserved the
