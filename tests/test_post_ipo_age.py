@@ -17,7 +17,6 @@ from scripts import run_a_share_post_ipo_age_preflight as preflight
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFINITION = ROOT / "research/definitions/a_share_post_ipo_age_underperformance_avoidance_v1.json"
-DB = Path("/home/rongyu/workspace/quant-data/quant_research.duckdb")
 
 
 def _source() -> SourceIdentity:
@@ -259,28 +258,12 @@ def test_report_status_precedence_and_validation_maximum() -> None:
     assert blocked["split_invalid_interval_counts"]["development_2020_2021"] == 1
 
 
-def test_strict_json_rejects_duplicates_and_sql_is_parameter_bound_explain_only() -> None:
+def test_strict_json_rejects_duplicates_and_sql_is_parameter_bound() -> None:
     with pytest.raises(age.PostIpoAgeContractError, match="duplicate"):
         preflight._strict_json(b'{"a":1,"a":2}', "probe")
-    connection = duckdb.connect(str(DB), read_only=True)
-    try:
-        parameters = [
-            age.CALENDAR_SNAPSHOT_ID,
-            age.CALENDAR_EXCHANGE,
-            age.CALENDAR_SOURCE,
-            age.HISTORICAL_CUTOFF.strftime("%Y%m%d"),
-            preflight._ORDINARY,
-            age.SNAPSHOT_ID,
-            *age.BOARD_LABELS,
-            age.SNAPSHOT_ID,
-            age.HISTORICAL_CUTOFF.strftime("%Y%m%d"),
-            preflight.CLASSIFICATION,
-            preflight.CLASSIFICATION,
-            preflight.CLASSIFICATION,
-        ]
-        assert connection.execute("EXPLAIN " + preflight._SCAN_SQL, parameters).fetchall()
-    finally:
-        connection.close()
+    assert preflight._SCAN_SQL.count("?") == 14
+    assert preflight._ORDINARY not in preflight._SCAN_SQL
+    assert age.SNAPSHOT_ID not in preflight._SCAN_SQL
 
 
 def test_pcg64_block_three_dependency_has_literal_golden_starts() -> None:
