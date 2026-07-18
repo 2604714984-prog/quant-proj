@@ -1,728 +1,140 @@
-# User-Dispatch Manager Handoff — V2 Post-Audit Roadmap, Version 2
+# V2 Manager Roadmap
 
-Date: 2026-07-16
-Repository: `2604714984-prog/quant-proj`
-Default branch: `v2-main`
-Status: `CURRENT_MANAGER_HANDOFF`
+Date: 2026-07-18 | Repository: `2604714984-prog/quant-proj` | Default branch: `v2-main` | Status: `CURRENT_MANAGER_HANDOFF`
 
-## Supersession and repository action
+## Scope and baseline
 
-This file supersedes:
+This is the only active Manager roadmap. It is an operating summary, not a
+constitution, registry, dispatcher, task framework, or second research system.
 
 ```text
-reports/agent_handoff/user_dispatch_manager_v2_master_handoff_and_future_roadmap_20260716.md
+precedence=latest user instruction > merged AGENTS.md > this roadmap > accepted task artifact
+architecture_rebuild_required=false
+one_repository=true
+one_python_package=true
+one_CLI=true
+one_DuckDB_access_layer=true
+one_event_loop_and_portfolio_core=true
+one_CI_workflow=true
+active_code_writing_family=none
+validated_specialists=0
+strategy_candidate_available=false
 ```
 
-When this file is added to `quant-proj`, delete the superseded file in the same PR. Do not keep two active roadmaps.
+Keep the lightweight architecture. During the three-cycle freeze, do not add a
+CLI, database layer, event loop, manifest framework, registry, agent platform,
+automatic source fusion, or parallel backtester.
 
-Before acting, read:
+## Closed lineage memory
+
+Closed families cannot be rerun, retuned, filtered, regime-relabeled, or rescued
+by new infrastructure.
+
+| Lineage | Terminal status | Controlling evidence |
+|---|---|---|
+| Relative Strength | `HISTORICAL_SCREENING_FAIL` (16/48) | `reports/validation/a_share_relative_strength_historical_secondary_screen_v3.json` |
+| Defensive Low Volatility | `HISTORICAL_GATED_FAIL` (48/64) | PR #63; `reports/validation/a_share_defensive_low_volatility_v1_result.json` |
+| Cycle 3 liquidity-shock reversal | `CLOSED_PREFLIGHT_STRUCTURAL_INFEASIBLE_NO_OUTCOME` | PR #67; `reports/agent_handoff/cycle_3_liquidity_shock_preflight_terminal_closure_20260717.md` |
+| Cycle 4 fixed three-ETF trend | `SOURCE_QUALIFICATION_INCOMPLETE_CLOSE_CYCLE4` | PR #70; `reports/validation/cycle4_three_etf_source_qualification_v1.json` |
+| Chronological ordering | `INPUT_BLOCKED_NO_OUTCOME` | `reports/validation/a_share_chronological_return_ordering_preflight_v1_20260718.json` |
+| Post-IPO lucky-code avoidance | `INPUT_BLOCKED_NO_OUTCOME` | `reports/validation/a_share_post_ipo_numerology_preflight_v1_20260718.json` |
+| Upper-limit delay | `INPUT_BLOCKED_NO_OUTCOME` | `reports/validation/a_share_upper_limit_delay_preflight_v1_20260718.json` |
+| Salient return | `STRUCTURAL_FAIL_NO_OUTCOME` | `reports/validation/a_share_salient_return_preflight_v1_20260718.json` |
+| Swing Count | `HISTORICAL_SCREENING_FAIL_CLOSED_EXECUTION_ERROR` | PR #74/#75; `reports/validation/a_share_swing_structure_participation_confirmed_trend_v1_result.json` |
+| Post-IPO age | `VALIDATION_FAIL` | PR #83; `reports/validation/a_share_post_ipo_age_validation_v1_20260718.json` |
+| China price-volume trend replication | `FEASIBILITY_BLOCKED_CLOSE_NO_ADAPTER_NO_OUTCOME` | `reports/validation/a_share_china_price_volume_trend_replication_feasibility_v1_20260718.json` |
+
+PR #58 is closed, unmerged historical material. Shared semantic state is
+`H3_STRICT_PREOPEN=CLOSED_ACCEPTED`; `M1_CROSS_TYPE_CORPORATE_ACTION_ID=DEFERRED`.
+
+## Parked external-review increment
 
 ```text
-reports/agent_handoff/manager_v2_control_constitution_v2_20260716.md
+research_id=A_SHARE_RELATIVE_VARIANCE_MANAGED_LIQUID_EQUITY_V1_20260718
+PR=https://github.com/2604714984-prog/quant-proj/pull/84
+PR_HEAD=44199bc4ec9f825750283c62b0242f7981f30fd6
+state=DRAFT_PARKED_PENDING_EXTERNAL_REVIEW
+scope=outcome_blind_PR_A_plus_aggregate_feasibility_only
+historical_outcome_opened=false
+strategy_candidate_available=false
 ```
 
-Precedence:
+Do not amend PR #84 except for a concrete reviewer finding. If accepted, its
+next step is one separately frozen historical economic screen. Acceptance does
+not authorize Shadow, candidate status, orders, provider calls, or data writes.
+
+## Research policy
+
+Each new family gets one economic hypothesis, one primary variant, at most one
+preregistered robustness variant, one role-specific endpoint, and aggregate
+feasibility before adapter or outcome access. Use the complete walk-forward OOS
+sequence as the primary historical test; short subperiods are diagnostics.
 
 ```text
-user's latest explicit instruction
-> Manager control constitution v2
-> merged AGENTS.md
-> this roadmap
-> task-specific GitHub file
+alpha endpoint       = net active return after frozen costs
+defensive endpoint   = frozen return lower bound plus drawdown improvement
+allocation endpoint  = risk-adjusted growth versus frozen static comparator
+
+aggregate feasibility
+-> close on missing inputs, breadth, capacity, or execution panels
+-> code frozen primary plus optional robustness only
+-> one historical economic screen
+-> FAIL permanently closes the family
+-> PASS permits SHADOW_ELIGIBLE only
+-> prospective Shadow evidence precedes any candidate decision
 ```
 
-This file records current state and authorized next work. It cannot expand the constitution.
+No result-dependent repair, threshold change, source substitution, or extra
+variant is permitted after the first outcome is opened.
 
-## Current terminal-state update — 2026-07-18
+## Priority queue
 
-This update records the accepted repository state after Cycle 4 closure and the
-shared strict-pre-open repair. It supersedes the stale active-Cycle-4 statements
-later in this file without creating another roadmap or control layer.
+1. Relative Variance: finish exact-head external review of PR #84 first.
+2. Low abnormal-turnover / anti-speculation: read-only turnover and free-float
+   identity check; close before adapter work if incomplete.
+3. CH3-style size/value: wait for qualified PIT fundamentals; do not build a
+   speculative fundamentals platform.
+4. High-turnover daily/intraday: defer until T+1, limits, costs, and capacity
+   inputs are qualified.
 
-```text
-V2_MAIN_HEAD=1af47ceca42c97794309d4073bf4f899e2ab591f
-ACTIVE_FAMILY=A_SHARE_POST_IPO_AGE_UNDERPERFORMANCE_AVOIDANCE_V1_20260718
-ACTIVE_STAGE=POST_IPO_AGE_VALIDATION_FAIL_LINEAGE_CLOSED
-POST_IPO_AGE_STATUS=HISTORICAL_VALIDATION_FAIL_CLOSED
-POST_IPO_AGE_INPUT_SCOPE=OBSERVED_SNAPSHOT_COHORT_RETROSPECTIVE_SECONDARY_ONLY
-POST_IPO_AGE_PREFLIGHT=PREFLIGHT_PASS
-POST_IPO_AGE_SPLIT_INTERVAL_COUNTS=DEVELOPMENT_23_VALIDATION_23_HOLDOUT_29
-POST_IPO_AGE_MINIMUM_PAIR_COUNTS=DEVELOPMENT_257_VALIDATION_277_HOLDOUT_185
-POST_IPO_AGE_SELECTED_PANEL_DEFECTS=0
-POST_IPO_AGE_PREFLIGHT_RESULT_SHA256=0b1eda369ae8191b28f0a349c28270342632331db6399ee30ee619c308cb0cce
-POST_IPO_AGE_HISTORICAL_OUTCOME=VALIDATION_FAIL_2_OF_6_GATES_HOLDOUT_NOT_OPENED
-POST_IPO_AGE_VALIDATION_RESULT_SHA256=72630b12289f0fc00ecdb0a59987fcbd2541436700031d15a71da624e910550b
-POST_IPO_AGE_FIRST_VALIDATION_ATTEMPT=PRE_OUTCOME_BINDER_FAILURE_MARKER_ABSENT_QFQ_UNOPENED_REPAIRED
-POST_IPO_AGE_VALIDATION_RUNNER=ONE_USE_COMPLETED_MARKER_CONSUMED_NO_RETRY
-POST_IPO_AGE_VALIDATION_SCOPE=2022_2023_ONLY_EXACT_23_MONTHS_50_PAIRS_PER_MONTH_HOLDOUT_FORWARD_CLOSED
-POST_IPO_AGE_FORWARD=CLOSED
-CRO_STATUS=CLOSED_PREFLIGHT_INPUT_BLOCKED_NO_OUTCOME
-CRO_INPUT_SCOPE=OBSERVED_SNAPSHOT_COHORT_RETROSPECTIVE_SECONDARY_ONLY
-CRO_PREFLIGHT=INPUT_BLOCKED
-CRO_FORMATION_MISSING_COUNT=28128
-CRO_ZERO_VARIANCE_OR_NONFINITE_COUNT=28167
-CRO_BENCHMARK_PANEL_MISSING_COUNT=2
-CRO_BENCHMARK_PANEL_IDENTITY_FAILURE_COUNT=2
-CRO_SPLIT_INVALID_INTERVAL_COUNTS=DEVELOPMENT_0_VALIDATION_1_HOLDOUT_1
-CRO_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
-CRO_FORWARD=CLOSED
-POST_IPO_NUMEROLOGY_VARIANT=POST_IPO_LUCKY_CODE_AVOIDANCE_MATCHED_15
-POST_IPO_NUMEROLOGY_STATUS=CLOSED_PREFLIGHT_INPUT_BLOCKED_NO_OUTCOME
-POST_IPO_NUMEROLOGY_COHORT_AUDIT=MASTER_ORDINARY_5208_OBSERVED_2909_UNOBSERVED_2299
-POST_IPO_NUMEROLOGY_PREFLIGHT=INPUT_BLOCKED
-POST_IPO_NUMEROLOGY_WINDOW_MISSING_COUNT=27398
-POST_IPO_NUMEROLOGY_WINDOW_PANELS_COMPLETE=false
-POST_IPO_NUMEROLOGY_QFQ_PANELS_COMPLETE=true
-POST_IPO_NUMEROLOGY_MINIMUM_PAIR_COUNTS=DEVELOPMENT_36_VALIDATION_116_HOLDOUT_43
-POST_IPO_NUMEROLOGY_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
-POST_IPO_NUMEROLOGY_FORWARD=CLOSED
-UPPER_LIMIT_DELAY_STAGE=TERMINAL_PREFLIGHT_INPUT_BLOCKED
-UPPER_LIMIT_DELAY_VARIANT=NON_ONE_PRICE_UPPER_LIMIT_HOLD_1_SESSION
-UPPER_LIMIT_DELAY_PREFLIGHT=INPUT_BLOCKED
-UPPER_LIMIT_DELAY_SIGNAL_MISSING_COUNT=2815128
-UPPER_LIMIT_DELAY_SIGNAL_NONFINITE_COUNT=388938
-UPPER_LIMIT_DELAY_EXIT_PANELS_COMPLETE=false
-UPPER_LIMIT_DELAY_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
-UPPER_LIMIT_DELAY_FORWARD=CLOSED
-SALIENT_RETURN_RESULT=STRUCTURAL_FAIL
-SALIENT_RETURN_DECISION_COUNT=77
-SALIENT_RETURN_INVALID_DECISION_COUNT=1
-SALIENT_RETURN_MINIMUM_ELIGIBLE_COUNT=0
-SALIENT_RETURN_MINIMUM_CANDIDATE_COUNT=0
-SALIENT_RETURN_HISTORICAL_OUTCOME=NOT_AUTHORIZED_NOT_RUN
-SALIENT_RETURN_FORWARD=CLOSED
-SWING_COUNT_RUN_ID=A_SHARE_SWING_STRUCTURE_PARTICIPATION_CONFIRMED_TREND_V1_HISTORICAL_20260718_001
-SWING_COUNT_RESULT=HISTORICAL_SCREENING_FAIL_CLOSED_EXECUTION_ERROR
-SWING_COUNT_GATE_COUNTS=null
-SWING_COUNT_FORWARD=CLOSED
-CYCLE_4=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
-SOURCE_MATRIX_COMPLETE=false
-H3=CLOSED_ACCEPTED_STRICT_PREOPEN
-M1=DEFERRED
-STRATEGY_CANDIDATE_AVAILABLE=false
-```
+China price-volume trend is closed at feasibility. The paper defines a
+long-short factor requiring PIT size and E/P controls; a future long-only version
+is a different hypothesis. ETF and multi-asset trend remain paused, and any
+future work is a new data task rather than a Cycle 4 repair.
 
-The chronological-return-ordering monthly screen completed its single
-aggregate-only preflight without opening a holding-period return. Historical
-split counts and selection breadth were structurally sufficient, but formation
-inputs contained 28,128 missing rows, validation and holdout each retained one
-invalid interval, and the equal-weight benchmark panels contained two missing
-and two identity-failing rows. The frozen precedence rule therefore returned
-`INPUT_BLOCKED`. The 5,208/2,909/2,299 master/observed/unobserved gap and unknown
-historical availability/ST identity remain explicit limitations. This lineage
-is closed; incomplete rows or months may not be skipped to reopen it.
-
-The post-IPO lucky-code avoidance successor completed its single aggregate-only
-preflight on the observed secondary snapshot cohort. It preserved the
-5,208/2,909/2,299 master, observed and unobserved ordinary-security counts and
-found adequate matched-pair counts in every historical split, but the required
-20-session amount windows contained 27,398 missing rows. The frozen stop rule
-therefore returned `INPUT_BLOCKED`; no return, Run ID, holdout access,
-executable/PIT claim or candidate state was opened. Historical ST identity
-remains unknown and was not used as a filter. This exact lineage is closed and
-must not be repaired by dropping incomplete rows or relaxing its input contract.
-
-The Swing Count Run ID above was consumed exactly once. Its aggregate result
-contains no performance cells and therefore is not evidence that a performance
-gate passed or failed. The run nevertheless reached the preregistered terminal
-fail-closed state, so this lineage is permanently closed: no rerun, retuning,
-rescue filter, regime relabel, prospective Shadow or candidate promotion is
-permitted. A future active family must use a genuinely new economic hypothesis,
-new lineage and outcome-blind preregistration.
-
-The non-one-price upper-limit delayed-price-discovery successor completed its
-single aggregate-only preflight without opening any return or identifier. The
-frozen snapshot contained ample interval and eligible-security counts, but the
-required signal universe had 2,815,128 missing rows and 388,938 nonfinite rows,
-and at least one selected D+2 exit panel was incomplete. The accepted precedence
-rule therefore returned `INPUT_BLOCKED`; no historical Run ID was allocated and
-no validation or holdout return was calculated. This exact lineage remains
-closed to outcomes. It may only be superseded by a new outcome-blind lineage
-after a genuinely qualified input snapshot fixes the identified data defects;
-the event, holding period, execution, reference, costs and gates may not be
-relaxed or retuned.
-
-The owner-selected low-salience-return successor completed its accepted
-aggregate-only preflight. One frozen calendar month had only 14 accepted-session
-returns against the preregistered minimum of 15, so that decision was retained
-as a deterministic 0/0 structural failure. The accepted stop rule therefore
-closed the lineage before any holding-period outcome, historical Run ID,
-candidate status, provider call or database write. It may not be rerun, retuned,
-rescued by skipping the short month, relabelled by regime, or promoted.
-
-No closed strategy family may be rerun or reinterpreted because of the H3
-repair. Listed-fund distribution semantics, cross-type corporate-action IDs,
-and mixed US terminal consideration remain future activation gates rather than
-current implementation work.
-
-## 1. Accepted project baseline
-
-The architecture is accepted as reliable and lightweight enough:
+## Capacity, data, Macro Risk, and combination
 
 ```text
-one repository
-one Python package
-one quant CLI
-one central DuckDB access layer
-one deterministic portfolio / event-loop core
-small A-share and US market-semantic modules
-one test suite
-one CI workflow
-```
-
-No architecture rebuild is authorized.
-
-Completed shared corrections that must not be rebuilt:
-
-```text
-A-share slippage/limit crossing -> conservative unfilled order
-fresh Run-ID separation
-deterministic terminalization of input errors
-repeatable outcome-free input qualification
-benchmark initial-entry preflight
-explicit SHARES / CNY unit contract
-actual benchmark invested-ratio measurement
-60-session variants do not inherit a 120-session data requirement
-```
-
-## 2. Closed strategy families
-
-### 2.1 Relative Strength
-
-```text
-research_id:
-A_SHARE_RELATIVE_STRENGTH_MEDIUM_TERM_MOMENTUM_V1_20260715
-
-status:
-HISTORICAL_SCREENING_FAIL
-
-gates:
-16 / 48
-
-forward:
-closed
-
-strategy_candidate_available:
-false
-```
-
-Permanent action:
-
-```text
-do not retune
-do not rerun
-do not add filters
-do not reclassify as a regime specialist
-```
-
-### 2.2 Defensive Low Volatility
-
-```text
-research_id:
-A_SHARE_DEFENSIVE_LOW_VOLATILITY_V1_20260717
-
-status:
-HISTORICAL_GATED_FAIL
-
-gates:
-48 / 64
-
-forward:
-closed
-
-strategy_candidate_available:
-false
-```
-
-Terminal evidence reference:
-
-```text
-PR #63
-merge commit:
-ec8d2b93d8c8ad7d585ec3ff31bd6d0ccc52cf2a
-```
-
-Observed properties:
-
-```text
-all four variants had positive net return
-all four reduced volatility
-all four reduced maximum drawdown
-all eight bootstrap lower-bound gates failed
-all four holdout Calmar gates failed
-all four holdout downside-efficiency gates failed
-```
-
-Adjudication:
-
-```text
-ACCEPT_TERMINAL_HISTORICAL_GATED_FAIL
-```
-
-The defensive properties are `OBSERVATION_ONLY`. They cannot be used as a specialist, ensemble member, synthesizer input, Macro Risk input, or trading candidate.
-
-## 3. Young-chairman Draft PR
-
-PR #58 is outcome-informed historical replication, not an active outcome-blind family.
-
-Required Manager action:
-
-```text
-close PR #58 without merge
-preserve its exact head only as optional historical material
-record NOT_ACTIVE_NOT_ELIGIBLE_FOR_RESULT_PHASE
-do not build a management-data pipeline for it
-```
-
-## 4. Immediate repository actions
-
-Execute in order:
-
-1. Add and merge the two Version 2 Manager files.
-2. Delete the two superseded Version 1 files in the same PR.
-3. Ensure that PR is documentation-only.
-4. Close PR #58 without merge.
-5. Update the stale active-family sentence in `AGENTS.md`.
-6. Run one complete CI suite on final `v2-main`.
-7. Record exact `v2-main` HEAD.
-8. Publish exactly two new task files under `reports/agent_handoff/`.
-
-Replace stale active-family text with:
-
-```text
-Only one code-writing strategy family may be active at a time.
-The active family is stated in the current merged Manager roadmap.
-```
-
-Do not create an active-family registry.
-
-## 5. Cycle 3 conditional reversal — closed at preflight
-
-Controlling terminal status as of 2026-07-17:
-
-```text
-STATUS=CLOSED_PREFLIGHT_STRUCTURAL_INFEASIBLE_NO_OUTCOME
-PR_A=#66
-MERGE_COMMIT=efe44b9f61769f73be0ed60dbb499d3efb85b27b
-PREFLIGHT_STATUS=INPUT_BLOCKED
-DECISION_COUNT=89
-MINIMUM_ELIGIBLE_COUNT=1339
-MINIMUM_CANDIDATE_COUNT=1
-INVALID_DECISION_COUNT=28
-OUTCOME_RUN_CONSUMED=false
-FORWARD_STATUS=CLOSED
-STRATEGY_CANDIDATE_AVAILABLE=false
-```
-
-Twenty-five invalid decisions were caused by the frozen shock condition yielding
-fewer than 15 candidates. Three additional decisions had 15 candidates but a
-selected security was explicitly suspended at the next open. The latter is a
-known local preflight-versus-engine representation difference, but repairing it
-cannot cure the 25 structurally insufficient decisions. Changing the frozen
-shock threshold or candidate rule after these counts were observed is forbidden.
-
-Cycle 3 is therefore closed without a historical return run. Do not create a
-child lineage, tune the threshold, repair the suspension representation for this
-family, or reopen it. The exact closure record is:
-
-```text
-reports/agent_handoff/cycle_3_liquidity_shock_preflight_terminal_closure_20260717.md
-```
-
-### Preserved original task design
-
-The closed family's outcome-blind design was:
-
-```text
-A-share liquidity-shock conditional short-term reversal
-```
-
-It was a new economic hypothesis, not a repair of RS or low volatility. This
-subsection is failure memory only and grants no current authority.
-
-#### 5.1 Hypothesis
-
-```text
-short-term market-relative price decline
-+ one explicit abnormal trading-activity shock
-+ normal, liquid, executable market state
-may represent temporary price pressure rather than permanent deterioration
-```
-
-Do not implement plain “buy the largest losers.”
-
-#### 5.2 Research freedom
-
-Freeze no more than four variants before any outcome access.
-
-Recommended structure:
-
-```text
-10-session market-relative reversal
-20-session market-relative reversal
-each with / without one fixed preregistered trading-activity-shock condition
-```
-
-The shock formula and threshold must be fixed in PR A.
-
-No parameter grid. No later macro or regime filter.
-
-#### 5.3 Reused execution contract
-
-```text
-CNY 400,000
-maximum 15 positions
-equal weight
-ordinary A shares
-listed at least 252 accepted sessions
-non-ST
-non-suspended
-liquid universe
-D after-close decision
-D+1 accepted-session open execution
-existing costs, board lot, capacity, limits, suspension, terminal and blocked-exit rules
-510300.SH benchmark
-CNY / SHARES units
-```
-
-No new engine or runner framework.
-
-#### 5.4 Outcome-free preflight
-
-Prove in aggregate:
-
-```text
-required history exists
-candidate count is sufficient
-execution panels are complete
-benchmark initial entry fills
-benchmark invested ratio is reported
-capacity rejection ratio is reported
-unexpected exception count is zero
-no embargo or prospective data are accessed
-```
-
-Do not emit identifiers, rankings, returns, NAV, or gates.
-
-#### 5.5 Original outcome-handling rule
-
-The following was the pre-preflight rule. The controlling terminal adjudication
-above now supersedes its generic `INPUT_BLOCKED` repair path for Cycle 3: no
-child lineage or repair is authorized for this closed family.
-
-After preflight PASS:
-
-```text
-one fresh Run ID
-one historical outcome
-one result
-one run receipt
-```
-
-Terminal behavior:
-
-```text
-FAIL:
-close permanently
-
-PASS:
-enter prospective Shadow; remain non-candidate
-
-INPUT_BLOCKED:
-repair only the input or financial-semantic defect with a new child lineage
-```
-
-An ordinary FAIL needs CI and Manager scope review, not a full external audit.
-
-## 6. Task file 2 — Macro Risk Shadow Phase 1
-
-Use a separate read-only subagent. It must not edit Cycle 3 files.
-
-### 6.1 Inputs
-
-Only existing local-market data:
-
-```text
-510300 120-session trend
-20-session realized volatility
-60-session realized volatility
-120-session drawdown
-share of stocks with positive 60-session return
-share above a frozen medium-term moving average
-market amount / turnover breadth
-limit-down share
-suspension share
-```
-
-No external macro provider in Phase 1.
-
-### 6.2 Output
-
-At most one weekly aggregate record:
-
-```text
-risk_score: 0–100
-risk_level: GREEN / AMBER / RED
-confidence
-component contributions
-stale components
-```
-
-### 6.3 Hard boundary
-
-```text
-SHADOW_ONLY
-NO_POSITION_EFFECT
-NO_STRATEGY_SELECTION
-NO_ORDER_OR_SIGNAL
-NO_USE_AS_A_STRATEGY_GATE
-```
-
-Run through current strategy cycles before judging usefulness.
-
-## 7. Subsequent roadmap
-
-### Cycle 4 — terminally closed without outcome
-
-Cycle 4 is no longer active. Its controlling task file remains historical
-failure memory:
-
-```text
-reports/agent_handoff/cycle_4_a_share_listed_etf_absolute_trend_defensive_allocation_task_20260717.md
-```
-
-Current state:
-
-```text
-CYCLE_4=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
-SOURCE_MATRIX_COMPLETE=false
-COMMON_QUALIFIED_DATE_COUNT=0
-OUTCOME_STATUS=NOT_RUN
-FORWARD_STATUS=CLOSED
-STRATEGY_CANDIDATE_AVAILABLE=false
-```
-
-Do not reopen this lineage by changing the fixed ETFs, trend rule, cash rule,
-costs, source contract, or data threshold. Any future ETF data work must use a
-new frozen task and cannot be presented as a Cycle 4 repair.
-
-Future activation gates remain:
-
-```text
-LISTED_FUND_DATES=ALLOW_MARKET_VALID_RECORD_EX_PAY_ORDERING
-LISTED_FUND_IDENTITY=REQUIRE_SOURCE_BOUND_PRODUCT_TYPE
-CORPORATE_ACTION_IDS=REQUIRE_GLOBAL_CROSS_TYPE_UNIQUENESS
-US_MIXED_CONSIDERATION=REQUIRE_EXPLICIT_BASIS_ALLOCATION_OR_FAIL_CLOSED
-```
-
-Do not launch RSI, MACD, Bollinger Bands, OBV, KDJ, CCI, or separate indicator families.
-
-### Next family — Swing Count selected for PR A
-
-The owner selected Swing Count / volume-confirmed trend on 2026-07-18. It must
-remain a new trend-persistence hypothesis, not a rescue of failed RS. The first
-authorized implementation phase is one frozen definition, one small adapter and
-one aggregate outcome-free preflight. No return, NAV, identifier output or
-performance gate is authorized until that preflight passes.
-
-The local read-only preflight completed on 2026-07-18 without opening outcomes
-or changing the database. It evaluated 89 historical month-end decisions for
-both frozen variants. Minimum eligible counts were 1,212 for SWING20 and 1,210
-for SWING60; minimum candidate counts were 56 and 89 respectively. All selected
-next-open panels were complete, the benchmark probe filled, and the unexpected
-exception count was zero. This remains a local `PREFLIGHT_PASS` pending fresh
-independent read-only acceptance; it is not historical strategy evidence.
-
-## 8. Strategy combination remains blocked
-
-Current validated historical specialist count:
-
-```text
-0
-```
-
-Do not build a synthesizer.
-
-Activation gate:
-
-```text
-at least two independently historically passing families
-different economic return sources
-shared-account executable targets
-prospective Shadow evidence
-static equal-weight combination implemented first
-```
-
-Required order:
-
-```text
-best single strategy
-→ equal-weight static ensemble
-→ fixed-risk-budget static ensemble
-→ static ensemble + Macro Risk cap
-→ soft synthesizer
-```
-
-Failed RS and low volatility cannot enter based on post-hoc regime performance.
-
-## 9. Data and tool policy
-
-### Data
-
-```text
+capacity = target_order_value / trailing_20_session_median_amount
 one canonical provider per dataset
-at most one read-only cross-check provider
+at most one read-only cross-check
 no automatic fusion
-new data domains only for the active approved hypothesis
+no provider or database write without explicit authority
 ```
 
-Do not speculatively build management, news, macro, options, fundamental, or event domains.
+Apply the existing Capacity Policy; do not impose a universal institutional
+liquidity threshold. Macro Risk remains read-only Shadow with no position,
+selection, signal, or order effect. Do not build a synthesizer or ensemble until
+two independently historically passing families with distinct economic sources
+have prospective Shadow evidence.
 
-### Tools
-
-Reference-only:
+## Stop budget and review triggers
 
 ```text
-RQAlpha for bounded A-share semantic differential fixtures
-Lean for bounded US settlement and corporate-action reference
-AKShare / BaoStock / efinance for explicit cross-check roles
+budget_start=2026-07-18
+maximum_new_high_prior_families=4
+families_consumed=2
+families_remaining=2
+maximum_calendar_duration=6_months
+stop_when=first_limit_reached
 ```
 
-Deferred:
+Relative Variance and the closed price-volume lane each consume one slot. At the
+stop point: two or more Shadow families allow static-combination research; one
+continues alone; zero leaves a passive core plus Macro Risk Shadow.
 
-```text
-Qlib after the three-cycle freeze, using read-only V2 exports
-```
-
-Rejected from active runtime:
-
-```text
-RD-Agent
-LangGraph research orchestration
-multi-agent buy/sell systems
-full financial desktop platforms
-second formal backtest engine
-automatic provider fusion
-```
-
-## 10. External-review rules
-
-Full review is required only for:
-
-```text
-shared financial-semantic changes
-PIT / availability / unit / snapshot-contract changes
-Cycle 3 first historical PASS
-any prospective result
-first static ensemble
-first Macro Risk position effect
-first synthesizer result
-any trading-stage opening
-```
-
-It is not required for an ordinary Cycle 3 FAIL.
-
-## 11. Required Manager callbacks
-
-### Callback A — housekeeping and task publication
-
-```text
-STATUS:
-V2_MAIN_HEAD:
-CONTROL_CONSTITUTION_V2_URL:
-CURRENT_ROADMAP_V2_URL:
-SUPERSEDED_FILES_DELETED:
-PR_58_STATUS:
-AGENTS_ACTIVE_FAMILY_TEXT_STATUS:
-FULL_CI_STATUS:
-CYCLE_3_TASK_FILE_URL:
-MACRO_SHADOW_TASK_FILE_URL:
-BLOCKERS:
-```
-
-### Callback B — Cycle 3 preflight
-
-```text
-STATUS:
-BASE_COMMIT:
-SNAPSHOT_ID:
-DEFINITION_SHA256:
-ADAPTER_SHA256:
-PREFLIGHT_STATUS:
-DECISION_COUNT:
-MIN_ELIGIBLE_COUNT:
-MIN_CANDIDATE_COUNT:
-INVALID_DECISION_COUNT:
-BENCHMARK_INITIAL_ENTRY_FILLED:
-BENCHMARK_INVESTED_RATIO:
-CAPACITY_REJECTION_RATIO:
-UNEXPECTED_EXCEPTION_COUNT:
-OUTCOME_RUN_AUTHORIZED:
-NEXT_ACTION:
-```
-
-### Callback C — Cycle 3 terminal result
-
-```text
-STATUS:
-RUN_ID:
-RESULT_STATUS:
-GATE_COUNTS:
-PROSPECTIVE_FORWARD_OPENED: false
-STRATEGY_CANDIDATE_AVAILABLE: false
-FAMILY_CLOSED_OR_SHADOW:
-RESULT_URL:
-RUN_RECEIPT_URL:
-NEXT_ACTIVE_FAMILY:
-NEXT_ACTION:
-```
-
-### Callback D — Macro Risk Shadow start
-
-```text
-STATUS:
-TASK_FILE_URL:
-MODULE_SCOPE:
-INPUT_COMPONENTS:
-OUTPUT_FREQUENCY:
-POSITION_EFFECT_ENABLED: false
-STRATEGY_SELECTION_ENABLED: false
-NEXT_ACTION:
-```
-
-## 12. Expected Manager state
-
-```text
-ACTIVE_FAMILY=A_SHARE_SALIENT_RETURN_MISPRICING_V1_20260718
-ACTIVE_STAGE=SALIENT_RETURN_OUTCOME_BLIND_PR_A_CODE_ACCEPTANCE_PENDING
-BASE_COMMIT=16f14edb6306360b1a720a888250a6450b06a2c3
-SNAPSHOT_ID=a_share_qfq_personal_research_20260716_v5
-PREFLIGHT_STATUS=NOT_RUN
-OUTCOME_STATUS=NOT_RUN
-FORWARD_STATUS=CLOSED
-STRATEGY_CANDIDATE_AVAILABLE=false
-RS_STATUS=HISTORICAL_SCREENING_FAIL_CLOSED
-LOW_VOLATILITY_STATUS=HISTORICAL_GATED_FAIL_CLOSED
-LIQUIDITY_SHOCK_STATUS=CLOSED_PREFLIGHT_STRUCTURAL_INFEASIBLE_NO_OUTCOME
-CYCLE_4_STATUS=CLOSED_DATA_AND_SEMANTIC_CONTRACT_INCOMPLETE_NO_OUTCOME
-H3_STATUS=CLOSED_ACCEPTED_STRICT_PREOPEN
-M1_STATUS=DEFERRED
-YOUNG_CHAIRMAN_PR=CLOSED_WITHOUT_MERGE
-NEXT_ACTION=INDEPENDENTLY_ACCEPT_SALIENT_RETURN_PR_A_CODE_WITHOUT_REAL_PREFLIGHT
-```
-
-## Final directive
-
-The project has zero validated specialists.
-
-The next priority is:
-
-```text
-Manager terminal-state sync
--> Swing Count terminally closed
--> owner selected the new salient-return mispricing hypothesis
--> code acceptance before one outcome-free feasibility scan
-+ read-only local Macro Risk Shadow after its separate start gates pass
-```
-
-Do not convert partial observations into a specialist. Do not build a synthesizer. Do not add another platform or framework.
+External review is required for shared financial semantics, PIT/availability or
+unit-contract changes, a family's first historical PASS, any prospective result,
+the first ensemble, any Macro Risk position effect, and any trading stage.
+Ordinary feasibility closes and historical FAILs need green CI and a concise
+Manager record, not a new architecture review.
