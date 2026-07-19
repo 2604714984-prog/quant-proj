@@ -1,0 +1,211 @@
+{
+  "schema_version": "us-scheduled-event-atlas-input-qualification-v1",
+  "research_id": "US_SCHEDULED_EVENT_ATLAS_DEVELOPMENT_V1_20260719",
+  "status": "INPUT_BLOCKED_INTRADAY_DATA",
+  "classification": "READ_ONLY_INPUT_QUALIFICATION_NO_OUTCOME",
+  "created_date": "2026-07-19",
+  "repository_identity": {
+    "repository": "2604714984-prog/quant-proj",
+    "worktree": "/home/rongyu/workspace/.wt-us-scheduled-event-atlas-input-blocked-20260719",
+    "branch": "codex/us-scheduled-event-atlas-input-blocked-20260719",
+    "base_commit": "22ded27718a38ebbdcba074b81259b4e3828f2b3",
+    "base_tree": "c605c5f468fb1d468aec3813e110bc59e92961aa"
+  },
+  "controlling_audit_evidence": [
+    {
+      "description": "PR 94 terminal and result-first research program",
+      "source_kind": "user_supplied_external_audit",
+      "sha256": "807db42d6264672f8d26c1ce470b2186bb0c84632848e6757fa49cad816344d2"
+    },
+    {
+      "description": "Broad mechanism pool and narrow formal validation addendum",
+      "source_kind": "user_supplied_external_audit",
+      "sha256": "aec2c7e2383d990fb232bcb772e637c91660cd59d2a8cdefa9f4efca55a509eb"
+    }
+  ],
+  "lineage_evidence": {
+    "us46_failure_memory": {
+      "artifact": "reports/validation/us_four_cleanroom_replication_v1.json",
+      "sha256": "f2bb7c6b6d9a850f2c5f4451b40fe17126d142ef122ec67c174b8329ac12f8b5",
+      "status": "REJECTED_NO_RETEST_NO_RESCUE"
+    },
+    "immediately_prior_daily_result": {
+      "artifact": "reports/validation/us_spy_qqq_gld_dual_momentum_v1_result.json",
+      "sha256": "9c22a877c13e783b73a164f49569c7a3ddb9739721af7ad973bb7f4a94337f65",
+      "status": "RETROSPECTIVE_DUAL_MOMENTUM_FAIL"
+    },
+    "duplicate_adjudication": "NO_EXACT_DUPLICATE. US46 is fixed-weight QQQ/GLD failure memory, while the current line is an eight-mechanism scheduled-event development atlas. Infrastructure improvements cannot reopen US46."
+  },
+  "frozen_definition": {
+    "artifact": "research/definitions/us_scheduled_event_atlas_development_v1.json",
+    "status": "FROZEN_PENDING_EXTERNAL_REVIEW_INPUT_BLOCKED",
+    "mechanisms_in_order": [
+      "M1_FOMC_PRE_ANNOUNCEMENT_DRIFT",
+      "M2_FOMC_ANNOUNCEMENT_TO_CLOSE_REACTION",
+      "M3_FOMC_CLOSE_TO_NEXT_CLOSE_REACTION",
+      "M4_CPI_PRE_RELEASE_NEGATIVE_CONTROL",
+      "M5_NFP_PRE_RELEASE_NEGATIVE_CONTROL",
+      "M6_MONTHLY_OPTIONS_EXPIRATION",
+      "M7_QUARTERLY_OPTIONS_FUTURES_EXPIRATION",
+      "M8_TREASURY_REFUNDING_TLT_REACTION"
+    ],
+    "development": "1994-01-01 through 2009-12-31",
+    "validation": "2010-01-01 through 2017-12-31 SEALED_NOT_READ",
+    "holdout": "2018-01-01 through 2026-06-30 SEALED_NOT_READ",
+    "definition_sha256": "042026c7b8af01284d22afa1610fd663e583ec9cdad097acb3a042beb99a7794"
+  },
+  "warehouse_identity": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "sha256_before": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "sha256_after": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "size_bytes": 4671156224,
+    "mode": "0600",
+    "wal_before": false,
+    "wal_after": false,
+    "database_opened_by_this_task": false,
+    "database_write_performed": false
+  },
+  "prior_local_qualification": {
+    "artifact": "reports/validation/us_market_state_data_qualification_v1_20260718.json",
+    "sha256": "96e8462eccaeace3b7720e7424a519e562c112d516b70f6f53bba2065cd916ee",
+    "relevant_finding": "The existing accepted-session research calendar covers only 2018-01-02 through 2026-07-06 and is explicitly PIT-unqualified; it cannot cover the 1994-2009 development split."
+  },
+  "read_only_local_evidence": {
+    "us_minute_or_intraday_tables": 0,
+    "scheduled_event_tables": 0,
+    "main_us_trade_calendar_rows": 0,
+    "qualified_1994_2009_nyse_calendar_rows": 0,
+    "local_minute_or_event_files": 0,
+    "existing_spy_daily_only": {
+      "table": "us_equity_research.us_daily_total_return_research",
+      "rows": 8418,
+      "date_start": "1993-01-29",
+      "date_end": "2026-07-10",
+      "available_at_nonnull_rows": 0,
+      "classification": "RETROSPECTIVE_DAILY_ONLY_NOT_MINUTE"
+    },
+    "existing_tlt": {
+      "official_inception_date": "2002-07-22",
+      "minute_rows": 0,
+      "development_pre_inception": "1994-01-01 through 2002-07-21 is structurally unavailable for TLT and may not be synthesized",
+      "classification": "NO_QUALIFIED_MINUTE_INPUT"
+    },
+    "expiration_identity": "No complete accepted official historical standard monthly and quarterly expiration snapshot exists locally."
+  },
+  "official_source_routes_identified_not_ingested": [
+    {
+      "component": "FOMC dates, materials and statement timing",
+      "url": "https://www.federalreserve.gov/monetarypolicy/fomc_historical.htm",
+      "qualification": "OFFICIAL_ROUTE_IDENTIFIED_CONTENT_NOT_MATERIALIZED"
+    },
+    {
+      "component": "CPI release archive",
+      "url": "https://www.bls.gov/bls/news-release/cpi.htm",
+      "qualification": "OFFICIAL_ROUTE_IDENTIFIED_CONTENT_NOT_MATERIALIZED"
+    },
+    {
+      "component": "Employment Situation release archive",
+      "url": "https://www.bls.gov/bls/news-release/empsit.htm",
+      "qualification": "OFFICIAL_ROUTE_IDENTIFIED_CONTENT_NOT_MATERIALIZED"
+    },
+    {
+      "component": "Treasury quarterly refunding archive",
+      "url": "https://home.treasury.gov/policy-issues/financing-the-government/quarterly-refunding/quarterly-refunding-archives",
+      "qualification": "OFFICIAL_ROUTE_IDENTIFIED_CONTENT_NOT_MATERIALIZED"
+    },
+    {
+      "component": "SPY official product identity",
+      "url": "https://www.ssga.com/us/en/individual/etfs/state-street-spdr-sp-500-etf-trust-spy",
+      "qualification": "OFFICIAL_PRODUCT_ROUTE_ONLY_NO_MINUTE_HISTORY"
+    },
+    {
+      "component": "TLT official product identity and inception",
+      "url": "https://www.ishares.com/us/products/239454/ishares-20-year",
+      "qualification": "OFFICIAL_PRODUCT_ROUTE_ONLY_NO_MINUTE_HISTORY"
+    }
+  ],
+  "required_vs_observed": [
+    {
+      "required": "official event table with exact actual timestamps, immutable source hashes and revision or cancellation lineage",
+      "observed": "official archive routes identified but no accepted materialized event table",
+      "passed": false
+    },
+    {
+      "required": "SPY one-minute data covering every qualified development window from 1994 through 2009",
+      "observed": "daily SPY rows only; zero local SPY minute rows",
+      "passed": false
+    },
+    {
+      "required": "TLT one-minute extended-hours data from inception through 2009 for applicable M8 events",
+      "observed": "zero local TLT minute rows; pre-2002-07-22 events structurally inapplicable",
+      "passed": false
+    },
+    {
+      "required": "accepted NYSE calendar covering 1994 through 2009 with early and unscheduled close identity",
+      "observed": "canonical calendar empty; research-only calendar begins in 2018 and is PIT-unqualified",
+      "passed": false
+    },
+    {
+      "required": "accepted complete historical standard monthly and quarterly expiration identity",
+      "observed": "no complete local accepted expiration snapshot",
+      "passed": false
+    },
+    {
+      "required": "at least 24 complete events, 6 years and 95 percent completeness for every M1 through M8 before any outcome",
+      "observed": "cannot be computed without the preceding event, minute and calendar identities",
+      "passed": false
+    }
+  ],
+  "decisive_blockers": [
+    "No qualified SPY or TLT one-minute dataset exists locally.",
+    "No accepted materialized official event table with exact historical timestamps and revision identity exists.",
+    "No accepted 1994-2009 NYSE session calendar exists locally.",
+    "TLT did not exist before 2002-07-22 and that interval cannot be synthesized or replaced.",
+    "No accepted complete historical options and futures expiration identity exists.",
+    "Daily bars cannot identify or separate the frozen intraday event windows."
+  ],
+  "terminal_adjudication": {
+    "status": "INPUT_BLOCKED_INTRADAY_DATA",
+    "source_qualification_passed": false,
+    "definition_present": true,
+    "implementation_created": false,
+    "focused_tests_created": false,
+    "development_outcomes_opened": false,
+    "validation_outcomes_opened": false,
+    "holdout_outcomes_opened": false,
+    "gate_counts": null,
+    "strategy_candidate_available": false,
+    "why_no_module": "Without an executable qualified input, an event-return module would be unused mainline code and could silently harden unverified assumptions. The smallest honest checkpoint is the frozen definition plus this fail-closed input result.",
+    "external_review_required": true,
+    "next_decision": "External review may accept the frozen definition and terminal input blocker. A later data-only task must independently qualify the exact event, minute and calendar identities before implementation or outcomes."
+  },
+  "validation": {
+    "strict_json_required": true,
+    "duplicate_key_rejection_required": true,
+    "nonfinite_rejection_required": true,
+    "reference_hashes_required_exact": true,
+    "repository_base_required_exact": true,
+    "database_sha256_before_after_required_equal": true,
+    "wal_before_after_required_absent": true,
+    "git_scope": "exactly this qualification file and the frozen definition file",
+    "git_diff_check_required": true,
+    "independent_read_only_acceptance_required": true
+  },
+  "boundaries": {
+    "provider_or_network_used": false,
+    "provider_or_network_authorized": false,
+    "credential_accessed": false,
+    "database_opened": false,
+    "database_write_performed": false,
+    "raw_payload_written": false,
+    "strategy_outcome_accessed": false,
+    "strategy_execution_performed": false,
+    "trial_registered": false,
+    "strategy_candidate_available": false,
+    "shadow_authorized": false,
+    "paper_authorized": false,
+    "broker_authorized": false,
+    "live_authorized": false,
+    "auto_trading_authorized": false
+  }
+}
