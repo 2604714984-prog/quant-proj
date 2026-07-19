@@ -1,25 +1,33 @@
 {
-  "schema_version": "us-scheduled-event-atlas-input-qualification-v1",
+  "schema_version": "us-scheduled-event-atlas-input-qualification-v1.1",
   "research_id": "US_SCHEDULED_EVENT_ATLAS_DEVELOPMENT_V1_20260719",
-  "status": "INPUT_BLOCKED_INTRADAY_DATA",
+  "status": "ATLAS_ALL_LANES_INPUT_BLOCKED",
   "classification": "READ_ONLY_INPUT_QUALIFICATION_NO_OUTCOME",
   "created_date": "2026-07-19",
   "repository_identity": {
     "repository": "2604714984-prog/quant-proj",
-    "worktree": "/home/rongyu/workspace/.wt-us-scheduled-event-atlas-input-blocked-20260719",
     "branch": "codex/us-scheduled-event-atlas-input-blocked-20260719",
     "base_commit": "22ded27718a38ebbdcba074b81259b4e3828f2b3",
     "base_tree": "c605c5f468fb1d468aec3813e110bc59e92961aa"
   },
-  "controlling_audit_evidence": [
+  "external_review_control": {
+    "pull_request": 97,
+    "review_id": 4730477148,
+    "reviewed_head": "f354fc8139989590254120cfe41b489a4b3aabd3",
+    "verdict": "REWORK_REQUIRED_DEFINITION_ONLY_INPUT_BLOCKER_FACTS_ACCEPTED",
+    "allowed_scope": "Modify only this qualification JSON and the existing frozen-definition JSON, then request delta external review.",
+    "provider_or_data_acquisition_authorized": false,
+    "implementation_or_outcome_authorized": false
+  },
+  "context_only_audit_evidence": [
     {
       "description": "PR 94 terminal and result-first research program",
-      "source_kind": "user_supplied_external_audit",
+      "source_kind": "NON_CONTROLLING_CONTEXT_ONLY_USER_ATTACHMENT",
       "sha256": "807db42d6264672f8d26c1ce470b2186bb0c84632848e6757fa49cad816344d2"
     },
     {
       "description": "Broad mechanism pool and narrow formal validation addendum",
-      "source_kind": "user_supplied_external_audit",
+      "source_kind": "NON_CONTROLLING_CONTEXT_ONLY_USER_ATTACHMENT",
       "sha256": "aec2c7e2383d990fb232bcb772e637c91660cd59d2a8cdefa9f4efca55a509eb"
     }
   ],
@@ -38,11 +46,11 @@
   },
   "frozen_definition": {
     "artifact": "research/definitions/us_scheduled_event_atlas_development_v1.json",
-    "status": "FROZEN_PENDING_EXTERNAL_REVIEW_INPUT_BLOCKED",
+    "status": "FROZEN_PENDING_DELTA_EXTERNAL_REVIEW_INPUT_BLOCKED",
     "mechanisms_in_order": [
       "M1_FOMC_PRE_ANNOUNCEMENT_DRIFT",
       "M2_FOMC_ANNOUNCEMENT_TO_CLOSE_REACTION",
-      "M3_FOMC_CLOSE_TO_NEXT_CLOSE_REACTION",
+      "M3_FOMC_NEXT_SESSION_OPEN_TO_CLOSE_REACTION",
       "M4_CPI_PRE_RELEASE_NEGATIVE_CONTROL",
       "M5_NFP_PRE_RELEASE_NEGATIVE_CONTROL",
       "M6_MONTHLY_OPTIONS_EXPIRATION",
@@ -52,7 +60,7 @@
     "development": "1994-01-01 through 2009-12-31",
     "validation": "2010-01-01 through 2017-12-31 SEALED_NOT_READ",
     "holdout": "2018-01-01 through 2026-06-30 SEALED_NOT_READ",
-    "definition_sha256": "042026c7b8af01284d22afa1610fd663e583ec9cdad097acb3a042beb99a7794"
+    "definition_sha256": "500d181234166a098fc01a786163b0e697bc99ef22272bc0295ec3fb956b05cd"
   },
   "warehouse_identity": {
     "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
@@ -62,7 +70,8 @@
     "mode": "0600",
     "wal_before": false,
     "wal_after": false,
-    "database_opened_by_this_task": false,
+    "database_opened_by_this_task": true,
+    "database_access_mode": "read_only",
     "database_write_performed": false
   },
   "prior_local_qualification": {
@@ -82,7 +91,26 @@
       "date_start": "1993-01-29",
       "date_end": "2026-07-10",
       "available_at_nonnull_rows": 0,
-      "classification": "RETROSPECTIVE_DAILY_ONLY_NOT_MINUTE"
+      "development_slice": {
+        "rows": 4030,
+        "distinct_trade_dates": 4030,
+        "date_start": "1994-01-03",
+        "date_end": "2009-12-31",
+        "raw_ohlc_null_rows": 0,
+        "adjusted_ohlc_null_rows": 0,
+        "volume_null_rows": 0,
+        "cash_distribution_null_rows": 0,
+        "split_factor_null_rows": 0,
+        "available_at_nonnull_rows": 0,
+        "source_snapshot_count": 1,
+        "source_document_hash_count": 1,
+        "distinct_row_hash_count": 4030,
+        "source_snapshot_id": "tiingo_raw_20260711T142010Z_5c24877d23cfc4a0",
+        "source_document_sha256": "695494dd12f3c8b9a1e2946ba1de8f594c69026185a5e25a6bbfce8503d569e4",
+        "quality_status": "PASS_RETROSPECTIVE_ONLY_UNQUALIFIED_PIT",
+        "price_status": "TIINGO_RAW_AND_CRSP_ADJUSTED"
+      },
+      "classification": "RETROSPECTIVE_DAILY_LANE_B_SHAPE_OBSERVED_NOT_YET_INPUT_QUALIFIED"
     },
     "existing_tlt": {
       "official_inception_date": "2002-07-22",
@@ -92,7 +120,7 @@
     },
     "expiration_identity": "No complete accepted official historical standard monthly and quarterly expiration snapshot exists locally."
   },
-  "official_source_routes_identified_not_ingested": [
+  "source_routes_identified_not_ingested": [
     {
       "component": "FOMC dates, materials and statement timing",
       "url": "https://www.federalreserve.gov/monetarypolicy/fomc_historical.htm",
@@ -107,6 +135,31 @@
       "component": "Employment Situation release archive",
       "url": "https://www.bls.gov/bls/news-release/empsit.htm",
       "qualification": "OFFICIAL_ROUTE_IDENTIFIED_CONTENT_NOT_MATERIALIZED"
+    },
+    {
+      "component": "BLS historical release-date reconciliation",
+      "url": "https://www.bls.gov/bls/histreleasedates.pdf",
+      "qualification": "OFFICIAL_ROUTE_IDENTIFIED_CONTENT_NOT_MATERIALIZED"
+    },
+    {
+      "component": "NYSE session-hours and holiday rules",
+      "url": "https://www.nyse.com/trade/hours-calendars",
+      "qualification": "OFFICIAL_CURRENT_RULE_ROUTE_ONLY_NO_COMPLETE_1994_2009_SESSION_SNAPSHOT"
+    },
+    {
+      "component": "Historical XNYS session generator",
+      "url": "https://github.com/gerrymanoim/exchange_calendars",
+      "qualification": "SECONDARY_VERSION_PINNABLE_GENERATOR_REQUIRES_SPY_DATE_AND_OFFICIAL_EXCEPTION_RECONCILIATION"
+    },
+    {
+      "component": "Standard ETF-options expiration convention",
+      "url": "https://www.theocc.com/clearance-and-settlement/clearing/etf-options",
+      "qualification": "OFFICIAL_RULE_ROUTE_IDENTIFIED_HISTORICAL_EVENT_TABLE_NOT_MATERIALIZED"
+    },
+    {
+      "component": "Quarterly equity-index expiration convention",
+      "url": "https://www.sec.gov/files/rules/proposed/34-44743.htm",
+      "qualification": "OFFICIAL_RULE_DOCUMENT_IDENTIFIED_HISTORICAL_EVENT_TABLE_NOT_MATERIALIZED"
     },
     {
       "component": "Treasury quarterly refunding archive",
@@ -124,49 +177,82 @@
       "qualification": "OFFICIAL_PRODUCT_ROUTE_ONLY_NO_MINUTE_HISTORY"
     }
   ],
-  "required_vs_observed": [
+  "lane_qualification": [
     {
-      "required": "official event table with exact actual timestamps, immutable source hashes and revision or cancellation lineage",
-      "observed": "official archive routes identified but no accepted materialized event table",
-      "passed": false
+      "lane_id": "LANE_A_FOMC_INTRADAY",
+      "mechanisms": [
+        "M1",
+        "M2"
+      ],
+      "status": "INPUT_BLOCKED",
+      "required": [
+        "official materialized FOMC events with exact actual statement timestamps and revision identity",
+        "SPY one-minute RTH OHLCV with corporate-action-complete identity covering applicable 1994-2009 windows",
+        "accepted 1994-2009 NYSE calendar with actual opens, closes and early or unscheduled closures"
+      ],
+      "observed": [
+        "official Federal Reserve archive route identified but no accepted materialized event table",
+        "zero local SPY minute rows; only retrospective daily SPY rows are present",
+        "canonical calendar empty and research-only calendar begins in 2018"
+      ],
+      "outcomes_authorized": false
     },
     {
-      "required": "SPY one-minute data covering every qualified development window from 1994 through 2009",
-      "observed": "daily SPY rows only; zero local SPY minute rows",
-      "passed": false
+      "lane_id": "LANE_B_DAILY_SCHEDULED_EVENTS",
+      "mechanisms": [
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7"
+      ],
+      "status": "INPUT_BLOCKED",
+      "required": [
+        "SPY daily raw open and close plus adjusted open and close with accepted split and cash-distribution identity",
+        "official materialized FOMC, CPI and Employment Situation actual event identities",
+        "accepted standard monthly and quarterly expiration identities",
+        "accepted 1994-2009 NYSE calendar with actual opens, closes and early or unscheduled closures"
+      ],
+      "observed": [
+        "The 1994-01-03 through 2009-12-31 SPY development slice has 4030 distinct dates, complete raw and adjusted OHLC, volume, cash-distribution and split-factor fields, one snapshot identity and 4030 distinct row hashes; available_at remains null and the snapshot is retrospective-only input not yet accepted for this lane",
+        "BLS, Federal Reserve, OCC and SEC official archive or rule routes are identified but no accepted event table is materialized",
+        "exchange_calendars can generate a version-pinned historical XNYS candidate calendar, but it remains secondary and must be reconciled to SPY dates plus official exception evidence",
+        "canonical calendar is empty and no accepted complete historical expiration identity exists locally"
+      ],
+      "outcomes_authorized": false,
+      "priority_after_delta_review": 1,
+      "source_route_feasibility": "FEASIBLE_PENDING_DELTA_REVIEW_AND_MATERIALIZATION"
     },
     {
-      "required": "TLT one-minute extended-hours data from inception through 2009 for applicable M8 events",
-      "observed": "zero local TLT minute rows; pre-2002-07-22 events structurally inapplicable",
-      "passed": false
-    },
-    {
-      "required": "accepted NYSE calendar covering 1994 through 2009 with early and unscheduled close identity",
-      "observed": "canonical calendar empty; research-only calendar begins in 2018 and is PIT-unqualified",
-      "passed": false
-    },
-    {
-      "required": "accepted complete historical standard monthly and quarterly expiration identity",
-      "observed": "no complete local accepted expiration snapshot",
-      "passed": false
-    },
-    {
-      "required": "at least 24 complete events, 6 years and 95 percent completeness for every M1 through M8 before any outcome",
-      "observed": "cannot be computed without the preceding event, minute and calendar identities",
-      "passed": false
+      "lane_id": "LANE_C_TREASURY_EXTENDED_HOURS",
+      "mechanisms": [
+        "M8"
+      ],
+      "status": "INPUT_BLOCKED",
+      "required": [
+        "official materialized Treasury quarterly-refunding events with exact actual timestamps and revision identity",
+        "TLT one-minute extended-hours OHLCV with corporate-action-complete identity from 2002-07-22 through 2009",
+        "accepted contemporaneous extended-session schedule"
+      ],
+      "observed": [
+        "official Treasury archive route identified but no accepted materialized event table",
+        "zero local TLT minute rows and pre-inception events cannot be synthesized",
+        "no accepted historical extended-session schedule"
+      ],
+      "outcomes_authorized": false
     }
   ],
   "decisive_blockers": [
-    "No qualified SPY or TLT one-minute dataset exists locally.",
-    "No accepted materialized official event table with exact historical timestamps and revision identity exists.",
-    "No accepted 1994-2009 NYSE session calendar exists locally.",
+    "Lane A lacks qualified FOMC timestamps, SPY minute data and a 1994-2009 NYSE calendar.",
+    "Lane B has a complete-shaped retrospective SPY development slice with immutable snapshot and row identities, but it remains unaccepted for this lane and lacks materialized official event and expiration identities plus an accepted 1994-2009 NYSE calendar.",
+    "Lane C lacks qualified Treasury timestamps, TLT extended-hours minute data and a contemporaneous extended-session schedule.",
     "TLT did not exist before 2002-07-22 and that interval cannot be synthesized or replaced.",
-    "No accepted complete historical options and futures expiration identity exists.",
-    "Daily bars cannot identify or separate the frozen intraday event windows."
+    "Daily bars remain forbidden substitutes for the intraday windows in Lane A and Lane C."
   ],
   "terminal_adjudication": {
-    "status": "INPUT_BLOCKED_INTRADAY_DATA",
-    "source_qualification_passed": false,
+    "status": "ATLAS_ALL_LANES_INPUT_BLOCKED",
+    "qualified_lane_count": 0,
+    "blocked_lane_count": 3,
     "definition_present": true,
     "implementation_created": false,
     "focused_tests_created": false,
@@ -175,9 +261,9 @@
     "holdout_outcomes_opened": false,
     "gate_counts": null,
     "strategy_candidate_available": false,
-    "why_no_module": "Without an executable qualified input, an event-return module would be unused mainline code and could silently harden unverified assumptions. The smallest honest checkpoint is the frozen definition plus this fail-closed input result.",
+    "why_no_module": "All three lanes are currently input-blocked. Without an executable qualified lane, an event-return module would be unused mainline code and could silently harden unverified assumptions. The smallest honest checkpoint remains the frozen definition plus this fail-closed lane qualification.",
     "external_review_required": true,
-    "next_decision": "External review may accept the frozen definition and terminal input blocker. A later data-only task must independently qualify the exact event, minute and calendar identities before implementation or outcomes."
+    "next_decision": "Delta external review must accept the revised definition before any provider or data acquisition. After acceptance, qualify Lane B first because its mechanisms use daily data; no implementation or outcome begins until that lane independently qualifies."
   },
   "validation": {
     "strict_json_required": true,
@@ -195,7 +281,8 @@
     "provider_or_network_used": false,
     "provider_or_network_authorized": false,
     "credential_accessed": false,
-    "database_opened": false,
+    "database_opened": true,
+    "database_access_mode": "read_only",
     "database_write_performed": false,
     "raw_payload_written": false,
     "strategy_outcome_accessed": false,
