@@ -1,0 +1,118 @@
+{
+  "schema_version": "us-spy-session-decomposition-v1",
+  "research_id": "US_SPY_SESSION_DECOMPOSITION_V1_20260720",
+  "status": "DEFINITION_FROZEN_NOT_EXECUTED",
+  "classification": "RETROSPECTIVE_PROGRAM_PERIOD_CONSUMED_DIAGNOSTIC_ONLY",
+  "purpose": "Measure whether SPY historical return accrued overnight or intraday after fixed daily trading costs; this is not a candidate decision.",
+  "input_identity": {
+    "database_sha256": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+    "table": "us_equity_research.us_daily_total_return_research",
+    "snapshot_id": "tiingo_raw_20260711T142010Z_5c24877d23cfc4a0",
+    "symbol": "SPY",
+    "required_snapshot_rows": 8418,
+    "required_consumed_rows": 8411,
+    "observed_date_start": "1993-01-29",
+    "observed_date_end": "2026-07-10",
+    "cutoff_inclusive": "2026-06-30",
+    "fields": ["trade_date", "open", "close", "adj_open", "adj_close"],
+    "available_at": "UNKNOWN_NOT_PIT_QUALIFIED",
+    "price_adjustment_status": "TIINGO_RAW_AND_CRSP_ADJUSTED",
+    "interpretation": "PROVIDER_ADJUSTED_TOTAL_RETURN_PROXY_NOT_BROKER_CASH_LEDGER",
+    "database_access": "read_only",
+    "database_sha256_before_after_required_equal": true,
+    "wal_before_after_required_absent": true
+  },
+  "accounts": {
+    "B1_SPY_BUY_HOLD": "Buy whole shares at the first raw open, mark with the adjusted close ratio, and value every day after hypothetical liquidation cost.",
+    "B2_SPY_OVERNIGHT": "Each accepted session close buy whole shares; sell at the next accepted session open using adj_open_t / adj_close_t_minus_1; remain cash intraday.",
+    "B3_SPY_INTRADAY": "Each accepted session open buy whole shares; sell at the same accepted session close using adj_close_t / adj_open_t; remain cash overnight."
+  },
+  "execution": {
+    "initial_capital_usd": 40000,
+    "whole_shares_only": true,
+    "fractional_shares": false,
+    "leverage": false,
+    "shorting": false,
+    "cash_interest": 0,
+    "unaffordable_trade": "INPUT_BLOCKED",
+    "split_boundary": "Every account starts from USD 40000 inside each individually reported split. Combined validation plus holdout chains the two independently simulated account-return paths through cash, with no B1 holding period or B2 overnight interval crossing the boundary.",
+    "corporate_action_semantics": "Use provider-adjusted endpoint ratios solely to translate raw entry notional into a corporate-action-complete exit proxy."
+  },
+  "costs": {
+    "reported_round_trip_bps": [0, 5, 15],
+    "primary_round_trip_bps": 5,
+    "stress_round_trip_bps": 15,
+    "one_way_rate": "round_trip_bps / 2 / 10000",
+    "B1": "one entry and one hypothetical liquidation per isolated segment; combined validation plus holdout therefore has two entries and two hypothetical liquidations",
+    "B2_B3": "one entry and one exit for every complete interval"
+  },
+  "one_use": {
+    "before_claim": "Verify clean pushed code identity, exact definition bytes, database file identity, schema, date-key metadata, split counts, and absence of any WAL without reading price rows.",
+    "after_durable_claim": "Read price rows, compute account outcomes, adjudicate gates, and publish canonical result and receipt bytes. Every result binds the exact canonical claim SHA-256, and result bytes are recaptured immediately before receipt finalization.",
+    "preflight_failure": "No result or receipt is created and the first outcome run remains unconsumed.",
+    "interruption_after_claim": "The run remains consumed. Recovery verifies the exact code, claim, database arguments and metadata, then publishes EXECUTION_ERROR_CONSUMED without reading price rows or rerunning outcomes."
+  },
+  "splits": {
+    "development": ["1994-01-01", "2009-12-31"],
+    "validation": ["2010-01-01", "2017-12-31"],
+    "retrospective_holdout": ["2018-01-01", "2026-06-30"],
+    "combined_validation_holdout": ["2010-01-01", "2026-06-30"],
+    "program_level_status": "VALIDATION_AND_RETROSPECTIVE_HOLDOUT_ALREADY_CONSUMED",
+    "future_same_period_pass": "RETROSPECTIVE_SECONDARY_ONLY_CANNOT_CREATE_CANDIDATE"
+  },
+  "required_metrics": [
+    "observation_count",
+    "cumulative_net_return",
+    "cagr",
+    "annualized_volatility",
+    "maximum_drawdown",
+    "calmar",
+    "positive_observation_fraction",
+    "maximum_positive_year_contribution",
+    "maximum_positive_observation_contribution",
+    "whole_share_trade_count"
+  ],
+  "metric_formulas": {
+    "maximum_positive_year_contribution": "For each calendar year, compute end-of-year NAV minus start-of-year NAV in USD on the continuous account path. Divide the largest strictly positive annual USD P&L by the sum of all strictly positive annual USD P&L. If no year has positive USD P&L, publish null and fail the concentration gate.",
+    "maximum_positive_observation_contribution": "Largest strictly positive observation return divided by the sum of strictly positive observation returns; null when none are positive. This is descriptive and not a gate."
+  },
+  "specialist_gates": {
+    "applies_to": ["B2_SPY_OVERNIGHT", "B3_SPY_INTRADAY"],
+    "items": [
+      "validation 5 bps CAGR > 0",
+      "retrospective holdout 5 bps CAGR > 0",
+      "validation 15 bps CAGR > 0",
+      "retrospective holdout 15 bps CAGR > 0",
+      "combined validation plus holdout 15 bps CAGR > 0",
+      "combined validation plus holdout 15 bps maximum positive year contribution <= 0.50",
+      "zero duplicate missing nonfinite identity or execution failures"
+    ]
+  },
+  "interpretation": {
+    "dominant_session": "Whichever B2 or B3 has the larger zero-cost combined validation-plus-holdout log return; ties are reported as TIE.",
+    "no_parameter_selection": true,
+    "no_regime_filter": true,
+    "no_vix_filter": true,
+    "no_window_grid": true,
+    "no_rescue_or_retest_of_US31_US36_US41_US46": true
+  },
+  "terminal_statuses": [
+    "RETROSPECTIVE_SESSION_DECOMPOSITION_OVERNIGHT_PASS_EXTERNAL_REVIEW",
+    "RETROSPECTIVE_SESSION_DECOMPOSITION_INTRADAY_PASS_EXTERNAL_REVIEW",
+    "RETROSPECTIVE_SESSION_DECOMPOSITION_BOTH_PASS_EXTERNAL_REVIEW",
+    "RETROSPECTIVE_SESSION_DECOMPOSITION_FAIL",
+    "EXECUTION_ERROR_CONSUMED",
+    "INPUT_BLOCKED"
+  ],
+  "boundaries": {
+    "provider_or_network_authorized": false,
+    "database_write_authorized": false,
+    "prospective_forward_authorized": false,
+    "strategy_candidate_available": false,
+    "shadow_authorized": false,
+    "paper_authorized": false,
+    "broker_authorized": false,
+    "live_authorized": false,
+    "auto_trading_authorized": false
+  }
+}
