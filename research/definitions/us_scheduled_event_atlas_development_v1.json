@@ -1,0 +1,324 @@
+{
+  "schema_version": "us-scheduled-event-atlas-development-definition-v1.1",
+  "research_id": "US_SCHEDULED_EVENT_ATLAS_DEVELOPMENT_V1_20260719",
+  "lineage_id": "US_SCHEDULED_EVENT_ATLAS_DEVELOPMENT_V1",
+  "status": "FROZEN_PENDING_DELTA_EXTERNAL_REVIEW_INPUT_BLOCKED",
+  "classification": "DEVELOPMENT_ONLY_SCHEDULED_EVENT_RESEARCH",
+  "research_scope": {
+    "market": "US",
+    "mechanism_family": "scheduled public macro and expiration events",
+    "mechanism_count": 8,
+    "parameter_grid": false,
+    "development_outcomes_authorized": false,
+    "validation_outcomes_authorized": false,
+    "holdout_outcomes_authorized": false,
+    "implementation_authorized": false,
+    "current_status": "ATLAS_ALL_LANES_INPUT_BLOCKED",
+    "input_lanes_are_independent": true
+  },
+  "lineage_control": {
+    "new_lineage": true,
+    "legacy_strategy_dependency": false,
+    "us46_reference_only": {
+      "artifact": "reports/validation/us_four_cleanroom_replication_v1.json",
+      "sha256": "f2bb7c6b6d9a850f2c5f4451b40fe17126d142ef122ec67c174b8329ac12f8b5",
+      "status": "REJECTED_FAILURE_MEMORY_ONLY",
+      "retest_or_rescue_forbidden": true,
+      "reason": "US46 is a fixed-weight QQQ/GLD allocation. This atlas studies preregistered scheduled-event windows and cannot reopen or reinterpret US46."
+    },
+    "monthly_and_quarterly_expiration_not_turn_of_month_repair": true,
+    "forbidden": [
+      "reuse a rejected strategy identifier",
+      "change a window after observing an outcome",
+      "add adjacent windows or filters",
+      "rank mechanisms on validation or holdout",
+      "treat an atlas result as a strategy candidate"
+    ]
+  },
+  "splits": {
+    "development": {
+      "start": "1994-01-01",
+      "end": "2009-12-31",
+      "use": "development_screen_only"
+    },
+    "validation": {
+      "start": "2010-01-01",
+      "end": "2017-12-31",
+      "use": "sealed_not_read"
+    },
+    "holdout": {
+      "start": "2018-01-01",
+      "end": "2026-06-30",
+      "use": "sealed_not_read"
+    },
+    "split_assignment": "An event belongs to the split containing its official event timestamp. Every entry and exit endpoint must also lie inside that split or the event is excluded and counted.",
+    "forbidden_after": "2026-06-30"
+  },
+  "input_lanes": [
+    {
+      "id": "LANE_A_FOMC_INTRADAY",
+      "mechanisms": [
+        "M1",
+        "M2"
+      ],
+      "required_inputs": "Official actual FOMC statement timestamps, SPY one-minute RTH OHLCV with corporate-action-complete identity, and an accepted NYSE calendar.",
+      "qualification": "independent",
+      "blocked_lane_effect": "Only M1 and M2 are ineligible for outcomes and promotion; other qualified lanes may proceed."
+    },
+    {
+      "id": "LANE_B_DAILY_SCHEDULED_EVENTS",
+      "mechanisms": [
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7"
+      ],
+      "required_inputs": "SPY daily raw and adjusted OHLC, official FOMC/CPI/Employment Situation dates and timestamps, accepted monthly and quarterly expiration identities, and an accepted NYSE calendar.",
+      "qualification": "independent",
+      "blocked_lane_effect": "Only M3 through M7 are ineligible for outcomes and promotion; other qualified lanes may proceed."
+    },
+    {
+      "id": "LANE_C_TREASURY_EXTENDED_HOURS",
+      "mechanisms": [
+        "M8"
+      ],
+      "required_inputs": "Official actual Treasury quarterly-refunding timestamps, TLT one-minute extended-hours OHLCV from inception with corporate-action-complete identity, and an accepted extended-session schedule.",
+      "qualification": "independent",
+      "blocked_lane_effect": "Only M8 is ineligible for outcomes and promotion; other qualified lanes may proceed."
+    }
+  ],
+  "time_and_bar_contract": {
+    "timezone": "America/New_York",
+    "intraday_bar_frequency": "1 minute for Lane A and Lane C",
+    "daily_bar_frequency": "daily raw and adjusted OHLC for Lane B",
+    "bar_label": "interval start [t,t+1 minute)",
+    "rth": "09:30 through 16:00 using an accepted NYSE session calendar",
+    "early_close_and_unscheduled_close": "Only an independently accepted official NYSE calendar may define actual opens, closes, early closes and closures.",
+    "event_time": "Use the official actual public release, embargo or statement timestamp for each event, not a scheduled date default or a modern-time backfill.",
+    "exact_endpoint_required": true,
+    "nearest_bar_forbidden": true,
+    "forward_fill_forbidden": true,
+    "backfill_forbidden": true,
+    "interpolation_forbidden": true,
+    "daily_bar_substitution_for_intraday_lanes_forbidden": true
+  },
+  "account_and_costs": {
+    "initial_capital_usd": 40000,
+    "long_only": true,
+    "whole_shares_only": true,
+    "fractional_shares": false,
+    "leverage": false,
+    "shorting": false,
+    "cash_interest": 0,
+    "round_trip_cost_bps": [
+      5,
+      15,
+      30
+    ],
+    "primary_round_trip_cost_bps": 15,
+    "one_way_cost_bps": {
+      "5_round_trip": 2.5,
+      "15_round_trip": 7.5,
+      "30_round_trip": 15
+    },
+    "entry_shares": "floor(40000 / (entry_price * (1 + one_way_cost_rate)))",
+    "residual_cash": "40000 - shares * entry_price * (1 + one_way_cost_rate)",
+    "gross_exit_value": "shares * raw_entry_price * adjusted_exit_price / adjusted_entry_price",
+    "exit_cash": "residual_cash + gross_exit_value * (1 - one_way_cost_rate)",
+    "event_return": "exit_cash / 40000 - 1",
+    "price_basis": "M1, M2 and M8 use exact minute raw entry plus an accepted corporate-action-complete adjusted price ratio; M3 uses daily raw and adjusted open-to-close; M4 through M7 use daily raw and adjusted close-to-close.",
+    "nonfinite_nonpositive_or_unaffordable": "exclude, count and fail the input gate if the minimum sample contract is no longer met"
+  },
+  "mechanisms": [
+    {
+      "id": "M1",
+      "name": "FOMC_PRE_ANNOUNCEMENT_DRIFT",
+      "asset": "SPY",
+      "event_source": "Federal Reserve historical FOMC materials and statement timestamps",
+      "entry": "14:00 bar open on the immediately preceding complete NYSE session",
+      "exit": "14:00 bar open on the scheduled statement day",
+      "inclusion": "Structurally applicable events are scheduled FOMC decisions with an official same-day public statement time strictly after 14:00 and official calendar sessions that include 14:00 on both dates. Exact minute-bar presence is not an inclusion criterion and is checked only after the denominator is frozen. A statement released exactly at 14:00 is structurally inapplicable to M1 because the 14:00 bar open is not guaranteed to precede release. The announcement-day 14:00 bar is excluded.",
+      "direction": "long_positive_mean",
+      "promotion_eligible": true,
+      "promotion_additional_gate": "M4 and M5 must both have executed qualified inputs and neither may trigger FOMC_EVENT_SPECIFICITY_NOT_ESTABLISHED."
+    },
+    {
+      "id": "M2",
+      "name": "FOMC_ANNOUNCEMENT_TO_CLOSE_REACTION",
+      "asset": "SPY",
+      "event_source": "Federal Reserve historical FOMC materials and statement timestamps",
+      "entry": "open of the first complete one-minute bar whose start is strictly after the official statement timestamp",
+      "exit": "close of the final RTH minute bar on the statement day",
+      "inclusion": "Structurally applicable events are scheduled FOMC decisions whose official statement occurs during RTH early enough to leave at least one complete post-release minute before the official session close. If the official time is minute-precision t, entry is the t+1 minute bar open; if it includes seconds, entry is the next minute boundary strictly greater than t. Exact entry-bar and close presence is checked only after the denominator is frozen.",
+      "direction": "long_positive_mean",
+      "promotion_eligible": true
+    },
+    {
+      "id": "M3",
+      "name": "FOMC_NEXT_SESSION_OPEN_TO_CLOSE_REACTION",
+      "asset": "SPY",
+      "event_source": "Federal Reserve historical FOMC materials and statement timestamps",
+      "entry": "raw open of the first accepted NYSE session whose open is strictly after the official statement timestamp",
+      "exit": "corporate-action-complete adjusted close of that same accepted NYSE session, including an officially identified early close",
+      "inclusion": "Structurally applicable events are scheduled FOMC decisions with an official public timestamp strictly before the next accepted NYSE session open. Exact daily open and close presence is checked only after the denominator is frozen. No event-day close or MOC execution is used.",
+      "direction": "long_positive_mean",
+      "promotion_eligible": true
+    },
+    {
+      "id": "M4",
+      "name": "CPI_PRE_RELEASE_NEGATIVE_CONTROL",
+      "asset": "SPY",
+      "event_source": "BLS CPI release archive with actual release date and time",
+      "entry": "actual RTH close of the second NYSE session before the release date",
+      "exit": "actual RTH close of the immediately preceding NYSE session",
+      "inclusion": "Final actual CPI releases only. Rescheduled releases use their final actual release identity. The release itself is not in the window.",
+      "direction": "long_positive_mean",
+      "interpretation": "event-specificity negative control, still counted in the frozen eight-test family",
+      "promotion_eligible": false,
+      "control_alarm": "FOMC_EVENT_SPECIFICITY_NOT_ESTABLISHED if the 15 bps mean is positive, its ordinary bootstrap lower bound is positive, and its Holm-adjusted p-value is at most 0.05.",
+      "control_alarm_effect": "Blocks M1 event-specificity interpretation and M1 promotion only; it does not change the frozen outcomes or eligibility of M2 through M8."
+    },
+    {
+      "id": "M5",
+      "name": "NFP_PRE_RELEASE_NEGATIVE_CONTROL",
+      "asset": "SPY",
+      "event_source": "BLS Employment Situation archive with actual release date and time",
+      "entry": "actual RTH close of the second NYSE session before the release date",
+      "exit": "actual RTH close of the immediately preceding NYSE session",
+      "inclusion": "Final actual Employment Situation releases only. Rescheduled releases use their final actual release identity. The release itself is not in the window.",
+      "direction": "long_positive_mean",
+      "interpretation": "event-specificity negative control, still counted in the frozen eight-test family",
+      "promotion_eligible": false,
+      "control_alarm": "FOMC_EVENT_SPECIFICITY_NOT_ESTABLISHED if the 15 bps mean is positive, its ordinary bootstrap lower bound is positive, and its Holm-adjusted p-value is at most 0.05.",
+      "control_alarm_effect": "Blocks M1 event-specificity interpretation and M1 promotion only; it does not change the frozen outcomes or eligibility of M2 through M8."
+    },
+    {
+      "id": "M6",
+      "name": "MONTHLY_OPTIONS_EXPIRATION",
+      "asset": "SPY",
+      "event_source": "accepted official standard monthly options expiration identity",
+      "entry": "actual RTH close of the immediately preceding NYSE session",
+      "exit": "actual RTH close on expiration day",
+      "inclusion": "Standard monthly expirations outside March, June, September and December. If the ordinary Friday is a market holiday, only an officially identified preceding-session expiration is accepted.",
+      "direction": "long_positive_mean",
+      "promotion_eligible": true
+    },
+    {
+      "id": "M7",
+      "name": "QUARTERLY_OPTIONS_FUTURES_EXPIRATION",
+      "asset": "SPY",
+      "event_source": "accepted official quarterly options and equity-index futures expiration identity",
+      "entry": "actual RTH close of the immediately preceding NYSE session",
+      "exit": "actual RTH close on expiration day",
+      "inclusion": "Standard March, June, September and December quarterly expirations only. M6 and M7 are mutually exclusive by construction.",
+      "direction": "long_positive_mean",
+      "promotion_eligible": true
+    },
+    {
+      "id": "M8",
+      "name": "TREASURY_REFUNDING_TLT_REACTION",
+      "asset": "TLT",
+      "event_source": "US Treasury quarterly refunding archive with actual public release timestamp",
+      "entry": "open of the first complete extended-hours one-minute bar whose start is strictly after the official quarterly refunding announcement timestamp",
+      "exit": "close of bar E+59, where E is the executable entry label and E through E+59 are exactly 60 consecutive accepted one-minute labels; the exit timestamp is E+60 minutes",
+      "inclusion": "Structurally applicable events are official quarterly refunding announcements on or after the TLT inception date 2002-07-22 whose first minute boundary strictly after release through 60 consecutive minutes lies inside the independently accepted extended-session schedule. If the official time is minute-precision t, entry is the t+1 minute bar open. A missing label blocks the event; the 60th merely observed bar after a gap is forbidden. Minute-bar presence is checked only after the denominator is frozen. Pre-inception events are structural not-applicable observations and are not missing data.",
+      "direction": "long_positive_mean",
+      "promotion_eligible": true,
+      "prior_strength": "weak development-only prior; no claim that Treasury source evidence itself establishes positive TLT returns"
+    }
+  ],
+  "sample_qualification": {
+    "minimum_complete_events_per_mechanism": 24,
+    "minimum_distinct_calendar_years_per_mechanism": 6,
+    "minimum_complete_fraction_per_mechanism": 0.95,
+    "structural_event_denominator": "For each mechanism, first enumerate all official events meeting only its frozen event type, actual official timestamp, development date, official calendar-session, asset-inception and M6/M7 month rules. Minute-bar presence, OHLCV validity and exact endpoint presence are forbidden from deciding this denominator. TLT pre-inception events are excluded before forming M8's denominator.",
+    "complete_event_numerator": "After the structural denominator is immutable, count events having every exact required minute or daily endpoint, as applicable to that mechanism, with finite strictly positive prices and the required session labels. Every denominator event not in the numerator retains one aggregate missing or invalid reason.",
+    "completeness_denominator": "The immutable structural-event denominator defined above; never the subset remaining after price or endpoint checks.",
+    "missing_endpoint_rule": "Record an aggregate missing reason without issuer or event values. Do not approximate. A failing mechanism is input-blocked and cannot produce outcomes.",
+    "lane_stop": "Each lane qualifies independently. An input-blocked lane does not block a different qualified lane. Within a qualified lane, a mechanism failing a minimum remains unexecuted, receives raw and Holm-adjusted p-value 1.0 for the frozen eight-test family, fails every pass gate and is ineligible for promotion."
+  },
+  "overlap_and_inference": {
+    "overlapping_different_mechanisms": "Keep as distinct preregistered hypotheses; do not merge, choose or reassign events. This atlas does not construct a concurrent portfolio.",
+    "primary_statistic": "arithmetic mean of 15 bps round-trip net event returns",
+    "alternative": "mean > 0 for each M1 through M8",
+    "bootstrap": {
+      "method": "mechanism-specific circular moving block bootstrap over chronologically ordered applicable development calendar years",
+      "block_length_calendar_years": 2,
+      "replications": 10000,
+      "rng": "NumPy PCG64",
+      "seed": 20260719,
+      "rng_streams": "For mechanism ordinal i in 1 through 8, initialize PCG64 from NumPy SeedSequence([20260719, i]).",
+      "sampling": "For each executed mechanism separately, form the chronological list of development calendar years containing at least one complete event after that mechanism and its lane pass their input gates. The list must contain at least six years. Draw two-year circular-block starts uniformly with replacement, concatenate until that mechanism's applicable-year-list length is filled, then truncate. Include every complete event return from each sampled year occurrence. Because each eligible year contains at least one complete event, every replication is nonempty; any empty replication is an implementation failure and blocks outcomes rather than being dropped or redrawn.",
+      "cross_mechanism_dependence": "No joint or portfolio statistic is estimated. Holm family-wise error control remains valid under arbitrary dependence, so M8's post-inception bootstrap is not forced onto the 1994-2001 years and no zero-observation replicate is possible by construction.",
+      "ordinary_confidence_bootstrap": "Apply the frozen block samples to observed 15 bps event returns. The one-sided 95 percent lower confidence bound is the linearly interpolated fifth percentile of the 10000 ordinary bootstrap means.",
+      "null_centering": "For each executed mechanism subtract its observed 15 bps arithmetic event mean from every event return before applying the same frozen block-sample construction.",
+      "raw_p_value": "(1 + count(null-centered bootstrap mean >= observed 15 bps event mean)) / 10001. This is the only p-value supplied to Holm."
+    },
+    "multiplicity": {
+      "method": "Holm step-down family-wise error control",
+      "alpha": 0.05,
+      "family_in_order": [
+        "M1",
+        "M2",
+        "M3",
+        "M4",
+        "M5",
+        "M6",
+        "M7",
+        "M8"
+      ],
+      "blocked_or_unexecuted_p_value": 1.0,
+      "holm_adjustment": "Sort the eight raw p-values ascending with ties by M1 through M8. At sorted rank k from 1 through 8, adjusted_p_k = max over j=1..k of min(1, (8-j+1) * raw_p_j), then map adjusted values back to mechanism IDs.",
+      "tie_break": "M1 then M2 then M3 then M4 then M5 then M6 then M7 then M8",
+      "promotion_limit": 2,
+      "promotion_scope": "Only mechanisms with promotion_eligible=true and every frozen pass gate true may be proposed for a separately reviewed validation phase. M4 and M5 never enter this set.",
+      "promotion_selection": "If more than two eligible mechanisms pass, choose the two by Holm-adjusted p-value ascending, then unrounded 15 bps mean descending, then fixed ordinal M1 through M8. No other discretion is permitted.",
+      "global_selection_readiness": "Do not perform the maximum-two selection until every promotion-eligible mechanism has either a development result or a separately externally accepted outcome-blind terminal-data-unavailable closure. Partial lane results may be published but cannot determine abandonment of another lane.",
+      "authorization": "A development pass may only produce a proposal for external review. This definition does not authorize validation access, candidate status or execution of a later split."
+    },
+    "mechanism_pass_gates": [
+      "the mechanism input and minimum-sample gates pass with zero identity, duplicate, nonfinite, nonpositive-price or whole-share failures; missing endpoints are permitted only within the frozen completeness threshold and every omission remains in the audit counts",
+      "the unrounded 15 bps round-trip mean event return is strictly greater than zero",
+      "the ordinary block-bootstrap one-sided 95 percent lower confidence bound is strictly greater than zero",
+      "the Holm-adjusted one-sided null-centered bootstrap p-value is at most 0.05",
+      "the unrounded 30 bps round-trip mean event return is strictly greater than zero",
+      "at 15 bps, max(max(event_profit,0)) / sum(max(event_profit,0)) is strictly less than 0.20; a nonpositive denominator fails",
+      "at 15 bps, max over exit calendar years of sum(max(event_profit,0) in that year) divided by sum(max(event_profit,0) over all events) is strictly less than 0.40; a nonpositive denominator fails",
+      "all account, timestamp, source, snapshot and split identities pass exactly"
+    ],
+    "diagnostics_only": [
+      "5 bps and 30 bps event means",
+      "event count, year count and missing-reason counts"
+    ]
+  },
+  "input_identity_required_before_execution": {
+    "official_event_table": "event ID, type, official actual timestamp, timezone, source URL, retrieved_at, immutable source bytes hash, revision/cancellation identity and qualification status",
+    "lane_a_minute_snapshot": "SPY exact one-minute RTH rows with timezone, OHLCV, corporate-action-complete identity, source, retrieved_at, immutable snapshot and row hashes",
+    "lane_b_daily_snapshot": "SPY daily raw open/close and adjusted open/close with corporate-action-complete identity, source, immutable snapshot and row hashes",
+    "lane_c_minute_snapshot": "TLT exact one-minute extended-hours rows from inception with timezone, OHLCV, corporate-action-complete identity, source, retrieved_at, immutable snapshot and row hashes",
+    "calendar": "accepted official NYSE session opens, closes, early closes and unscheduled closures over the development interval",
+    "joint_manifest": "exact row counts, date coverage, duplicate/missing/nonfinite counts and hashes binding event, applicable minute or daily price, corporate-action and calendar inputs",
+    "current_status": "ALL_THREE_LANES_NOT_QUALIFIED"
+  },
+  "terminal_statuses": [
+    "DEVELOPMENT_ATLAS_COMPLETE",
+    "DEVELOPMENT_ATLAS_PARTIAL_RESULTS_COMPLETE",
+    "ATLAS_PARTIALLY_INPUT_BLOCKED",
+    "ATLAS_ALL_LANES_INPUT_BLOCKED"
+  ],
+  "stop_rule": "Delta external review must accept this frozen definition before any acquisition, implementation or outcome. Afterwards, each lane still requires independent input qualification. Execute development outcomes exactly once only for qualified mechanisms, assign p=1 and no result to blocked mechanisms, never substitute daily bars for intraday lanes, never change mechanisms, and never open sealed periods.",
+  "boundaries": {
+    "provider_or_network_authorized": false,
+    "database_write_authorized": false,
+    "development_outcome_authorized": false,
+    "validation_outcome_authorized": false,
+    "holdout_outcome_authorized": false,
+    "strategy_candidate_available": false,
+    "shadow_authorized": false,
+    "paper_authorized": false,
+    "broker_authorized": false,
+    "live_authorized": false,
+    "auto_trading_authorized": false
+  }
+}
