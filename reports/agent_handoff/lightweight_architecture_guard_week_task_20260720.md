@@ -34,7 +34,7 @@ Inspect every new branch and PR created under the week program for:
 - raw data committed to Git;
 - one-off scripts proposed for mainline;
 - evidence and registry framework growth;
-- hidden price or outcome access;
+- hidden per-security price, volume, or dollar-volume value access, or outcome access;
 - database write paths;
 - provider credentials or cookies;
 - task-scope drift.
@@ -52,7 +52,7 @@ new backtest engine
 new provider abstraction
 raw official PDFs or HTML
 credentials, cookies, or private headers
-price or return outcomes without authorization
+per-security price, volume, or dollar-volume values, or return outcomes
 central database writes
 more than one unrelated workstream
 ```

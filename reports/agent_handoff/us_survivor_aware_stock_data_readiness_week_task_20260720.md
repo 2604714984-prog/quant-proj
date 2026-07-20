@@ -25,13 +25,16 @@ Do not change their Atlas scores or recommendations and do not select one as a s
 May use:
 
 - read-only local schema, metadata, row counts, date coverage, and identifier tables;
-- already available raw and adjusted OHLCV identities;
+- field names, types, null rates, duplicate-key counts, and coverage aggregates that establish whether raw and adjusted OHLCV fields exist;
 - listing, delisting, corporate-action, and security-master metadata;
 - public provider documentation;
 - Git-external scratch scripts.
 
 May not:
 
+- read, export, print, or retain per-security price, volume, or dollar-volume values;
+- calculate raw-to-adjusted ratios or inspect individual split adjustments;
+- join price fields to events, filings, fundamentals, or other research inputs;
 - compute close-to-close or forward returns;
 - calculate 52-week-high signals;
 - rank stocks;
@@ -92,8 +95,8 @@ No strategy can be marked data-ready when delisted and failed securities are abs
 Check only:
 
 - at least 252 accepted sessions per eligible security;
-- split-consistent high and close identity;
-- no future split adjustment leakage;
+- field and provenance metadata for raw and adjusted high and close series;
+- whether source documentation and metadata are sufficient to qualify split timing without inspecting price values; otherwise report the requirement as unqualified;
 - historical eligibility as of each date;
 - inactive and delisted securities retained through terminal date.
 
@@ -102,7 +105,7 @@ Check only:
 Check only:
 
 - synchronized stock and market session dates;
-- raw/adjusted daily close identity;
+- raw/adjusted daily close field and provenance identity, without reading price values;
 - trading-status and halt fields;
 - event exclusions can be known point-in-time;
 - volume and dollar-volume identity;
@@ -171,7 +174,7 @@ One compact JSON or Markdown report under 300 lines containing:
 - no provider recommendation beyond `existing / paid / unavailable`;
 - no strategy ranking.
 
-Detailed row samples and scratch scripts remain Git-external.
+Identifier, status, and key-only row samples and scratch scripts remain Git-external. Price, volume, and dollar-volume values are prohibited even in Git-external samples or logs.
 
 ## Time box
 
@@ -196,7 +199,8 @@ STK_04_READINESS=
 STK_12_READINESS=
 PAID_ROUTE_REQUIRED=
 REPORT_URL=
-PRICE_VALUES_READ_FOR_IDENTITY_ONLY=true|false
+PRICE_FIELD_METADATA_INSPECTED=true|false
+PER_SECURITY_PRICE_VALUES_READ=false
 RETURN_COMPUTATION=false
 SIGNAL_COMPUTATION=false
 DATABASE_WRITE=false

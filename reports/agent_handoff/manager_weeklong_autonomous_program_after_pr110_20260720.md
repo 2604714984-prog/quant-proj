@@ -42,7 +42,8 @@ Run the following workstreams in parallel, using separate branches or Git-extern
 3. `C_SURVIVOR_AWARE_STOCK_DATA_READINESS` — future stock research data qualification.
 4. `D_SEC_INSIDER_FUNDAMENTAL_READINESS` — official SEC data feasibility.
 5. `E_HIGH_COST_DATA_NO_PURCHASE_SCOUT` — intraday/options/text availability only.
-6. `F_LIGHTWEIGHT_ARCHITECTURE_GUARD` — continuous control and final closeout.
+6. `F_MECHANISM_FALSIFICATION_SCOUT` — adversarial literature and replication evidence.
+7. `G_LIGHTWEIGHT_ARCHITECTURE_GUARD` — continuous control and final closeout.
 
 Only Workstream A may become the next formal research input lane. All other workstreams are supporting qualification or scout work and may not select a strategy.
 
@@ -69,7 +70,7 @@ May access public official sources and Git-external source bytes. No price data 
 
 ### Workstream C
 
-May perform read-only schema, metadata, row-count, identifier, corporate-action, and listing-status checks against already available local data. It may not calculate returns, ranks, signals, portfolios, or outcome metrics.
+May perform read-only schema, field-name/type, row-count, date-coverage, null-rate, duplicate-key, identifier, corporate-action-table, and listing-status checks against already available local data. It may confirm that raw or adjusted OHLCV fields exist, but it may not read, export, print, or retain per-security price values; calculate adjustment ratios, returns, ranks, signals, portfolios, or outcome metrics; or join price fields to events or fundamentals.
 
 ### Workstream D
 
@@ -81,6 +82,10 @@ May inspect public vendor documentation and pricing pages. It may not create acc
 
 ### Workstream F
 
+May inspect public papers, official working papers, journals, and author datasets for contrary, limiting, post-publication, cost, and replication evidence. It may not access local prices or returns, fit models, change Atlas R1, create a strategy family, or recommend parameters.
+
+### Workstream G
+
 May inspect all week branches and PRs. It may not rewrite research content except to request compaction or boundary corrections.
 
 ## Mainline and PR policy
@@ -90,7 +95,7 @@ May inspect all week branches and PRs. It may not rewrite research content excep
 A compact, outcome-blind artifact may merge only when all of the following are true:
 
 - one JSON or Markdown file only;
-- no code, raw source files, record-level dump, database change, or price/return content;
+- no code, raw source files, record-level dump, database change, per-security price, volume, or dollar-volume values, or return/result content;
 - exact-head CI green;
 - independent read-only verification is `VALID` with zero findings;
 - no more than 300 added lines;
@@ -153,7 +158,7 @@ A cannot be accepted or merged. Record the discrepancy and stop the main lane un
 ### Day 1
 
 - merge PR #110 exact HEAD;
-- dispatch all six workstreams;
+- dispatch all seven workstreams;
 - confirm every workstream's branch, allowed sources, and stop conditions.
 
 ### Days 2–4
@@ -162,13 +167,14 @@ A cannot be accepted or merged. Record the discrepancy and stop the main lane un
 - B independently audits source availability and schedule versions;
 - C and D run bounded data-readiness checks;
 - E builds the no-purchase market survey;
-- F reviews scope and size daily.
+- F builds the adversarial mechanism-falsification report;
+- G reviews scope and size daily.
 
 ### Day 5
 
 - A and B reconcile only factual source discrepancies; B must not edit A's artifact;
-- C, D, and E freeze their results;
-- F issues any required compaction findings.
+- C, D, E, and F freeze their results;
+- G issues any required compaction findings.
 
 ### Days 6–7
 
@@ -176,6 +182,10 @@ A cannot be accepted or merged. Record the discrepancy and stop the main lane un
 - run independent acceptance and CI;
 - leave all code-bearing or unresolved PRs Draft;
 - publish one Manager closeout with links, exact SHAs, and no narrative inflation.
+
+## Minimum completion chain
+
+The week is not complete until Workstreams A through G each have an explicit terminal or blocked status and an exact artifact URL or an explicit `NO_ARTIFACT` reason. The Manager closeout must collect all seven receipts; an undispatched, uncollected, or unlinked workstream remains incomplete.
 
 ## Required Manager closeout
 
@@ -190,6 +200,8 @@ PROVENANCE_VERIFIER_STATUS=
 SURVIVOR_AWARE_DATA_STATUS=
 SEC_DATA_STATUS=
 HIGH_COST_DATA_SCOUT_STATUS=
+FALSIFICATION_SCOUT_STATUS=
+FALSIFICATION_REPORT_URL=
 ARCHITECTURE_GUARD_STATUS=
 MAINLINE_NET_LINE_DELTA=
 OPEN_DRAFT_PRS=
