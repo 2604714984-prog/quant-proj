@@ -1,0 +1,19 @@
+{
+  "artifact_type":"outcome_blind_lane_b_identity_adjudication",
+  "research_id":"US_LANE_B_DAILY_IDENTITY_RESOLUTION_R1_20260720",
+  "date":"2026-07-20","market":"US","phase":"adjudication","status":"blocked-on-data",
+  "repository":{"branch":"codex/us-official-data-mechanism-discovery-atlas-r1-20260720","base_branch":"v2-main","base_commit":"d76572f826fab4e1532dd27c027bd5565efb5253","base_tree":"7086226a5299c9a5af44466175925966ad9dd3c8"},
+  "source_input":{"path":"G:\\quant_proj\\.scout_scratch_20260720\\lane_b_identity.json","sha256":"d7014b06a58e01b55778fc1f3c37e021db2d656896c0e935575d007c6150473b","hash_verified":true},
+  "boundaries":{"outcome_access":false,"price_return_access":false,"validation_holdout_access":false,"database_access":false,"database_write":false,"strategy_code_write":false,"strategy_candidate_available":false,"shadow":false,"paper":false,"live":false},
+  "m3_exact_time_terminal_decision":{"status":"TERMINAL_DATA_UNAVAILABLE_WITHIN_BOUND_NO_OUTCOME","required_accepted_actual_timestamps":94,"event_records":98,"accepted_actual_timestamp_records":0,"request_count":17,"request_cap":200,"unique_requested_urls":16,"official_statement_objects":98,"official_minutes_objects":98,"official_transcript_objects":98,"decision_basis":"No reviewed official object proved record-level actual first public availability for a frozen M3 event; 0 accepted timestamps is below 94.","forbidden_inferences_not_used":["planned release time","customary release time","same-day page last-update time","modern schedule backfill","market movement","third-party timestamps"]},
+  "daily_alternatives":[
+    {"mechanism_id":"M3_DATE_ANCHORED_NEXT_SESSION_V2","identity_status":"IDENTITY_FEASIBLE_PENDING_PREREGISTRATION","score":16,"recommendation":"ADVANCE"},
+    {"mechanism_id":"M4_CPI_DATE_CONTROL_V2","identity_status":"PARK_SOURCE_INCOMPLETE","score":12,"recommendation":"PARK"},
+    {"mechanism_id":"M5_NFP_DATE_CONTROL_V2","identity_status":"PARK_SOURCE_INCOMPLETE","score":12,"recommendation":"PARK"},
+    {"mechanism_id":"M6_MONTHLY_EXPIRATION_RULESPAN_V2","identity_status":"PARK_SOURCE_INCOMPLETE","score":14,"recommendation":"PARK"},
+    {"mechanism_id":"M7_QUARTERLY_EXPIRATION_RULESPAN_V2","identity_status":"PARK_SOURCE_INCOMPLETE","score":13,"recommendation":"PARK"}
+  ],
+  "calendar_contract":{"status":"PARK_SOURCE_INCOMPLETE","proposed_pin":"exchange_calendars==4.11.1","calendar_name":"XNYS","required_session_date_parity":4030,"observed_session_date_parity":null,"required_ad_hoc_full_closure_evidence":7,"qualified_ad_hoc_full_closure_evidence":null,"every_observed_date_difference_resolved":false,"immutable_calendar_rows_sha256":null},
+  "formal_readiness":{"lane_b_daily_mechanism_ready":false,"reason":"The date-anchored alternative has 98/98 official Statement dates, but accepted XNYS session parity, seven ad-hoc closure proofs, difference reconciliation and immutable calendar-row identity are incomplete.","next_action":"Complete the outcome-blind XNYS calendar contract before preregistration; do not reopen exact-time M3."},
+  "validation":{"strict_json":true,"nonfinite_numbers":0,"duplicate_mechanism_ids":0,"alternative_count":5,"boundary_flags_valid":true,"source_hash_valid":true}
+}
