@@ -3,17 +3,29 @@
   "research_id":"US_LANE_B_DAILY_IDENTITY_RESOLUTION_R1_20260720",
   "date":"2026-07-20","market":"US","phase":"adjudication","status":"blocked-on-data",
   "repository":{"branch":"codex/us-official-data-mechanism-discovery-atlas-r1-20260720","base_branch":"v2-main","base_commit":"d76572f826fab4e1532dd27c027bd5565efb5253","base_tree":"7086226a5299c9a5af44466175925966ad9dd3c8"},
-  "source_input":{"path":"G:\\quant_proj\\.scout_scratch_20260720\\lane_b_identity.json","sha256":"d7014b06a58e01b55778fc1f3c37e021db2d656896c0e935575d007c6150473b","hash_verified":true},
+  "source_input":{"control_status":"NON_CONTROLLING_LOCAL_CONTEXT","path":"G:\\quant_proj\\.scout_scratch_20260720\\lane_b_identity.json","sha256":"d7014b06a58e01b55778fc1f3c37e021db2d656896c0e935575d007c6150473b","hash_verified":true},
+  "controlling_evidence":{
+    "authority":"PR105_ACCEPTED_PORTABLE_EVIDENCE",
+    "pr_105_head":"85e2f1e803d10067f63cb6edce83911d1922a6b2",
+    "pr_105_review_id":4731989819,
+    "official_manifest_sha256":"8a8498c4552db34c7a7304656b76670348a0c89a2781fc163340a196463e109d",
+    "fomc_qualification_sha256":"ca067e82413a17b621fa016e3da9a014dbf87ff9725fe6d308c71e807cec0804",
+    "joint_sha256":"25ada6a57923d76741163ca5ca846a95fae3ebb38e7c567ce7cbba6b04234be9",
+    "official_manifest_resources":323,
+    "searched_record_classes":["Statement","Minutes","Transcript","official linked Federal Reserve records"],
+    "search_bound":{"working_days":2,"requests_used":17,"request_cap":200,"unique_urls":16},
+    "record_coverage":{"events":98,"statement_objects":98,"minutes_objects":98,"transcript_objects":98,"accepted_actual_first_public_timestamp_records":0,"required_accepted_actual_first_public_timestamp_records":94}
+  },
   "boundaries":{"outcome_access":false,"price_return_access":false,"validation_holdout_access":false,"database_access":false,"database_write":false,"strategy_code_write":false,"strategy_candidate_available":false,"shadow":false,"paper":false,"live":false},
-  "m3_exact_time_terminal_decision":{"status":"TERMINAL_DATA_UNAVAILABLE_WITHIN_BOUND_NO_OUTCOME","required_accepted_actual_timestamps":94,"event_records":98,"accepted_actual_timestamp_records":0,"request_count":17,"request_cap":200,"unique_requested_urls":16,"official_statement_objects":98,"official_minutes_objects":98,"official_transcript_objects":98,"decision_basis":"No reviewed official object proved record-level actual first public availability for a frozen M3 event; 0 accepted timestamps is below 94.","forbidden_inferences_not_used":["planned release time","customary release time","same-day page last-update time","modern schedule backfill","market movement","third-party timestamps"]},
+  "m3_exact_time_terminal_decision":{"family_id":"FOMC_SCHEDULED_POLICY_INFORMATION","hypothesis_id":"M3_EXACT_TIME_ANNOUNCEMENT_RESPONSE","attempt_id":"PR105_M3_EXACT_TIME_IDENTITY_R1","attempt_history":["PR105_M3_EXACT_TIME_IDENTITY_R1:TERMINAL_DATA_UNAVAILABLE_WITHIN_BOUND_NO_OUTCOME"],"status":"TERMINAL_DATA_UNAVAILABLE_WITHIN_BOUND_NO_OUTCOME","required_accepted_actual_timestamps":94,"event_records":98,"accepted_actual_timestamp_records":0,"request_count":17,"request_cap":200,"unique_requested_urls":16,"official_statement_objects":98,"official_minutes_objects":98,"official_transcript_objects":98,"decision_basis":"Within the frozen two-working-day and 200-request contract, no reviewed official object proved record-level actual first public availability for a frozen M3 event; 0 accepted timestamps is below 94.","terminal_scope":"Freezes only the 94-of-98 exact-time identity contract and the consumed bound. It is not a universal proof that qualifying evidence can never exist, does not reject FOMC economics, and does not close a separately identified date-anchored hypothesis.","forbidden_inferences_not_used":["planned release time","customary release time","same-day page last-update time","modern schedule backfill","market movement","third-party timestamps"]},
   "daily_alternatives":[
-    {"mechanism_id":"M3_DATE_ANCHORED_NEXT_SESSION_V2","identity_status":"IDENTITY_FEASIBLE_PENDING_PREREGISTRATION","score":16,"recommendation":"ADVANCE"},
+    {"mechanism_id":"M3_DATE_ANCHORED_NEXT_SESSION_V2","family_id":"FOMC_SCHEDULED_POLICY_INFORMATION","hypothesis_id":"FOMC_NEXT_SESSION_RESPONSE","attempt_id":"M3_DATE_ANCHORED_NEXT_SESSION_V2_R1","causal_mechanism":"NEXT_SESSION_RESPONSE","source_class":"ECONOMIC_PRIOR_ONLY","identity_status":"PARK_PENDING_EXACT_SOURCE_AND_XNYS_IDENTITY","score":14,"recommendation":"PARK"},
     {"mechanism_id":"M4_CPI_DATE_CONTROL_V2","identity_status":"PARK_SOURCE_INCOMPLETE","score":12,"recommendation":"PARK"},
     {"mechanism_id":"M5_NFP_DATE_CONTROL_V2","identity_status":"PARK_SOURCE_INCOMPLETE","score":12,"recommendation":"PARK"},
     {"mechanism_id":"M6_MONTHLY_EXPIRATION_RULESPAN_V2","identity_status":"PARK_SOURCE_INCOMPLETE","score":14,"recommendation":"PARK"},
     {"mechanism_id":"M7_QUARTERLY_EXPIRATION_RULESPAN_V2","identity_status":"PARK_SOURCE_INCOMPLETE","score":13,"recommendation":"PARK"}
   ],
   "calendar_contract":{"status":"PARK_SOURCE_INCOMPLETE","proposed_pin":"exchange_calendars==4.11.1","calendar_name":"XNYS","required_session_date_parity":4030,"observed_session_date_parity":null,"required_ad_hoc_full_closure_evidence":7,"qualified_ad_hoc_full_closure_evidence":null,"every_observed_date_difference_resolved":false,"immutable_calendar_rows_sha256":null},
-  "formal_readiness":{"lane_b_daily_mechanism_ready":false,"reason":"The date-anchored alternative has 98/98 official Statement dates, but accepted XNYS session parity, seven ad-hoc closure proofs, difference reconciliation and immutable calendar-row identity are incomplete.","next_action":"Complete the outcome-blind XNYS calendar contract before preregistration; do not reopen exact-time M3."},
-  "validation":{"strict_json":true,"nonfinite_numbers":0,"duplicate_mechanism_ids":0,"alternative_count":5,"boundary_flags_valid":true,"source_hash_valid":true}
+  "formal_readiness":{"lane_b_daily_mechanism_ready":false,"reason":"The date-anchored alternative has 98/98 official Statement dates, but lacks a mechanism-specific direct source and the accepted XNYS session parity, seven ad-hoc closure proofs, difference reconciliation, and immutable calendar-row identity.","next_action":"Resolve a mechanism-specific direct source first, then the outcome-blind XNYS calendar contract; neither action may reopen the frozen exact-time contract."},
+  "validation":{"strict_json":true,"duplicate_keys":0,"nonfinite_numbers":0,"duplicate_mechanism_ids":0,"alternative_count":5,"boundary_flags_valid":true,"source_hash_valid":true,"source_input_non_controlling":true,"portable_controlling_evidence_complete":true,"exact_time_terminal_scope_bounded":true,"date_anchored_hypothesis_separate":true,"eof_single_lf":true,"no_index_whitespace_check":true}
 }

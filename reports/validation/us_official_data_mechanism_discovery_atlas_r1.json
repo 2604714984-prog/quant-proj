@@ -9,7 +9,9 @@
     "branch": "codex/us-official-data-mechanism-discovery-atlas-r1-20260720",
     "base_branch": "v2-main",
     "base_commit": "d76572f826fab4e1532dd27c027bd5565efb5253",
-    "base_tree": "7086226a5299c9a5af44466175925966ad9dd3c8"
+    "base_tree": "7086226a5299c9a5af44466175925966ad9dd3c8",
+    "pr_number": 107,
+    "pr_status": "DRAFT"
   },
   "rework_target": {
     "path": "G:\\quant_proj\\.scout_scratch_20260720\\final_atlas.json",
@@ -52,6 +54,8 @@
   },
   "shared_card_schema": [
     "mechanism_id",
+    "card_role",
+    "source_class",
     "economic_mechanism",
     "primary_original_source",
     "market_role",
@@ -70,8 +74,8 @@
   ],
   "deduplication": {
     "input_card_count": 91,
-    "unique_card_count": 63,
-    "removed_duplicate_count": 28,
+    "unique_card_count": 65,
+    "removed_duplicate_count": 26,
     "rule": "Retain distinct causal economics. Remove only true sign, horizon, conditioning, operational-identity, or index/owner variants; do not target a fixed count.",
     "removals": [
       {
@@ -115,20 +119,6 @@
           "USDEM-010"
         ],
         "reason": "Index-owner variant of benchmark-tracking recomposition demand; S&P versus Russell is not independent economics."
-      },
-      {
-        "removed_id": "USIOT-001",
-        "retained_ids": [
-          "M3_DATE_ANCHORED_NEXT_SESSION_V2"
-        ],
-        "reason": "Intraday pre-event horizon of the retained scheduled-FOMC uncertainty mechanism."
-      },
-      {
-        "removed_id": "USIOT-002",
-        "retained_ids": [
-          "M3_DATE_ANCHORED_NEXT_SESSION_V2"
-        ],
-        "reason": "Intraday post-announcement horizon of the retained scheduled-FOMC uncertainty-resolution mechanism."
       },
       {
         "removed_id": "USIOT-003",
@@ -341,16 +331,30 @@
     "conclusion": "Distinct economics remain separate even when data routes, instruments, or dates overlap."
   },
   "source_binding_contract": {
-    "requirement": "Every retained card has a separate original mechanism paper or primary mechanism source and one or more official/provider-operational routes. Missing credible mechanism research is an explicit PARK/CLOSE evidence gap.",
+    "requirement": "Every retained card carries exactly one source_class. Classification follows the cited paper or primary source already bound in this outcome-blind atlas; mechanism mismatch is explicit and operational documentation alone is not mechanism evidence.",
+    "source_class_enum": [
+      "EXACT_MECHANISM_SOURCE",
+      "ECONOMIC_PRIOR_ONLY",
+      "OPERATIONAL_ROUTE_ONLY",
+      "SOURCE_GAP"
+    ],
+    "definitions": {
+      "EXACT_MECHANISM_SOURCE": "Cited source studies substantially the same signal direction, event timing, and economic channel.",
+      "ECONOMIC_PRIOR_ONLY": "Cited source supports the economic state or causal channel but not the frozen tradable signal.",
+      "OPERATIONAL_ROUTE_ONLY": "Documentation supports only data or market mechanics.",
+      "SOURCE_GAP": "No credible source currently binds the proposed mechanism."
+    },
+    "maximum_economic_prior_without_exact_plus_independent_support": 2,
     "tracking_parameters_removed": true
   },
   "source_bindings": [
     {
       "mechanism_id": "M3_DATE_ANCHORED_NEXT_SESSION_V2",
+      "source_class": "ECONOMIC_PRIOR_ONLY",
       "original_mechanism_source": {
         "citation": "Lucca and Moench, The Pre-FOMC Announcement Drift, New York Fed Staff Report 512",
         "url": "https://www.newyorkfed.org/research/staff_reports/sr512.html",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -364,15 +368,62 @@
           "route_class": "official_exchange_calendar"
         }
       ],
-      "binding_status": "BOUND",
-      "evidence_gap": null
+      "binding_status": "SOURCE_MISMATCH_PARKED",
+      "evidence_gap": "Lucca and Moench establish pre-announcement drift, not a next-session open-to-close response. Resolve a direct mechanism source before XNYS identity work; do not reopen exact-time M3."
+    },
+    {
+      "mechanism_id": "USIOT-001",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "original_mechanism_source": {
+        "citation": "Lucca and Moench, The Pre-FOMC Announcement Drift, New York Fed Staff Report 512",
+        "url": "https://www.newyorkfed.org/research/staff_reports/sr512.html",
+        "source_kind": "original_mechanism_paper"
+      },
+      "operational_data_routes": [
+        {
+          "title": "Federal Reserve FOMC calendars and statements",
+          "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+          "route_class": "official_event_identity"
+        },
+        {
+          "title": "NYSE Daily TAQ documentation",
+          "url": "https://www.nyse.com/data-products/catalog/daily-taq",
+          "route_class": "official_exchange_data_documentation"
+        }
+      ],
+      "binding_status": "BOUND_DATA_ROUTE_PARKED",
+      "evidence_gap": "Exact historical timestamp data is paid/high-cost and the frozen PR105 exact-time contract is not reopened."
+    },
+    {
+      "mechanism_id": "USIOT-002",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "original_mechanism_source": {
+        "citation": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets",
+        "url": "https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
+        "source_kind": "original_mechanism_paper"
+      },
+      "operational_data_routes": [
+        {
+          "title": "Federal Reserve FOMC calendars and statements",
+          "url": "https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm",
+          "route_class": "official_event_identity"
+        },
+        {
+          "title": "NYSE Daily TAQ documentation",
+          "url": "https://www.nyse.com/data-products/catalog/daily-taq",
+          "route_class": "official_exchange_data_documentation"
+        }
+      ],
+      "binding_status": "BOUND_DATA_ROUTE_PARKED",
+      "evidence_gap": "Exact historical timestamp data is paid/high-cost and the frozen PR105 exact-time contract is not reopened."
     },
     {
       "mechanism_id": "M6_MONTHLY_EXPIRATION_RULESPAN_V2",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Stoll and Whaley, Program Trading and Expiration-Day Effects",
         "url": "https://doi.org/10.2469/faj.v43.n2.16",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -391,10 +442,11 @@
     },
     {
       "mechanism_id": "M7_QUARTERLY_EXPIRATION_RULESPAN_V2",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Stoll and Whaley, Expiration-Day Effects: What Has Changed?",
         "url": "https://doi.org/10.2469/faj.v47.n1.58",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -418,10 +470,11 @@
     },
     {
       "mechanism_id": "USDEM-002",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets, Federal Reserve IFDP 871: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
         "url": "https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -440,10 +493,11 @@
     },
     {
       "mechanism_id": "USDEM-003",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets, Federal Reserve IFDP 871: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
         "url": "https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -462,10 +516,11 @@
     },
     {
       "mechanism_id": "USDEM-004",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Wachter and Zhu, The Macroeconomic Announcement Premium, NBER Working Paper 24432: https://www.nber.org/papers/w24432",
         "url": "https://www.nber.org/papers/w24432",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -489,10 +544,11 @@
     },
     {
       "mechanism_id": "USDEM-005",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Fleming, Nguyen and Rosenberg, How Do Treasury Dealers Manage Their Positions?, New York Fed Staff Report 299",
         "url": "https://www.newyorkfed.org/research/staff_reports/sr299.html",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -511,10 +567,11 @@
     },
     {
       "mechanism_id": "USDEM-006",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Ariel, High Stock Returns before Holidays: Existence and Evidence on Possible Causes",
         "url": "https://doi.org/10.1111/j.1540-6261.1990.tb03731.x",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -533,10 +590,11 @@
     },
     {
       "mechanism_id": "USDEM-007",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Pettengill, Holiday Closings and Security Returns",
         "url": "https://doi.org/10.1111/j.1475-6803.1989.tb00101.x",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -555,10 +613,11 @@
     },
     {
       "mechanism_id": "USDEM-010",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Chang, Hong and Liskovich, Regression Discontinuity and the Price Effects of Stock Market Indexing",
         "url": "https://doi.org/10.1093/rfs/hhu041",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -577,10 +636,11 @@
     },
     {
       "mechanism_id": "USDEM-012",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Cliff, Cooper and Gulen, Return Differences between Trading and Non-Trading Hours: Like Night and Day: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1004081",
         "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1004081",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -594,10 +654,11 @@
     },
     {
       "mechanism_id": "USDEM-013",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
         "url": "https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -611,10 +672,11 @@
     },
     {
       "mechanism_id": "USDEM-014",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Cliff, Cooper and Gulen, Return Differences between Trading and Non-Trading Hours: Like Night and Day: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1004081",
         "url": "https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1004081",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -628,10 +690,11 @@
     },
     {
       "mechanism_id": "USDEM-015",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Gilchrist and Zakrajsek lineage summarized by the Federal Reserve, Updating the Recession Risk and the Excess Bond Premium: https://www.federalreserve.gov/econres/notes/feds-notes/updating-the-recession-risk-and-the-excess-bond-premium-20161006.html",
         "url": "https://www.federalreserve.gov/econres/notes/feds-notes/updating-the-recession-risk-and-the-excess-bond-premium-20161006.html",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -645,10 +708,11 @@
     },
     {
       "mechanism_id": "USDEM-016",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Estrella and Mishkin, Predicting U.S. Recessions: Financial Variables as Leading Indicators, New York Fed Research Paper 9609: https://www.newyorkfed.org/research/staff_reports/research_papers/9609.html",
         "url": "https://www.newyorkfed.org/research/staff_reports/research_papers/9609.html",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -662,10 +726,11 @@
     },
     {
       "mechanism_id": "USDEM-017",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Bodie, Inflation Risk and Capital Market Equilibrium, NBER Working Paper 373: https://www.nber.org/papers/w0373",
         "url": "https://www.nber.org/papers/w0373",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -679,10 +744,11 @@
     },
     {
       "mechanism_id": "USDEM-018",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Andersen, Bollerslev, Diebold and Ebens, The Distribution of Stock Return Volatility, NBER Working Paper 7933: https://www.nber.org/papers/w7933",
         "url": "https://www.nber.org/papers/w7933",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -696,10 +762,11 @@
     },
     {
       "mechanism_id": "USDEM-019",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Li, Zha, Zhang and Zhou, Does Fiscal Policy Matter for Stock-Bond Return Correlation?, NBER Working Paper 27861: https://www.nber.org/papers/w27861",
         "url": "https://www.nber.org/papers/w27861",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -713,6 +780,7 @@
     },
     {
       "mechanism_id": "USDEM-020",
+      "source_class": "SOURCE_GAP",
       "original_mechanism_source": null,
       "operational_data_routes": [
         {
@@ -726,15 +794,17 @@
           "route_class": "provider_operational_documentation_unqualified"
         }
       ],
-      "binding_status": "EVIDENCE_GAP_PARKED",
-      "evidence_gap": "No mechanism-specific original paper was found for an equal-weight minus cap-weight ETF spread as a broad-versus-concentrated participation state; index mathematics is operational documentation only."
+      "binding_status": "SOURCE_GAP_PARKED",
+      "evidence_gap": "A bounded mechanism-specific source search remains available; until resolved this record is PARK, not a candidate.",
+      "bounded_source_resolution": true
     },
     {
       "mechanism_id": "USDEM-021",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Banz, The Relationship between Return and Market Value of Common Stocks",
         "url": "https://doi.org/10.1016/0304-405X(81)90018-0",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -753,10 +823,11 @@
     },
     {
       "mechanism_id": "USDEM-022",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Barsky and Kilian, Oil and the Macroeconomy Since the 1970s, NBER Working Paper 10855: https://www.nber.org/papers/w10855",
         "url": "https://www.nber.org/papers/w10855",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -770,10 +841,11 @@
     },
     {
       "mechanism_id": "USIOT-006",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Madhavan and Panchapagesan, Price Discovery in Auction Markets: A Look Inside the Black Box",
         "url": "https://doi.org/10.1093/rfs/13.3.627",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -792,10 +864,11 @@
     },
     {
       "mechanism_id": "USIOT-007",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
         "url": "https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -814,10 +887,11 @@
     },
     {
       "mechanism_id": "USIOT-008",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Bollerslev, Tauchen and Zhou, Expected Stock Returns and Variance Risk Premia",
         "url": "https://doi.org/10.1093/rfs/hhp008",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -836,10 +910,11 @@
     },
     {
       "mechanism_id": "USIOT-009",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Conrad, Dittmar and Ghysels, Ex Ante Skewness and Expected Stock Returns",
         "url": "https://doi.org/10.1111/j.1540-6261.2012.01795.x",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -858,10 +933,11 @@
     },
     {
       "mechanism_id": "USIOT-010",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Mixon, The Implied Volatility Term Structure of Stock Index Options",
         "url": "https://doi.org/10.1016/j.jempfin.2006.06.003",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -880,10 +956,11 @@
     },
     {
       "mechanism_id": "USIOT-011",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Dubinsky and Johannes, Earnings Announcements and Equity Options",
         "url": "https://arxiv.org/abs/1412.8414",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -902,10 +979,11 @@
     },
     {
       "mechanism_id": "USIOT-012",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Pan and Poteshman, The Information in Option Volume for Future Stock Prices",
         "url": "https://doi.org/10.1093/rfs/hhj024",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -924,10 +1002,11 @@
     },
     {
       "mechanism_id": "USIOT-013",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Cohen, Malloy and Nguyen, Lazy Prices, NBER Working Paper 25084: https://www.nber.org/papers/w25084",
         "url": "https://www.nber.org/papers/w25084",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -946,10 +1025,11 @@
     },
     {
       "mechanism_id": "USIOT-015",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Price, Doran, Peterson and Bliss, Earnings Conference Calls and Stock Returns: The Incremental Informativeness of Textual Tone",
         "url": "https://doi.org/10.1016/j.jbankfin.2011.10.013",
-        "source_class": "original_mechanism_paper"
+        "source_kind": "original_mechanism_paper"
       },
       "operational_data_routes": [
         {
@@ -963,10 +1043,11 @@
     },
     {
       "mechanism_id": "STK_01_52_WEEK_HIGH_PROXIMITY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "George and Hwang, The 52-Week High and Momentum Investing, Journal of Finance (2004), https://doi.org/10.1111/j.1540-6261.2004.00695.x",
         "url": "https://doi.org/10.1111/j.1540-6261.2004.00695.x",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -980,10 +1061,11 @@
     },
     {
       "mechanism_id": "STK_02_INDUSTRY_MOMENTUM_LONG_ONLY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Moskowitz and Grinblatt, Do Industries Explain Momentum?, Journal of Finance (1999), https://doi.org/10.1111/0022-1082.00146",
         "url": "https://doi.org/10.1111/0022-1082.00146",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -997,10 +1079,11 @@
     },
     {
       "mechanism_id": "STK_03_RESIDUAL_MOMENTUM_LONG_ONLY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Blitz, Huij and Martens, Residual Momentum, Journal of Empirical Finance (2011), https://doi.org/10.1016/j.jempfin.2011.01.003",
         "url": "https://doi.org/10.1016/j.jempfin.2011.01.003",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1014,10 +1097,11 @@
     },
     {
       "mechanism_id": "STK_04_FIVE_DAY_MARKET_RESIDUAL_REVERSAL",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Jegadeesh, Evidence of Predictable Behavior of Security Returns, Journal of Finance (1990), https://doi.org/10.1111/j.1540-6261.1990.tb05110.x; Blitz et al., Short-term residual reversal (2013), https://doi.org/10.1016/j.finmar.2012.10.005",
         "url": "https://doi.org/10.1111/j.1540-6261.1990.tb05110.x",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1031,10 +1115,11 @@
     },
     {
       "mechanism_id": "STK_07_LARGE_OVERNIGHT_GAP_REVERSAL",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Berkman, Koch, Tuttle and Zhang, Paying Attention: Overnight Returns and the Hidden Cost of Buying at the Open, JFQA (2012), https://doi.org/10.1017/S0022109012000270",
         "url": "https://doi.org/10.1017/S0022109012000270",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1053,10 +1138,11 @@
     },
     {
       "mechanism_id": "STK_08_POST_BREAKOUT_PERSISTENCE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Brock, Lakonishok and LeBaron, Simple Technical Trading Rules and the Stochastic Properties of Stock Returns, Journal of Finance (1992), https://doi.org/10.1111/j.1540-6261.1992.tb04681.x",
         "url": "https://doi.org/10.1111/j.1540-6261.1992.tb04681.x",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1070,10 +1156,11 @@
     },
     {
       "mechanism_id": "STK_09_OVERNIGHT_CONTINUATION",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Lou, Polk and Skouras, A Tug of War: Overnight versus Intraday Expected Returns, JFE (2019), https://doi.org/10.1016/j.jfineco.2019.03.011",
         "url": "https://doi.org/10.1016/j.jfineco.2019.03.011",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1092,10 +1179,11 @@
     },
     {
       "mechanism_id": "STK_10_OVERNIGHT_WINNER_INTRADAY_LOSER_INTERACTION",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Lou, Polk and Skouras (2019), https://doi.org/10.1016/j.jfineco.2019.03.011",
         "url": "https://doi.org/10.1016/j.jfineco.2019.03.011",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1114,10 +1202,11 @@
     },
     {
       "mechanism_id": "STK_11_OPENING_GAP_RESIDUAL_SIGNAL",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Lou, Polk and Skouras (2019), https://doi.org/10.1016/j.jfineco.2019.03.011",
         "url": "https://doi.org/10.1016/j.jfineco.2019.03.011",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1136,10 +1225,11 @@
     },
     {
       "mechanism_id": "STK_12_AMIHUD_ILLIQUIDITY_AVOIDANCE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Amihud, Illiquidity and Stock Returns, Journal of Financial Markets (2002), https://doi.org/10.1016/S1386-4181(01)00024-6",
         "url": "https://doi.org/10.1016/S1386-4181(01)00024-6",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1153,10 +1243,11 @@
     },
     {
       "mechanism_id": "STK_13_ABNORMAL_VOLUME_ATTENTION",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Gervais, Kaniel and Mingelgrin, The High-Volume Return Premium, Journal of Finance (2001), https://doi.org/10.1111/0022-1082.00349",
         "url": "https://doi.org/10.1111/0022-1082.00349",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1170,10 +1261,11 @@
     },
     {
       "mechanism_id": "STK_14_TURNOVER_SHOCK_CONDITIONED_ATTENTION",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Lee and Swaminathan, Price Momentum and Trading Volume, Journal of Finance (2000), https://doi.org/10.1111/0022-1082.00280",
         "url": "https://doi.org/10.1111/0022-1082.00280",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1187,10 +1279,11 @@
     },
     {
       "mechanism_id": "STK_15_MAX_LOTTERY_AVOIDANCE_LONG_ONLY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Bali, Cakici and Whitelaw, Maxing Out: Stocks as Lotteries and the Cross-Section of Expected Returns, JFE (2011), https://doi.org/10.1016/j.jfineco.2010.08.014",
         "url": "https://doi.org/10.1016/j.jfineco.2010.08.014",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1204,10 +1297,11 @@
     },
     {
       "mechanism_id": "STK_16_LOW_RESIDUAL_VOLATILITY_LONG_ONLY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Baker, Bradley and Wurgler, Benchmarks as Limits to Arbitrage, Financial Analysts Journal (2011), https://doi.org/10.2469/faj.v67.n1.4",
         "url": "https://doi.org/10.2469/faj.v67.n1.4",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1221,10 +1315,11 @@
     },
     {
       "mechanism_id": "STK_17_DOWNSIDE_BETA_DEFENSIVE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Ang, Chen and Xing, Downside Risk, Review of Financial Studies (2006), https://doi.org/10.1093/rfs/hhj035",
         "url": "https://doi.org/10.1093/rfs/hhj035",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1238,10 +1333,11 @@
     },
     {
       "mechanism_id": "STK_18_QUALITY_PLUS_LOW_BETA",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Asness, Frazzini and Pedersen, Quality Minus Junk, Review of Accounting Studies (2019), https://doi.org/10.1007/s11142-018-9470-2; Baker et al. (2011), https://doi.org/10.2469/faj.v67.n1.4",
         "url": "https://doi.org/10.1007/s11142-018-9470-2",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1255,10 +1351,11 @@
     },
     {
       "mechanism_id": "STK_22_STOCK_SPLIT_POST_EVENT",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Ikenberry, Rankine and Stice, What Do Stock Splits Really Signal?, JFQA (1996), https://doi.org/10.2307/2331396",
         "url": "https://doi.org/10.2307/2331396",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1277,10 +1374,11 @@
     },
     {
       "mechanism_id": "FND_01_PEAD_TIME_SERIES_SURPRISE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Bernard and Thomas, Evidence that Stock Prices Do Not Fully Reflect the Implications of Current Earnings for Future Earnings, JAE (1990), https://doi.org/10.1016/0165-4101(90)90008-R",
         "url": "https://doi.org/10.1016/0165-4101(90)90008-R",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1304,10 +1402,11 @@
     },
     {
       "mechanism_id": "FND_02_REVENUE_SURPRISE_TIME_SERIES",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Jegadeesh and Livnat, Revenue Surprises and Stock Returns, JAE (2006), https://doi.org/10.1016/j.jacceco.2005.10.003",
         "url": "https://doi.org/10.1016/j.jacceco.2005.10.003",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1331,10 +1430,11 @@
     },
     {
       "mechanism_id": "FND_07_FILING_LAG_REPORTING_DELAY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Chambers and Penman, Timeliness of Reporting and the Stock Price Reaction to Earnings Announcements, JAR (1984), https://doi.org/10.2307/2490700",
         "url": "https://doi.org/10.2307/2490700",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1358,10 +1458,11 @@
     },
     {
       "mechanism_id": "FND_10_EARNINGS_ANNOUNCEMENT_PREMIUM",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Frazzini and Lamont, The Earnings Announcement Premium and Trading Volume, NBER Working Paper 13090 (2007), https://www.nber.org/papers/w13090",
         "url": "https://www.nber.org/papers/w13090",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1385,10 +1486,11 @@
     },
     {
       "mechanism_id": "FND_11_OPEN_MARKET_REPURCHASE_ANNOUNCEMENT",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Ikenberry, Lakonishok and Vermaelen, Market Underreaction to Open Market Share Repurchases, JFE (1995), https://doi.org/10.1016/0304-405X(95)00826-Z",
         "url": "https://doi.org/10.1016/0304-405X(95)00826-Z",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1412,10 +1514,11 @@
     },
     {
       "mechanism_id": "FND_12_DIVIDEND_INITIATION",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Michaely, Thaler and Womack, Price Reactions to Dividend Initiations and Omissions, Journal of Finance (1995), https://doi.org/10.1111/j.1540-6261.1995.tb04796.x",
         "url": "https://doi.org/10.1111/j.1540-6261.1995.tb04796.x",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1439,10 +1542,11 @@
     },
     {
       "mechanism_id": "FND_13_DIVIDEND_CUT_OR_OMISSION_AVOIDANCE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Michaely, Thaler and Womack (1995), https://doi.org/10.1111/j.1540-6261.1995.tb04796.x",
         "url": "https://doi.org/10.1111/j.1540-6261.1995.tb04796.x",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1466,10 +1570,11 @@
     },
     {
       "mechanism_id": "FND_14_SEASONED_EQUITY_OFFERING_AVOIDANCE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Loughran and Ritter, The New Issues Puzzle, Journal of Finance (1995), https://doi.org/10.1111/j.1540-6261.1995.tb05166.x",
         "url": "https://doi.org/10.1111/j.1540-6261.1995.tb05166.x",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1493,10 +1598,11 @@
     },
     {
       "mechanism_id": "FND_15_NET_EQUITY_ISSUANCE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Pontiff and Woodgate, Share Issuance and Cross-Sectional Returns, Journal of Finance (2008), https://doi.org/10.1111/j.1540-6261.2008.01335.x",
         "url": "https://doi.org/10.1111/j.1540-6261.2008.01335.x",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1520,10 +1626,11 @@
     },
     {
       "mechanism_id": "FND_16_CLUSTER_INSIDER_PURCHASES",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Lakonishok and Lee, Are Insider Trades Informative?, Review of Financial Studies (2001), https://doi.org/10.1093/rfs/14.1.79; Cohen, Malloy and Pomorski (2012), https://doi.org/10.1111/j.1540-6261.2012.01740.x",
         "url": "https://doi.org/10.1093/rfs/14.1.79",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1542,10 +1649,11 @@
     },
     {
       "mechanism_id": "FND_20_INSIDER_TRANSACTION_TO_FILING_LAG",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Brochet, Information Content of Insider Trades before and after the Sarbanes-Oxley Act, The Accounting Review (2010), https://doi.org/10.2308/accr.2010.85.2.419",
         "url": "https://doi.org/10.2308/accr.2010.85.2.419",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1564,10 +1672,11 @@
     },
     {
       "mechanism_id": "FND_21_GROSS_PROFITABILITY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Novy-Marx, The Other Side of Value: The Gross Profitability Premium, JFE (2013), https://doi.org/10.1016/j.jfineco.2013.01.003",
         "url": "https://doi.org/10.1016/j.jfineco.2013.01.003",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1591,10 +1700,11 @@
     },
     {
       "mechanism_id": "FND_22_ASSET_GROWTH",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Cooper, Gulen and Schill, Asset Growth and the Cross-Section of Stock Returns, Journal of Finance (2008), https://doi.org/10.1111/j.1540-6261.2008.01370.x",
         "url": "https://doi.org/10.1111/j.1540-6261.2008.01370.x",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1618,10 +1728,11 @@
     },
     {
       "mechanism_id": "FND_23_ACCRUALS_QUALITY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Sloan, Do Stock Prices Fully Reflect Information in Accruals and Cash Flows About Future Earnings?, The Accounting Review (1996), https://doi.org/10.2308/tar-9608042309",
         "url": "https://doi.org/10.2308/tar-9608042309",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1645,10 +1756,11 @@
     },
     {
       "mechanism_id": "FND_24_BALANCE_SHEET_SAFETY_QUALITY_VALUE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Piotroski, Value Investing: The Use of Historical Financial Statement Information to Separate Winners from Losers, JAR (2000), https://doi.org/10.2307/2672906",
         "url": "https://doi.org/10.2307/2672906",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1672,10 +1784,11 @@
     },
     {
       "mechanism_id": "FND_25_MATERIAL_WEAKNESS_DISCLOSURE_AVOIDANCE",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "original_mechanism_source": {
         "citation": "Doyle, Ge and McVay, Determinants of Weaknesses in Internal Control over Financial Reporting, JAE (2007), https://doi.org/10.1016/j.jacceco.2006.10.003",
         "url": "https://doi.org/10.1016/j.jacceco.2006.10.003",
-        "source_class": "original_mechanism_paper_or_primary_source"
+        "source_kind": "original_mechanism_paper_or_primary_source"
       },
       "operational_data_routes": [
         {
@@ -1701,27 +1814,72 @@
   "cards": [
     {
       "mechanism_id": "M3_DATE_ANCHORED_NEXT_SESSION_V2",
-      "economic_mechanism": "FOMC policy-announcement date anchoring without an intraday timestamp claim.",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "ECONOMIC_PRIOR_ONLY",
+      "economic_mechanism": "NEXT_SESSION_RESPONSE: FOMC policy-announcement date anchoring for a distinct next-session response hypothesis without an intraday timestamp claim; the currently bound pre-announcement paper is economic-prior context only.",
       "primary_original_source": "Lucca and Moench, The Pre-FOMC Announcement Drift, New York Fed Staff Report 512: https://www.newyorkfed.org/research/staff_reports/sr512.html",
       "market_role": "scheduled monetary-policy event",
       "universe": "SPY daily session identity only; no prices accessed",
       "signal_and_holding_period": "Official Statement release date; next accepted XNYS session open to the same session close, subject to separate preregistration.",
       "required_data": [
+        "mechanism-specific direct source for a next-session response",
         "official Statement release date",
         "accepted XNYS session dates"
       ],
-      "current_data_status": "98/98 official Statement dates materialized and hash-verified; session mapping remains a preregistration input.",
+      "current_data_status": "PARK_PENDING_EXACT_SOURCE_AND_XNYS_IDENTITY",
       "sample_size_estimate": 98,
       "turnover_and_cost_risk": "One event session per qualified release; opening-auction spread and slippage must be frozen later.",
       "USD_40000_execution_fit": "High for a liquid ETF, subject to future cost preregistration; not an execution authorization.",
       "survivorship_and_PIT_risk": "Low symbol-survivorship risk; release-date and next-session mapping must remain point-in-time.",
-      "closed_lineage_duplicate_screen": "New date-anchored identity; does not inherit frozen exact-time M3 state.",
+      "closed_lineage_duplicate_screen": "Distinct NEXT_SESSION_RESPONSE hypothesis in family FOMC_SCHEDULED_POLICY_INFORMATION; does not inherit or reopen the frozen exact-time M3 attempt.",
       "implementation_size_estimate": "small adapter after preregistration",
-      "result_time_estimate": "one bounded Development run after outcome-blind review",
-      "recommendation": "ADVANCE"
+      "result_time_estimate": "Resolve a direct mechanism source first, then the XNYS identity; no outcome-bearing run is authorized.",
+      "recommendation": "PARK"
+    },
+    {
+      "mechanism_id": "USIOT-001",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "economic_mechanism": "Equity risk may be repriced in the hours before a scheduled FOMC announcement as intermediaries reduce uncertainty exposure.",
+      "primary_original_source": "Lucca and Moench, The Pre-FOMC Announcement Drift, New York Fed Staff Report 512: https://www.newyorkfed.org/research/staff_reports/sr512.html",
+      "market_role": "intraday macro event",
+      "universe": "SPY intraday bars only",
+      "signal_and_holding_period": "fixed pre-announcement window ending before the official decision timestamp; flatten at the announcement",
+      "required_data": "official historical FOMC timestamps; split-aware SPY minute bars including session labels; immutable sample export",
+      "current_data_status": "BOUNDED_PAID_DATA_NEEDED",
+      "sample_size_estimate": "about eight scheduled meetings per year; a 1994-start identity needs NYSE TAQ rather than the 2003-start flat-file route",
+      "turnover_and_cost_risk": "low event count but time-sensitive fills and spread widening",
+      "USD_40000_execution_fit": "plausible in SPY; no leverage and no execution during the announcement minute",
+      "survivorship_and_PIT_risk": "low symbol risk; high timestamp-regime risk because decision times and press-conference conventions changed",
+      "closed_lineage_duplicate_screen": "PASS: pre-announcement intraday mechanism is independent of all closed daily allocation lines",
+      "implementation_size_estimate": "medium, about 180-260 adapter lines",
+      "result_time_estimate": "sample qualification first; 5+ working days after authorization",
+      "recommendation": "PARK"
+    },
+    {
+      "mechanism_id": "USIOT-002",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "economic_mechanism": "The official FOMC decision resolves policy uncertainty and generates cross-asset price discovery from the announcement through the close.",
+      "primary_original_source": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
+      "market_role": "intraday macro event",
+      "universe": "SPY, TLT, GLD, and a dollar proxy observed separately; no allocation across them",
+      "signal_and_holding_period": "official decision timestamp to regular-session close",
+      "required_data": "official historical decision timestamps; minute bars with UTC and Eastern conversion; RTH flags; corporate actions",
+      "current_data_status": "BOUNDED_PAID_DATA_NEEDED",
+      "sample_size_estimate": "about eight events per year with fewer usable same-session closes on exceptional dates",
+      "turnover_and_cost_risk": "low frequency but extreme announcement-minute spread and slippage risk",
+      "USD_40000_execution_fit": "plausible only with liquid ETFs and a no-trade buffer around the release timestamp",
+      "survivorship_and_PIT_risk": "moderate timestamp and session-regime risk",
+      "closed_lineage_duplicate_screen": "PASS: event reaction measured separately by asset; no GLD safe-haven sleeve or top-one weighting",
+      "implementation_size_estimate": "medium, about 200-280 adapter lines",
+      "result_time_estimate": "sample qualification first; 5+ working days",
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "M6_MONTHLY_EXPIRATION_RULESPAN_V2",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Monthly expiration identity from effective rule spans, ordinary formulas, holiday shifts, and explicit exceptions.",
       "primary_original_source": "Stoll and Whaley, Program Trading and Expiration-Day Effects: https://doi.org/10.2469/faj.v43.n2.16",
       "market_role": "scheduled derivatives expiration",
@@ -1746,6 +1904,8 @@
     },
     {
       "mechanism_id": "M7_QUARTERLY_EXPIRATION_RULESPAN_V2",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Quarterly expiration identity from complete options and equity-index-futures rule spans and exceptions.",
       "primary_original_source": "Stoll and Whaley, Expiration-Day Effects: What Has Changed?: https://doi.org/10.2469/faj.v47.n1.58",
       "market_role": "quarterly derivatives expiration",
@@ -1770,6 +1930,8 @@
     },
     {
       "mechanism_id": "USDEM-002",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "A scheduled inflation release can shift discount-rate and cash-flow expectations even without using an as-released surprise value; test a frozen event-day to next-session window.",
       "primary_original_source": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets, Federal Reserve IFDP 871: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
       "market_role": "scheduled macro event",
@@ -1784,10 +1946,12 @@
       "closed_lineage_duplicate_screen": "PASS: scheduled inflation-event mechanism; no prohibited trend, allocation, or GLD safe-haven rule",
       "implementation_size_estimate": "small, about 90-150 adapter lines",
       "result_time_estimate": "2-3 working days after calendar normalization",
-      "recommendation": "ADVANCE"
+      "recommendation": "ADVANCE_FOR_QUALIFICATION"
     },
     {
       "mechanism_id": "USDEM-003",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "The Employment Situation release resolves labor-growth and policy-rate uncertainty on a scheduled date; test the event window without forecast-surprise inputs.",
       "primary_original_source": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets, Federal Reserve IFDP 871: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
       "market_role": "scheduled macro event",
@@ -1802,10 +1966,12 @@
       "closed_lineage_duplicate_screen": "PASS: labor-announcement timing is independent of every stated closed line",
       "implementation_size_estimate": "small, about 90-150 adapter lines",
       "result_time_estimate": "2-3 working days",
-      "recommendation": "ADVANCE"
+      "recommendation": "ADVANCE_FOR_QUALIFICATION"
     },
     {
       "mechanism_id": "USDEM-004",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Risk compensation may concentrate on a preregistered union of major scheduled macro-announcement dates rather than on any one indicator.",
       "primary_original_source": "Wachter and Zhu, The Macroeconomic Announcement Premium, NBER Working Paper 24432: https://www.nber.org/papers/w24432",
       "market_role": "multi-event scheduled macro premium",
@@ -1820,10 +1986,12 @@
       "closed_lineage_duplicate_screen": "PASS: announcement-date aggregation is not calendar turn-of-month and does not use trend or cross-asset weighting",
       "implementation_size_estimate": "small-medium, about 140-220 adapter lines",
       "result_time_estimate": "3-5 working days",
-      "recommendation": "ADVANCE"
+      "recommendation": "ADVANCE_FOR_QUALIFICATION"
     },
     {
       "mechanism_id": "USDEM-005",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Treasury auction announcement, auction, and settlement dates alter dealer inventory and duration supply at known dates.",
       "primary_original_source": "Fleming, Nguyen and Rosenberg, How Do Treasury Dealers Manage Their Positions?, New York Fed Staff Report 299: https://www.newyorkfed.org/research/staff_reports/sr299.html",
       "market_role": "scheduled government financing event",
@@ -1842,6 +2010,8 @@
     },
     {
       "mechanism_id": "USDEM-006",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Early closes and market holidays can shift liquidity provision, risk transfer, and institutional inventory before a known closure.",
       "primary_original_source": "Ariel, High Stock Returns before Holidays: Existence and Evidence on Possible Causes: https://doi.org/10.1111/j.1540-6261.1990.tb03731.x",
       "market_role": "calendar and institutional event",
@@ -1856,10 +2026,12 @@
       "closed_lineage_duplicate_screen": "PASS: holiday boundary is not classic turn-of-month or weekend-only timing",
       "implementation_size_estimate": "small, about 80-130 adapter lines",
       "result_time_estimate": "2-3 working days",
-      "recommendation": "ADVANCE"
+      "recommendation": "ADVANCE_FOR_QUALIFICATION"
     },
     {
       "mechanism_id": "USDEM-007",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Risk accumulated during a market closure may continue or reverse on the first session after an exchange holiday.",
       "primary_original_source": "Pettengill, Holiday Closings and Security Returns: https://doi.org/10.1111/j.1475-6803.1989.tb00101.x",
       "market_role": "calendar and institutional event",
@@ -1874,10 +2046,12 @@
       "closed_lineage_duplicate_screen": "PASS: post-holiday continuation/reversal is not classic turn-of-month",
       "implementation_size_estimate": "small, about 80-130 adapter lines",
       "result_time_estimate": "2-3 working days",
-      "recommendation": "PARK"
+      "recommendation": "ADVANCE_FOR_QUALIFICATION"
     },
     {
       "mechanism_id": "USDEM-010",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Russell membership recomposition creates predictable benchmark-tracking demand around published rank, preliminary-list, and implementation dates.",
       "primary_original_source": "Chang, Hong and Liskovich, Regression Discontinuity and the Price Effects of Stock Market Indexing: https://doi.org/10.1093/rfs/hhu041",
       "market_role": "index reconstitution event",
@@ -1892,10 +2066,12 @@
       "closed_lineage_duplicate_screen": "PASS: benchmark reconstitution flow is independent of momentum, inverse volatility, and safe-haven allocation",
       "implementation_size_estimate": "small-medium, about 120-190 adapter lines",
       "result_time_estimate": "3-4 working days",
-      "recommendation": "ADVANCE"
+      "recommendation": "ADVANCE_FOR_QUALIFICATION"
     },
     {
       "mechanism_id": "USDEM-012",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Information arriving during the market closure may be priced differently from information arriving during the regular session.",
       "primary_original_source": "Cliff, Cooper and Gulen, Return Differences between Trading and Non-Trading Hours: Like Night and Day: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1004081",
       "market_role": "session decomposition V2",
@@ -1910,10 +2086,12 @@
       "closed_lineage_duplicate_screen": "PASS WITH V2 GUARD: not a rescue of V1; explicit residual-cash behavior and frozen error taxonomy are mandatory before any outcome access",
       "implementation_size_estimate": "medium, about 180-260 adapter lines",
       "result_time_estimate": "4-5 working days",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "USDEM-013",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Overnight information in rates, credit, or the dollar may lead the next regular equity session because trading-hour overlap differs across assets.",
       "primary_original_source": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
       "market_role": "cross-asset session lead-lag",
@@ -1932,6 +2110,8 @@
     },
     {
       "mechanism_id": "USDEM-014",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Large opening gaps can reflect either overnight information continuation or temporary liquidity pressure; a preregistered sign rule can distinguish the hypotheses.",
       "primary_original_source": "Cliff, Cooper and Gulen, Return Differences between Trading and Non-Trading Hours: Like Night and Day: https://papers.ssrn.com/sol3/papers.cfm?abstract_id=1004081",
       "market_role": "gap continuation versus reversal",
@@ -1950,6 +2130,8 @@
     },
     {
       "mechanism_id": "USDEM-015",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "A widening gap between high-yield and investment-grade bond ETF behavior proxies a shift in intermediary risk appetite; a subsequent normalization may mark credit-stress recovery.",
       "primary_original_source": "Gilchrist and Zakrajsek lineage summarized by the Federal Reserve, Updating the Recession Risk and the Excess Bond Premium: https://www.federalreserve.gov/econres/notes/feds-notes/updating-the-recession-risk-and-the-excess-bond-premium-20161006.html",
       "market_role": "credit stress and recovery",
@@ -1964,10 +2146,12 @@
       "closed_lineage_duplicate_screen": "PASS: credit-intermediation recovery, not SPY/QQQ/GLD momentum, inverse volatility, or safe-haven rotation",
       "implementation_size_estimate": "medium, about 170-240 adapter lines",
       "result_time_estimate": "4-5 working days",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "USDEM-016",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Yield-curve slope changes proxy the market's growth and policy outlook; duration ETFs can form an investable state label without using a fitted macro model.",
       "primary_original_source": "Estrella and Mishkin, Predicting U.S. Recessions: Financial Variables as Leading Indicators, New York Fed Research Paper 9609: https://www.newyorkfed.org/research/staff_reports/research_papers/9609.html",
       "market_role": "rates state",
@@ -1986,6 +2170,8 @@
     },
     {
       "mechanism_id": "USDEM-017",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Inflation compensation repricing changes the relative demand for inflation-linked and nominal Treasury duration.",
       "primary_original_source": "Bodie, Inflation Risk and Capital Market Equilibrium, NBER Working Paper 373: https://www.nber.org/papers/w0373",
       "market_role": "inflation-linked versus nominal rates",
@@ -2000,28 +2186,32 @@
       "closed_lineage_duplicate_screen": "PASS: inflation compensation mechanism does not use GLD and is not dual momentum",
       "implementation_size_estimate": "small-medium, about 140-210 adapter lines",
       "result_time_estimate": "3-5 working days",
-      "recommendation": "ADVANCE"
+      "recommendation": "ADVANCE_FOR_QUALIFICATION"
     },
     {
       "mechanism_id": "USDEM-018",
-      "economic_mechanism": "Large realized-volatility shocks cluster and decay because uncertainty and liquidity conditions persist, allowing a simple fixed risk-state label without portfolio optimization.",
+      "card_role": "DIAGNOSTIC_ONLY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "economic_mechanism": "VOLATILITY_PERSISTENCE_AND_DECAY_DIAGNOSTIC: large realized-volatility shocks may persist and decay because uncertainty and liquidity states cluster; this record defines a state diagnostic only and makes no directional alpha, SPY-to-cash, risk-off, or net risk-adjusted-return claim.",
       "primary_original_source": "Andersen, Bollerslev, Diebold and Ebens, The Distribution of Stock Return Volatility, NBER Working Paper 7933: https://www.nber.org/papers/w7933",
-      "market_role": "volatility shock and decay",
-      "universe": "one liquid broad-US equity ETF with cash during the frozen risk-off state",
-      "signal_and_holding_period": "one fixed trailing realized-volatility estimator and one fixed one-week decay window; no parameter grid",
-      "required_data": "adjusted daily OHLC; distributions; exchange calendar",
-      "current_data_status": "READY_WITH_SMALL_OFFICIAL_IDENTITY_TASK",
+      "market_role": "realized-volatility state diagnostic",
+      "universe": "SPY daily observations used only to estimate and label volatility persistence and decay; no allocation, cash switch, or trade is defined.",
+      "signal_and_holding_period": "Diagnostic observation window only. Estimator, lookback, initialization, shock threshold, provenance, decay estimator, and decay-exit specification remain unresolved; no holding period or tradable direction is authorized.",
+      "required_data": "Immutable qualified SPY daily observations plus a frozen estimator, lookback, initialization rule, shock threshold and provenance rule, decay estimator, and diagnostic exit definition.",
+      "current_data_status": "PARK_SPECIFICATION_INCOMPLETE",
       "sample_size_estimate": "about 4,100 daily observations and roughly 850 weekly decision points",
-      "turnover_and_cost_risk": "weekly or event-driven turnover; risk of whipsaw after volatility spikes",
-      "USD_40000_execution_fit": "strong with one liquid ETF and cash, no dynamic weighting",
-      "survivorship_and_PIT_risk": "low universe risk; estimator initialization and corporate-action adjustment must be frozen",
-      "closed_lineage_duplicate_screen": "PASS: volatility-shock decay is not monthly capped inverse volatility and not 200-session trend/cash",
-      "implementation_size_estimate": "small-medium, about 140-210 adapter lines",
-      "result_time_estimate": "3-4 working days",
-      "recommendation": "ADVANCE"
+      "turnover_and_cost_risk": "Not applicable to a diagnostic-only record; no execution or performance claim is authorized.",
+      "USD_40000_execution_fit": "Not applicable: DIAGNOSTIC_ONLY and not a tradable hypothesis.",
+      "survivorship_and_PIT_risk": "Low symbol-identity risk; estimator initialization and provenance must be frozen before diagnostic collection.",
+      "closed_lineage_duplicate_screen": "PASS AS DIAGNOSTIC ONLY: volatility persistence and decay measurement is not evidence that a SPY-to-cash or risk-off allocation improves net risk-adjusted returns.",
+      "implementation_size_estimate": "small diagnostic adapter after all estimator and provenance specifications are frozen",
+      "result_time_estimate": "specification qualification first; no outcome-bearing result authorized",
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "USDEM-019",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "The equity-bond correlation sign can change across inflation and policy regimes, weakening the diversification assumption precisely when a static hedge is expected to work.",
       "primary_original_source": "Li, Zha, Zhang and Zhou, Does Fiscal Policy Matter for Stock-Bond Return Correlation?, NBER Working Paper 27861: https://www.nber.org/papers/w27861",
       "market_role": "cross-asset correlation breakdown",
@@ -2040,13 +2230,15 @@
     },
     {
       "mechanism_id": "USDEM-020",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "SOURCE_GAP",
       "economic_mechanism": "Divergence between equal-weight and cap-weight indexes measures whether market participation is broad or concentrated, creating a participation-state signal distinct from absolute trend.",
       "primary_original_source": "MECHANISM SOURCE GAP: No mechanism-specific original paper was found for an equal-weight minus cap-weight ETF spread as a broad-versus-concentrated participation state; index mathematics is operational documentation only.",
       "market_role": "breadth and participation",
       "universe": "RSP and SPY as breadth proxies; SPY as the response asset",
       "signal_and_holding_period": "one fixed prior-month RSP-versus-SPY relative change and one-month response holding period; no ranking across assets",
       "required_data": "adjusted daily OHLC and distributions for RSP and SPY; index methodology history",
-      "current_data_status": "READY_WITH_SMALL_OFFICIAL_IDENTITY_TASK",
+      "current_data_status": "PARK_SOURCE_GAP_BOUNDED_RESOLUTION",
       "sample_size_estimate": "about 198 monthly decisions over 2010 through mid-2026",
       "turnover_and_cost_risk": "low monthly turnover; RSP spread and rebalance distributions need conservative treatment",
       "USD_40000_execution_fit": "strong in two liquid unlevered ETFs",
@@ -2058,6 +2250,8 @@
     },
     {
       "mechanism_id": "USDEM-021",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Small-cap participation relative to large-cap participation can indicate breadth of risk-bearing across financing-sensitive firms.",
       "primary_original_source": "Banz, The Relationship between Return and Market Value of Common Stocks: https://doi.org/10.1016/0304-405X(81)90018-0",
       "market_role": "size participation",
@@ -2072,10 +2266,12 @@
       "closed_lineage_duplicate_screen": "PASS: participation-state signal, not a top-one momentum allocation; no GLD or QQQ weighting",
       "implementation_size_estimate": "small-medium, about 140-210 adapter lines",
       "result_time_estimate": "3-4 working days",
-      "recommendation": "PARK"
+      "recommendation": "ADVANCE_FOR_QUALIFICATION"
     },
     {
       "mechanism_id": "USDEM-022",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Oil supply and demand shocks transmit asymmetrically to energy-intensive and energy-producing sectors; a sector-spread response can isolate this channel.",
       "primary_original_source": "Barsky and Kilian, Oil and the Macroeconomy Since the 1970s, NBER Working Paper 10855: https://www.nber.org/papers/w10855",
       "market_role": "cross-asset macro shock",
@@ -2094,6 +2290,8 @@
     },
     {
       "mechanism_id": "USIOT-006",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Published opening and closing auction imbalances reveal concentrated benchmark and liquidity demand before the auction print.",
       "primary_original_source": "Madhavan and Panchapagesan, Price Discovery in Auction Markets: A Look Inside the Black Box: https://doi.org/10.1093/rfs/13.3.627",
       "market_role": "intraday market structure",
@@ -2112,6 +2310,8 @@
     },
     {
       "mechanism_id": "USIOT-007",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Price discovery may alternate between an ETF and its index futures because the venues differ in trading hours, latency, and informed order flow.",
       "primary_original_source": "Andersen, Bollerslev, Diebold and Vega, Real-Time Price Discovery in Global Stock, Bond and Foreign Exchange Markets: https://www.federalreserve.gov/pubs/ifdp/2006/871/default.htm",
       "market_role": "intraday cross-venue lead-lag",
@@ -2130,6 +2330,8 @@
     },
     {
       "mechanism_id": "USIOT-008",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "The gap between option-implied variance and subsequently realizable physical variance compensates investors for variance risk.",
       "primary_original_source": "Bollerslev, Tauchen and Zhou, Expected Stock Returns and Variance Risk Premia: https://doi.org/10.1093/rfs/hhp008",
       "market_role": "options variance risk premium",
@@ -2144,10 +2346,12 @@
       "closed_lineage_duplicate_screen": "PASS: option variance compensation is independent of monthly capped inverse-volatility allocation",
       "implementation_size_estimate": "medium, about 220-320 adapter lines",
       "result_time_estimate": "sample qualification in 3-5 days; formal result only after purchase authorization",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "USIOT-009",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "The relative price of downside versus upside options reflects priced tail asymmetry and crash insurance demand.",
       "primary_original_source": "Conrad, Dittmar and Ghysels, Ex Ante Skewness and Expected Stock Returns: https://doi.org/10.1111/j.1540-6261.2012.01795.x",
       "market_role": "options skew",
@@ -2166,6 +2370,8 @@
     },
     {
       "mechanism_id": "USIOT-010",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "The slope of the implied-volatility term structure reflects the horizon of priced uncertainty and dealer inventory.",
       "primary_original_source": "Mixon, The Implied Volatility Term Structure of Stock Index Options: https://doi.org/10.1016/j.jempfin.2006.06.003",
       "market_role": "options term structure",
@@ -2184,6 +2390,8 @@
     },
     {
       "mechanism_id": "USIOT-011",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Single-name implied volatility may include compensation for earnings jump risk that dissipates after the scheduled report.",
       "primary_original_source": "Dubinsky and Johannes, Earnings Announcements and Equity Options: https://arxiv.org/abs/1412.8414",
       "market_role": "earnings options premium",
@@ -2202,6 +2410,8 @@
     },
     {
       "mechanism_id": "USIOT-012",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Put/call volume and open-interest disagreement can reveal asymmetric hedging or informed demand not present in the underlying daily tape.",
       "primary_original_source": "Pan and Poteshman, The Information in Option Volume for Future Stock Prices: https://doi.org/10.1093/rfs/hhj024",
       "market_role": "options demand and disagreement",
@@ -2216,10 +2426,12 @@
       "closed_lineage_duplicate_screen": "PASS: derivatives-demand signal is not ETF momentum or inverse volatility",
       "implementation_size_estimate": "medium, about 200-280 adapter lines",
       "result_time_estimate": "sample qualification in 3-5 working days",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "USIOT-013",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Material textual changes between successive 10-K or 10-Q filings may reveal operational change that investors process slowly.",
       "primary_original_source": "Cohen, Malloy and Nguyen, Lazy Prices, NBER Working Paper 25084: https://www.nber.org/papers/w25084",
       "market_role": "filing textual change",
@@ -2234,10 +2446,12 @@
       "closed_lineage_duplicate_screen": "PASS: primary-source text change is independent of all closed market-timing and allocation lines",
       "implementation_size_estimate": "medium, about 220-320 adapter lines using deterministic text features only",
       "result_time_estimate": "3-5 working days for an outcome-free filing sample; formal result later",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "USIOT-015",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Management tone and uncertainty during earnings calls may convey soft information not captured in filed numeric statements.",
       "primary_original_source": "Price, Doran, Peterson and Bliss, Earnings Conference Calls and Stock Returns: The Incremental Informativeness of Textual Tone: https://doi.org/10.1016/j.jbankfin.2011.10.013",
       "market_role": "earnings-call text",
@@ -2256,6 +2470,8 @@
     },
     {
       "mechanism_id": "STK_01_52_WEEK_HIGH_PROXIMITY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Anchoring and slow belief adjustment near a salient prior high may create continuation without reusing the closed generic 12-1 momentum definition.",
       "primary_original_source": "George and Hwang, The 52-Week High and Momentum Investing, Journal of Finance (2004), https://doi.org/10.1111/j.1540-6261.2004.00695.x",
       "market_role": "price-anchor continuation",
@@ -2270,10 +2486,12 @@
       "closed_lineage_duplicate_screen": "Distinct price anchor, but must be frozen so it cannot collapse into the explicitly closed 12-1 momentum or broad-trend line.",
       "implementation_size_estimate": "120-180 lines in one feature/selection adapter after shared data qualification.",
       "result_time_estimate": "3-4 working days after qualified snapshot.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "STK_02_INDUSTRY_MOMENTUM_LONG_ONLY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Industry-level information diffusion and common cash-flow shocks may persist after firm-specific noise is removed.",
       "primary_original_source": "Moskowitz and Grinblatt, Do Industries Explain Momentum?, Journal of Finance (1999), https://doi.org/10.1111/0022-1082.00146",
       "market_role": "industry information diffusion",
@@ -2292,6 +2510,8 @@
     },
     {
       "mechanism_id": "STK_03_RESIDUAL_MOMENTUM_LONG_ONLY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Removing common-factor exposures may isolate slower firm-specific information diffusion.",
       "primary_original_source": "Blitz, Huij and Martens, Residual Momentum, Journal of Empirical Finance (2011), https://doi.org/10.1016/j.jempfin.2011.01.003",
       "market_role": "firm-specific continuation",
@@ -2310,6 +2530,8 @@
     },
     {
       "mechanism_id": "STK_04_FIVE_DAY_MARKET_RESIDUAL_REVERSAL",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Temporary liquidity imbalance and inventory pressure can reverse after market-wide movement is removed.",
       "primary_original_source": "Jegadeesh, Evidence of Predictable Behavior of Security Returns, Journal of Finance (1990), https://doi.org/10.1111/j.1540-6261.1990.tb05110.x; Blitz et al., Short-term residual reversal (2013), https://doi.org/10.1016/j.finmar.2012.10.005",
       "market_role": "short-horizon liquidity provision",
@@ -2324,10 +2546,12 @@
       "closed_lineage_duplicate_screen": "Independent of closed intermediate momentum and broad trend; no outcome evidence checked.",
       "implementation_size_estimate": "130-190 lines.",
       "result_time_estimate": "3-4 working days after snapshot.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "STK_07_LARGE_OVERNIGHT_GAP_REVERSAL",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Retail attention and opening imbalances can temporarily elevate the open and reverse intraday.",
       "primary_original_source": "Berkman, Koch, Tuttle and Zhang, Paying Attention: Overnight Returns and the Hidden Cost of Buying at the Open, JFQA (2012), https://doi.org/10.1017/S0022109012000270",
       "market_role": "opening-auction liquidity provision",
@@ -2346,6 +2570,8 @@
     },
     {
       "mechanism_id": "STK_08_POST_BREAKOUT_PERSISTENCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Slow diffusion after a new information-driven price range break may persist beyond the breakout date.",
       "primary_original_source": "Brock, Lakonishok and LeBaron, Simple Technical Trading Rules and the Stochastic Properties of Stock Returns, Journal of Finance (1992), https://doi.org/10.1111/j.1540-6261.1992.tb04681.x",
       "market_role": "price-range information diffusion",
@@ -2364,6 +2590,8 @@
     },
     {
       "mechanism_id": "STK_09_OVERNIGHT_CONTINUATION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Persistent investor clienteles trading near the open may create same-session-component continuation.",
       "primary_original_source": "Lou, Polk and Skouras, A Tug of War: Overnight versus Intraday Expected Returns, JFE (2019), https://doi.org/10.1016/j.jfineco.2019.03.011",
       "market_role": "overnight clientele persistence",
@@ -2382,6 +2610,8 @@
     },
     {
       "mechanism_id": "STK_10_OVERNIGHT_WINNER_INTRADAY_LOSER_INTERACTION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Opposing retail-at-open and institutional-intraday clienteles may create persistent return decomposition.",
       "primary_original_source": "Lou, Polk and Skouras (2019), https://doi.org/10.1016/j.jfineco.2019.03.011",
       "market_role": "clientele tug-of-war",
@@ -2400,6 +2630,8 @@
     },
     {
       "mechanism_id": "STK_11_OPENING_GAP_RESIDUAL_SIGNAL",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Firm-specific overnight information can be separated from broad overnight market movement; residual gaps may distinguish news from market repricing.",
       "primary_original_source": "Lou, Polk and Skouras (2019), https://doi.org/10.1016/j.jfineco.2019.03.011",
       "market_role": "overnight information decomposition",
@@ -2418,6 +2650,8 @@
     },
     {
       "mechanism_id": "STK_12_AMIHUD_ILLIQUIDITY_AVOIDANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Daily price impact proxies compensation for illiquidity, but for a small account the safest long-only use is to exclude the most costly tail rather than depend on microcaps.",
       "primary_original_source": "Amihud, Illiquidity and Stock Returns, Journal of Financial Markets (2002), https://doi.org/10.1016/S1386-4181(01)00024-6",
       "market_role": "liquidity-risk screen",
@@ -2432,10 +2666,12 @@
       "closed_lineage_duplicate_screen": "Diagnostic/overlay, not a duplicate of closed momentum or trend.",
       "implementation_size_estimate": "80-120 lines.",
       "result_time_estimate": "2-3 working days after snapshot.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "STK_13_ABNORMAL_VOLUME_ATTENTION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Unusual trading activity can broaden investor recognition and reveal persistent attention demand.",
       "primary_original_source": "Gervais, Kaniel and Mingelgrin, The High-Volume Return Premium, Journal of Finance (2001), https://doi.org/10.1111/0022-1082.00349",
       "market_role": "attention and recognition",
@@ -2450,10 +2686,12 @@
       "closed_lineage_duplicate_screen": "Independent attention mechanism.",
       "implementation_size_estimate": "110-160 lines.",
       "result_time_estimate": "3-4 working days after snapshot.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "STK_14_TURNOVER_SHOCK_CONDITIONED_ATTENTION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Turnover can condition the life cycle of price continuation by distinguishing crowded attention from neglected information.",
       "primary_original_source": "Lee and Swaminathan, Price Momentum and Trading Volume, Journal of Finance (2000), https://doi.org/10.1111/0022-1082.00280",
       "market_role": "attention-state conditioning",
@@ -2472,6 +2710,8 @@
     },
     {
       "mechanism_id": "STK_15_MAX_LOTTERY_AVOIDANCE_LONG_ONLY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Preference for lottery-like extreme daily payoffs can create over-demand; a long-only portfolio can exclude the highest-MAX tail.",
       "primary_original_source": "Bali, Cakici and Whitelaw, Maxing Out: Stocks as Lotteries and the Cross-Section of Expected Returns, JFE (2011), https://doi.org/10.1016/j.jfineco.2010.08.014",
       "market_role": "speculative-demand avoidance",
@@ -2486,10 +2726,12 @@
       "closed_lineage_duplicate_screen": "Independent speculative-demand screen.",
       "implementation_size_estimate": "80-120 lines.",
       "result_time_estimate": "2-3 working days after snapshot.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "STK_16_LOW_RESIDUAL_VOLATILITY_LONG_ONLY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Benchmarking and leverage constraints can cause excess demand for high-risk stocks, leaving low residual-volatility stocks comparatively neglected.",
       "primary_original_source": "Baker, Bradley and Wurgler, Benchmarks as Limits to Arbitrage, Financial Analysts Journal (2011), https://doi.org/10.2469/faj.v67.n1.4",
       "market_role": "low-risk defensive allocation",
@@ -2504,10 +2746,12 @@
       "closed_lineage_duplicate_screen": "Independent defensive mechanism.",
       "implementation_size_estimate": "150-210 lines.",
       "result_time_estimate": "4-5 working days after snapshot.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "STK_17_DOWNSIDE_BETA_DEFENSIVE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Investors may price covariance with market downside differently from upside covariance; a long-only low-downside-beta basket targets defensive exposure.",
       "primary_original_source": "Ang, Chen and Xing, Downside Risk, Review of Financial Studies (2006), https://doi.org/10.1093/rfs/hhj035",
       "market_role": "downside-risk defense",
@@ -2526,6 +2770,8 @@
     },
     {
       "mechanism_id": "STK_18_QUALITY_PLUS_LOW_BETA",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Profitability and balance-sheet safety may screen out distressed low-beta traps while retaining the benchmark-constraint low-risk prior.",
       "primary_original_source": "Asness, Frazzini and Pedersen, Quality Minus Junk, Review of Accounting Studies (2019), https://doi.org/10.1007/s11142-018-9470-2; Baker et al. (2011), https://doi.org/10.2469/faj.v67.n1.4",
       "market_role": "quality defensive composite",
@@ -2544,6 +2790,8 @@
     },
     {
       "mechanism_id": "STK_22_STOCK_SPLIT_POST_EVENT",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "A split can convey management confidence and alter salience/retail accessibility; any slow response must be tested after the public event.",
       "primary_original_source": "Ikenberry, Rankine and Stice, What Do Stock Splits Really Signal?, JFQA (1996), https://doi.org/10.2307/2331396",
       "market_role": "corporate-action information event",
@@ -2558,10 +2806,12 @@
       "closed_lineage_duplicate_screen": "Independent corporate-action event.",
       "implementation_size_estimate": "150-210 lines.",
       "result_time_estimate": "5-6 working days after event join.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_01_PEAD_TIME_SERIES_SURPRISE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Investors may underreact to earnings innovations relative to the issuer's own seasonal history, creating delayed incorporation after public filing.",
       "primary_original_source": "Bernard and Thomas, Evidence that Stock Prices Do Not Fully Reflect the Implications of Current Earnings for Future Earnings, JAE (1990), https://doi.org/10.1016/0165-4101(90)90008-R",
       "market_role": "earnings information diffusion",
@@ -2576,10 +2826,12 @@
       "closed_lineage_duplicate_screen": "Independent earnings-event mechanism based on authorized control files only.",
       "implementation_size_estimate": "200-280 lines.",
       "result_time_estimate": "6-8 working days after SEC and price snapshots qualify.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_02_REVENUE_SURPRISE_TIME_SERIES",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Revenue innovations contain demand information not fully captured by earnings and may diffuse slowly.",
       "primary_original_source": "Jegadeesh and Livnat, Revenue Surprises and Stock Returns, JAE (2006), https://doi.org/10.1016/j.jacceco.2005.10.003",
       "market_role": "top-line information diffusion",
@@ -2594,10 +2846,12 @@
       "closed_lineage_duplicate_screen": "Independent top-line event signal.",
       "implementation_size_estimate": "190-270 lines.",
       "result_time_estimate": "6-8 working days after joins.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_07_FILING_LAG_REPORTING_DELAY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Unexpected reporting delay can signal operational or accounting difficulty before the filing content is processed.",
       "primary_original_source": "Chambers and Penman, Timeliness of Reporting and the Stock Price Reaction to Earnings Announcements, JAR (1984), https://doi.org/10.2307/2490700",
       "market_role": "reporting-delay event",
@@ -2612,10 +2866,12 @@
       "closed_lineage_duplicate_screen": "Independent filing-timing mechanism.",
       "implementation_size_estimate": "160-230 lines.",
       "result_time_estimate": "5-7 working days after joins.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_10_EARNINGS_ANNOUNCEMENT_PREMIUM",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Systematic information arrival and investor attention around scheduled earnings dates may create a distinct event-period premium.",
       "primary_original_source": "Frazzini and Lamont, The Earnings Announcement Premium and Trading Volume, NBER Working Paper 13090 (2007), https://www.nber.org/papers/w13090",
       "market_role": "scheduled information-risk event",
@@ -2634,6 +2890,8 @@
     },
     {
       "mechanism_id": "FND_11_OPEN_MARKET_REPURCHASE_ANNOUNCEMENT",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Repurchase authorization can signal perceived undervaluation, but authorization is not execution and must remain distinct from buyback completion.",
       "primary_original_source": "Ikenberry, Lakonishok and Vermaelen, Market Underreaction to Open Market Share Repurchases, JFE (1995), https://doi.org/10.1016/0304-405X(95)00826-Z",
       "market_role": "corporate payout signal",
@@ -2648,10 +2906,12 @@
       "closed_lineage_duplicate_screen": "Independent corporate payout event.",
       "implementation_size_estimate": "190-270 lines.",
       "result_time_estimate": "6-8 working days after joins.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_12_DIVIDEND_INITIATION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "A new recurring cash payout can signal durable cash-flow confidence and may be incorporated gradually.",
       "primary_original_source": "Michaely, Thaler and Womack, Price Reactions to Dividend Initiations and Omissions, Journal of Finance (1995), https://doi.org/10.1111/j.1540-6261.1995.tb04796.x",
       "market_role": "payout initiation event",
@@ -2666,10 +2926,12 @@
       "closed_lineage_duplicate_screen": "Independent payout event.",
       "implementation_size_estimate": "150-220 lines.",
       "result_time_estimate": "5-7 working days after joins.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_13_DIVIDEND_CUT_OR_OMISSION_AVOIDANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Dividend cuts or omissions can reveal deterioration that may diffuse slowly; a long-only process can move to cash rather than short.",
       "primary_original_source": "Michaely, Thaler and Womack (1995), https://doi.org/10.1111/j.1540-6261.1995.tb04796.x",
       "market_role": "payout deterioration screen",
@@ -2688,6 +2950,8 @@
     },
     {
       "mechanism_id": "FND_14_SEASONED_EQUITY_OFFERING_AVOIDANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Seasoned equity issuance may reflect financing pressure or managerial timing; long-only portfolios can exclude recent issuers.",
       "primary_original_source": "Loughran and Ritter, The New Issues Puzzle, Journal of Finance (1995), https://doi.org/10.1111/j.1540-6261.1995.tb05166.x",
       "market_role": "external-financing risk screen",
@@ -2706,6 +2970,8 @@
     },
     {
       "mechanism_id": "FND_15_NET_EQUITY_ISSUANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Cumulative share issuance versus contraction summarizes financing and payout choices that may be incompletely priced.",
       "primary_original_source": "Pontiff and Woodgate, Share Issuance and Cross-Sectional Returns, Journal of Finance (2008), https://doi.org/10.1111/j.1540-6261.2008.01335.x",
       "market_role": "financing-policy cross-section",
@@ -2720,10 +2986,12 @@
       "closed_lineage_duplicate_screen": "Independent financing-policy mechanism.",
       "implementation_size_estimate": "210-290 lines.",
       "result_time_estimate": "7-9 working days after joins.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_16_CLUSTER_INSIDER_PURCHASES",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Multiple independent insiders buying in a short public window can aggregate private assessments and reduce idiosyncratic motives.",
       "primary_original_source": "Lakonishok and Lee, Are Insider Trades Informative?, Review of Financial Studies (2001), https://doi.org/10.1093/rfs/14.1.79; Cohen, Malloy and Pomorski (2012), https://doi.org/10.1111/j.1540-6261.2012.01740.x",
       "market_role": "insider-information event",
@@ -2738,10 +3006,12 @@
       "closed_lineage_duplicate_screen": "Independent insider event.",
       "implementation_size_estimate": "180-260 lines.",
       "result_time_estimate": "6-8 working days after joins.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_20_INSIDER_TRANSACTION_TO_FILING_LAG",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "The delay between transaction and public filing may condition information decay and disclosure behavior.",
       "primary_original_source": "Brochet, Information Content of Insider Trades before and after the Sarbanes-Oxley Act, The Accounting Review (2010), https://doi.org/10.2308/accr.2010.85.2.419",
       "market_role": "insider disclosure-timing classifier",
@@ -2760,6 +3030,8 @@
     },
     {
       "mechanism_id": "FND_21_GROSS_PROFITABILITY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Gross profits relative to assets capture productive efficiency before many discretionary expenses and may complement value.",
       "primary_original_source": "Novy-Marx, The Other Side of Value: The Gross Profitability Premium, JFE (2013), https://doi.org/10.1016/j.jfineco.2013.01.003",
       "market_role": "fundamental quality cross-section",
@@ -2774,10 +3046,12 @@
       "closed_lineage_duplicate_screen": "Independent quality mechanism.",
       "implementation_size_estimate": "190-270 lines.",
       "result_time_estimate": "6-8 working days after joins.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_22_ASSET_GROWTH",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Rapid balance-sheet expansion can reflect overinvestment or extrapolative financing, while restrained investment may preserve returns on capital.",
       "primary_original_source": "Cooper, Gulen and Schill, Asset Growth and the Cross-Section of Stock Returns, Journal of Finance (2008), https://doi.org/10.1111/j.1540-6261.2008.01370.x",
       "market_role": "investment cross-section",
@@ -2792,10 +3066,12 @@
       "closed_lineage_duplicate_screen": "Independent investment mechanism.",
       "implementation_size_estimate": "170-240 lines.",
       "result_time_estimate": "6-8 working days after joins.",
-      "recommendation": "ADVANCE"
+      "recommendation": "PARK"
     },
     {
       "mechanism_id": "FND_23_ACCRUALS_QUALITY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Investors may over-weight less persistent accrual components relative to cash-flow components of earnings.",
       "primary_original_source": "Sloan, Do Stock Prices Fully Reflect Information in Accruals and Cash Flows About Future Earnings?, The Accounting Review (1996), https://doi.org/10.2308/tar-9608042309",
       "market_role": "earnings-quality cross-section",
@@ -2814,6 +3090,8 @@
     },
     {
       "mechanism_id": "FND_24_BALANCE_SHEET_SAFETY_QUALITY_VALUE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "Within inexpensive stocks, profitability, leverage, liquidity and operating improvement can distinguish financially sound firms from distress traps.",
       "primary_original_source": "Piotroski, Value Investing: The Use of Historical Financial Statement Information to Separate Winners from Losers, JAR (2000), https://doi.org/10.2307/2672906",
       "market_role": "quality-value composite",
@@ -2832,6 +3110,8 @@
     },
     {
       "mechanism_id": "FND_25_MATERIAL_WEAKNESS_DISCLOSURE_AVOIDANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
       "economic_mechanism": "A disclosed material weakness in internal control can signal reporting reliability and operational risk; long-only portfolios can move to cash or exclude the issuer.",
       "primary_original_source": "Doyle, Ge and McVay, Determinants of Weaknesses in Internal Control over Financial Reporting, JAE (2007), https://doi.org/10.1016/j.jacceco.2006.10.003",
       "market_role": "text-light filing risk screen",
@@ -2862,33 +3142,187 @@
     "total"
   ],
   "score_rubric": {
-    "economic_prior": "0-3",
-    "data_readiness": "0-3",
-    "sample_sufficiency": "0-2",
-    "USD_40000_execution_fit": "0-2",
-    "cost_robustness_expectation": "0-2",
-    "independence_from_closed_lines": "0-2",
-    "implementation_simplicity": "0-1",
-    "prospective_observability": "0-2",
-    "total": "sum of eight components, 0-17"
+    "dimensions": {
+      "economic_prior": {
+        "range": [
+          0,
+          3
+        ],
+        "anchors": {
+          "0": {
+            "code": "EP0_NO_CREDIBLE_MECHANISM",
+            "criterion": "No credible mechanism evidence."
+          },
+          "1": {
+            "code": "EP1_INDIRECT_ANALOGICAL",
+            "criterion": "Indirect or analogical evidence only."
+          },
+          "2": {
+            "code": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+            "criterion": "Exact source with material implementation translation, or strong economic prior only."
+          },
+          "3": {
+            "code": "EP3_EXACT_PLUS_INDEPENDENT",
+            "criterion": "Exact mechanism source plus at least one independent supporting source."
+          }
+        }
+      },
+      "data_readiness": {
+        "range": [
+          0,
+          3
+        ],
+        "anchors": {
+          "0": {
+            "code": "DR0_UNAVAILABLE_OR_PROHIBITED",
+            "criterion": "Required data unavailable or prohibited."
+          },
+          "1": {
+            "code": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+            "criterion": "Paid source, multi-system mapping, or major unresolved coverage remains."
+          },
+          "2": {
+            "code": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+            "criterion": "One bounded official-identity or join task remains."
+          },
+          "3": {
+            "code": "DR3_ALL_IMMUTABLE_QUALIFIED",
+            "criterion": "All required identities are qualified locally and immutable."
+          }
+        }
+      },
+      "sample_sufficiency": {
+        "range": [
+          0,
+          2
+        ],
+        "anchors": {
+          "0": {
+            "code": "SS0_INSUFFICIENT_OR_UNKNOWN",
+            "criterion": "Expected sample insufficient or unknown."
+          },
+          "1": {
+            "code": "SS1_MARGINAL_OR_CLUSTERED",
+            "criterion": "Expected count is marginal or highly clustered."
+          },
+          "2": {
+            "code": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+            "criterion": "Expected count clearly exceeds the frozen minimum across enough years."
+          }
+        }
+      },
+      "USD_40000_execution_fit": {
+        "range": [
+          0,
+          2
+        ],
+        "anchors": {
+          "0": {
+            "code": "EF0_NOT_FAITHFULLY_EXECUTABLE",
+            "criterion": "Cannot faithfully execute."
+          },
+          "1": {
+            "code": "EF1_MATERIAL_CONSTRAINTS",
+            "criterion": "Material concentration, turnover, or gap constraints."
+          },
+          "2": {
+            "code": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+            "criterion": "Liquid, unlevered, whole-share faithful."
+          }
+        }
+      },
+      "cost_robustness_expectation": {
+        "range": [
+          0,
+          2
+        ],
+        "anchors": {
+          "0": {
+            "code": "CR0_FRICTION_LIKELY_DOMINATES",
+            "criterion": "Execution friction likely dominates."
+          },
+          "1": {
+            "code": "CR1_PLAUSIBLE_COST_SENSITIVE",
+            "criterion": "Plausible but cost-sensitive."
+          },
+          "2": {
+            "code": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+            "criterion": "Low turnover or large event prior relative to conservative costs."
+          }
+        }
+      },
+      "independence_from_closed_lines": {
+        "range": [
+          0,
+          2
+        ],
+        "anchors": {
+          "0": {
+            "code": "IN0_DUPLICATE_OR_RESCUE",
+            "criterion": "Duplicate or outcome-informed rescue."
+          },
+          "1": {
+            "code": "IN1_ADJACENT_GUARD_REQUIRED",
+            "criterion": "Adjacent to a closed line and requires an explicit guard."
+          },
+          "2": {
+            "code": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+            "criterion": "Distinct economic source and signal."
+          }
+        }
+      },
+      "implementation_simplicity": {
+        "range": [
+          0,
+          1
+        ],
+        "anchors": {
+          "0": {
+            "code": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+            "criterion": "New platform, NLP stack, optimizer, or high-complexity engine needed."
+          },
+          "1": {
+            "code": "IS1_NARROW_EXISTING_ARCHITECTURE",
+            "criterion": "Narrow implementation within existing architecture."
+          }
+        }
+      },
+      "prospective_observability": {
+        "range": [
+          0,
+          2
+        ],
+        "anchors": {
+          "0": {
+            "code": "PO0_NOT_PRACTICALLY_COLLECTABLE",
+            "criterion": "Future evidence is not practically collectable."
+          },
+          "1": {
+            "code": "PO1_SLOW_OR_SPARSE",
+            "criterion": "Future observations are slow or sparse."
+          },
+          "2": {
+            "code": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS",
+            "criterion": "Frequent and objectively timestamped future observations."
+          }
+        }
+      }
+    },
+    "total": {
+      "range": [
+        0,
+        17
+      ],
+      "calculation": "sum of the eight dimension scores"
+    },
+    "maximum_data_readiness_in_this_artifact": 2,
+    "economic_prior_3_requires_independent_second_mechanism_source": true
   },
   "scores": [
     [
       "M3_DATE_ANCHORED_NEXT_SESSION_V2",
-      2,
-      3,
-      2,
-      2,
-      2,
-      2,
       1,
       2,
-      16
-    ],
-    [
-      "M6_MONTHLY_EXPIRATION_RULESPAN_V2",
-      2,
-      1,
       2,
       2,
       2,
@@ -2896,6 +3330,42 @@
       1,
       2,
       14
+    ],
+    [
+      "USIOT-001",
+      2,
+      1,
+      1,
+      2,
+      1,
+      2,
+      0,
+      2,
+      11
+    ],
+    [
+      "USIOT-002",
+      2,
+      1,
+      1,
+      2,
+      0,
+      2,
+      0,
+      2,
+      10
+    ],
+    [
+      "M6_MONTHLY_EXPIRATION_RULESPAN_V2",
+      2,
+      0,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      13
     ],
     [
       "M7_QUARTERLY_EXPIRATION_RULESPAN_V2",
@@ -2911,39 +3381,39 @@
     ],
     [
       "USDEM-002",
-      3,
-      0,
+      2,
+      2,
       2,
       2,
       2,
       2,
       1,
       2,
-      14
+      15
     ],
     [
       "USDEM-003",
-      3,
-      0,
+      2,
+      2,
       2,
       2,
       2,
       2,
       1,
       2,
-      14
+      15
     ],
     [
       "USDEM-004",
-      3,
-      0,
+      2,
+      2,
       2,
       2,
       2,
       2,
       1,
       2,
-      14
+      15
     ],
     [
       "USDEM-005",
@@ -2960,32 +3430,8 @@
     [
       "USDEM-006",
       2,
-      1,
-      1,
-      2,
-      2,
       2,
       1,
-      2,
-      13
-    ],
-    [
-      "USDEM-007",
-      2,
-      3,
-      1,
-      2,
-      2,
-      2,
-      1,
-      2,
-      15
-    ],
-    [
-      "USDEM-010",
-      3,
-      2,
-      0,
       2,
       2,
       2,
@@ -2994,16 +3440,40 @@
       14
     ],
     [
-      "USDEM-012",
-      3,
+      "USDEM-007",
       2,
+      2,
+      1,
+      2,
+      2,
+      2,
+      1,
+      2,
+      14
+    ],
+    [
+      "USDEM-010",
       2,
       2,
       0,
       2,
-      0,
+      2,
+      2,
+      1,
       2,
       13
+    ],
+    [
+      "USDEM-012",
+      2,
+      2,
+      2,
+      2,
+      0,
+      2,
+      0,
+      2,
+      12
     ],
     [
       "USDEM-013",
@@ -3031,7 +3501,7 @@
     ],
     [
       "USDEM-015",
-      3,
+      2,
       2,
       2,
       2,
@@ -3039,11 +3509,11 @@
       2,
       0,
       2,
-      14
+      13
     ],
     [
       "USDEM-016",
-      3,
+      2,
       2,
       2,
       2,
@@ -3051,7 +3521,7 @@
       2,
       0,
       1,
-      13
+      12
     ],
     [
       "USDEM-017",
@@ -3067,19 +3537,19 @@
     ],
     [
       "USDEM-018",
-      3,
-      3,
       2,
+      2,
+      2,
+      0,
+      0,
       2,
       1,
       2,
-      1,
-      2,
-      16
+      11
     ],
     [
       "USDEM-019",
-      3,
+      2,
       2,
       1,
       2,
@@ -3087,12 +3557,24 @@
       2,
       0,
       1,
-      13
+      12
     ],
     [
       "USDEM-020",
+      0,
+      2,
       1,
-      3,
+      2,
+      2,
+      2,
+      1,
+      2,
+      12
+    ],
+    [
+      "USDEM-021",
+      2,
+      2,
       1,
       2,
       2,
@@ -3102,20 +3584,8 @@
       14
     ],
     [
-      "USDEM-021",
-      2,
-      3,
-      1,
-      2,
-      2,
-      2,
-      1,
-      2,
-      15
-    ],
-    [
       "USDEM-022",
-      3,
+      2,
       2,
       1,
       2,
@@ -3123,12 +3593,12 @@
       2,
       0,
       2,
-      13
+      12
     ],
     [
       "USIOT-006",
-      3,
-      0,
+      2,
+      1,
       2,
       1,
       0,
@@ -3139,8 +3609,8 @@
     ],
     [
       "USIOT-007",
-      3,
-      0,
+      2,
+      1,
       2,
       0,
       0,
@@ -3151,44 +3621,44 @@
     ],
     [
       "USIOT-008",
-      3,
       2,
+      1,
       2,
       1,
       1,
-      2,
-      0,
-      2,
-      13
-    ],
-    [
-      "USIOT-009",
-      3,
-      2,
-      2,
-      1,
-      0,
-      2,
-      0,
-      2,
-      12
-    ],
-    [
-      "USIOT-010",
-      2,
-      2,
-      2,
-      1,
-      0,
       2,
       0,
       2,
       11
     ],
     [
-      "USIOT-011",
-      3,
+      "USIOT-009",
+      2,
+      1,
+      2,
+      1,
       0,
+      2,
+      0,
+      2,
+      10
+    ],
+    [
+      "USIOT-010",
+      2,
+      1,
+      2,
+      1,
+      0,
+      2,
+      0,
+      2,
+      10
+    ],
+    [
+      "USIOT-011",
+      2,
+      1,
       2,
       1,
       0,
@@ -3200,50 +3670,50 @@
     [
       "USIOT-012",
       2,
+      1,
+      2,
+      2,
+      1,
+      2,
+      0,
+      2,
+      12
+    ],
+    [
+      "USIOT-013",
       2,
       2,
       2,
       1,
+      2,
       2,
       0,
       2,
       13
     ],
     [
-      "USIOT-013",
-      3,
-      3,
-      2,
-      1,
-      2,
-      2,
-      0,
-      2,
-      15
-    ],
-    [
       "USIOT-015",
       2,
-      0,
-      2,
-      1,
       1,
       2,
+      1,
+      1,
+      2,
       0,
       1,
-      9
+      10
     ],
     [
       "STK_01_52_WEEK_HIGH_PROXIMITY",
-      3,
-      1,
-      2,
       2,
       1,
       2,
+      2,
       1,
       2,
-      14
+      1,
+      2,
+      13
     ],
     [
       "STK_02_INDUSTRY_MOMENTUM_LONG_ONLY",
@@ -3252,10 +3722,10 @@
       2,
       1,
       1,
-      0,
+      1,
       1,
       2,
-      10
+      11
     ],
     [
       "STK_03_RESIDUAL_MOMENTUM_LONG_ONLY",
@@ -3264,10 +3734,10 @@
       2,
       2,
       1,
-      0,
+      1,
       0,
       2,
-      10
+      11
     ],
     [
       "STK_04_FIVE_DAY_MARKET_RESIDUAL_REVERSAL",
@@ -3284,8 +3754,44 @@
     [
       "STK_07_LARGE_OVERNIGHT_GAP_REVERSAL",
       2,
+      1,
+      2,
+      1,
       0,
       2,
+      0,
+      2,
+      10
+    ],
+    [
+      "STK_08_POST_BREAKOUT_PERSISTENCE",
+      2,
+      1,
+      2,
+      2,
+      1,
+      0,
+      1,
+      2,
+      11
+    ],
+    [
+      "STK_09_OVERNIGHT_CONTINUATION",
+      2,
+      1,
+      2,
+      1,
+      0,
+      2,
+      1,
+      2,
+      11
+    ],
+    [
+      "STK_10_OVERNIGHT_WINNER_INTRADAY_LOSER_INTERACTION",
+      2,
+      1,
+      1,
       1,
       0,
       2,
@@ -3294,112 +3800,76 @@
       9
     ],
     [
-      "STK_08_POST_BREAKOUT_PERSISTENCE",
-      1,
-      1,
-      2,
-      2,
-      1,
-      0,
-      1,
-      2,
-      10
-    ],
-    [
-      "STK_09_OVERNIGHT_CONTINUATION",
-      2,
-      0,
-      2,
-      1,
-      0,
-      2,
-      1,
-      2,
-      10
-    ],
-    [
-      "STK_10_OVERNIGHT_WINNER_INTRADAY_LOSER_INTERACTION",
-      2,
-      0,
-      1,
-      1,
-      0,
-      2,
-      0,
-      2,
-      8
-    ],
-    [
       "STK_11_OPENING_GAP_RESIDUAL_SIGNAL",
       2,
-      0,
+      1,
       2,
       1,
       0,
       2,
       1,
       2,
-      10
+      11
     ],
     [
       "STK_12_AMIHUD_ILLIQUIDITY_AVOIDANCE",
-      3,
-      1,
-      2,
-      2,
-      2,
       2,
       1,
       2,
-      15
-    ],
-    [
-      "STK_13_ABNORMAL_VOLUME_ATTENTION",
-      3,
-      1,
       2,
       2,
-      1,
       2,
       1,
       2,
       14
     ],
     [
+      "STK_13_ABNORMAL_VOLUME_ATTENTION",
+      2,
+      1,
+      2,
+      2,
+      1,
+      2,
+      1,
+      2,
+      13
+    ],
+    [
       "STK_14_TURNOVER_SHOCK_CONDITIONED_ATTENTION",
       2,
-      0,
-      2,
-      1,
-      1,
-      1,
       1,
       2,
-      10
+      1,
+      1,
+      1,
+      1,
+      2,
+      11
     ],
     [
       "STK_15_MAX_LOTTERY_AVOIDANCE_LONG_ONLY",
-      3,
-      1,
-      2,
-      2,
-      2,
       2,
       1,
       2,
-      15
+      2,
+      2,
+      2,
+      1,
+      2,
+      14
     ],
     [
       "STK_16_LOW_RESIDUAL_VOLATILITY_LONG_ONLY",
-      3,
-      1,
-      2,
-      2,
-      2,
       2,
       1,
       2,
-      15
+      2,
+      2,
+      2,
+      1,
+      2,
+      14
     ],
     [
       "STK_17_DOWNSIDE_BETA_DEFENSIVE",
@@ -3416,14 +3886,14 @@
     [
       "STK_18_QUALITY_PLUS_LOW_BETA",
       3,
-      0,
+      1,
       2,
       2,
       2,
       2,
       0,
       2,
-      13
+      14
     ],
     [
       "STK_22_STOCK_SPLIT_POST_EVENT",
@@ -3439,290 +3909,265 @@
     ],
     [
       "FND_01_PEAD_TIME_SERIES_SURPRISE",
-      3,
-      2,
-      2,
-      2,
-      1,
-      2,
-      0,
-      2,
-      14
-    ],
-    [
-      "FND_02_REVENUE_SURPRISE_TIME_SERIES",
-      3,
-      2,
-      2,
-      2,
-      1,
-      2,
-      0,
-      2,
-      14
-    ],
-    [
-      "FND_07_FILING_LAG_REPORTING_DELAY",
-      3,
-      2,
-      2,
-      2,
-      2,
-      2,
-      1,
-      2,
-      16
-    ],
-    [
-      "FND_10_EARNINGS_ANNOUNCEMENT_PREMIUM",
-      2,
-      0,
-      2,
-      1,
-      1,
-      2,
-      0,
-      1,
-      9
-    ],
-    [
-      "FND_11_OPEN_MARKET_REPURCHASE_ANNOUNCEMENT",
-      3,
-      2,
-      2,
-      2,
-      2,
-      2,
-      0,
-      2,
-      15
-    ],
-    [
-      "FND_12_DIVIDEND_INITIATION",
-      3,
       2,
       1,
       2,
       2,
-      2,
       1,
-      2,
-      15
-    ],
-    [
-      "FND_13_DIVIDEND_CUT_OR_OMISSION_AVOIDANCE",
-      3,
-      2,
-      2,
-      2,
-      2,
-      2,
-      1,
-      2,
-      16
-    ],
-    [
-      "FND_14_SEASONED_EQUITY_OFFERING_AVOIDANCE",
-      2,
-      2,
-      2,
-      2,
-      2,
-      2,
-      1,
-      2,
-      15
-    ],
-    [
-      "FND_15_NET_EQUITY_ISSUANCE",
-      3,
-      1,
-      2,
-      2,
-      2,
-      2,
-      0,
-      2,
-      14
-    ],
-    [
-      "FND_16_CLUSTER_INSIDER_PURCHASES",
-      3,
-      2,
-      2,
-      2,
-      2,
-      2,
-      1,
-      2,
-      16
-    ],
-    [
-      "FND_20_INSIDER_TRANSACTION_TO_FILING_LAG",
-      2,
-      2,
-      2,
-      2,
-      2,
-      1,
-      1,
-      2,
-      14
-    ],
-    [
-      "FND_21_GROSS_PROFITABILITY",
-      3,
-      2,
-      2,
-      2,
-      2,
-      2,
-      0,
-      2,
-      15
-    ],
-    [
-      "FND_22_ASSET_GROWTH",
-      3,
-      2,
-      2,
-      2,
-      2,
-      2,
-      1,
-      2,
-      16
-    ],
-    [
-      "FND_23_ACCRUALS_QUALITY",
-      3,
-      1,
-      2,
-      2,
-      2,
-      2,
-      0,
-      2,
-      14
-    ],
-    [
-      "FND_24_BALANCE_SHEET_SAFETY_QUALITY_VALUE",
-      3,
-      1,
-      2,
-      2,
-      2,
-      2,
-      0,
-      2,
-      14
-    ],
-    [
-      "FND_25_MATERIAL_WEAKNESS_DISCLOSURE_AVOIDANCE",
-      2,
-      0,
-      2,
-      2,
-      2,
       2,
       0,
       2,
       12
+    ],
+    [
+      "FND_02_REVENUE_SURPRISE_TIME_SERIES",
+      2,
+      1,
+      2,
+      2,
+      1,
+      2,
+      0,
+      2,
+      12
+    ],
+    [
+      "FND_07_FILING_LAG_REPORTING_DELAY",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      14
+    ],
+    [
+      "FND_10_EARNINGS_ANNOUNCEMENT_PREMIUM",
+      2,
+      1,
+      2,
+      1,
+      1,
+      2,
+      0,
+      1,
+      10
+    ],
+    [
+      "FND_11_OPEN_MARKET_REPURCHASE_ANNOUNCEMENT",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      0,
+      2,
+      13
+    ],
+    [
+      "FND_12_DIVIDEND_INITIATION",
+      2,
+      1,
+      1,
+      2,
+      2,
+      2,
+      1,
+      2,
+      13
+    ],
+    [
+      "FND_13_DIVIDEND_CUT_OR_OMISSION_AVOIDANCE",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      14
+    ],
+    [
+      "FND_14_SEASONED_EQUITY_OFFERING_AVOIDANCE",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      14
+    ],
+    [
+      "FND_15_NET_EQUITY_ISSUANCE",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      0,
+      2,
+      13
+    ],
+    [
+      "FND_16_CLUSTER_INSIDER_PURCHASES",
+      3,
+      1,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      15
+    ],
+    [
+      "FND_20_INSIDER_TRANSACTION_TO_FILING_LAG",
+      2,
+      1,
+      2,
+      2,
+      2,
+      1,
+      1,
+      2,
+      13
+    ],
+    [
+      "FND_21_GROSS_PROFITABILITY",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      0,
+      2,
+      13
+    ],
+    [
+      "FND_22_ASSET_GROWTH",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      1,
+      2,
+      14
+    ],
+    [
+      "FND_23_ACCRUALS_QUALITY",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      0,
+      2,
+      13
+    ],
+    [
+      "FND_24_BALANCE_SHEET_SAFETY_QUALITY_VALUE",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      0,
+      2,
+      13
+    ],
+    [
+      "FND_25_MATERIAL_WEAKNESS_DISCLOSURE_AVOIDANCE",
+      2,
+      1,
+      2,
+      2,
+      2,
+      2,
+      0,
+      2,
+      13
     ]
   ],
-  "finalist_selection": {
-    "eligibility": "recommendation ADVANCE, no source-binding evidence gap, and total >=11",
-    "ordering": [
-      "total descending",
-      "data_readiness descending",
-      "prospective_observability descending",
-      "implementation_simplicity descending",
-      "mechanism_id ascending"
-    ],
-    "finalists": [
-      {
-        "rank": 1,
-        "mechanism_id": "M3_DATE_ANCHORED_NEXT_SESSION_V2",
-        "score": 16
-      },
-      {
-        "rank": 2,
-        "mechanism_id": "USDEM-018",
-        "score": 16
-      },
-      {
-        "rank": 3,
-        "mechanism_id": "FND_07_FILING_LAG_REPORTING_DELAY",
-        "score": 16
-      },
-      {
-        "rank": 4,
-        "mechanism_id": "FND_16_CLUSTER_INSIDER_PURCHASES",
-        "score": 16
-      },
-      {
-        "rank": 5,
-        "mechanism_id": "FND_22_ASSET_GROWTH",
-        "score": 16
-      }
-    ]
-  },
   "formal_mechanism_decision": {
     "decision": "NO_MECHANISM_READY",
     "selected_mechanism_id": null,
-    "priority_review": [
+    "readiness_barriers": [
       {
-        "priority": 1,
-        "class": "Lane B daily",
+        "barrier_order": 1,
+        "class": "Lane B daily (excluded from source qualification priorities)",
         "ready": false,
-        "reason": "XNYS calendar identity contract incomplete."
+        "reason": "M3 is PARK_SOURCE_MISMATCH_AND_XNYS_INCOMPLETE; resolve a direct mechanism source before XNYS identity, and do not reopen exact-time M3."
       },
       {
-        "priority": 2,
+        "barrier_order": 2,
         "class": "existing-data daily ETF or broad market",
         "ready": false,
         "reason": "Required daily input identities were not qualified without prohibited price/database access."
       },
       {
-        "priority": 3,
+        "barrier_order": 3,
         "class": "survivor-aware stock",
         "ready": false,
         "reason": "No-purchase survivor-aware sample and terminal-value contract not passed."
       },
       {
-        "priority": 4,
+        "barrier_order": 4,
         "class": "earnings/fundamental",
         "ready": false,
         "reason": "Accession PIT data still lacks qualified permanent security mapping and survivor-aware prices."
       },
       {
-        "priority": 5,
+        "barrier_order": 5,
         "class": "high-cost data",
         "ready": false,
         "reason": "Explicit user purchase authorization absent; spend ceiling is USD 0."
       }
     ],
-    "narrowest_next_action": "Complete Lane B XNYS calendar qualification first; if it fails, qualify one existing-data daily ETF input identity before any outcome access."
+    "narrowest_next_action": "Submit this semantic delta for external review; any later source qualification remains outcome-blind and creates no strategy candidate.",
+    "formal_selection_count": 0,
+    "strategy_candidate_available": false,
+    "next_action": "DELTA_EXTERNAL_REVIEW"
   },
   "counts": {
     "input_cards": 91,
-    "retained_unique_cards": 63,
-    "removed_true_variants": 28,
+    "retained_unique_cards": 65,
+    "removed_true_variants": 26,
     "recommendations": {
-      "ADVANCE": 29,
-      "PARK": 32,
+      "ADVANCE_FOR_QUALIFICATION": 8,
+      "PARK": 55,
       "CLOSE": 2
     },
-    "source_binding_records": 63,
-    "complete_source_bindings": 62,
-    "source_evidence_gaps": 1,
-    "finalists": 5
+    "source_binding_records": 65,
+    "source_class_counts": {
+      "EXACT_MECHANISM_SOURCE": 63,
+      "ECONOMIC_PRIOR_ONLY": 1,
+      "OPERATIONAL_ROUTE_ONLY": 0,
+      "SOURCE_GAP": 1
+    },
+    "score_rows": 65,
+    "score_basis_rows": 65,
+    "recommendation_basis_rows": 65,
+    "source_qualification_priorities": 5,
+    "formal_selection_count": 0
   },
   "unresolved_evidence_gaps": [
     {
       "mechanism_id": "USDEM-020",
       "gap": "No mechanism-specific original paper was found for an equal-weight minus cap-weight ETF spread as a broad-versus-concentrated participation state; index mathematics is operational documentation only.",
-      "required_action": "Locate a mechanism-specific original paper or keep PARKED."
+      "required_action": "Run only a bounded mechanism-specific source qualification task or keep PARKED.",
+      "bounded_source_resolution": true
     },
     {
       "scope": "all price-dependent cards",
@@ -3731,35 +4176,1645 @@
     {
       "scope": "high-cost intraday/options/transcript cards",
       "gap": "No provider purchase authorization; spend ceiling remains USD 0."
+    },
+    {
+      "mechanism_id": "USDEM-018",
+      "gap": "Diagnostic estimator, lookback, initialization, shock threshold, provenance, decay estimator, and decay-exit specifications are absent.",
+      "required_action": "Freeze those diagnostic specifications before prospective observation; do not infer a SPY-to-cash, risk-off, alpha, or net risk-adjusted-return claim."
     }
   ],
   "validation": {
     "strict_json": true,
+    "duplicate_keys": 0,
+    "nonfinite_numbers": 0,
     "input_hashes_valid": true,
+    "input_hashes_unchanged": true,
     "target_hash_valid": true,
     "input_card_count": 91,
-    "unique_card_count": 63,
+    "unique_card_count": 65,
+    "removed_true_variant_count": 26,
     "natural_count_range_50_to_100": true,
+    "card_schema_field_count": 18,
     "card_schema_exact": true,
-    "score_row_count": 63,
+    "card_roles_valid": true,
+    "source_classes_valid": true,
+    "source_class_counts_recomputed": true,
+    "nested_source_kind_schema_valid": true,
+    "score_anchor_levels_complete": true,
+    "score_row_count": 65,
+    "score_basis_row_count": 65,
+    "score_values_recomputable_from_basis": true,
     "score_totals_recomputed": true,
     "score_ranges_valid": true,
+    "data_readiness_3_count": 0,
+    "economic_prior_3_requires_independent_source": true,
+    "recommendation_basis_row_count": 65,
+    "recommendations_mechanically_verified": true,
     "duplicate_mechanism_ids": 0,
     "duplicate_economic_mechanisms": 0,
-    "nonfinite_numbers": 0,
     "removal_justifications_complete": true,
     "semantic_independence_reviewed": true,
     "source_binding_record_coverage": true,
-    "source_mechanism_bound_or_gap": true,
     "card_primary_sources_match_bindings": true,
-    "operational_route_coverage": true,
     "tracking_parameters_absent": true,
     "boundary_flags_valid": true,
-    "finalist_count": 5,
-    "finalist_count_at_most_5": true,
-    "finalist_minimum_score_valid": true,
-    "tie_break_order_valid": true,
+    "all_outcome_trading_boundary_flags_false": true,
+    "source_qualification_priority_count": 5,
+    "source_qualification_priority_count_at_most_5": true,
+    "source_qualification_priorities_from_advance_only": true,
+    "m3_excluded_from_priorities": true,
+    "usdem_018_excluded_from_priorities": true,
     "formal_selection_count": 0,
-    "formal_decision_preserved": true
+    "formal_decision_preserved": true,
+    "strategy_candidate_available": false,
+    "next_action_delta_external_review": true,
+    "eof_single_lf": true,
+    "no_index_whitespace_check": true,
+    "git_diff_check": true,
+    "exact_two_file_scope": true
+  },
+  "control": {
+    "github_review_id": 4732598307,
+    "audit_task": "reports/agent_handoff/pr107_atlas_semantic_rework_task_20260720.md",
+    "audit_task_commit": "dbb0ab27db95fa9c239e5420c1d2cbf0f78d6aa4",
+    "reviewed_head": "9f9f0b443260f5d9509971099e73e6d88d272890"
+  },
+  "next_action": "DELTA_EXTERNAL_REVIEW",
+  "fomc_hypothesis_identities": [
+    {
+      "mechanism_id": "USIOT-001",
+      "family_id": "FOMC_SCHEDULED_POLICY_INFORMATION",
+      "hypothesis_id": "PRE_ANNOUNCEMENT_DRIFT",
+      "attempt_history": [
+        "USIOT-001:RESTORED_SEPARATE_PARK"
+      ],
+      "timing_identity": "fixed pre-announcement window ending before the official decision timestamp",
+      "status": "PARK",
+      "terminal_exact_time_contract_reopened": false
+    },
+    {
+      "mechanism_id": "USIOT-002",
+      "family_id": "FOMC_SCHEDULED_POLICY_INFORMATION",
+      "hypothesis_id": "IMMEDIATE_POST_ANNOUNCEMENT_REACTION",
+      "attempt_history": [
+        "USIOT-002:RESTORED_SEPARATE_PARK"
+      ],
+      "timing_identity": "official decision timestamp to regular-session close",
+      "status": "PARK",
+      "terminal_exact_time_contract_reopened": false
+    },
+    {
+      "mechanism_id": "M3_DATE_ANCHORED_NEXT_SESSION_V2",
+      "family_id": "FOMC_SCHEDULED_POLICY_INFORMATION",
+      "hypothesis_id": "NEXT_SESSION_RESPONSE",
+      "attempt_history": [
+        "M3_DATE_ANCHORED_NEXT_SESSION_V2:R1:PARK_PENDING_EXACT_SOURCE_AND_XNYS_IDENTITY"
+      ],
+      "timing_identity": "next accepted XNYS session open to the same session close",
+      "status": "PARK_PENDING_EXACT_SOURCE_AND_XNYS_IDENTITY",
+      "terminal_exact_time_contract_reopened": false
+    }
+  ],
+  "score_basis_format": [
+    "mechanism_id",
+    "economic_prior",
+    "data_readiness",
+    "sample_sufficiency",
+    "USD_40000_execution_fit",
+    "cost_robustness_expectation",
+    "independence_from_closed_lines",
+    "implementation_simplicity",
+    "prospective_observability"
+  ],
+  "score_basis": [
+    {
+      "mechanism_id": "M3_DATE_ANCHORED_NEXT_SESSION_V2",
+      "economic_prior": "EP1_INDIRECT_ANALOGICAL",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-001",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-002",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "M6_MONTHLY_EXPIRATION_RULESPAN_V2",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR0_UNAVAILABLE_OR_PROHIBITED",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "M7_QUARTERLY_EXPIRATION_RULESPAN_V2",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR0_UNAVAILABLE_OR_PROHIBITED",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-002",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-003",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-004",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-005",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-006",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-007",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-010",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS0_INSUFFICIENT_OR_UNKNOWN",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-012",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-013",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-014",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-015",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-016",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO1_SLOW_OR_SPARSE"
+    },
+    {
+      "mechanism_id": "USDEM-017",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO1_SLOW_OR_SPARSE"
+    },
+    {
+      "mechanism_id": "USDEM-018",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF0_NOT_FAITHFULLY_EXECUTABLE",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-019",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO1_SLOW_OR_SPARSE"
+    },
+    {
+      "mechanism_id": "USDEM-020",
+      "economic_prior": "EP0_NO_CREDIBLE_MECHANISM",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-021",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USDEM-022",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-006",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-007",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF0_NOT_FAITHFULLY_EXECUTABLE",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO1_SLOW_OR_SPARSE"
+    },
+    {
+      "mechanism_id": "USIOT-008",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-009",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-010",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-011",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-012",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-013",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR2_ONE_BOUNDED_IDENTITY_OR_JOIN",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "USIOT-015",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO1_SLOW_OR_SPARSE"
+    },
+    {
+      "mechanism_id": "STK_01_52_WEEK_HIGH_PROXIMITY",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_02_INDUSTRY_MOMENTUM_LONG_ONLY",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN1_ADJACENT_GUARD_REQUIRED",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_03_RESIDUAL_MOMENTUM_LONG_ONLY",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN1_ADJACENT_GUARD_REQUIRED",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_04_FIVE_DAY_MARKET_RESIDUAL_REVERSAL",
+      "economic_prior": "EP3_EXACT_PLUS_INDEPENDENT",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_07_LARGE_OVERNIGHT_GAP_REVERSAL",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_08_POST_BREAKOUT_PERSISTENCE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN0_DUPLICATE_OR_RESCUE",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_09_OVERNIGHT_CONTINUATION",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_10_OVERNIGHT_WINNER_INTRADAY_LOSER_INTERACTION",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_11_OPENING_GAP_RESIDUAL_SIGNAL",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR0_FRICTION_LIKELY_DOMINATES",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_12_AMIHUD_ILLIQUIDITY_AVOIDANCE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_13_ABNORMAL_VOLUME_ATTENTION",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_14_TURNOVER_SHOCK_CONDITIONED_ATTENTION",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN1_ADJACENT_GUARD_REQUIRED",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_15_MAX_LOTTERY_AVOIDANCE_LONG_ONLY",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_16_LOW_RESIDUAL_VOLATILITY_LONG_ONLY",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_17_DOWNSIDE_BETA_DEFENSIVE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_18_QUALITY_PLUS_LOW_BETA",
+      "economic_prior": "EP3_EXACT_PLUS_INDEPENDENT",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "STK_22_STOCK_SPLIT_POST_EVENT",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_01_PEAD_TIME_SERIES_SURPRISE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_02_REVENUE_SURPRISE_TIME_SERIES",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_07_FILING_LAG_REPORTING_DELAY",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_10_EARNINGS_ANNOUNCEMENT_PREMIUM",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF1_MATERIAL_CONSTRAINTS",
+      "cost_robustness_expectation": "CR1_PLAUSIBLE_COST_SENSITIVE",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO1_SLOW_OR_SPARSE"
+    },
+    {
+      "mechanism_id": "FND_11_OPEN_MARKET_REPURCHASE_ANNOUNCEMENT",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_12_DIVIDEND_INITIATION",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS1_MARGINAL_OR_CLUSTERED",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_13_DIVIDEND_CUT_OR_OMISSION_AVOIDANCE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_14_SEASONED_EQUITY_OFFERING_AVOIDANCE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_15_NET_EQUITY_ISSUANCE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_16_CLUSTER_INSIDER_PURCHASES",
+      "economic_prior": "EP3_EXACT_PLUS_INDEPENDENT",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_20_INSIDER_TRANSACTION_TO_FILING_LAG",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN1_ADJACENT_GUARD_REQUIRED",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_21_GROSS_PROFITABILITY",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_22_ASSET_GROWTH",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS1_NARROW_EXISTING_ARCHITECTURE",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_23_ACCRUALS_QUALITY",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_24_BALANCE_SHEET_SAFETY_QUALITY_VALUE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    },
+    {
+      "mechanism_id": "FND_25_MATERIAL_WEAKNESS_DISCLOSURE_AVOIDANCE",
+      "economic_prior": "EP2_EXACT_TRANSLATION_OR_STRONG_PRIOR",
+      "data_readiness": "DR1_PAID_MULTISYSTEM_OR_MAJOR_GAP",
+      "sample_sufficiency": "SS2_CLEARLY_EXCEEDS_MINIMUM",
+      "USD_40000_execution_fit": "EF2_LIQUID_UNLEVERED_WHOLE_SHARE",
+      "cost_robustness_expectation": "CR2_LOW_TURNOVER_OR_LARGE_PRIOR",
+      "independence_from_closed_lines": "IN2_DISTINCT_SOURCE_AND_SIGNAL",
+      "implementation_simplicity": "IS0_NEW_OR_HIGH_COMPLEXITY_STACK",
+      "prospective_observability": "PO2_FREQUENT_OBJECTIVE_TIMESTAMPS"
+    }
+  ],
+  "recommendation_rule": {
+    "evaluation_order": [
+      "DIAGNOSTIC_ONLY => PARK",
+      "duplicate_or_rescue => CLOSE",
+      "SOURCE_GAP with bounded_source_resolution=false => CLOSE",
+      "USD_40000_execution_fit=0 => CLOSE",
+      "data_readiness<=1 => PARK",
+      "implementation_simplicity=0 => PARK",
+      "economic_prior<=1 => PARK",
+      "unresolved_source_mismatch=true => PARK",
+      "otherwise total>=11 and no source gap and outcome_access=false => ADVANCE_FOR_QUALIFICATION",
+      "otherwise => PARK"
+    ],
+    "advance_threshold": 11,
+    "unknown_disposition": "PARK",
+    "strategy_candidate_created": false
+  },
+  "recommendation_basis": [
+    {
+      "mechanism_id": "M3_DATE_ANCHORED_NEXT_SESSION_V2",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "ECONOMIC_PRIOR_ONLY",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "economic_prior<=1",
+        "unresolved_source_mismatch=true"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-001",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-002",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 10,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "M6_MONTHLY_EXPIRATION_RULESPAN_V2",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "M7_QUARTERLY_EXPIRATION_RULESPAN_V2",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-002",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 15,
+      "recommendation": "ADVANCE_FOR_QUALIFICATION",
+      "rule_code": "ADVANCE_THRESHOLD_NO_GAP_NO_OUTCOME",
+      "reasons": [
+        "total>=11",
+        "no_source_gap",
+        "outcome_access=false"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-003",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 15,
+      "recommendation": "ADVANCE_FOR_QUALIFICATION",
+      "rule_code": "ADVANCE_THRESHOLD_NO_GAP_NO_OUTCOME",
+      "reasons": [
+        "total>=11",
+        "no_source_gap",
+        "outcome_access=false"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-004",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 15,
+      "recommendation": "ADVANCE_FOR_QUALIFICATION",
+      "rule_code": "ADVANCE_THRESHOLD_NO_GAP_NO_OUTCOME",
+      "reasons": [
+        "total>=11",
+        "no_source_gap",
+        "outcome_access=false"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-005",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-006",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "ADVANCE_FOR_QUALIFICATION",
+      "rule_code": "ADVANCE_THRESHOLD_NO_GAP_NO_OUTCOME",
+      "reasons": [
+        "total>=11",
+        "no_source_gap",
+        "outcome_access=false"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-007",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "ADVANCE_FOR_QUALIFICATION",
+      "rule_code": "ADVANCE_THRESHOLD_NO_GAP_NO_OUTCOME",
+      "reasons": [
+        "total>=11",
+        "no_source_gap",
+        "outcome_access=false"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-010",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "ADVANCE_FOR_QUALIFICATION",
+      "rule_code": "ADVANCE_THRESHOLD_NO_GAP_NO_OUTCOME",
+      "reasons": [
+        "total>=11",
+        "no_source_gap",
+        "outcome_access=false"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-012",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-013",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-014",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-015",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-016",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-017",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "ADVANCE_FOR_QUALIFICATION",
+      "rule_code": "ADVANCE_THRESHOLD_NO_GAP_NO_OUTCOME",
+      "reasons": [
+        "total>=11",
+        "no_source_gap",
+        "outcome_access=false"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-018",
+      "card_role": "DIAGNOSTIC_ONLY",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_DIAGNOSTIC_ONLY",
+      "reasons": [
+        "DIAGNOSTIC_ONLY"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-019",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-020",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "SOURCE_GAP",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_BOUNDED_SOURCE_GAP",
+      "reasons": [
+        "SOURCE_GAP",
+        "bounded_source_resolution=true"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-021",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "ADVANCE_FOR_QUALIFICATION",
+      "rule_code": "ADVANCE_THRESHOLD_NO_GAP_NO_OUTCOME",
+      "reasons": [
+        "total>=11",
+        "no_source_gap",
+        "outcome_access=false"
+      ]
+    },
+    {
+      "mechanism_id": "USDEM-022",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-006",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 10,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-007",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 8,
+      "recommendation": "CLOSE",
+      "rule_code": "CLOSE_EXECUTION_FIT_ZERO",
+      "reasons": [
+        "USD_40000_execution_fit=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-008",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-009",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 10,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-010",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 10,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-011",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 10,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-012",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-013",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "USIOT-015",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 10,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "STK_01_52_WEEK_HIGH_PROXIMITY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_02_INDUSTRY_MOMENTUM_LONG_ONLY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_03_RESIDUAL_MOMENTUM_LONG_ONLY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "STK_04_FIVE_DAY_MARKET_RESIDUAL_REVERSAL",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_07_LARGE_OVERNIGHT_GAP_REVERSAL",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 10,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "STK_08_POST_BREAKOUT_PERSISTENCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "CLOSE",
+      "rule_code": "CLOSE_DUPLICATE_OR_RESCUE",
+      "reasons": [
+        "closed_lineage_duplicate_or_rescue"
+      ]
+    },
+    {
+      "mechanism_id": "STK_09_OVERNIGHT_CONTINUATION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_10_OVERNIGHT_WINNER_INTRADAY_LOSER_INTERACTION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 9,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "STK_11_OPENING_GAP_RESIDUAL_SIGNAL",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_12_AMIHUD_ILLIQUIDITY_AVOIDANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_13_ABNORMAL_VOLUME_ATTENTION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_14_TURNOVER_SHOCK_CONDITIONED_ATTENTION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 11,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_15_MAX_LOTTERY_AVOIDANCE_LONG_ONLY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_16_LOW_RESIDUAL_VOLATILITY_LONG_ONLY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "STK_17_DOWNSIDE_BETA_DEFENSIVE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "STK_18_QUALITY_PLUS_LOW_BETA",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "STK_22_STOCK_SPLIT_POST_EVENT",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "FND_01_PEAD_TIME_SERIES_SURPRISE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "FND_02_REVENUE_SURPRISE_TIME_SERIES",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 12,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "FND_07_FILING_LAG_REPORTING_DELAY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "FND_10_EARNINGS_ANNOUNCEMENT_PREMIUM",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 10,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "FND_11_OPEN_MARKET_REPURCHASE_ANNOUNCEMENT",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "FND_12_DIVIDEND_INITIATION",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "FND_13_DIVIDEND_CUT_OR_OMISSION_AVOIDANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "FND_14_SEASONED_EQUITY_OFFERING_AVOIDANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "FND_15_NET_EQUITY_ISSUANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "FND_16_CLUSTER_INSIDER_PURCHASES",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 15,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "FND_20_INSIDER_TRANSACTION_TO_FILING_LAG",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "FND_21_GROSS_PROFITABILITY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "FND_22_ASSET_GROWTH",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 14,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1"
+      ]
+    },
+    {
+      "mechanism_id": "FND_23_ACCRUALS_QUALITY",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "FND_24_BALANCE_SHEET_SAFETY_QUALITY_VALUE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    },
+    {
+      "mechanism_id": "FND_25_MATERIAL_WEAKNESS_DISCLOSURE_AVOIDANCE",
+      "card_role": "TRADABLE_HYPOTHESIS",
+      "source_class": "EXACT_MECHANISM_SOURCE",
+      "total": 13,
+      "recommendation": "PARK",
+      "rule_code": "PARK_RULE_CONDITION",
+      "reasons": [
+        "data_readiness<=1",
+        "implementation_simplicity=0"
+      ]
+    }
+  ],
+  "source_qualification_priorities": {
+    "purpose": "Outcome-blind source qualification ordering only; not finalists, selections, or strategy candidates.",
+    "eligibility": "deterministic recommendation=ADVANCE_FOR_QUALIFICATION",
+    "ordering": [
+      "total descending",
+      "data_readiness descending",
+      "prospective_observability descending",
+      "implementation_simplicity descending",
+      "mechanism_id ascending"
+    ],
+    "maximum_records": 5,
+    "priorities": [
+      {
+        "priority": 1,
+        "mechanism_id": "USDEM-002",
+        "score": 15
+      },
+      {
+        "priority": 2,
+        "mechanism_id": "USDEM-003",
+        "score": 15
+      },
+      {
+        "priority": 3,
+        "mechanism_id": "USDEM-004",
+        "score": 15
+      },
+      {
+        "priority": 4,
+        "mechanism_id": "USDEM-006",
+        "score": 14
+      },
+      {
+        "priority": 5,
+        "mechanism_id": "USDEM-007",
+        "score": 14
+      }
+    ]
   }
 }
