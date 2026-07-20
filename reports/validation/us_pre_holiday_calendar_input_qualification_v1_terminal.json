@@ -1,0 +1,209 @@
+{
+  "schema_version": "1.0",
+  "artifact_id": "US_PRE_HOLIDAY_CALENDAR_INPUT_QUALIFICATION_V1_TERMINAL_20260720",
+  "as_of_date": "2026-07-20",
+  "mechanism": {
+    "mechanism_id": "USDEM-006",
+    "title": "US pre-holiday return premium",
+    "atlas_priority_at_selection": 2,
+    "atlas_score": 14,
+    "controlling_atlas": {
+      "path": "reports/validation/us_official_data_mechanism_discovery_atlas_r1.json",
+      "sha256": "4db67996f17455ff9c34903cb61b92ffde4393286bd58d6a6ff69a37ddd78a73"
+    }
+  },
+  "terminal_adjudication": {
+    "status": "PARKED_INPUT_BLOCKED",
+    "classification": "OUTCOME_FREE_PARTIAL_INPUT_EVIDENCE_NO_CONSUMER",
+    "reason": "The frozen 2010-01-01 through 2026-06-30 XNYS calendar contract cannot be completed from the currently recovered primary evidence without substituting comparable-market calendars, secondary mirrors, or an unsupported absence claim for ad-hoc events.",
+    "outcome_execution_authorized": false,
+    "price_join_authorized": false,
+    "strategy_candidate_available": false
+  },
+  "frozen_input_contract": {
+    "market_calendar": "XNYS",
+    "start_date": "2010-01-01",
+    "end_date": "2026-06-30",
+    "period_shortening_allowed": false,
+    "required_identities": [
+      "scheduled_full-day closures",
+      "scheduled early closes",
+      "ad-hoc full-day closures",
+      "ad-hoc delayed opens and nonstandard closes",
+      "historically controlling rule version",
+      "session immediately preceding each scheduled holiday"
+    ]
+  },
+  "previous_pull_request": {
+    "number": 108,
+    "head": "9f3fe7ee6a1b15d448e8157e192d8e46634c8d94",
+    "tree": "4dd137692836c2b0e70b360f15742786f1839121",
+    "review_id": 4734812927,
+    "review_disposition": "DO_NOT_MERGE_CURRENT_HEAD",
+    "recorded_summary": {
+      "scheduled_candidates": 152,
+      "accepted_candidates": 45,
+      "blocked_candidates": 107,
+      "accepted_period": "2022-01-01 through 2026-06-30",
+      "blocked_period": "2010-01-01 through 2021-12-31"
+    },
+    "current_disposition": "CLOSE_WITHOUT_MERGE_AFTER_THIS_TERMINAL_RECORD_IS_INDEPENDENTLY_REVIEWED"
+  },
+  "source_completion_summary": [
+    {
+      "period": "2010-2011",
+      "status": "PARTIAL_OFFICIAL_CORROBORATION_ONLY",
+      "finding": "Official Nasdaq annual calendars and early-close notices were recovered, but direct or archived NYSE annual source bytes and a complete NYSE ad-hoc-event registry were not recovered. Comparable-market evidence cannot replace the frozen XNYS identity."
+    },
+    {
+      "period": "2012-2013",
+      "status": "PARTIAL_OFFICIAL_CORROBORATION_ONLY",
+      "finding": "Official SEC/NYSE material supports scheduled early closes and the Hurricane Sandy closure, but the complete annual NYSE calendars remain available only through a news-release mirror and ad-hoc completeness is not established."
+    },
+    {
+      "period": "2014-2021",
+      "status": "DIRECT_OFFICIAL_ROUTES_LOCATED_NOT_MATERIALIZED_HERE",
+      "finding": "ICE/NYSE official archive pages cover the annual holiday and early-close schedules, and an official ICE notice covers the 2018 Bush closure. These discoveries do not cure the unresolved earlier years or create a consumer-ready dataset."
+    },
+    {
+      "period": "2022-2026H1",
+      "status": "PARTIAL_INPUT_EVIDENCE_RECORDED_IN_UNMERGED_PR_108",
+      "finding": "PR 108 records 45 accepted candidates for this period, but its eight-file implementation bundle is intentionally not merged and no strategy consumer is authorized."
+    }
+  ],
+  "source_role_corrections": [
+    {
+      "source": "NYSE Rule 51 emergency authority",
+      "correct_role": "CONTEXT_ONLY_EMERGENCY_CLOSURE",
+      "prohibited_role": "SCHEDULED_HOLIDAY_CONTROLLER"
+    },
+    {
+      "source": "2017 NYSE Pillar Rule 7.2",
+      "correct_role_for_2010_2016": "CONTEXT_ONLY",
+      "prohibited_role": "HISTORICAL_CONTROLLING_RULE_FOR_PRE_EFFECTIVE_YEARS"
+    }
+  ],
+  "source_observations": [
+    {
+      "source_id": "NASDAQ_2010_ANNUAL_CALENDAR",
+      "url": "https://nasdaqtrader.com/TraderNews.aspx?id=dn2009-041",
+      "source_class": "DIRECT_OFFICIAL_COMPARABLE_MARKET",
+      "use": "CORROBORATION_ONLY"
+    },
+    {
+      "source_id": "NASDAQ_2010_EARLY_CLOSE",
+      "url": "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2010-73",
+      "source_class": "DIRECT_OFFICIAL_COMPARABLE_MARKET",
+      "use": "CORROBORATION_ONLY"
+    },
+    {
+      "source_id": "NASDAQ_2011_ANNUAL_CALENDAR",
+      "url": "https://www.nasdaqtrader.com/TraderNews.aspx?id=dn2010-030",
+      "source_class": "DIRECT_OFFICIAL_COMPARABLE_MARKET",
+      "use": "CORROBORATION_ONLY"
+    },
+    {
+      "source_id": "NASDAQ_2011_EARLY_CLOSE",
+      "url": "https://www.nasdaqtrader.com/TraderNews.aspx?id=ETA2011-54",
+      "source_class": "DIRECT_OFFICIAL_COMPARABLE_MARKET",
+      "use": "CORROBORATION_ONLY"
+    },
+    {
+      "source_id": "NYSE_2010_2011_CALENDAR_MIRROR",
+      "url": "https://www.streetinsider.com/Insiders%2BBlog/NYSE%2BReleases%2B2010%2Band%2B2011%2BHoliday%2BCalendar/4915576.html",
+      "source_class": "SECONDARY_LOCATOR_ONLY",
+      "use": "NOT_QUALIFYING"
+    },
+    {
+      "source_id": "SEC_NYSE_2012_2014_EARLY_CLOSE_RULE",
+      "url": "https://www.sec.gov/rules/sro/nyse/2012/34-68243.pdf",
+      "source_class": "DIRECT_OFFICIAL_REGULATORY",
+      "use": "PARTIAL_EVENT_IDENTITY_ONLY"
+    },
+    {
+      "source_id": "SEC_NYSE_ARCA_2012_SANDY_CLOSURE",
+      "url": "https://www.sec.gov/rules/sro/nysearca/2013/34-70097.pdf",
+      "source_class": "DIRECT_OFFICIAL_REGULATORY",
+      "use": "PARTIAL_AD_HOC_EVENT_IDENTITY_ONLY"
+    },
+    {
+      "source_id": "NYSE_2012_2013_CALENDAR_MIRROR",
+      "url": "https://hk.marketscreener.com/quote/stock/NYSE-EURONEXT-13866/news/NYSE-EURO-NYSE-Euronext-NYX-Announces-its-2012-and-2013-Holiday-Calendar-and-Early-Closings-for-13533281/",
+      "source_class": "SECONDARY_NEWS_RELEASE_MIRROR",
+      "use": "NOT_QUALIFYING"
+    },
+    {
+      "source_id": "ICE_NYSE_2014_2015_CALENDAR",
+      "url": "https://ir.theice.com/press/news-details/2013/NYSE-Euronext-Announces-2015-Holiday-Calendar-and-Early-Closings/default.aspx",
+      "source_class": "DIRECT_OFFICIAL_ISSUER_ARCHIVE",
+      "use": "PERIOD_ROUTE_RESOLVED_NOT_MATERIALIZED_IN_THIS_ARTIFACT"
+    },
+    {
+      "source_id": "ICE_NYSE_2015_2016_CALENDAR",
+      "url": "https://ir.theice.com/press/news-details/2014/NYSE-Group-2016-Holiday-Calendar-and-Early-Closings/default.aspx",
+      "source_class": "DIRECT_OFFICIAL_ISSUER_ARCHIVE",
+      "use": "PERIOD_ROUTE_RESOLVED_NOT_MATERIALIZED_IN_THIS_ARTIFACT"
+    },
+    {
+      "source_id": "ICE_NYSE_2016_2017_CALENDAR",
+      "url": "https://ir.theice.com/press/news-details/2016/NYSE-Group-Announces-2017-Holiday-and-Early-Closings-Calendar/default.aspx",
+      "source_class": "DIRECT_OFFICIAL_ISSUER_ARCHIVE",
+      "use": "PERIOD_ROUTE_RESOLVED_NOT_MATERIALIZED_IN_THIS_ARTIFACT"
+    },
+    {
+      "source_id": "ICE_NYSE_2017_2019_CALENDAR",
+      "url": "https://ir.theice.com/press/news-details/2016/NYSE-Group-announces-2018-and-2019-holiday-and-early-closings-calendar/default.aspx",
+      "source_class": "DIRECT_OFFICIAL_ISSUER_ARCHIVE",
+      "use": "PERIOD_ROUTE_RESOLVED_NOT_MATERIALIZED_IN_THIS_ARTIFACT"
+    },
+    {
+      "source_id": "ICE_NYSE_2018_2020_CALENDAR",
+      "url": "https://ir.theice.com/press/news-details/2017/NYSE-Group-Announces-2018-2019-and-2020-Holiday-and-Early-Closings-Calendar/default.aspx",
+      "source_class": "DIRECT_OFFICIAL_ISSUER_ARCHIVE",
+      "use": "PERIOD_ROUTE_RESOLVED_NOT_MATERIALIZED_IN_THIS_ARTIFACT"
+    },
+    {
+      "source_id": "ICE_NYSE_2019_2021_CALENDAR",
+      "url": "https://ir.theice.com/press/news-details/2018/NYSE-Group-Announces-2019-2020-and-2021-Holiday-and-Early-Closings-Calendar/default.aspx",
+      "source_class": "DIRECT_OFFICIAL_ISSUER_ARCHIVE",
+      "use": "PERIOD_ROUTE_RESOLVED_NOT_MATERIALIZED_IN_THIS_ARTIFACT"
+    },
+    {
+      "source_id": "ICE_NYSE_2018_BUSH_CLOSURE",
+      "url": "https://ir.theice.com/press/news-details/2018/New-York-Stock-Exchange-to-Honor-President-George-H-W-Bush/default.aspx",
+      "source_class": "DIRECT_OFFICIAL_ISSUER_ARCHIVE",
+      "use": "PERIOD_ROUTE_RESOLVED_NOT_MATERIALIZED_IN_THIS_ARTIFACT"
+    }
+  ],
+  "unresolved_blockers": [
+    "No direct or archived NYSE annual calendar source bytes were recovered for 2010 and 2011.",
+    "The complete 2012 and 2013 annual NYSE holiday calendars remain supported only by a secondary news-release mirror.",
+    "No official, complete 2010-2013 register of ad-hoc full-day closures, delayed opens, and nonstandard closes was recovered.",
+    "Absence of an event cannot be inferred merely because no additional event was found in a bounded search.",
+    "The frozen XNYS period cannot be shortened and comparable-market Nasdaq calendars cannot silently replace XNYS identity."
+  ],
+  "disposition": {
+    "pr_108_merge_allowed": false,
+    "close_pr_108_without_merge": true,
+    "retain_pr_108_as_historical_partial_evidence": true,
+    "consumer_implementation_retained": false,
+    "outcome_run_consumed": false,
+    "reopen_conditions": [
+      "Recover direct or independently archived NYSE source bytes for the unresolved annual calendars.",
+      "Establish official ad-hoc event completeness for every unresolved year.",
+      "Freeze historically effective source roles without back-applying later rules.",
+      "Submit a new compact source package for exact-head external review before any price join."
+    ],
+    "next_atlas_mechanism": "USDEM-004",
+    "next_action": "EXTERNAL_REVIEW_THIS_TERMINAL_PARKING_RECORD_BEFORE_OPENING_THE_NEXT_OUTCOME_BLIND_MECHANISM"
+  },
+  "boundaries": {
+    "network_or_provider_ingestion_performed_by_this_artifact": false,
+    "database_cache_or_raw_write_performed": false,
+    "price_or_return_data_accessed": false,
+    "strategy_outcome_opened": false,
+    "strategy_implementation_added": false,
+    "candidate_or_recommendation_created": false,
+    "broker_order_paper_live_or_auto_path_touched": false
+  }
+}
