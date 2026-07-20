@@ -1,0 +1,32 @@
+{
+  "artifacts": {
+    "bls_m4_m5_identity_qualification.json": "e02a34f05a4ce72a30a22e7ffaa4e8abb687746fcbbe0dbc2b3de721e40de0aa",
+    "expiration_m6_m7_identity_qualification.json": "5f9c25f1aa63b329f1ffd8630c78335558c52b85dccb5d9f3d0e0da7b453c781",
+    "fomc_m3_identity_qualification.json": "ca067e82413a17b621fa016e3da9a014dbf87ff9725fe6d308c71e807cec0804",
+    "xnys_exception_qualification.json": "087b5bd00131a4bf463269a8c001328ddc2c827eabf80a44099de740b47e871d"
+  },
+  "development_atlas_execution_authorized": false,
+  "lane_b_input_qualified": false,
+  "mechanisms": {
+    "M3": "INPUT_BLOCKED_NONTERMINAL",
+    "M4": "INPUT_BLOCKED_NONTERMINAL",
+    "M5": "INPUT_BLOCKED_NONTERMINAL",
+    "M6": "INPUT_BLOCKED_NONTERMINAL",
+    "M7": "INPUT_BLOCKED_NONTERMINAL"
+  },
+  "next_action": "Fresh exact-head input review only. Price, return and Development access remain closed.",
+  "official_source_manifest": {
+    "path": "reports/validation/us_scheduled_event_lane_b_r3/official_source_manifest.json",
+    "sha256": "8a8498c4552db34c7a7304656b76670348a0c89a2781fc163340a196463e109d"
+  },
+  "price_or_return_access_authorized": false,
+  "repository": {
+    "base_commit": "7222b0ca5ee53fb61cee7e4d85ba4a8525c61c52",
+    "base_tree": "be3639a3f4fb6cd67e4a59742bd81f5c7202eac1"
+  },
+  "schema_version": "lane-b-official-identity-joint-qualification-r3",
+  "status": "PARTIAL_OFFICIAL_IDENTITY_MATERIALIZATION_INPUT_BLOCKED_NO_OUTCOME",
+  "strategy_candidate_available": false,
+  "task_id": "US_SCHEDULED_EVENT_LANE_B_OFFICIAL_IDENTITY_MATERIALIZATION_R3",
+  "xnys_calendar_identity_qualified": false
+}
