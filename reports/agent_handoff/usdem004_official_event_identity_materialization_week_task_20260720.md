@@ -34,6 +34,33 @@ use_surprise_sign=false
 use_revision_values=false
 ```
 
+The literature estimand is not yet an executable SPY whole-share account. Do not translate it into an order ledger during this task.
+
+## Two event states must remain separate
+
+Each candidate must preserve both:
+
+```text
+source_replication_event
+ex_ante_trade_event
+```
+
+Definitions:
+
+- `source_replication_event=true` only when an actual qualifying announcement occurred on the accepted event date under the exact source taxonomy.
+- `ex_ante_trade_event=true` only when the then-applicable event date was public by the prior-session decision cutoff, regardless of whether a later cancellation or reschedule was announced after that cutoff.
+
+These sets may differ.
+
+Examples:
+
+- Revised date published before the cutoff and actual release occurs: both true.
+- Revised date visible only later and not proven known by the cutoff: `source_replication_event=true`, `ex_ante_trade_event=false`, disposition `EXCLUDE_NOT_KNOWN_BY_CUTOFF` for the ex-ante lane.
+- Cancellation announced after the prior-session cutoff: actual replication event may be false, but the ex-ante trade state that existed at the cutoff must remain recorded. Do not erase it with future information.
+- Cancellation announced before the cutoff: both the canceled actual event and the no-trade ex-ante state remain explicit.
+
+No later artifact may collapse these states into one hindsight-cleaned event list.
+
 ## Frozen decision cutoff
 
 Use:
@@ -73,6 +100,9 @@ actual_release_at
 timezone
 status
 cancellation_published_at
+source_replication_event
+ex_ante_trade_event
+ex_ante_schedule_state_at_cutoff
 source_url
 source_sha256
 retrieved_at
@@ -86,6 +116,20 @@ exclusion_reason
 ```
 
 Use UTC timestamps plus an explicit `America/New_York` display field. Do not store naive timestamps.
+
+Required terminal row dispositions include, where applicable:
+
+```text
+ACCEPTED_BOTH_STATES
+REPLICATION_ONLY_NOT_KNOWN_BY_CUTOFF
+EX_ANTE_ONLY_CANCELED_OR_RESCHEDULED_AFTER_CUTOFF
+CANCELED_KNOWN_BEFORE_CUTOFF
+EXCLUDE_NONTRADING_RELEASE
+EXCLUDE_UNSCHEDULED_FOMC
+BLOCKED_SOURCE_AVAILABILITY
+```
+
+Once every candidate has a deterministic row-level disposition, a small set of causally excluded events does not by itself keep the entire table blocked.
 
 ## FOMC rules
 
@@ -117,9 +161,11 @@ For Employment Situation and PPI:
 - use official release archives and annual schedules;
 - use the immediately prior release footer when it gives the next release date and time;
 - record cancellations explicitly;
-- record delayed releases under their revised dates only when the revision was officially published by the decision cutoff;
+- record delayed releases under their revised dates only when the revision was officially published by the decision cutoff for the ex-ante lane;
+- preserve actual release identity separately for the replication lane;
 - never treat a later mutable schedule page as proof of prior availability without a dated notice or archived official version;
-- keep the 2025 lapse rows blocked when prior knowledge cannot be proven.
+- classify a revised date without prior-cutoff proof as `REPLICATION_ONLY_NOT_KNOWN_BY_CUTOFF`, not as a globally missing event;
+- keep the 2025 lapse rows blocked only when neither event state can be deterministically resolved.
 
 Primary routes:
 
@@ -135,9 +181,11 @@ When two or three allowed families fall on the same accepted XNYS session:
 
 - create one `collision_group_id`;
 - retain all family labels in sorted order;
-- count one event day for later research;
+- count one event day within each event-state lane;
 - do not choose a dominant family;
 - do not inspect any return to resolve collisions.
+
+A collision may have different membership in the replication and ex-ante lanes when one family's revised date was not known by the cutoff.
 
 ## XNYS mapping
 
@@ -179,6 +227,19 @@ Preferred compact package:
 
 Large source material and disposable scripts stay outside Git.
 
+The summary must report counts separately for:
+
+```text
+source_replication_event
+ex_ante_trade_event
+both states
+replication only
+ex-ante only
+canceled before cutoff
+canceled after cutoff
+blocked
+```
+
 ## Allowed terminal statuses
 
 ```text
@@ -191,8 +252,8 @@ TERMINAL_DATA_UNAVAILABLE_WITHIN_BOUND
 
 - all years complete;
 - all three families complete under the frozen taxonomy;
-- every accepted event causally scheduled before the cutoff;
-- all cancellations and reschedules reconciled;
+- every candidate has a terminal row-level disposition in both event states;
+- all cancellations and reschedules reconciled without hindsight;
 - all event-local XNYS mappings resolved;
 - zero duplicate event IDs;
 - zero nonfinite or naive timestamps;
@@ -203,7 +264,7 @@ TERMINAL_DATA_UNAVAILABLE_WITHIN_BOUND
 
 Maximum active effort: five working days.
 
-If the 2025 BLS prior-availability chain or any other year cannot be resolved within the bound, return `INPUT_BLOCKED_NONTERMINAL`. Do not extend the search indefinitely.
+If a source chain cannot be resolved within the bound, return `INPUT_BLOCKED_NONTERMINAL`. Do not extend the search indefinitely.
 
 ## Prohibitions
 
@@ -217,7 +278,8 @@ Do not:
 - add event families;
 - use Internet Archive or third-party calendars as controlling evidence without separately labeling them non-qualifying;
 - change the research period;
-- silently drop difficult years or events.
+- silently drop difficult years or events;
+- use later cancellation or reschedule knowledge to rewrite the ex-ante state.
 
 ## Callback
 
@@ -225,10 +287,16 @@ Do not:
 BATCH=USDEM004_OFFICIAL_EVENT_IDENTITY_WEEK_20260720
 STATUS=
 EVENT_ROWS_TOTAL=
-ACCEPTED_ROWS=
+SOURCE_REPLICATION_EVENT_COUNT=
+EX_ANTE_TRADE_EVENT_COUNT=
+BOTH_STATE_COUNT=
+REPLICATION_ONLY_COUNT=
+EX_ANTE_ONLY_COUNT=
 BLOCKED_ROWS=
-CANCELED_ROWS=
-COLLISION_DAYS=
+CANCELED_BEFORE_CUTOFF=
+CANCELED_AFTER_CUTOFF=
+COLLISION_DAYS_REPLICATION=
+COLLISION_DAYS_EX_ANTE=
 COMPLETE_YEARS=
 FOMC_STATUS=
 EMPLOYMENT_STATUS=
