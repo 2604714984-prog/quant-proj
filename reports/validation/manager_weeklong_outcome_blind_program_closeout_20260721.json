@@ -1,0 +1,176 @@
+{
+  "schema_version": "manager-weeklong-closeout-v1",
+  "batch": "MANAGER_WEEKLONG_AUTONOMOUS_PROGRAM_AFTER_PR110_20260720",
+  "as_of_date": "2026-07-21",
+  "status": "A_G_TERMINAL_OR_BLOCKED_AWAITING_ONE_FINAL_EXTERNAL_REVIEW",
+  "repository": "2604714984-prog/quant-proj",
+  "canonical_base_before_program": "00e141c08082d389d4bafc89b894cd3e91699bd2",
+  "canonical_end": "6751fa4f3acf30e41a06cb6f90c0d8c50abdc095",
+  "control_bundle": {
+    "pr": 111,
+    "head": "037827f85becec1c706c679402a313fcf23922fc",
+    "tree": "f58c233c935227c84ccc455530e0d1e819a212dd",
+    "state": "DRAFT_DO_NOT_MERGE",
+    "narrow_rework_external_review": "https://github.com/2604714984-prog/quant-proj/pull/111#pullrequestreview-4737394860",
+    "final_delta_review_request": "https://github.com/2604714984-prog/quant-proj/pull/111#issuecomment-5028071280",
+    "final_disposition": "CLOSE_WITHOUT_MERGE_AFTER_THIS_CLOSEOUT_IS_EXTERNALLY_ACCEPTED"
+  },
+  "canonical_merges": [
+    {
+      "pr": 110,
+      "reviewed_head": "783059c6e4176af87de7de3f8f80c29e05083031",
+      "merge_commit": "e9f9aaa2b9f7f6dc5807150d3ef6da0fe1a4e787",
+      "files": 1,
+      "insertions": 213,
+      "deletions": 0
+    },
+    {
+      "pr": 112,
+      "reviewed_head": "8b7ae7a43140edf4980f75e533c366c9caae4ae3",
+      "merge_commit": "6751fa4f3acf30e41a06cb6f90c0d8c50abdc095",
+      "files": 2,
+      "insertions": 261,
+      "deletions": 0,
+      "external_review": "https://github.com/2604714984-prog/quant-proj/pull/112#issuecomment-5025195125"
+    }
+  ],
+  "workstreams": [
+    {
+      "id": "A_USDEM004_EVENT_IDENTITY",
+      "status": "PARKED_INPUT_BLOCKED_ATTEMPT_TERMINAL",
+      "input_state": "INPUT_BLOCKED_NONTERMINAL",
+      "strategy_result": "NOT_OPENED",
+      "artifacts": [
+        {
+          "url": "https://github.com/2604714984-prog/quant-proj/blob/6751fa4f3acf30e41a06cb6f90c0d8c50abdc095/reports/validation/us_macro_announcement_premium_input_qualification_v1.json",
+          "sha256": "69a4a32b6ad583e0c35407436cb74b7fcfd6ff0cedffd6135d9e3c0fd69f4b03"
+        },
+        {
+          "url": "https://github.com/2604714984-prog/quant-proj/blob/6751fa4f3acf30e41a06cb6f90c0d8c50abdc095/reports/validation/us_macro_announcement_event_identity_attempt_terminal_v1.json",
+          "sha256": "43acc548962eecdb058299c043a11c3e6c84f3ef01db8c5e1fa384f16bbf2d94"
+        },
+        {
+          "url": "https://github.com/2604714984-prog/quant-proj/blob/6751fa4f3acf30e41a06cb6f90c0d8c50abdc095/reports/validation/us_macro_announcement_event_identity_source_manifest_v1.json",
+          "sha256": "2c317d83b1c37a2780b77706ef689d0c946ec464689ab41fa62c874130be870f"
+        }
+      ]
+    },
+    {
+      "id": "B_MACRO_PROVENANCE_VERIFIER",
+      "status": "VALID_EXTERNAL_EXACT_HEAD_REVIEW",
+      "artifact": "NO_SEPARATE_ARTIFACT_PR112_CONVERSATION_IS_CONTROLLING_RECEIPT",
+      "receipt_url": "https://github.com/2604714984-prog/quant-proj/pull/112#issuecomment-5025195125",
+      "reviewed_head": "8b7ae7a43140edf4980f75e533c366c9caae4ae3"
+    },
+    {
+      "id": "C_SURVIVOR_AWARE_STOCK_DATA_READINESS",
+      "status": "DATA_BLOCKED_SURVIVOR_OR_TERMINAL_VALUE",
+      "commit": "ec3027b73fb74947c3173776fd7b383cad3f3814",
+      "tree": "11021259b266a6710fb345967870cd4fe62cc1e3",
+      "artifact_url": "https://github.com/2604714984-prog/quant-proj/blob/ec3027b73fb74947c3173776fd7b383cad3f3814/reports/validation/us_survivor_aware_data_readiness_week_20260721.md",
+      "artifact_sha256": "ffb1f7b439b8fdc7db6b0b61e78ec4d67e0c4e931e25b317d2c92305cbdee1df",
+      "independent_acceptance": "VALID"
+    },
+    {
+      "id": "D_SEC_DATA_READINESS",
+      "status": "FIELD_OR_AMENDMENT_IDENTITY_BLOCKED",
+      "commit": "a19182e7fbe3eff5a5a48faff187205d40680340",
+      "tree": "19a5d0b3af4c52ecb6e4ec71424d9f97d46ee0de",
+      "artifact_url": "https://github.com/2604714984-prog/quant-proj/blob/a19182e7fbe3eff5a5a48faff187205d40680340/reports/validation/us_sec_data_readiness_week_20260721.md",
+      "artifact_sha256": "feebedddd6e9c888691e03e58c5a485cd32b4c863e328410127686cf020f07b7",
+      "independent_acceptance": "VALID"
+    },
+    {
+      "id": "E_HIGH_COST_DATA_NO_PURCHASE_SCOUT",
+      "status": "COMPLETE_NO_PURCHASE_MARKET_MAP",
+      "commit": "9cb339f055fbc712a8922539fbaa40cbe6603353",
+      "tree": "05d4e641b4db006273a3f6e22e84b3f3cef41438",
+      "artifact_url": "https://github.com/2604714984-prog/quant-proj/blob/9cb339f055fbc712a8922539fbaa40cbe6603353/reports/validation/us_high_cost_data_no_purchase_scout_week_20260721.md",
+      "artifact_sha256": "fe34be6f8cbad9c0fab4a85a99620ab040268c8ed87649c4223fd1435b494608",
+      "routes_reviewed": 12,
+      "purchases": 0,
+      "trials": 0,
+      "accounts": 0,
+      "independent_acceptance": "VALID"
+    },
+    {
+      "id": "F_MECHANISM_FALSIFICATION_SCOUT",
+      "status": "COMPLETE_PRIORS_WEAKENED_NO_OUTCOME",
+      "commit": "5fd7a9c36932e9b16f553016e505dc3005d4c23f",
+      "tree": "ffa1b15e72ed019371c92e890cda62d88e9a655c",
+      "artifact_url": "https://github.com/2604714984-prog/quant-proj/blob/5fd7a9c36932e9b16f553016e505dc3005d4c23f/reports/validation/us_mechanism_falsification_scout_week_20260721.md",
+      "artifact_sha256": "435246eb3c184be107fbc5e4056cc97100167f89b33f22c1f78c67130da27391",
+      "mechanisms_reviewed": 10,
+      "strong_prior_count": 0,
+      "independent_acceptance": "VALID"
+    },
+    {
+      "id": "G_LIGHTWEIGHT_ARCHITECTURE_GUARD",
+      "status": "VALID_LIGHTWEIGHT_WEEK",
+      "commit": "97104f8df4dc4948b8d261cdffcecf05c07d4a20",
+      "tree": "3b19e0131dda313f6571686ff857edaf852617bb",
+      "artifact_url": "https://github.com/2604714984-prog/quant-proj/blob/97104f8df4dc4948b8d261cdffcecf05c07d4a20/reports/validation/lightweight_architecture_guard_week_20260721.md",
+      "artifact_sha256": "b20316ae0ecaa90ae21eecb05be253181be2ff9a0fd07eca45914c4da58d84a2",
+      "independent_acceptance": "VALID"
+    }
+  ],
+  "week_findings": {
+    "usdem004": "The bounded official event-identity attempt did not produce a complete row contract; no price join or strategy result was opened.",
+    "survivor_aware_data": "Local US security inputs contain no dead-security population or terminal-value identity and cannot support survivor-aware research.",
+    "sec_data": "Official SEC bulk files provide useful bounded schema evidence, but acceptance/predecessor, amendment closure, exact-field coverage and permanent share-class mapping remain incomplete.",
+    "high_cost_data": "Twelve official routes were mapped without purchase; no paid route is justified before a frozen mechanism specialist pass.",
+    "falsification": "Among ten frozen mechanisms, zero retained a strong prior; evidence weakened expectations without selecting or testing a strategy.",
+    "architecture": "The canonical branch gained only three JSON evidence files and no runtime code, tests, dependencies, data write paths or outcome paths."
+  },
+  "mainline_accounting": {
+    "files_changed": 3,
+    "insertions": 474,
+    "deletions": 0,
+    "new_runtime_modules": 0,
+    "new_test_modules": 0,
+    "new_dependencies": 0,
+    "raw_data_committed": false,
+    "database_write_paths_added": 0,
+    "outcome_paths_added": 0
+  },
+  "final_callback": {
+    "PR_110_MERGE_COMMIT": "e9f9aaa2b9f7f6dc5807150d3ef6da0fe1a4e787",
+    "USDEM004_STATUS": "PARKED_INPUT_BLOCKED_ATTEMPT_TERMINAL",
+    "USDEM004_ARTIFACT_URL": "https://github.com/2604714984-prog/quant-proj/blob/6751fa4f3acf30e41a06cb6f90c0d8c50abdc095/reports/validation/us_macro_announcement_event_identity_attempt_terminal_v1.json",
+    "USDEM004_PR_URL": "https://github.com/2604714984-prog/quant-proj/pull/112",
+    "PROVENANCE_VERIFIER_STATUS": "VALID_EXTERNAL_EXACT_HEAD_REVIEW",
+    "SURVIVOR_AWARE_DATA_STATUS": "DATA_BLOCKED_SURVIVOR_OR_TERMINAL_VALUE",
+    "SEC_DATA_STATUS": "FIELD_OR_AMENDMENT_IDENTITY_BLOCKED",
+    "HIGH_COST_DATA_SCOUT_STATUS": "COMPLETE_NO_PURCHASE_MARKET_MAP",
+    "FALSIFICATION_SCOUT_STATUS": "COMPLETE_PRIORS_WEAKENED_NO_OUTCOME",
+    "FALSIFICATION_REPORT_URL": "https://github.com/2604714984-prog/quant-proj/blob/5fd7a9c36932e9b16f553016e505dc3005d4c23f/reports/validation/us_mechanism_falsification_scout_week_20260721.md",
+    "ARCHITECTURE_GUARD_STATUS": "VALID_LIGHTWEIGHT_WEEK",
+    "MAINLINE_NET_LINE_DELTA": "+474/-0",
+    "OPEN_DRAFT_PRS": "111,113",
+    "DATABASE_WRITE": false,
+    "OUTCOME_ACCESS": false,
+    "STRATEGY_IMPLEMENTATION": false,
+    "STRATEGY_CANDIDATE_AVAILABLE": false,
+    "NEXT_EXTERNAL_REVIEW_TARGET": "https://github.com/2604714984-prog/quant-proj/pull/113"
+  },
+  "boundaries": {
+    "price_or_return_access": false,
+    "prospective_forward_access": false,
+    "database_or_cache_write": false,
+    "strategy_code_created": false,
+    "strategy_execution": false,
+    "new_mechanism_lineage_started": false,
+    "provider_purchase": false,
+    "provider_trial": false,
+    "provider_account_created": false,
+    "atlas_modified": false,
+    "strategy_candidate_available": false,
+    "paper_broker_live_or_trading_activation": false
+  },
+  "closeout_pr": {
+    "number": 113,
+    "url": "https://github.com/2604714984-prog/quant-proj/pull/113",
+    "state": "DRAFT_AWAITING_EXACT_HEAD_CI_AND_EXTERNAL_REVIEW"
+  },
+  "next_action": "ONE_FINAL_EXACT_HEAD_EXTERNAL_REVIEW_THEN_CLOSE_PR111_WITHOUT_MERGE_AND_STOP"
+}
