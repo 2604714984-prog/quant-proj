@@ -62,6 +62,8 @@ scheduled_fomc_only=true
 
 No event table is claimed complete. No event row may be joined to prices under PR #110.
 
+The literature estimand is not yet an executable SPY whole-share ledger. Any tradable proxy requires a separate frozen definition after event identity qualification.
+
 ## Accepted blockers
 
 The following are real unresolved blockers rather than strategy failures:
@@ -80,7 +82,7 @@ Official routes:
 - https://www.bls.gov/bls/news-release-dates-to-change-for-government-closure.htm
 - https://www.federalreserve.gov/monetarypolicy/fomccalendars.htm
 
-## Required control frozen for the next artifact
+## Required controls for the next artifact
 
 Before any event row is accepted, the next artifact must freeze:
 
@@ -98,6 +100,18 @@ Schedule-evidence precedence must be deterministic:
 4. original schedule only when no later qualifying change exists.
 
 An actual release page may verify the actual release time, but it cannot by itself prove that a revised schedule was known before the trading cutoff.
+
+The event table must also preserve two separate states:
+
+```text
+source_replication_event
+ex_ante_trade_event
+```
+
+- `source_replication_event` records whether an actual qualifying announcement occurred.
+- `ex_ante_trade_event` records whether the then-applicable date was public by the prior-session cutoff.
+
+A revised date lacking prior-cutoff proof must be excluded from the ex-ante lane even when it remains a valid actual announcement for source replication. A cancellation or reschedule published after the prior close must not be used with hindsight to erase the ex-ante schedule state that existed at the cutoff.
 
 ## Weeklong operating model
 
@@ -147,6 +161,7 @@ Raw source bytes, large row-level extracts, temporary scripts, and investigation
 4. One survivor-aware US stock data-readiness result.
 5. One SEC insider/fundamental data-readiness result.
 6. One high-cost-data no-purchase market survey.
-7. One architecture-guard closeout covering every PR created during the week.
+7. One adversarial mechanism-falsification report.
+8. One architecture-guard closeout covering every PR created during the week.
 
 No historical strategy PASS/FAIL is required or authorized during this absence period.
