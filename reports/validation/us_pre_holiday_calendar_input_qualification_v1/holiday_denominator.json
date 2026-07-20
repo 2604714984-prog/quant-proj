@@ -1,0 +1,1652 @@
+{
+  "accepted_denominator_count": 45,
+  "blocked_candidate_count": 107,
+  "definition": "Scheduled NYSE full-day holiday closures only; weekends and ad-hoc closures never enter the denominator.",
+  "formal_rules": [
+    "New Year's Day; Saturday year-end exception is not back-shifted to Friday",
+    "third Monday in January for Martin Luther King Jr. Day",
+    "third Monday in February for Presidents Day",
+    "Friday before Gregorian Easter for Good Friday",
+    "last Monday in May for Memorial Day",
+    "Juneteenth from 2022 with Friday/Monday weekend observation",
+    "Independence Day with Friday/Monday weekend observation",
+    "first Monday in September for Labor Day",
+    "fourth Thursday in November for Thanksgiving Day",
+    "Christmas Day with Friday/Monday weekend observation"
+  ],
+  "historical_rule_version_complete_2010_2016": false,
+  "qualification_id": "US_PRE_HOLIDAY_CALENDAR_INPUT_QUALIFICATION_V1",
+  "rows": [
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-01-18",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-02-15",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-04-02",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-05-31",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-07-05",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-09-06",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-11-25",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2010-12-24",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2011-01-17",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2011-02-21",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2011-04-22",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2011-05-30",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2011-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2011-09-05",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2011-11-24",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2011-12-26",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-01-02",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-01-16",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-02-20",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-04-06",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-05-28",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-09-03",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-11-22",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2012-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-01-21",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-02-18",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-03-29",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-05-27",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-09-02",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-11-28",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2013-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-01-20",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-02-17",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-04-18",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-05-26",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-09-01",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-11-27",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2014-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-01-19",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-02-16",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-04-03",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-05-25",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-07-03",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-09-07",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-11-26",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2015-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-01-18",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-02-15",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-03-25",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-05-30",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-09-05",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-11-24",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2016-12-26",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-01-02",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-01-16",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-02-20",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-04-14",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-05-29",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-09-04",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-11-23",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2017-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-01-15",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-02-19",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-03-30",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-05-28",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-09-03",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-11-22",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2018-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-01-21",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-02-18",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-04-19",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-05-27",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-09-02",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-11-28",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2019-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-01-20",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-02-17",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-04-10",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-05-25",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-07-03",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-09-07",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-11-26",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2020-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-01-18",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-02-15",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-04-02",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-05-31",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-07-05",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-09-06",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-11-25",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": null,
+      "closure_date": "2021-12-24",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": false,
+      "qualification_status": "UNQUALIFIED_ANNUAL_ARCHIVE_AND_EARLY_CLOSE_IDENTITY_MISSING",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-01-17",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-02-21",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-04-15",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-05-30",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-06-20",
+      "holiday_name": "JUNETEENTH",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-09-05",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-11-24",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2022",
+      "closure_date": "2022-12-26",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-01-02",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-01-16",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-02-20",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-04-07",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-05-29",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-06-19",
+      "holiday_name": "JUNETEENTH",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-09-04",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-11-23",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2023",
+      "closure_date": "2023-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-01-15",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-02-19",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-03-29",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-05-27",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-06-19",
+      "holiday_name": "JUNETEENTH",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-09-02",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-11-28",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2024",
+      "closure_date": "2024-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-01-20",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-02-17",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-04-18",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-05-26",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-06-19",
+      "holiday_name": "JUNETEENTH",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-07-04",
+      "holiday_name": "INDEPENDENCE_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-09-01",
+      "holiday_name": "LABOR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-11-27",
+      "holiday_name": "THANKSGIVING_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2025",
+      "closure_date": "2025-12-25",
+      "holiday_name": "CHRISTMAS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2026",
+      "closure_date": "2026-01-01",
+      "holiday_name": "NEW_YEARS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2026",
+      "closure_date": "2026-01-19",
+      "holiday_name": "MARTIN_LUTHER_KING_JR_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2026",
+      "closure_date": "2026-02-16",
+      "holiday_name": "PRESIDENTS_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2026",
+      "closure_date": "2026-04-03",
+      "holiday_name": "GOOD_FRIDAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2026",
+      "closure_date": "2026-05-25",
+      "holiday_name": "MEMORIAL_DAY",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    },
+    {
+      "annual_calendar_source_id": "nyse_annual_calendar_2026",
+      "closure_date": "2026-06-19",
+      "holiday_name": "JUNETEENTH",
+      "included_in_accepted_denominator": true,
+      "qualification_status": "ACCEPTED_OFFICIAL_ANNUAL_CALENDAR",
+      "rule_source_ids": [
+        "sec_nyse_pillar_rule_7_2_2017",
+        "nyse_rule_7_2_juneteenth"
+      ]
+    }
+  ],
+  "target_end": "2026-06-30",
+  "target_start": "2010-01-01",
+  "total_candidate_count": 152,
+  "version": 1
+}

@@ -1,0 +1,48 @@
+{
+  "block_count": 3,
+  "closure_date_count": 4,
+  "continuous_blocks_are_single_events": true,
+  "holiday_denominator_inclusion_count": 0,
+  "qualification_id": "US_PRE_HOLIDAY_CALENDAR_INPUT_QUALIFICATION_V1",
+  "rows": [
+    {
+      "block_id": "ADHOC_2012_SANDY",
+      "closure_date_count": 2,
+      "closure_dates": [
+        "2012-10-29",
+        "2012-10-30"
+      ],
+      "included_in_holiday_denominator": false,
+      "label": "Hurricane Sandy emergency closure",
+      "source_ids": [
+        "sec_nyse_rule_51_2010",
+        "sec_nyse_sandy_closure_2012"
+      ]
+    },
+    {
+      "block_id": "ADHOC_2018_BUSH",
+      "closure_date_count": 1,
+      "closure_dates": [
+        "2018-12-05"
+      ],
+      "included_in_holiday_denominator": false,
+      "label": "National Day of Mourning for President George H. W. Bush",
+      "source_ids": [
+        "nyse_bush_closure_2018"
+      ]
+    },
+    {
+      "block_id": "ADHOC_2025_CARTER",
+      "closure_date_count": 1,
+      "closure_dates": [
+        "2025-01-09"
+      ],
+      "included_in_holiday_denominator": false,
+      "label": "National Day of Mourning for President Jimmy Carter",
+      "source_ids": [
+        "nyse_carter_closure_2025"
+      ]
+    }
+  ],
+  "version": 1
+}

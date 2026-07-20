@@ -1,0 +1,59 @@
+{
+  "accepted_annual_calendar_years": [
+    2022,
+    2023,
+    2024,
+    2025,
+    2026
+  ],
+  "accepted_pre_holiday_event_count": 45,
+  "ad_hoc_block_count": 3,
+  "ad_hoc_closure_date_count": 4,
+  "blocked_annual_calendar_years": [
+    2010,
+    2011,
+    2012,
+    2013,
+    2014,
+    2015,
+    2016,
+    2017,
+    2018,
+    2019,
+    2020,
+    2021
+  ],
+  "boundaries": {
+    "database_or_cache_write_performed": false,
+    "market_price_data_accessed": false,
+    "network_performed_by_qualification": false,
+    "outcome_accessed": false,
+    "strategy_candidate_available": false,
+    "strategy_execution_performed": false
+  },
+  "component_sha256": {
+    "accepted_pre_holiday_sessions.json": "73217873ba38bd62af286287a1d71e2d956a7a4c0cbea1b8c016d1faf10a2a20",
+    "ad_hoc_closure_identity.json": "1c1b78efdc8700016d2f56ec986fffb379e8767b56f084bafae5b125fa418190",
+    "early_close_identity.json": "aeed6d8cfa32f44eee9f319c4579eb8d0f1b4236ad1d7a5e3cde96ed89d335c0",
+    "holiday_denominator.json": "6a21eb6a3a235dda09836d6a69a7d45de45c923ef4191b8d637c7f867c050d5c",
+    "source_manifest.json": "aa701545f3087d572c4feac62e9de46a1816ff25cbfbac461b13eb97de2c6ec5"
+  },
+  "current_status": "blocked-on-data",
+  "early_close_identity_complete_2010_2021": false,
+  "gate_counts": null,
+  "input_scope": "CALENDAR_AND_PRE_HOLIDAY_EVENT_IDENTITY_ONLY",
+  "price_panel_checked": false,
+  "qualification_id": "US_PRE_HOLIDAY_CALENDAR_INPUT_QUALIFICATION_V1",
+  "residual_blockers": [
+    "official_annual_calendar_archives_missing_2010_2021",
+    "official_early_close_identity_incomplete_2010_2021",
+    "historical_rule_version_identity_incomplete_2010_2016",
+    "full_2010_2026_calendar_input_cannot_be_accepted_until_all_gaps_close"
+  ],
+  "source_snapshot_sha256": "35b474cf858086e03a8ce01a8d9b3bf393be7eb60dd1c2b7fc945cc721022b08",
+  "status": "INPUT_BLOCKED_NONTERMINAL",
+  "strategy_candidate_available": false,
+  "target_end": "2026-06-30",
+  "target_start": "2010-01-01",
+  "version": 1
+}
