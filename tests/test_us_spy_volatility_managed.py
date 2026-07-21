@@ -45,7 +45,7 @@ UTC = timezone.utc
 NY = ZoneInfo("America/New_York")
 DEFINITION_SHA = hashlib.sha256(b"spy-definition").hexdigest()
 ADAPTER_SHA = hashlib.sha256(b"spy-adapter").hexdigest()
-INCLUSION_SHA = hashlib.sha256(b"fixed-spy-universe").hexdigest()
+INCLUSION_SHA = SCRIPT.EXPECTED_INCLUSION_RULE_SHA256
 
 
 def _source(
@@ -185,6 +185,7 @@ def _execution_input(
         _statuses(),
         decision_price=decision_price,
         decision_price_source=_source(f"decision-{signal_day}", signal.close_at),
+        decision_price_basis="raw_execution_units",
     )
 
 
@@ -248,13 +249,14 @@ def _authorization(
     projection_bytes: bytes = b"",
 ) -> SCRIPT.RuntimeAuthorization:
     return SCRIPT.RuntimeAuthorization(
-        "PREREGISTERED_NOT_EXECUTED",
-        hashlib.sha256(REPORT_PATH.read_bytes()).hexdigest(),
-        hashlib.sha256(ADAPTER_PATH.read_bytes()).hexdigest(),
-        SCRIPT.PR117_REVIEWED_HEAD,
-        calendar_identity_sha256(calendar.identity),
-        SCRIPT.QUALIFIED_MARKET_ROWS_SHA256,
-        SCRIPT.runtime_input_bundle_sha256(calendar, points, projection_bytes)
+        preregistration_status="PREREGISTERED_NOT_EXECUTED",
+        preregistration_json_sha256=hashlib.sha256(REPORT_PATH.read_bytes()).hexdigest(),
+        strategy_adapter_sha256=hashlib.sha256(ADAPTER_PATH.read_bytes()).hexdigest(),
+        causal_core_reviewed_head=SCRIPT.PR117_REVIEWED_HEAD,
+        causal_core_merged_main_head=SCRIPT.PR117_MERGED_MAIN_HEAD,
+        calendar_identity_sha256=calendar_identity_sha256(calendar.identity),
+        qualified_market_rows_sha256=SCRIPT.QUALIFIED_MARKET_ROWS_SHA256,
+        input_bundle_sha256=SCRIPT.runtime_input_bundle_sha256(calendar, points, projection_bytes)
         if points
         else "0" * 64,
     )
@@ -300,6 +302,15 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     assert record["status"] == "PREREGISTERED_NOT_EXECUTED"
     assert record["strategy_candidate_available"] is False
     assert record["adjudication"]["outcome_accessed"] is False
+    assert record["repository_identity"]["causal_core_reviewed_head"] == (
+        SCRIPT.PR117_REVIEWED_HEAD
+    )
+    assert record["repository_identity"]["causal_core_merged_main_head"] == (
+        SCRIPT.PR117_MERGED_MAIN_HEAD
+    )
+    assert frozen["expected_inclusion_rule"] == "fixed-spy-universe"
+    assert frozen["expected_inclusion_rule_sha256"] == INCLUSION_SHA
+    assert INCLUSION_SHA == hashlib.sha256(b"fixed-spy-universe").hexdigest()
     assert frozen["calendar_and_signal"]["required_raw_closes"] == 22
     assert frozen["splits"]["validation_entry_cohorts"]["required_count"] == 45
     assert frozen["splits"]["retrospective_holdout_entry_cohorts"]["required_count"] == 53
@@ -555,28 +566,18 @@ def test_authorization_binds_actual_files_and_reviewed_core_head() -> None:
     calendar = _calendar(_business_days(date(2024, 1, 1), date(2024, 2, 2)))
     authorization = _authorization(calendar)
     SCRIPT.validate_runtime_authorization(authorization, calendar)
-    forged = SCRIPT.RuntimeAuthorization(
-        authorization.preregistration_status,
-        "0" * 64,
-        authorization.strategy_adapter_sha256,
-        authorization.causal_core_reviewed_head,
-        authorization.calendar_identity_sha256,
-        authorization.qualified_market_rows_sha256,
-        authorization.input_bundle_sha256,
-    )
+    forged = dataclasses.replace(authorization, preregistration_json_sha256="0" * 64)
     with pytest.raises(SCRIPT.InputBlockedError, match="current bytes"):
         SCRIPT.validate_runtime_authorization(forged, calendar)
-    wrong_core = SCRIPT.RuntimeAuthorization(
-        authorization.preregistration_status,
-        authorization.preregistration_json_sha256,
-        authorization.strategy_adapter_sha256,
-        "c" * 40,
-        authorization.calendar_identity_sha256,
-        authorization.qualified_market_rows_sha256,
-        authorization.input_bundle_sha256,
-    )
+    wrong_core = dataclasses.replace(authorization, causal_core_reviewed_head="c" * 40)
     with pytest.raises(SCRIPT.InputBlockedError, match="reviewed PR117"):
         SCRIPT.validate_runtime_authorization(wrong_core, calendar)
+    wrong_merged_core = dataclasses.replace(
+        authorization,
+        causal_core_merged_main_head="d" * 40,
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="merged PR117"):
+        SCRIPT.validate_runtime_authorization(wrong_merged_core, calendar)
 
 
 def test_shared_core_partial_cash_preserves_requested_shares_and_residual_cash() -> None:
@@ -686,6 +687,53 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
     assert "signal" not in {field.name for field in dataclasses.fields(SCRIPT.ExecutionPoint)}
     rebuilt = SCRIPT._point_signal(calendar, first, official_actions)
     assert rebuilt.target_weight == MODULE.target_weight(rebuilt.annualized_volatility)
+    wrong_inclusion = dataclasses.replace(
+        first,
+        universe_snapshot=dataclasses.replace(
+            first.universe_snapshot,
+            inclusion_rule_sha256="0" * 64,
+        ),
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="inclusion rule"):
+        SCRIPT._point_signal(calendar, wrong_inclusion, official_actions)
+
+    wrong_basis = dataclasses.replace(
+        first,
+        execution_input=dataclasses.replace(
+            first.execution_input,
+            decision_price_basis="raw_pre_action_per_old_share",
+        ),
+    )
+    assert SCRIPT.runtime_market_rows_sha256((wrong_basis,)) != (
+        SCRIPT.runtime_market_rows_sha256((first,))
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="raw_execution_units"):
+        SCRIPT._rebalance(
+            Portfolio.us(40_000.0),
+            calendar,
+            wrong_basis,
+            authorization,
+            rebuilt.signal_session,
+            rebuilt.target_weight,
+            "0" * 64,
+        )
+    missing_basis = dataclasses.replace(
+        first,
+        execution_input=dataclasses.replace(
+            first.execution_input,
+            decision_price_basis=None,
+        ),
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="raw_execution_units"):
+        SCRIPT._rebalance(
+            Portfolio.us(40_000.0),
+            calendar,
+            missing_basis,
+            authorization,
+            rebuilt.signal_session,
+            rebuilt.target_weight,
+            "0" * 64,
+        )
     forged_date = dataclasses.replace(second, execution_session=date(2024, 4, 1))
     forged_authorization = _authorization(calendar, (first, forged_date, final), projection)
     with pytest.raises(SCRIPT.InputBlockedError):
