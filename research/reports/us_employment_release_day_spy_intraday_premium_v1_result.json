@@ -1,0 +1,75 @@
+{
+  "adapter_sha256": "86caf12756279fc25535c17c3b71ee5042dd13a4b4c00e125aeeb1df49487c1c",
+  "database_sha256": "e636bb80e300f89e46831e91275c6f2167e370e81a00b21b300e253f6107bee0",
+  "decision_rule": {
+    "fail": "Either split lower bound is zero or negative, or any frozen input/data gate fails.",
+    "familywise_alpha": 0.05,
+    "no_repair": "No parameter, event, cost, comparator, split, or threshold may change after outcome access.",
+    "pass": "Both validation and retrospective-holdout circular-block bootstrap one-sided lower bounds for mean net premium are strictly positive.",
+    "split_alpha": 0.025
+  },
+  "definition_sha256": "cbf50c85a706f8646f8ced779e1d6025eb5035cd4267bef33798d2ff30135d27",
+  "event_dates_sha256": "3c9788a548b48a9cdc31c407e5b13f6e627eafd459541a2f53c910eb0a615a6e",
+  "event_dates_total": 108,
+  "excluded_market_closed_dates": [
+    "2021-04-02",
+    "2023-04-07"
+  ],
+  "input_classification": "RETROSPECTIVE_SECONDARY_PRICE_SOURCE_NOT_STRICT_PIT",
+  "input_rows_sha256": "624be568f1d478dcc2a374c856e67cc91ab299c2e4b1f38a9c19480f9b0a7000",
+  "limitations": [
+    "Sina is a secondary retrospective source and available_at is unknown.",
+    "The screen uses raw same-session open and close only; it makes no overnight or total-return claim.",
+    "The 2021-04-02 and 2023-04-07 Good Friday releases are excluded rather than mapped to a later session.",
+    "A historical pass would require external review and still would not create a strategy candidate."
+  ],
+  "observation_identity_sha256": "41bcdf5e9eec5ae70e24abe3f8d5b776e07e0ade894ad4b9abe8ca83e95f7729",
+  "observed_event_dates": 106,
+  "research_id": "US_EMPLOYMENT_RELEASE_DAY_SPY_INTRADAY_PREMIUM_V1",
+  "schema_version": "compact-research-result-v1",
+  "source_document_sha256": "f8b24c6da41007b1ff809463fe81b9f2a56f5ad5640389cb8a5308cf0858b790",
+  "source_snapshot_id": "sina_us_etf_20160101_20251231_e4c60497095e76f9",
+  "splits": {
+    "retrospective_holdout": {
+      "annual_mean_net_premium": {
+        "2020": -0.00028994055269594563,
+        "2021": -0.00042976795609792577,
+        "2022": -0.0023066251006086612,
+        "2023": 0.001567375592785343,
+        "2024": -0.0014837850291151533
+      },
+      "end": "2024-12-31",
+      "event_count": 58,
+      "gate_pass": false,
+      "mean_gross_intraday_return": 0.0005622012828109008,
+      "mean_net_intraday_return": -0.00043779871718909943,
+      "mean_net_premium": -0.0006284573135426815,
+      "mean_non_event_month_intraday_return": 0.00019065859635358212,
+      "net_premium_positive_fraction": 0.46551724137931033,
+      "net_premium_sample_std": 0.008165418291773894,
+      "one_sided_lower_bound": -0.002627777849592358,
+      "start": "2020-01-01"
+    },
+    "validation": {
+      "annual_mean_net_premium": {
+        "2016": -0.001961167055723525,
+        "2017": 0.0002470507520774057,
+        "2018": -0.0018820651088713154,
+        "2019": 0.0030715227584474057
+      },
+      "end": "2019-12-31",
+      "event_count": 48,
+      "gate_pass": false,
+      "mean_gross_intraday_return": 0.0010037474582867527,
+      "mean_net_intraday_return": 3.7474582867525127e-06,
+      "mean_net_premium": -0.00013116466351750726,
+      "mean_non_event_month_intraday_return": 0.00013491212180425974,
+      "net_premium_positive_fraction": 0.5416666666666666,
+      "net_premium_sample_std": 0.007774486448308882,
+      "one_sided_lower_bound": -0.0023543012367955554,
+      "start": "2016-01-01"
+    }
+  },
+  "status": "HISTORICAL_SCREEN_FAIL",
+  "strategy_candidate_available": false
+}
