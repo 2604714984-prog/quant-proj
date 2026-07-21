@@ -1,14 +1,42 @@
 {
-  "schema_version": "us-spy-volatility-managed-exposure-preregistration-v7",
-  "supersedes_report_sha256": "cd1e14fc690bd1965625ebe4286b5c09575575fb02f416aaef75965c1c541f97",
+  "schema_version": "us-spy-volatility-managed-exposure-preregistration-v8",
+  "supersedes_report_sha256": "5a2ccf702e8e46d3e6210cb0e82107aa1a72a4e8c5e8dc03ee90c03d1ed5cda4",
   "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1",
-  "date": "2026-07-21",
+  "date": "2026-07-22",
   "market": "US",
   "phase": "OUTCOME_BLIND_PREREGISTRATION",
   "status": "PREREGISTERED_NOT_EXECUTED",
-  "current_status": "CODE_V6_THIN_EXACT_VALIDATION_BUNDLE_BRIDGE_FROZEN_NOT_EXECUTED",
-  "evidence_class": "RETROSPECTIVE_RESEARCH_GRADE_NOT_PAPER_OR_LIVE",
+  "current_status": "ISSUE119_PROGRAM_ALPHA_AMENDMENT_FROZEN_RETROSPECTIVE_SCREEN_A_NOT_EXECUTED",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_NOT_PAPER_OR_LIVE",
   "family_number": null,
+  "program_multiplicity": {
+    "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE1",
+    "frozen_mechanism_order": [
+      "M119-01_US_SPY_REALIZED_VOL_SCALING",
+      "M119-03_US_SPY_YIELD_CURVE_STATE",
+      "M119-09_US_SPY_CREDIT_STRESS_STATE"
+    ],
+    "method": "weighted Bonferroni",
+    "program_family_alpha": 0.05,
+    "allocations": [
+      {
+        "mechanism_id": "M119-01_US_SPY_REALIZED_VOL_SCALING",
+        "alpha": 0.025
+      },
+      {
+        "mechanism_id": "M119-03_US_SPY_YIELD_CURVE_STATE",
+        "alpha": 0.015
+      },
+      {
+        "mechanism_id": "M119-09_US_SPY_CREDIT_STRESS_STATE",
+        "alpha": 0.01
+      }
+    ],
+    "allocation_is_non_recycling": true,
+    "failed_blocked_or_unexecuted_alpha_reallocation": "FORBIDDEN",
+    "current_mechanism_id": "M119-01_US_SPY_REALIZED_VOL_SCALING",
+    "current_program_alpha": 0.025
+  },
   "repository_identity": {
     "branch": "research/us-spy-vol-managed-v1-validation",
     "implementation_base_head": "f2b3e622903dae0bf30dafbd4899af67f2571c13",
@@ -123,6 +151,11 @@
       "overlap_drift_rule": "any nonzero overlap is INPUT_BLOCKED; the count must never change silently"
     },
     "splits": {
+      "historical_evidence_ceiling": "all observations through 2026-06-30 are retrospective secondary evidence; no interval is described as untouched validation, holdout, or prospective evidence",
+      "legacy_private_transport_stage_mapping": {
+        "validation": "RETROSPECTIVE_SECONDARY_SCREEN_A",
+        "holdout": "RETROSPECTIVE_SECONDARY_INFERENCE_B"
+      },
       "formation_only": {
         "start": "2018-01-02",
         "end": "2018-02-28"
@@ -141,7 +174,7 @@
         "required_count": 53,
         "last_exit_month": "2026-06"
       },
-      "holdout_access_rule": "separate invocation only; requires both (a) an immutable ValidationReceipt digest recomputed from the exact 46 strategy and benchmark boundary NAVs, derived 45 returns, and all four validation gates and (b) a separately qualified and frozen holdout calendar, action dimensions, and runtime input bundle; validation identities cannot substitute for holdout identities"
+      "holdout_access_rule": "legacy private transport label only: inference B is a separate invocation requiring both (a) an immutable screen-A receipt recomputed from the exact 46 strategy and benchmark boundary NAVs, derived 45 returns, and all four screen gates and (b) a separately qualified and frozen inference-B calendar, action dimensions, and runtime input bundle; screen-A identities cannot substitute for inference-B identities"
     },
     "validation_gates": {
       "required_complete_cohorts": 45,
@@ -163,8 +196,11 @@
       "restart_probability": "1/6",
       "draw_algorithm": "for each replicate initial_index=floor(Random.random()*N); at every later position draw u=Random.random(); if u<1/6 draw a second Random.random() and set floor(random*N), otherwise use (previous+1) modulo N",
       "invalid_replicate": "INPUT_BLOCKED; no replicate may be skipped",
-      "quantile": "sort all 10000 statistics; h=(n-1)*0.05; linearly interpolate between floor(h) and ceil(h)",
-      "pass_rule": "the interpolated 5th percentile is strictly greater than zero",
+      "local_alpha": 0.05,
+      "program_overlay_alpha": 0.025,
+      "shared_draw_rule": "generate the frozen 10000 stationary-bootstrap paths and paired Sharpe-difference statistics exactly once, then derive both lower bounds from that same ordered statistic vector",
+      "quantile": "for alpha in the fixed order 0.05 then 0.025, sort the one shared 10000-statistic vector; h=(n-1)*alpha; linearly interpolate between floor(h) and ceil(h)",
+      "pass_rule": "both the local 5th-percentile lower bound and the distinct program-overlay 2.5th-percentile lower bound are strictly greater than zero",
       "primary_test_count": 1,
       "discretionary_exception_repair": "FORBIDDEN"
     },
@@ -175,9 +211,9 @@
     ],
     "terminal_rules": {
       "identity_schema_coverage_action_or_chronology_failure_before_complete_cohorts": "INPUT_BLOCKED; permanent closure",
-      "completed_validation_gate_failure": "HISTORICAL_VALIDATION_FAIL; permanent closure; holdout remains unopened",
-      "completed_holdout_failure": "HISTORICAL_HOLDOUT_FAIL",
-      "validation_and_holdout_pass": "HISTORICAL_PASS_PENDING_EXTERNAL_REVIEW",
+      "completed_validation_gate_failure": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL; permanent closure; inference B remains unopened",
+      "completed_holdout_failure": "RETROSPECTIVE_SECONDARY_INFERENCE_B_FAIL",
+      "validation_and_holdout_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_EXTERNAL_REVIEW",
       "strategy_candidate_available_after_any_terminal_state": false
     },
     "real_execution_gate": {
@@ -211,6 +247,12 @@
       "holdout_official_action_exact_count": null,
       "holdout_runtime_input_bundle_sha256": null,
       "runtime_input_bundle_state": "VALIDATION_EXACT_PRIVATE_BUNDLE_FROZEN_HOLDOUT_IDENTITY_STILL_SEPARATE_AND_UNQUALIFIED",
+      "legacy_private_transport_stage_mapping": {
+        "validation": "RETROSPECTIVE_SECONDARY_SCREEN_A",
+        "holdout": "RETROSPECTIVE_SECONDARY_INFERENCE_B"
+      },
+      "current_cli_research_stage": "RETROSPECTIVE_SECONDARY_SCREEN_A_ONLY",
+      "screen_a_pass_effect": "unlock a separate inference-B input qualification and invocation only; never create a strategy candidate",
       "real_data_loader_present": true,
       "loader_scope": "this exact validation bundle only; no generic schema, manifest, provider, database, or holdout loader",
       "default_cli_state": "EXACT_CODE_HASHES_AND_PRIVATE_ONE_USE_CLAIM_REQUIRED",
@@ -301,11 +343,15 @@
   "adjudication": {
     "outcome_accessed": false,
     "strategy_executed": false,
-    "validation_opened": false,
-    "holdout_opened": false,
+    "screen_a_opened": false,
+    "inference_b_opened": false,
+    "legacy_private_transport_opened": {
+      "validation": false,
+      "holdout": false
+    },
     "gate_counts": null,
     "strategy_result": null,
-    "next_action": "independently accept the thin exact-bundle bridge and final code identities; merge the two already-reviewed shared-core prerequisites; then consume the validation claim exactly once"
+    "next_action": "independently accept this outcome-blind Issue 119 amendment and final code identities; only then may the current CLI consume the retrospective-secondary screen-A claim exactly once"
   },
   "boundaries": {
     "provider_or_network_used_by_this_record_task": false,

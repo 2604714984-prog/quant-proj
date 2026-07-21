@@ -32,6 +32,16 @@ HOLDOUT_COHORTS = 53
 BOOTSTRAP_RESAMPLES = 10_000
 BOOTSTRAP_SEED = 4601
 BOOTSTRAP_RESTART_PROBABILITY = 1.0 / 6.0
+PROGRAM_FAMILY_ID = "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE1"
+PROGRAM_MECHANISM_ORDER = (
+    "M119-01_US_SPY_REALIZED_VOL_SCALING",
+    "M119-03_US_SPY_YIELD_CURVE_STATE",
+    "M119-09_US_SPY_CREDIT_STRESS_STATE",
+)
+PROGRAM_ALPHA_ALLOCATIONS = (0.025, 0.015, 0.010)
+PROGRAM_ALPHA_NON_RECYCLING = True
+LOCAL_INFERENCE_ALPHA = 0.05
+M119_01_PROGRAM_ALPHA = 0.025
 CONTEMPORANEOUS_ACTION_BASIS = "contemporaneous_point_in_time"
 RETROSPECTIVE_ACTION_BASIS = "retrospective_realized_event_reconstruction"
 _ACTION_EVIDENCE_BASES = {
@@ -48,6 +58,7 @@ _VALIDATION_GATE_NAMES = (
 )
 _HOLDOUT_GATE_NAMES = (
     "bootstrap_lower_bound_positive",
+    "program_overlay_bootstrap_lower_bound_positive",
     "strategy_compounded_net_return_positive",
     "strategy_annualized_volatility_lower",
     "strategy_maximum_drawdown_better",
@@ -151,6 +162,7 @@ class HoldoutDecision:
     strategy: PerformanceMetrics
     benchmark: PerformanceMetrics
     bootstrap_lower_bound: float
+    program_overlay_lower_bound: float
     gates: tuple[tuple[str, bool], ...]
 
     @property
@@ -448,10 +460,10 @@ def stationary_bootstrap_indices(sample_size: int) -> tuple[tuple[int, ...], ...
     return tuple(paths)
 
 
-def paired_bootstrap_lower_bound(
+def paired_bootstrap_lower_bounds(
     strategy_returns: tuple[float, ...],
     benchmark_returns: tuple[float, ...],
-) -> float:
+) -> tuple[float, float]:
     if len(strategy_returns) != HOLDOUT_COHORTS or len(benchmark_returns) != HOLDOUT_COHORTS:
         raise InputContractError("holdout bootstrap requires exactly 53 paired rows")
     strategy = tuple(_finite(value, "strategy return") for value in strategy_returns)
@@ -475,11 +487,25 @@ def paired_bootstrap_lower_bound(
         )
         statistics_.append(_finite(statistic, "bootstrap statistic"))
     ordered = sorted(statistics_)
-    h = (len(ordered) - 1) * 0.05
-    lower = math.floor(h)
-    upper = math.ceil(h)
-    quantile = ordered[lower] + (h - lower) * (ordered[upper] - ordered[lower])
-    return _finite(quantile, "bootstrap lower bound")
+    bounds = []
+    for alpha in (LOCAL_INFERENCE_ALPHA, M119_01_PROGRAM_ALPHA):
+        h = (len(ordered) - 1) * alpha
+        lower = math.floor(h)
+        upper = math.ceil(h)
+        bounds.append(ordered[lower] + (h - lower) * (ordered[upper] - ordered[lower]))
+    return (
+        _finite(bounds[0], "local bootstrap lower bound"),
+        _finite(bounds[1], "program-overlay bootstrap lower bound"),
+    )
+
+
+def paired_bootstrap_lower_bound(
+    strategy_returns: tuple[float, ...],
+    benchmark_returns: tuple[float, ...],
+) -> float:
+    """Preserve the original local-alpha lower bound API."""
+
+    return paired_bootstrap_lower_bounds(strategy_returns, benchmark_returns)[0]
 
 
 def holdout_gate_decision(
@@ -495,9 +521,12 @@ def holdout_gate_decision(
         raise InputContractError("holdout requires exactly 53 complete cohorts")
     strategy = performance_metrics(strategy_returns, strategy_boundary_navs)
     benchmark = performance_metrics(benchmark_returns, benchmark_boundary_navs)
-    lower_bound = paired_bootstrap_lower_bound(strategy_returns, benchmark_returns)
+    lower_bound, program_lower_bound = paired_bootstrap_lower_bounds(
+        strategy_returns, benchmark_returns
+    )
     gates = (
         ("bootstrap_lower_bound_positive", lower_bound > 0.0),
+        ("program_overlay_bootstrap_lower_bound_positive", program_lower_bound > 0.0),
         ("strategy_compounded_net_return_positive", strategy.compounded_net_return > 0.0),
         (
             "strategy_annualized_volatility_lower",
@@ -508,7 +537,9 @@ def holdout_gate_decision(
             strategy.maximum_drawdown > benchmark.maximum_drawdown,
         ),
     )
-    return HoldoutDecision(HOLDOUT_COHORTS, strategy, benchmark, lower_bound, gates)
+    return HoldoutDecision(
+        HOLDOUT_COHORTS, strategy, benchmark, lower_bound, program_lower_bound, gates
+    )
 
 
 __all__ = [
@@ -520,7 +551,13 @@ __all__ = [
     "HoldoutDecision",
     "INITIAL_CAPITAL",
     "InputContractError",
+    "LOCAL_INFERENCE_ALPHA",
+    "M119_01_PROGRAM_ALPHA",
     "PerformanceMetrics",
+    "PROGRAM_ALPHA_ALLOCATIONS",
+    "PROGRAM_ALPHA_NON_RECYCLING",
+    "PROGRAM_FAMILY_ID",
+    "PROGRAM_MECHANISM_ORDER",
     "VALIDATION_COHORTS",
     "ValidationDecision",
     "VolatilitySignal",
@@ -529,6 +566,7 @@ __all__ = [
     "cohort_returns",
     "holdout_gate_decision",
     "paired_bootstrap_lower_bound",
+    "paired_bootstrap_lower_bounds",
     "performance_metrics",
     "stationary_bootstrap_indices",
     "target_weight",

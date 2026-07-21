@@ -341,6 +341,18 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     assert record["status"] == "PREREGISTERED_NOT_EXECUTED"
     assert record["strategy_candidate_available"] is False
     assert record["adjudication"]["outcome_accessed"] is False
+    program = record["program_multiplicity"]
+    assert program["program_family_id"] == MODULE.PROGRAM_FAMILY_ID
+    assert tuple(program["frozen_mechanism_order"]) == MODULE.PROGRAM_MECHANISM_ORDER
+    assert tuple(row["mechanism_id"] for row in program["allocations"]) == (
+        MODULE.PROGRAM_MECHANISM_ORDER
+    )
+    assert tuple(row["alpha"] for row in program["allocations"]) == (
+        MODULE.PROGRAM_ALPHA_ALLOCATIONS
+    )
+    assert program["allocation_is_non_recycling"] is MODULE.PROGRAM_ALPHA_NON_RECYCLING
+    assert program["current_mechanism_id"] == MODULE.PROGRAM_MECHANISM_ORDER[0]
+    assert program["current_program_alpha"] == MODULE.M119_01_PROGRAM_ALPHA
     assert record["repository_identity"]["causal_core_reviewed_head"] == (
         SCRIPT.PR117_REVIEWED_HEAD
     )
@@ -372,9 +384,18 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     assert frozen["holdout_primary_inference"]["resamples"] == 10_000
     assert frozen["holdout_primary_inference"]["seed"] == 4601
     terminal = frozen["terminal_rules"]
-    assert terminal["completed_validation_gate_failure"].startswith("HISTORICAL_VALIDATION_FAIL")
-    assert terminal["completed_holdout_failure"] == "HISTORICAL_HOLDOUT_FAIL"
-    assert terminal["validation_and_holdout_pass"] == ("HISTORICAL_PASS_PENDING_EXTERNAL_REVIEW")
+    assert terminal["completed_validation_gate_failure"].startswith(
+        "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL"
+    )
+    assert terminal["completed_holdout_failure"] == "RETROSPECTIVE_SECONDARY_INFERENCE_B_FAIL"
+    assert terminal["validation_and_holdout_pass"] == (
+        "RETROSPECTIVE_SECONDARY_PASS_PENDING_EXTERNAL_REVIEW"
+    )
+    mapping = frozen["splits"]["legacy_private_transport_stage_mapping"]
+    assert mapping == {
+        "validation": SCRIPT.SCREEN_A_STAGE,
+        "holdout": SCRIPT.INFERENCE_B_STAGE,
+    }
     serialized = REPORT_PATH.read_text(encoding="utf-8")
     assert "shared P0" not in serialized
     assert '"strategy_result": null' in serialized
@@ -621,7 +642,9 @@ def test_monthly_metric_formulas_drawdown_and_zero_variance() -> None:
         MODULE.cohort_returns((100.0, 101.0), expected_cohorts=2)
 
 
-def test_bootstrap_literal_golden_vector_and_lower_bound_are_deterministic() -> None:
+def test_bootstrap_literal_golden_vector_and_lower_bound_are_deterministic(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     paths = MODULE.stationary_bootstrap_indices(8)
     assert paths[:5] == (
         (1, 2, 3, 4, 5, 6, 6, 7),
@@ -635,8 +658,18 @@ def test_bootstrap_literal_golden_vector_and_lower_bound_are_deterministic() -> 
     strategy = tuple(0.010 + 0.001 * ((index % 7) - 3) for index in range(53))
     benchmark = tuple(0.006 + 0.004 * ((index % 11) - 5) for index in range(53))
     first = MODULE.paired_bootstrap_lower_bound(strategy, benchmark)
+    original_paths = MODULE.stationary_bootstrap_indices
+    path_calls: list[int] = []
+    monkeypatch.setattr(
+        MODULE, "stationary_bootstrap_indices",
+        lambda size: (path_calls.append(size) or original_paths(size)),
+    )
+    local, program = MODULE.paired_bootstrap_lower_bounds(strategy, benchmark)
+    assert path_calls == [53]
     second = MODULE.paired_bootstrap_lower_bound(strategy, benchmark)
     assert first == pytest.approx(14.248971607495543, rel=0.0, abs=1e-12)
+    assert local == first
+    assert program == pytest.approx(13.99197376713835, rel=0.0, abs=1e-12)
     assert second == first
 
     invalid = list(0.01 for _ in range(53))
@@ -645,7 +678,7 @@ def test_bootstrap_literal_golden_vector_and_lower_bound_are_deterministic() -> 
         MODULE.paired_bootstrap_lower_bound(tuple(invalid), benchmark)
 
 
-def test_holdout_lock_and_terminal_exception_mapping() -> None:
+def test_holdout_lock_and_terminal_exception_mapping(monkeypatch: pytest.MonkeyPatch) -> None:
     metric = MODULE.PerformanceMetrics(0.01, 0.02, 1.0, 0.05, 0.2, -0.1)
     failed = MODULE.ValidationDecision(
         45,
@@ -656,21 +689,43 @@ def test_holdout_lock_and_terminal_exception_mapping() -> None:
     )
     with pytest.raises(MODULE.InputContractError, match="locked"):
         MODULE.holdout_gate_decision(failed, (), (), (), ())
-    with pytest.raises(SCRIPT.InputBlockedError, match="immutable validation receipt"):
+    with pytest.raises(SCRIPT.InputBlockedError, match="immutable screen-A receipt"):
         SCRIPT.require_holdout_unlocked(failed)
 
     assert SCRIPT.classify_terminal(stage="validation", complete=False, passed=False).status == (
         "INPUT_BLOCKED"
     )
     assert SCRIPT.classify_terminal(stage="validation", complete=True, passed=False).status == (
-        "HISTORICAL_VALIDATION_FAIL"
+        "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL"
     )
     assert SCRIPT.classify_terminal(stage="holdout", complete=True, passed=False).status == (
-        "HISTORICAL_HOLDOUT_FAIL"
+        "RETROSPECTIVE_SECONDARY_INFERENCE_B_FAIL"
     )
     passed = SCRIPT.classify_terminal(stage="holdout", complete=True, passed=True)
-    assert passed.status == "HISTORICAL_PASS_PENDING_EXTERNAL_REVIEW"
+    assert passed.status == "RETROSPECTIVE_SECONDARY_PASS_PENDING_EXTERNAL_REVIEW"
     assert passed.strategy_candidate_available is False
+
+    valid = MODULE.ValidationDecision(
+        45, metric, metric, 1.0,
+        tuple((name, True) for name in (
+            "sharpe_difference_positive", "strategy_compounded_net_return_positive",
+            "strategy_annualized_volatility_lower", "strategy_maximum_drawdown_better",
+        )),
+    )
+    calls: list[int] = []
+    monkeypatch.setattr(
+        MODULE, "paired_bootstrap_lower_bounds",
+        lambda strategy, benchmark: (calls.append(len(strategy)) or (0.2, 0.1)),
+    )
+    strategy = tuple(0.01 + 0.001 * (index % 5) for index in range(53))
+    benchmark = tuple(0.005 + 0.003 * ((index % 7) - 3) for index in range(53))
+    inference = MODULE.holdout_gate_decision(
+        valid, strategy, benchmark, _navs(strategy), _navs(benchmark)
+    )
+    assert calls == [53]
+    assert inference.bootstrap_lower_bound == 0.2
+    assert inference.program_overlay_lower_bound == 0.1
+    assert dict(inference.gates)["program_overlay_bootstrap_lower_bound_positive"] is True
 
 
 def test_holdout_unlock_recomputes_validation_navs_and_digest(monkeypatch) -> None:
@@ -848,7 +903,7 @@ def test_authorization_binds_every_current_code_and_core_identity(
     forged_definition["outcome_blind_frozen_specification"][
         "expected_inclusion_rule_sha256"
     ] = SCRIPT.EXPECTED_INCLUSION_RULE_SHA256
-    forged_definition["status"] = "HISTORICAL_VALIDATION_FAIL"
+    forged_definition["status"] = "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL"
     forged_path.write_text(json.dumps(forged_definition), encoding="utf-8")
     forged_status_authorization = dataclasses.replace(
         authorization,
@@ -1435,9 +1490,16 @@ def test_one_use_bridge_claims_before_read_and_writes_aggregate_only(
     assert SCRIPT._run_once(tmp_path / "bundle.json", claim, result, (definition_sha, code_sha, code_sha)) == 0
     published = json.loads(result.read_text())
     assert calls == ["capture"]
-    assert published["classification"] == "VALIDATION_PASS_HOLDOUT_LOCKED"
+    assert published["classification"] == (
+        "RETROSPECTIVE_SECONDARY_SCREEN_A_PASS_INFERENCE_B_UNLOCKED"
+    )
     assert published["strategy_candidate_available"] is False
-    assert published["holdout_opened"] is False
+    assert published["inference_b_opened"] is False
+    assert published["research_stage"] == SCRIPT.SCREEN_A_STAGE
+    assert published["private_transport_stage"] == "validation"
+    assert published["program_family_id"] == MODULE.PROGRAM_FAMILY_ID
+    assert published["mechanism_id"] == MODULE.PROGRAM_MECHANISM_ORDER[0]
+    assert published["program_alpha"] == MODULE.M119_01_PROGRAM_ALPHA
     assert published["code_and_core_sha256"]["definition"] == definition_sha
     assert len(published["strategy_boundary_navs_hex"]) == 46
     assert "raw_open" not in result.read_text() and "raw_close" not in result.read_text()

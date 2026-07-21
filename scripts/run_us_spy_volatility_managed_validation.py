@@ -48,6 +48,9 @@ from quant_system.markets.universe import (  # noqa: E402
 
 from research.adapters.us_spy_volatility_managed import (  # noqa: E402
     INITIAL_CAPITAL,
+    M119_01_PROGRAM_ALPHA,
+    PROGRAM_FAMILY_ID,
+    PROGRAM_MECHANISM_ORDER,
     RETROSPECTIVE_ACTION_BASIS,
     CloseObservation,
     InputContractError,
@@ -80,6 +83,8 @@ VALIDATION_CALENDAR_MAPPING_FILE_SHA256 = "75bb2f0d15d07ca5ab9a58b702665493ddedc
 VALIDATION_CALENDAR_MAPPING_SHA256 = "36300dd6763fc8be3a53ddd70a1f3b1b6a1b058967bc0a7e6c79cb99b5510530"
 VALIDATION_MARKET_RUNTIME_SHA256 = "6e00567c8a7bc065a542d031b6f441a829b40c236a8b6d8470e4e0513d72a8ee"
 VALIDATION_ACTION_IDENTITY_SHA256 = "25cf12430457b6efd63d26b6db81f485b99392d8d505ba057c0961e26664c35c"
+SCREEN_A_STAGE = "RETROSPECTIVE_SECONDARY_SCREEN_A"
+INFERENCE_B_STAGE = "RETROSPECTIVE_SECONDARY_INFERENCE_B"
 HOLDOUT_CALENDAR_PROJECTION_SHA256: str | None = None
 HOLDOUT_RUNTIME_INPUT_BUNDLE_SHA256: str | None = None
 VALIDATION_CALENDAR_SESSION_COUNT = 987
@@ -166,7 +171,7 @@ class CohortSimulation:
 class TerminalClassification:
     status: str
     permanent_closure: bool
-    holdout_opened: bool
+    inference_b_opened: bool
     strategy_candidate_available: bool = False
 
 
@@ -884,7 +889,8 @@ def _validation_receipt_digest(
         benchmark_navs,
     )
     payload = {
-        "stage": "validation",
+        "research_stage": SCREEN_A_STAGE,
+        "private_transport_stage": "validation",
         "query_start": VALIDATION_QUERY_BOUNDS[0].isoformat(),
         "query_end": VALIDATION_QUERY_BOUNDS[1].isoformat(),
         "strategy_boundary_navs": [float(value).hex() for value in strategy_navs],
@@ -914,7 +920,7 @@ def validation_receipt(simulation: CohortSimulation) -> ValidationReceipt:
 
 def require_holdout_unlocked(receipt: object) -> None:
     if not isinstance(receipt, ValidationReceipt):
-        raise InputBlockedError("holdout requires an immutable validation receipt")
+        raise InputBlockedError("inference B requires an immutable screen-A receipt")
     if _sha256(receipt.result_sha256, "validation result_sha256") != (
         _validation_receipt_digest(
             receipt.strategy_boundary_navs,
@@ -931,7 +937,7 @@ def require_holdout_unlocked(receipt: object) -> None:
         receipt.benchmark_boundary_navs,
     )
     if not decision.all_gates_pass:
-        raise InputBlockedError("holdout requires recomputed all-gates-true validation evidence")
+        raise InputBlockedError("inference B requires recomputed all-gates-true screen-A evidence")
 
 
 def simulate_validation(
@@ -1001,16 +1007,16 @@ def simulate_holdout(
 def classify_terminal(*, stage: str, complete: bool, passed: bool) -> TerminalClassification:
     if not complete:
         return TerminalClassification("INPUT_BLOCKED", True, False)
-    if stage == "validation":
+    if stage in {"validation", SCREEN_A_STAGE}:
         if passed:
-            raise InputContractError("a validation pass unlocks holdout and is not terminal")
-        return TerminalClassification("HISTORICAL_VALIDATION_FAIL", True, False)
-    if stage != "holdout":
-        raise InputContractError("stage must be validation or holdout")
+            raise InputContractError("a screen-A pass unlocks inference B and is not terminal")
+        return TerminalClassification("RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL", True, False)
+    if stage not in {"holdout", INFERENCE_B_STAGE}:
+        raise InputContractError("stage must map to retrospective screen A or inference B")
     if not passed:
-        return TerminalClassification("HISTORICAL_HOLDOUT_FAIL", True, True)
+        return TerminalClassification("RETROSPECTIVE_SECONDARY_INFERENCE_B_FAIL", True, True)
     return TerminalClassification(
-        "HISTORICAL_PASS_PENDING_EXTERNAL_REVIEW",
+        "RETROSPECTIVE_SECONDARY_PASS_PENDING_EXTERNAL_REVIEW",
         False,
         True,
     )
@@ -1202,7 +1208,9 @@ def _run_once(bundle: Path, claim: Path, result: Path, expected: tuple[str, str,
         raise InputBlockedError("claim and result paths must differ")
     _target(result)
     claim_sha = _publish(claim, {"research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1",
-        "stage": "validation", "claimed_at": datetime.now(timezone.utc).isoformat(),
+        "research_stage": SCREEN_A_STAGE, "private_transport_stage": "validation",
+        "program_family_id": PROGRAM_FAMILY_ID, "mechanism_id": PROGRAM_MECHANISM_ORDER[0], "program_alpha": M119_01_PROGRAM_ALPHA,
+        "claimed_at": datetime.now(timezone.utc).isoformat(),
         "bundle_file_sha256": VALIDATION_BUNDLE_FILE_SHA256, "definition_sha256": actual[0],
         "adapter_sha256": actual[1], "runner_sha256": actual[2]})
     calendar, entries, final_exit, daily_sessions, projection = _load_validation_bundle(_capture_bundle(bundle))
@@ -1219,17 +1227,19 @@ def _run_once(bundle: Path, claim: Path, result: Path, expected: tuple[str, str,
         simulation.strategy_boundary_navs, simulation.benchmark_boundary_navs)
     receipt = validation_receipt(simulation)
     _publish(result, {
-        "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1", "stage": "validation",
-        "classification": "VALIDATION_PASS_HOLDOUT_LOCKED" if decision.all_gates_pass else "HISTORICAL_VALIDATION_FAIL",
+        "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1", "research_stage": SCREEN_A_STAGE,
+        "private_transport_stage": "validation",
+        "program_family_id": PROGRAM_FAMILY_ID, "mechanism_id": PROGRAM_MECHANISM_ORDER[0], "program_alpha": M119_01_PROGRAM_ALPHA,
+        "classification": "RETROSPECTIVE_SECONDARY_SCREEN_A_PASS_INFERENCE_B_UNLOCKED" if decision.all_gates_pass else "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",
         "completed": True, "observed_cohorts": decision.observed_cohorts, "gates": dict(decision.gates),
         "strategy_metrics_hex": {key: float(value).hex() for key, value in vars(decision.strategy).items()},
         "benchmark_metrics_hex": {key: float(value).hex() for key, value in vars(decision.benchmark).items()},
         "strategy_boundary_navs_hex": [float(value).hex() for value in simulation.strategy_boundary_navs],
         "benchmark_boundary_navs_hex": [float(value).hex() for value in simulation.benchmark_boundary_navs],
-        "validation_receipt_sha256": receipt.result_sha256, "claim_sha256": claim_sha,
+        "screen_a_receipt_sha256": receipt.result_sha256, "claim_sha256": claim_sha,
         "bundle_file_sha256": VALIDATION_BUNDLE_FILE_SHA256, "runtime_bundle_sha256": VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256,
         "code_and_core_sha256": {"definition": actual[0], "adapter": actual[1], "runner": actual[2], "causal_core": PR117_REVIEWED_HEAD, "status_core": STATUS_CORE_REVIEWED_HEAD, "execution_core": EXECUTION_CORE_REVIEWED_HEAD}, "input_semantic_sha256": {"reconstruction_calendar": VALIDATION_CALENDAR_IDENTITY_SHA256, "calendar_mapping": VALIDATION_CALENDAR_MAPPING_SHA256, "market_rows": VALIDATION_MARKET_RUNTIME_SHA256, "actions": VALIDATION_ACTION_IDENTITY_SHA256},
-        "holdout_opened": False, "strategy_candidate_available": False,
+        "inference_b_opened": False, "strategy_candidate_available": False,
     })
     return 0
 
