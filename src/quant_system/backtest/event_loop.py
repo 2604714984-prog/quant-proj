@@ -36,8 +36,16 @@ from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
 from .portfolio import Portfolio, Position, Trade
 
 Market = Literal["a_share", "us"]
+DecisionPriceBasis = Literal[
+    "raw_pre_action_per_old_share",
+    "raw_execution_units",
+]
 TargetWeightCallback = Callable[["DecisionContext"], Mapping[str, float]]
 _RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
+_DECISION_PRICE_BASES = {
+    "raw_pre_action_per_old_share",
+    "raw_execution_units",
+}
 
 
 @dataclass(frozen=True)
@@ -63,7 +71,7 @@ class TerminalAction:
 
 @dataclass(frozen=True)
 class ExecutionInput:
-    """One execution row with a causal pre-action decision-time sizing price."""
+    """One execution row with an explicit causal decision-price unit basis."""
 
     symbol: str
     market: Market
@@ -80,6 +88,7 @@ class ExecutionInput:
     terminal_action: TerminalAction | None = None
     decision_price: float | None = None
     decision_price_source: SourceIdentity | None = None
+    decision_price_basis: DecisionPriceBasis | None = None
 
 
 @dataclass(frozen=True)
@@ -304,8 +313,16 @@ def _inputs(
             raise MarketDataError(
                 "status_records include future evidence unavailable at decision_at"
             )
-        if (row.decision_price is None) != (row.decision_price_source is None):
-            raise MarketDataError("decision price and source must be supplied together")
+        decision_fields = (
+            row.decision_price,
+            row.decision_price_source,
+            row.decision_price_basis,
+        )
+        supplied = tuple(value is not None for value in decision_fields)
+        if any(supplied) and not all(supplied):
+            raise MarketDataError(
+                "decision price, source, and basis must be supplied together"
+            )
         if row.decision_price is not None:
             if not is_positive_price(row.decision_price):
                 raise MarketDataError("decision price must be finite and positive")
@@ -313,6 +330,8 @@ def _inputs(
                 raise MarketDataError("decision price requires a SourceIdentity")
             if row.decision_price_source.available_at > cutoff:
                 raise MarketDataError("decision price was unavailable at decision_at")
+            if row.decision_price_basis not in _DECISION_PRICE_BASES:
+                raise MarketDataError("decision price basis is unsupported")
         if type(row.action_types) is not tuple or row.action_types != tuple(sorted(set(row.action_types))):
             raise MarketDataError("action_types must be sorted and unique")
         if set(row.action_types) - KNOWN_ACTION_TYPES:
@@ -338,6 +357,13 @@ def _inputs(
         if len(current_action_ids) > 1:
             raise CorporateActionValuationError(
                 "multiple same-session ordinary actions require an explicit order and unit basis"
+            )
+        if (
+            current_action_ids
+            and row.decision_price_basis != "raw_pre_action_per_old_share"
+        ):
+            raise CorporateActionValuationError(
+                "ordinary actions require raw_pre_action_per_old_share decision prices"
             )
         action_ids.extend(item.action_id for item in row.corporate_actions)
         if row.capacity is not None and (
@@ -542,7 +568,18 @@ def _open(row: ExecutionInput) -> float:
 def _decision_price(row: ExecutionInput) -> float:
     if not is_positive_price(row.decision_price):
         raise MarketDataError(f"{row.symbol} lacks a qualified decision-time sizing price")
+    if row.decision_price_basis not in _DECISION_PRICE_BASES:
+        raise MarketDataError(f"{row.symbol} lacks a supported decision price basis")
+    if (
+        row.corporate_actions
+        and row.decision_price_basis != "raw_pre_action_per_old_share"
+    ):
+        raise CorporateActionValuationError(
+            "ordinary actions require raw_pre_action_per_old_share decision prices"
+        )
     price = float(row.decision_price)
+    if row.decision_price_basis == "raw_execution_units":
+        return price
     for action in sorted(row.corporate_actions, key=lambda item: item.action_id):
         if action.action_type in {"split", "reverse_split"}:
             assert action.split_ratio is not None

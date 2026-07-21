@@ -126,6 +126,7 @@ def _input(
     source_label: str | None = None,
     decision_price: float | None = None,
     decision_price_available_at: datetime = datetime(2000, 1, 1, tzinfo=UTC),
+    decision_price_basis: str | None = "raw_pre_action_per_old_share",
 ) -> ExecutionInput:
     timezone_name = execution.exchange_timezone
     decision_reference = (
@@ -149,6 +150,7 @@ def _input(
         terminal,
         decision_reference,
         _source(f"decision-price-{symbol}", decision_price_available_at),
+        decision_price_basis,  # type: ignore[arg-type]
     )
 
 
@@ -843,6 +845,7 @@ def test_engine_adjusts_pre_action_decision_price_for_split_and_distribution() -
                 price=50,
                 corporate_actions=(split,),
                 decision_price=100,
+                decision_price_basis="raw_pre_action_per_old_share",
             ),
         ),
         target_weights=lambda _: {"ABC": 1.0},
@@ -875,6 +878,7 @@ def test_engine_adjusts_pre_action_decision_price_for_split_and_distribution() -
         price=90,
         corporate_actions=(distribution,),
         decision_price=100,
+        decision_price_basis="raw_pre_action_per_old_share",
     )
     distribution_result = _run_static_rebalance(
         distribution_portfolio,
@@ -891,6 +895,35 @@ def test_engine_adjusts_pre_action_decision_price_for_split_and_distribution() -
     assert distribution_result.portfolio.positions["ABC"].shares == 110
     assert distribution_result.portfolio.pending_cash_total == pytest.approx(100)
 
+    for action, execution_price in ((split, 50), (distribution, 90)):
+        caller = Portfolio.us(10_000, costs=TransactionCostModel())
+        before = deepcopy(caller.__dict__)
+        callback_calls = []
+        with pytest.raises(
+            CorporateActionValuationError,
+            match="raw_pre_action_per_old_share",
+        ):
+            _run_static_rebalance(
+                caller,
+                calendar,
+                signal_session=days[0],
+                decision_at=signal.close_at,
+                execution_inputs=(
+                    _input(
+                        "ABC",
+                        "us",
+                        execution,
+                        price=execution_price,
+                        corporate_actions=(action,),
+                        decision_price=execution_price,
+                        decision_price_basis="raw_execution_units",
+                    ),
+                ),
+                target_weights=lambda context: callback_calls.append(context)
+                or {"ABC": 1.0},
+            )
+        assert callback_calls == []
+    assert caller.__dict__ == before
 
     with pytest.raises(CorporateActionValuationError, match="explicit order and unit basis"):
         _run_static_rebalance(
@@ -1057,6 +1090,7 @@ def test_decision_price_must_be_present_finite_positive_and_timely(bad_price) ->
             **base.__dict__,
             "decision_price": None,
             "decision_price_source": None,
+            "decision_price_basis": None,
         }
     )
     callback_calls = []
@@ -1067,6 +1101,27 @@ def test_decision_price_must_be_present_finite_positive_and_timely(bad_price) ->
             signal_session=days[0],
             decision_at=signal.close_at,
             execution_inputs=(missing,),
+            target_weights=lambda context: callback_calls.append(context) or {"AAA": 1.0},
+        )
+    assert callback_calls == []
+    missing_basis = replace(base, decision_price_basis=None)
+    with pytest.raises(MarketDataError, match="price, source, and basis"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(missing_basis,),
+            target_weights=lambda context: callback_calls.append(context) or {"AAA": 1.0},
+        )
+    unknown_basis = replace(base, decision_price_basis="qfq")
+    with pytest.raises(MarketDataError, match="basis is unsupported"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(unknown_basis,),
             target_weights=lambda context: callback_calls.append(context) or {"AAA": 1.0},
         )
     assert callback_calls == []
@@ -1126,6 +1181,20 @@ def test_strategy_hashes_are_required_and_bound_to_stage_identity() -> None:
     assert len({baseline.stage_hash, definition_changed.stage_hash, adapter_changed.stage_hash}) == 3
     assert baseline.strategy_definition_sha256 == DEFINITION_SHA
     assert baseline.strategy_adapter_sha256 == ADAPTER_SHA
+
+    execution_basis = _run_static_rebalance(
+        portfolio,
+        calendar,
+        **{
+            **arguments,
+            "execution_inputs": (
+                replace(inputs[0], decision_price_basis="raw_execution_units"),
+            ),
+        },
+    )
+    assert execution_basis.receipts == baseline.receipts
+    assert execution_basis.input_identity_hash != baseline.input_identity_hash
+    assert execution_basis.stage_hash != baseline.stage_hash
 
     called = False
 
@@ -1211,6 +1280,51 @@ def test_universe_snapshot_rejects_missing_member_and_lifecycle_drift() -> None:
             universe_snapshot=alive_snapshot,
             target_weights=lambda _: {},
         )
+
+
+@pytest.mark.parametrize("members", [("A", "B\nC"), ("A\nB", "C"), ("A\tB",)])
+def test_universe_member_identifiers_reject_c0_control_characters(members) -> None:
+    with pytest.raises(MarketDataError, match="C0 control characters"):
+        ordered_members_sha256(members)
+
+
+def test_control_character_universe_fails_before_lifecycle_or_callback() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+    inputs = (
+        _input("A\nB", "a_share", execution),
+        _input("C", "a_share", execution),
+    )
+    snapshot = UniverseSnapshotIdentity(
+        market="a_share",
+        exchange_id=calendar.identity.exchange_id,
+        effective_session=execution.session_date,
+        member_count=2,
+        ordered_members_sha256="0" * 64,
+        lifecycle_coverage_sha256="0" * 64,
+        inclusion_rule_sha256=INCLUSION_RULE_SHA,
+        calendar_identity_sha256=calendar_identity_sha256(calendar.identity),
+        source_identity=_source("invalid-universe", signal.close_at),
+    )
+    callback_calls = []
+
+    with pytest.raises(MarketDataError, match="C0 control characters"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=inputs,
+            universe_members=("A\nB", "C"),
+            universe_snapshot=snapshot,
+            target_weights=lambda context: callback_calls.append(context) or {},
+        )
+    assert callback_calls == []
+    assert portfolio.__dict__ == before
 
 
 def test_universe_candidates_are_separate_from_held_maintenance_rows() -> None:

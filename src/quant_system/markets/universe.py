@@ -124,7 +124,12 @@ def ordered_members_sha256(members: tuple[str, ...]) -> str:
     """Hash one strictly sorted, unique candidate-member tuple."""
 
     frozen = _members(members)
-    return hashlib.sha256("\n".join(frozen).encode()).hexdigest()
+    encoded = json.dumps(
+        frozen,
+        ensure_ascii=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def lifecycle_coverage_sha256(
@@ -313,6 +318,8 @@ def _members(members: tuple[str, ...]) -> tuple[str, ...]:
         raise MarketDataError("universe_members must be a nonempty immutable tuple")
     if any(not isinstance(symbol, str) or not symbol.strip() for symbol in members):
         raise MarketDataError("universe members must be nonempty strings")
+    if any(any(ord(character) < 32 for character in symbol) for symbol in members):
+        raise MarketDataError("universe members cannot contain C0 control characters")
     if members != tuple(sorted(set(members))):
         raise MarketDataError("universe_members must be sorted and unique")
     return members
