@@ -1,47 +1,64 @@
-"""Pure, outcome-blind contract for the frozen SPY volatility-managed strategy."""
+"""Pure frozen calculations for the SPY volatility-managed research lane.
+
+Execution and portfolio accounting deliberately live in the shared backtest core.
+"""
 
 from __future__ import annotations
 
 import math
-import re
+import random
 import statistics
 from dataclasses import dataclass
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
+from quant_system.data import (
+    AcceptedSessionCalendar,
+    CorporateActionIdentity,
+    SourceIdentity,
+)
+
 INSTRUMENT = "SPY"
+EXCHANGE_ID = "XNYS"
+EXCHANGE_TIMEZONE = "America/New_York"
 REQUIRED_RAW_CLOSES = 22
 REQUIRED_LOG_RETURNS = 21
 TARGET_ANNUALIZED_VOLATILITY = 0.10
 ANNUALIZATION_DAYS = 252
-ONE_WAY_SLIPPAGE_BPS = 10
-DECISION_HOUR = 20
-DECISION_MINUTE = 5
+MONTHS_PER_YEAR = 12
+INITIAL_CAPITAL = 40_000.0
+VALIDATION_COHORTS = 45
+HOLDOUT_COHORTS = 53
+BOOTSTRAP_RESAMPLES = 10_000
+BOOTSTRAP_SEED = 4601
+BOOTSTRAP_RESTART_PROBABILITY = 1.0 / 6.0
 
-_NEW_YORK = ZoneInfo("America/New_York")
-_SHA256 = re.compile(r"[0-9a-f]{64}")
+_NEW_YORK = ZoneInfo(EXCHANGE_TIMEZONE)
+_VALIDATION_GATE_NAMES = (
+    "sharpe_difference_positive",
+    "strategy_compounded_net_return_positive",
+    "strategy_annualized_volatility_lower",
+    "strategy_maximum_drawdown_better",
+)
+_HOLDOUT_GATE_NAMES = (
+    "bootstrap_lower_bound_positive",
+    "strategy_compounded_net_return_positive",
+    "strategy_annualized_volatility_lower",
+    "strategy_maximum_drawdown_better",
+)
 
 
 class InputContractError(ValueError):
-    """Raised before calculation when a frozen input invariant is not satisfied."""
+    """Raised when a frozen input or calculation invariant is not satisfied."""
 
 
-def _require_date(value: date, field: str) -> None:
-    if not isinstance(value, date) or isinstance(value, datetime):
-        raise InputContractError(f"{field} must be a date")
-
-
-def _require_aware(value: datetime, field: str) -> None:
-    if not isinstance(value, datetime) or value.tzinfo is None:
-        raise InputContractError(f"{field} must be timezone-aware")
-    if value.utcoffset() is None:
-        raise InputContractError(f"{field} must have a valid UTC offset")
-
-
-def _require_finite(value: float, field: str, *, positive: bool = False) -> float:
+def _finite(value: object, field: str, *, positive: bool = False) -> float:
     if isinstance(value, bool):
         raise InputContractError(f"{field} must be numeric, not boolean")
-    number = float(value)
+    try:
+        number = float(value)
+    except (TypeError, ValueError) as exc:
+        raise InputContractError(f"{field} must be numeric") from exc
     if not math.isfinite(number):
         raise InputContractError(f"{field} must be finite")
     if positive and number <= 0.0:
@@ -49,248 +66,249 @@ def _require_finite(value: float, field: str, *, positive: bool = False) -> floa
     return number
 
 
-def _require_sha256(value: str, field: str = "source_sha256") -> None:
-    if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
-        raise InputContractError(f"{field} must be a lowercase SHA-256 hex digest")
+def _date(value: object, field: str) -> date:
+    if type(value) is not date:
+        raise InputContractError(f"{field} must be a date")
+    return value
 
 
-def _require_ex_date_open(value: datetime, ex_date: date) -> None:
-    _require_aware(value, "information_available_at")
+def _decision_at(value: datetime, expected_date: date) -> datetime:
+    if type(value) is not datetime or value.tzinfo is None or value.utcoffset() is None:
+        raise InputContractError("decision_at must be timezone-aware")
     local = value.astimezone(_NEW_YORK)
-    if local.date() != ex_date:
-        raise InputContractError("information_available_at must fall on ex_date")
-    if (local.hour, local.minute, local.second, local.microsecond) != (9, 30, 0, 0):
-        raise InputContractError("information_available_at must equal ex-date XNYS open")
-
-
-def _require_decision_time(value: datetime) -> datetime:
-    _require_aware(value, "decision_at")
-    local = value.astimezone(_NEW_YORK)
-    if (local.hour, local.minute, local.second, local.microsecond) != (
-        DECISION_HOUR,
-        DECISION_MINUTE,
-        0,
-        0,
-    ):
-        raise InputContractError("decision_at must equal 20:05 America/New_York")
+    if local.date() != expected_date or (
+        local.hour,
+        local.minute,
+        local.second,
+        local.microsecond,
+    ) != (20, 5, 0, 0):
+        raise InputContractError(
+            "decision_at must equal 20:05 America/New_York on the signal session"
+        )
     return local
 
 
 @dataclass(frozen=True)
 class CloseObservation:
-    """One accepted raw close and its immutable source identity."""
+    """One causal raw close with canonical source identity."""
 
     session_date: date
-    close_at: datetime
-    available_at: datetime
     raw_close: float
-    source_sha256: str
+    source: SourceIdentity
 
     def __post_init__(self) -> None:
-        _require_date(self.session_date, "session_date")
-        _require_aware(self.close_at, "close_at")
-        _require_aware(self.available_at, "available_at")
-        if self.close_at.astimezone(_NEW_YORK).date() != self.session_date:
-            raise InputContractError("close_at must belong to session_date")
-        if self.available_at < self.close_at:
-            raise InputContractError("raw close cannot be available before the close")
-        _require_finite(self.raw_close, "raw_close", positive=True)
-        _require_sha256(self.source_sha256)
+        _date(self.session_date, "session_date")
+        _finite(self.raw_close, "raw_close", positive=True)
+        if not isinstance(self.source, SourceIdentity):
+            raise InputContractError("source must be a canonical SourceIdentity")
 
 
 @dataclass(frozen=True)
-class CashDistribution:
-    """Official cash distribution; comparison amounts never control calculations."""
-
-    ex_date: date
-    record_date: date
-    payment_date: date
-    information_available_at: datetime
-    official_amount: float
-    currency: str
-    amount_unit: str
-    source_sha256: str
-    tiingo_comparison_amount: float | None = None
-
-    def __post_init__(self) -> None:
-        _require_date(self.ex_date, "ex_date")
-        _require_date(self.record_date, "record_date")
-        _require_date(self.payment_date, "payment_date")
-        if not self.ex_date <= self.record_date <= self.payment_date:
-            raise InputContractError("distribution dates must satisfy ex <= record <= payment")
-        _require_ex_date_open(self.information_available_at, self.ex_date)
-        _require_finite(self.official_amount, "official_amount", positive=True)
-        if self.currency != "USD":
-            raise InputContractError("distribution currency must equal USD")
-        if self.amount_unit != "PER_SHARE":
-            raise InputContractError("distribution amount_unit must equal PER_SHARE")
-        _require_sha256(self.source_sha256)
-        if self.tiingo_comparison_amount is not None:
-            comparison = _require_finite(
-                self.tiingo_comparison_amount,
-                "tiingo_comparison_amount",
-            )
-            if comparison < 0.0:
-                raise InputContractError("tiingo_comparison_amount must be nonnegative")
-
-
-@dataclass(frozen=True)
-class SplitEvent:
-    """Official split event applied exactly once on its ex-date."""
-
-    ex_date: date
-    information_available_at: datetime
-    factor: float
-    source_sha256: str
-
-    def __post_init__(self) -> None:
-        _require_date(self.ex_date, "ex_date")
-        _require_ex_date_open(self.information_available_at, self.ex_date)
-        factor = _require_finite(self.factor, "factor", positive=True)
-        if factor == 1.0:
-            raise InputContractError("a split event must have a non-unit factor")
-        _require_sha256(self.source_sha256)
-
-
-@dataclass(frozen=True)
-class RebalanceRequest:
-    """Decision-time shares frozen before the next execution open is observed."""
-
-    decision_at: datetime
-    target_weight: float
-    requested_shares: int
-    sizing_price: float
+class VolatilitySignal:
+    signal_session: date
+    execution_session: date
+    log_total_returns: tuple[float, ...]
     annualized_volatility: float
+    target_weight: float
 
-    def __post_init__(self) -> None:
-        _require_decision_time(self.decision_at)
-        weight = _require_finite(self.target_weight, "target_weight", positive=True)
-        if weight > 1.0:
-            raise InputContractError("target_weight cannot exceed one")
-        volatility = _require_finite(
-            self.annualized_volatility,
-            "annualized_volatility",
-            positive=True,
+
+@dataclass(frozen=True)
+class PerformanceMetrics:
+    monthly_arithmetic_mean: float
+    monthly_sample_stdev: float
+    sharpe: float
+    annualized_volatility: float
+    compounded_net_return: float
+    maximum_drawdown: float
+
+
+@dataclass(frozen=True)
+class ValidationDecision:
+    observed_cohorts: int
+    strategy: PerformanceMetrics
+    benchmark: PerformanceMetrics
+    sharpe_difference: float
+    gates: tuple[tuple[str, bool], ...]
+
+    @property
+    def all_gates_pass(self) -> bool:
+        return (
+            self.observed_cohorts == VALIDATION_COHORTS
+            and tuple(name for name, _ in self.gates) == _VALIDATION_GATE_NAMES
+            and all(passed is True for _, passed in self.gates)
         )
-        if not math.isclose(weight, target_weight(volatility), rel_tol=0.0, abs_tol=1e-15):
-            raise InputContractError("target_weight must match the frozen volatility formula")
-        if not isinstance(self.requested_shares, int) or isinstance(self.requested_shares, bool):
-            raise InputContractError("requested_shares must be an integer")
-        if self.requested_shares < 0:
-            raise InputContractError("requested_shares must be nonnegative")
-        _require_finite(self.sizing_price, "sizing_price", positive=True)
 
 
 @dataclass(frozen=True)
-class ExecutionFillObservation:
-    """Next-session raw open observed only after requested shares are frozen."""
+class HoldoutDecision:
+    observed_cohorts: int
+    strategy: PerformanceMetrics
+    benchmark: PerformanceMetrics
+    bootstrap_lower_bound: float
+    gates: tuple[tuple[str, bool], ...]
 
-    execution_session_date: date
-    raw_open: float
-    requested_shares: int
-    source_sha256: str
-
-    def __post_init__(self) -> None:
-        _require_date(self.execution_session_date, "execution_session_date")
-        _require_finite(self.raw_open, "raw_open", positive=True)
-        if not isinstance(self.requested_shares, int) or isinstance(self.requested_shares, bool):
-            raise InputContractError("requested_shares must be an integer")
-        if self.requested_shares < 0:
-            raise InputContractError("requested_shares must be nonnegative")
-        _require_sha256(self.source_sha256)
+    @property
+    def all_gates_pass(self) -> bool:
+        return (
+            self.observed_cohorts == HOLDOUT_COHORTS
+            and tuple(name for name, _ in self.gates) == _HOLDOUT_GATE_NAMES
+            and all(passed is True for _, passed in self.gates)
+        )
 
 
-@dataclass(frozen=True)
-class DistributionEntitlement:
-    """Cash receivable fixed at ex-date and credited only on payment date."""
-
-    ex_date: date
-    payment_date: date
-    entitled_shares: int
-    amount_per_share: float
-    total_cash: float
-    source_sha256: str
-
-    def __post_init__(self) -> None:
-        _require_date(self.ex_date, "ex_date")
-        _require_date(self.payment_date, "payment_date")
-        if self.payment_date < self.ex_date:
-            raise InputContractError("payment_date cannot precede ex_date")
-        if not isinstance(self.entitled_shares, int) or isinstance(self.entitled_shares, bool):
-            raise InputContractError("entitled_shares must be an integer")
-        if self.entitled_shares < 0:
-            raise InputContractError("entitled_shares must be nonnegative")
-        amount = _require_finite(self.amount_per_share, "amount_per_share", positive=True)
-        total = _require_finite(self.total_cash, "total_cash")
-        expected = self.entitled_shares * amount
-        if total < 0.0 or not math.isclose(total, expected, rel_tol=0.0, abs_tol=1e-12):
-            raise InputContractError("total_cash must match shares times amount_per_share")
-        _require_sha256(self.source_sha256)
-
-
-def _action_by_date(
-    closes: tuple[CloseObservation, ...],
-    distributions: tuple[CashDistribution, ...],
-    splits: tuple[SplitEvent, ...],
-    decision_at: datetime,
-) -> dict[date, CashDistribution | SplitEvent]:
-    usable_dates = {observation.session_date for observation in closes[1:]}
-    actions: dict[date, CashDistribution | SplitEvent] = {}
-    for action in (*distributions, *splits):
-        if action.ex_date not in usable_dates:
-            raise InputContractError("every action must map to a return-period session")
-        if action.ex_date in actions:
-            raise InputContractError("multiple ordinary actions on one session fail closed")
-        if action.information_available_at > decision_at:
-            raise InputContractError("action information was not available by decision_at")
-        actions[action.ex_date] = action
-    return actions
-
-
-def total_return_log_returns(
+def _calendar_window(
+    calendar: AcceptedSessionCalendar,
     closes: tuple[CloseObservation, ...],
     *,
-    distributions: tuple[CashDistribution, ...] = (),
-    splits: tuple[SplitEvent, ...] = (),
     decision_at: datetime,
-) -> tuple[float, ...]:
-    """Build the exact 21 causal total-return log returns from 22 raw closes."""
-
-    observations = tuple(closes)
-    if len(observations) != REQUIRED_RAW_CLOSES:
+    execution_session: date,
+) -> tuple[date, ...]:
+    if not isinstance(calendar, AcceptedSessionCalendar):
+        raise InputContractError("calendar must be an AcceptedSessionCalendar")
+    if calendar.exchange_id != EXCHANGE_ID or calendar.exchange_timezone != EXCHANGE_TIMEZONE:
+        raise InputContractError("signal calendar must be accepted XNYS/America-New_York")
+    if len(closes) != REQUIRED_RAW_CLOSES:
         raise InputContractError(f"exactly {REQUIRED_RAW_CLOSES} raw closes are required")
-    decision_local = _require_decision_time(decision_at)
-    dates = tuple(observation.session_date for observation in observations)
-    if any(current <= previous for previous, current in zip(dates, dates[1:])):
-        raise InputContractError("close session dates must be strictly increasing")
-    if dates[-1] != decision_local.date():
-        raise InputContractError("latest raw close must be from the decision session")
-    if any(observation.available_at > decision_at for observation in observations):
-        raise InputContractError("every raw close must be available by decision_at")
+    dates = tuple(item.session_date for item in closes)
+    if len(set(dates)) != len(dates):
+        raise InputContractError("close session dates must be unique")
+    final_date = dates[-1]
+    _decision_at(decision_at, final_date)
+    _date(execution_session, "execution_session")
+    try:
+        final_position = calendar.session_dates.index(final_date)
+    except ValueError as exc:
+        raise InputContractError("signal session is not an accepted XNYS session") from exc
+    if final_position < REQUIRED_RAW_CLOSES - 1:
+        raise InputContractError("calendar lacks the complete 22-session signal window")
+    expected = calendar.session_dates[final_position - REQUIRED_RAW_CLOSES + 1 : final_position + 1]
+    if dates != expected:
+        raise InputContractError("closes must cover 22 consecutive accepted XNYS sessions")
+    try:
+        following = calendar.next_session(final_date, as_of=decision_at)
+    except (TypeError, ValueError) as exc:
+        raise InputContractError("calendar cannot establish the next accepted session") from exc
+    if (following.session_date.year, following.session_date.month) == (
+        final_date.year,
+        final_date.month,
+    ):
+        raise InputContractError("signal session must be the final accepted session of the month")
+    if following.session_date != execution_session:
+        raise InputContractError("execution must be the immediately following accepted session")
+    for observation, session_date in zip(closes, expected, strict=True):
+        try:
+            session = calendar.session_on(session_date, as_of=decision_at)
+        except (TypeError, ValueError) as exc:
+            raise InputContractError("calendar session identity is unavailable") from exc
+        if observation.source.available_at < session.close_at:
+            raise InputContractError("raw close cannot be available before the accepted close")
+        if observation.source.available_at > decision_at:
+            raise InputContractError("raw close must be available by decision_at")
+    return expected
 
-    actions = _action_by_date(observations, distributions, splits, decision_at)
-    returns: list[float] = []
-    for previous, current in zip(observations, observations[1:]):
-        action = actions.get(current.session_date)
-        split_factor = action.factor if isinstance(action, SplitEvent) else 1.0
-        distribution = action.official_amount if isinstance(action, CashDistribution) else 0.0
-        gross_return = (split_factor * current.raw_close + distribution) / previous.raw_close
-        if not math.isfinite(gross_return) or gross_return <= 0.0:
+
+def _actions_by_date(
+    calendar: AcceptedSessionCalendar,
+    actions: tuple[CorporateActionIdentity, ...],
+    expected_action_ids: tuple[str, ...],
+    return_dates: tuple[date, ...],
+    decision_at: datetime,
+) -> dict[date, CorporateActionIdentity]:
+    if type(actions) is not tuple or any(
+        not isinstance(action, CorporateActionIdentity) for action in actions
+    ):
+        raise InputContractError("actions must be CorporateActionIdentity values")
+    if type(expected_action_ids) is not tuple or any(
+        not isinstance(action_id, str) or not action_id.strip() for action_id in expected_action_ids
+    ):
+        raise InputContractError("expected_action_ids must be a nonempty-ID tuple")
+    actual_ids = tuple(action.action_id for action in actions)
+    if len(actual_ids) != len(set(actual_ids)):
+        raise InputContractError("duplicate action IDs fail closed")
+    if actual_ids != expected_action_ids:
+        raise InputContractError("runtime action IDs do not exactly match the expected window")
+    usable = set(return_dates)
+    indexed: dict[date, CorporateActionIdentity] = {}
+    for action in actions:
+        if action.subject_id != INSTRUMENT:
+            raise InputContractError("corporate action subject must equal SPY")
+        if action.effective_date not in usable:
+            raise InputContractError("window-outside action fails closed")
+        if action.effective_date in indexed:
+            raise InputContractError("multiple ordinary actions on one session fail closed")
+        try:
+            session = calendar.session_on(action.effective_date, as_of=decision_at)
+        except (TypeError, ValueError) as exc:
+            raise InputContractError("corporate action is not on an accepted session") from exc
+        if action.effective_at != session.open_at:
+            raise InputContractError("corporate action effective_at must equal XNYS open")
+        if action.source.available_at > action.effective_at:
+            raise InputContractError("corporate action identity was not available by ex-date open")
+        if action.action_type in {"cash_dividend", "special_dividend"}:
+            if action.currency != "USD" or action.unit != "per_share":
+                raise InputContractError("cash action must use USD per_share")
+        elif action.action_type not in {"split", "reverse_split"}:
+            raise InputContractError("unsupported action type in signal window")
+        indexed[action.effective_date] = action
+    return indexed
+
+
+def build_signal_feature(
+    calendar: AcceptedSessionCalendar,
+    closes: tuple[CloseObservation, ...],
+    *,
+    actions: tuple[CorporateActionIdentity, ...] = (),
+    expected_action_ids: tuple[str, ...] = (),
+    decision_at: datetime,
+    execution_session: date,
+) -> VolatilitySignal:
+    """Build the exact causal 21-return feature for one monthly decision."""
+
+    dates = _calendar_window(
+        calendar,
+        closes,
+        decision_at=decision_at,
+        execution_session=execution_session,
+    )
+    indexed = _actions_by_date(
+        calendar,
+        actions,
+        expected_action_ids,
+        dates[1:],
+        decision_at,
+    )
+    log_returns: list[float] = []
+    for previous, current in zip(closes, closes[1:]):
+        action = indexed.get(current.session_date)
+        split_ratio = 1.0
+        distribution = 0.0
+        if action is not None and action.action_type in {"split", "reverse_split"}:
+            assert action.split_ratio is not None
+            split_ratio = _finite(action.split_ratio, "split_ratio", positive=True)
+        elif action is not None:
+            assert action.cash_amount is not None
+            distribution = _finite(action.cash_amount, "cash_amount", positive=True)
+        gross = (
+            split_ratio * _finite(current.raw_close, "raw_close", positive=True) + distribution
+        ) / _finite(previous.raw_close, "raw_close", positive=True)
+        if not math.isfinite(gross) or gross <= 0.0:
             raise InputContractError("total-return gross relative must be finite and positive")
-        returns.append(math.log(gross_return))
-    if len(returns) != REQUIRED_LOG_RETURNS:
-        raise InputContractError("return window length drifted from the frozen contract")
-    return tuple(returns)
+        log_returns.append(math.log(gross))
+    frozen_returns = tuple(log_returns)
+    volatility = annualized_realized_volatility(frozen_returns)
+    return VolatilitySignal(
+        dates[-1],
+        execution_session,
+        frozen_returns,
+        volatility,
+        target_weight(volatility),
+    )
 
 
 def annualized_realized_volatility(log_returns: tuple[float, ...]) -> float:
-    """Frozen ddof=1 sample volatility annualized by sqrt(252)."""
-
-    values = tuple(float(value) for value in log_returns)
+    values = tuple(_finite(value, "log return") for value in log_returns)
     if len(values) != REQUIRED_LOG_RETURNS:
         raise InputContractError(f"exactly {REQUIRED_LOG_RETURNS} log returns are required")
-    if not all(math.isfinite(value) for value in values):
-        raise InputContractError("log returns must be finite")
     volatility = statistics.stdev(values) * math.sqrt(ANNUALIZATION_DAYS)
     if not math.isfinite(volatility) or volatility <= 0.0:
         raise InputContractError("annualized volatility must be finite and positive")
@@ -298,9 +316,7 @@ def annualized_realized_volatility(log_returns: tuple[float, ...]) -> float:
 
 
 def target_weight(annualized_volatility: float) -> float:
-    """Return the unlevered 10-percent volatility target weight."""
-
-    volatility = _require_finite(
+    volatility = _finite(
         annualized_volatility,
         "annualized_volatility",
         positive=True,
@@ -308,88 +324,182 @@ def target_weight(annualized_volatility: float) -> float:
     return min(1.0, TARGET_ANNUALIZED_VOLATILITY / volatility)
 
 
-def form_monthly_rebalance(
-    nav: float,
-    closes: tuple[CloseObservation, ...],
+def cohort_returns(
+    boundary_navs: tuple[float, ...],
     *,
-    distributions: tuple[CashDistribution, ...] = (),
-    splits: tuple[SplitEvent, ...] = (),
-    decision_at: datetime,
-) -> RebalanceRequest:
-    """Freeze whole-share demand using only the latest causal decision-time close."""
+    expected_cohorts: int | None = None,
+) -> tuple[float, ...]:
+    if type(boundary_navs) is not tuple or len(boundary_navs) < 2:
+        raise InputContractError("boundary_navs must contain an initial and final boundary")
+    if expected_cohorts is not None and (type(expected_cohorts) is not int or expected_cohorts < 1):
+        raise InputContractError("expected_cohorts must be a positive integer")
+    if expected_cohorts is not None and len(boundary_navs) != expected_cohorts + 1:
+        raise InputContractError("no cohort may be skipped")
+    values = tuple(_finite(value, "boundary NAV", positive=True) for value in boundary_navs)
+    returns = tuple(current / previous - 1.0 for previous, current in zip(values, values[1:]))
+    if not all(math.isfinite(value) for value in returns):
+        raise InputContractError("cohort returns must be finite")
+    return returns
 
-    account_value = _require_finite(nav, "nav")
-    if account_value <= 0.0:
-        raise InputContractError("nav must be positive")
-    returns = total_return_log_returns(
-        closes,
-        distributions=distributions,
-        splits=splits,
-        decision_at=decision_at,
+
+def performance_metrics(
+    monthly_returns: tuple[float, ...],
+    boundary_navs: tuple[float, ...],
+) -> PerformanceMetrics:
+    values = tuple(_finite(value, "monthly return") for value in monthly_returns)
+    navs = tuple(_finite(value, "boundary NAV", positive=True) for value in boundary_navs)
+    if len(values) < 2 or len(navs) != len(values) + 1:
+        raise InputContractError("metrics require every monthly return and boundary NAV")
+    expected = cohort_returns(navs, expected_cohorts=len(values))
+    if any(not math.isclose(a, b, rel_tol=0.0, abs_tol=1e-12) for a, b in zip(values, expected)):
+        raise InputContractError("monthly returns must match the complete boundary NAV path")
+    mean = statistics.fmean(values)
+    stdev = statistics.stdev(values)
+    if not math.isfinite(stdev) or stdev <= 0.0:
+        raise InputContractError("monthly sample standard deviation must be finite and positive")
+    sharpe = math.sqrt(MONTHS_PER_YEAR) * mean / stdev
+    annualized_volatility = stdev * math.sqrt(MONTHS_PER_YEAR)
+    compounded = math.prod(1.0 + value for value in values) - 1.0
+    running_max = navs[0]
+    drawdowns: list[float] = []
+    for nav in navs:
+        running_max = max(running_max, nav)
+        drawdowns.append(nav / running_max - 1.0)
+    maximum_drawdown = min(drawdowns)
+    outputs = (mean, stdev, sharpe, annualized_volatility, compounded, maximum_drawdown)
+    if not all(math.isfinite(value) for value in outputs):
+        raise InputContractError("performance metrics must be finite")
+    return PerformanceMetrics(*outputs)
+
+
+def validation_gate_decision(
+    strategy_returns: tuple[float, ...],
+    benchmark_returns: tuple[float, ...],
+    strategy_boundary_navs: tuple[float, ...],
+    benchmark_boundary_navs: tuple[float, ...],
+) -> ValidationDecision:
+    if len(strategy_returns) != VALIDATION_COHORTS or len(benchmark_returns) != VALIDATION_COHORTS:
+        raise InputContractError("validation requires exactly 45 complete cohorts")
+    strategy = performance_metrics(strategy_returns, strategy_boundary_navs)
+    benchmark = performance_metrics(benchmark_returns, benchmark_boundary_navs)
+    difference = _finite(strategy.sharpe - benchmark.sharpe, "Sharpe difference")
+    gates = (
+        ("sharpe_difference_positive", difference > 0.0),
+        ("strategy_compounded_net_return_positive", strategy.compounded_net_return > 0.0),
+        (
+            "strategy_annualized_volatility_lower",
+            strategy.annualized_volatility < benchmark.annualized_volatility,
+        ),
+        (
+            "strategy_maximum_drawdown_better",
+            strategy.maximum_drawdown > benchmark.maximum_drawdown,
+        ),
     )
-    volatility = annualized_realized_volatility(returns)
-    weight = target_weight(volatility)
-    sizing_price = float(closes[-1].raw_close)
-    requested_shares = math.floor(account_value * weight / sizing_price)
-    return RebalanceRequest(
-        decision_at=decision_at,
-        target_weight=weight,
-        requested_shares=requested_shares,
-        sizing_price=sizing_price,
-        annualized_volatility=volatility,
+    return ValidationDecision(VALIDATION_COHORTS, strategy, benchmark, difference, gates)
+
+
+def stationary_bootstrap_indices(sample_size: int) -> tuple[tuple[int, ...], ...]:
+    """Return the exact 10,000 frozen stationary-bootstrap index paths."""
+
+    if type(sample_size) is not int or sample_size < 2:
+        raise InputContractError("sample_size must be an integer of at least two")
+    generator = random.Random(BOOTSTRAP_SEED)
+    paths: list[tuple[int, ...]] = []
+    for _ in range(BOOTSTRAP_RESAMPLES):
+        path = [math.floor(generator.random() * sample_size)]
+        for _ in range(1, sample_size):
+            restart_draw = generator.random()
+            if restart_draw < BOOTSTRAP_RESTART_PROBABILITY:
+                path.append(math.floor(generator.random() * sample_size))
+            else:
+                path.append((path[-1] + 1) % sample_size)
+        paths.append(tuple(path))
+    return tuple(paths)
+
+
+def paired_bootstrap_lower_bound(
+    strategy_returns: tuple[float, ...],
+    benchmark_returns: tuple[float, ...],
+) -> float:
+    if len(strategy_returns) != HOLDOUT_COHORTS or len(benchmark_returns) != HOLDOUT_COHORTS:
+        raise InputContractError("holdout bootstrap requires exactly 53 paired rows")
+    strategy = tuple(_finite(value, "strategy return") for value in strategy_returns)
+    benchmark = tuple(_finite(value, "benchmark return") for value in benchmark_returns)
+    statistics_: list[float] = []
+    for path in stationary_bootstrap_indices(HOLDOUT_COHORTS):
+        strategy_sample = tuple(strategy[index] for index in path)
+        benchmark_sample = tuple(benchmark[index] for index in path)
+        strategy_stdev = statistics.stdev(strategy_sample)
+        benchmark_stdev = statistics.stdev(benchmark_sample)
+        if (
+            not math.isfinite(strategy_stdev)
+            or strategy_stdev <= 0.0
+            or not math.isfinite(benchmark_stdev)
+            or benchmark_stdev <= 0.0
+        ):
+            raise InputContractError("invalid bootstrap replicate fails closed")
+        statistic = math.sqrt(MONTHS_PER_YEAR) * (
+            statistics.fmean(strategy_sample) / strategy_stdev
+            - statistics.fmean(benchmark_sample) / benchmark_stdev
+        )
+        statistics_.append(_finite(statistic, "bootstrap statistic"))
+    ordered = sorted(statistics_)
+    h = (len(ordered) - 1) * 0.05
+    lower = math.floor(h)
+    upper = math.ceil(h)
+    quantile = ordered[lower] + (h - lower) * (ordered[upper] - ordered[lower])
+    return _finite(quantile, "bootstrap lower bound")
+
+
+def holdout_gate_decision(
+    validation: ValidationDecision,
+    strategy_returns: tuple[float, ...],
+    benchmark_returns: tuple[float, ...],
+    strategy_boundary_navs: tuple[float, ...],
+    benchmark_boundary_navs: tuple[float, ...],
+) -> HoldoutDecision:
+    if not isinstance(validation, ValidationDecision) or not validation.all_gates_pass:
+        raise InputContractError("holdout is locked until a validation decision passes every gate")
+    if len(strategy_returns) != HOLDOUT_COHORTS or len(benchmark_returns) != HOLDOUT_COHORTS:
+        raise InputContractError("holdout requires exactly 53 complete cohorts")
+    strategy = performance_metrics(strategy_returns, strategy_boundary_navs)
+    benchmark = performance_metrics(benchmark_returns, benchmark_boundary_navs)
+    lower_bound = paired_bootstrap_lower_bound(strategy_returns, benchmark_returns)
+    gates = (
+        ("bootstrap_lower_bound_positive", lower_bound > 0.0),
+        ("strategy_compounded_net_return_positive", strategy.compounded_net_return > 0.0),
+        (
+            "strategy_annualized_volatility_lower",
+            strategy.annualized_volatility < benchmark.annualized_volatility,
+        ),
+        (
+            "strategy_maximum_drawdown_better",
+            strategy.maximum_drawdown > benchmark.maximum_drawdown,
+        ),
     )
+    return HoldoutDecision(HOLDOUT_COHORTS, strategy, benchmark, lower_bound, gates)
 
 
-def observe_execution_fill(
-    request: RebalanceRequest,
-    *,
-    execution_session_date: date,
-    raw_open: float,
-    source_sha256: str,
-) -> ExecutionFillObservation:
-    """Record a next-session open without allowing it to resize the request."""
-
-    _require_date(execution_session_date, "execution_session_date")
-    if execution_session_date <= request.decision_at.astimezone(_NEW_YORK).date():
-        raise InputContractError("execution session must follow the decision session")
-    opening_price = _require_finite(raw_open, "raw_open", positive=True)
-    _require_sha256(source_sha256)
-    return ExecutionFillObservation(
-        execution_session_date=execution_session_date,
-        raw_open=opening_price,
-        requested_shares=request.requested_shares,
-        source_sha256=source_sha256,
-    )
-
-
-def distribution_entitlement(
-    action: CashDistribution,
-    shares_held_before_ex_date_open: int,
-) -> DistributionEntitlement:
-    """Freeze the receivable using shares held before the ex-date open."""
-
-    if not isinstance(shares_held_before_ex_date_open, int) or isinstance(
-        shares_held_before_ex_date_open,
-        bool,
-    ):
-        raise InputContractError("entitled shares must be an integer")
-    if shares_held_before_ex_date_open < 0:
-        raise InputContractError("entitled shares must be nonnegative")
-    total = shares_held_before_ex_date_open * action.official_amount
-    return DistributionEntitlement(
-        ex_date=action.ex_date,
-        payment_date=action.payment_date,
-        entitled_shares=shares_held_before_ex_date_open,
-        amount_per_share=action.official_amount,
-        total_cash=total,
-        source_sha256=action.source_sha256,
-    )
-
-
-def cash_credit_on(entitlement: DistributionEntitlement, session_date: date) -> float:
-    """Credit the frozen receivable on pay-date only; all other sessions get zero."""
-
-    _require_date(session_date, "session_date")
-    if session_date < entitlement.ex_date:
-        raise InputContractError("entitlement does not exist before ex-date")
-    return entitlement.total_cash if session_date == entitlement.payment_date else 0.0
+__all__ = [
+    "BOOTSTRAP_RESAMPLES",
+    "BOOTSTRAP_RESTART_PROBABILITY",
+    "BOOTSTRAP_SEED",
+    "CloseObservation",
+    "HOLDOUT_COHORTS",
+    "HoldoutDecision",
+    "INITIAL_CAPITAL",
+    "InputContractError",
+    "PerformanceMetrics",
+    "VALIDATION_COHORTS",
+    "ValidationDecision",
+    "VolatilitySignal",
+    "annualized_realized_volatility",
+    "build_signal_feature",
+    "cohort_returns",
+    "holdout_gate_decision",
+    "paired_bootstrap_lower_bound",
+    "performance_metrics",
+    "stationary_bootstrap_indices",
+    "target_weight",
+    "validation_gate_decision",
+]

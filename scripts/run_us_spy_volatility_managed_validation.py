@@ -1,0 +1,784 @@
+"""One-off, injected-input SPY volatility-managed historical validation.
+
+This module has no database, provider, network, or file-loading path.  A real run
+remains hard-gated on a current preregistration hash and the merged PR117 identity.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import sys
+from dataclasses import dataclass
+from datetime import date, datetime
+from decimal import Decimal, InvalidOperation
+from pathlib import Path
+from typing import Any
+
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
+_SOURCE_ROOT = _REPOSITORY_ROOT / "src"
+for _path in (_SOURCE_ROOT, _REPOSITORY_ROOT):
+    if str(_path) not in sys.path:
+        sys.path.insert(0, str(_path))
+
+from quant_system.backtest import (  # noqa: E402
+    ExecutionInput,
+    ExecutionReceipt,
+    Portfolio,
+    run_static_rebalance,
+)
+from quant_system.data import (  # noqa: E402
+    AcceptedSessionCalendar,
+    CorporateActionIdentity,
+    SourceIdentity,
+    calendar_identity_sha256,
+)
+from quant_system.markets.universe import UniverseSnapshotIdentity  # noqa: E402
+
+from research.adapters.us_spy_volatility_managed import (  # noqa: E402
+    INITIAL_CAPITAL,
+    CloseObservation,
+    InputContractError,
+    build_signal_feature,
+    cohort_returns,
+    validation_gate_decision,
+)
+
+OFFICIAL_ACTION_PROJECTION_SHA256 = (
+    "caf871c657e8c1ff258e8733c8ef49409da1c66c911b5a48f2148cdf9cc3f12a"
+)
+OFFICIAL_ACTION_COUNT = 34
+OFFICIAL_ACTION_RETRIEVED_AT = datetime.fromisoformat("2026-07-21T08:13:17.580138+00:00")
+OFFICIAL_ACTION_AVAILABLE_AT_BASIS = (
+    "OFFICIAL_SOURCE_RETRIEVED_20260721_HISTORICAL_PUBLICATION_TIME_NOT_BACKDATED"
+)
+PR117_REVIEWED_HEAD = "d065def0625fe20126c1579d8bf4c8c75614a154"
+QUALIFIED_CALENDAR_PROJECTION_SHA256 = (
+    "c5a6a88cb3b616d1207a5a67959879ad514553aec1d3da5367a12afae7c22f9a"
+)
+QUALIFIED_MARKET_ROWS_SHA256 = "818ac5f04a072e1d8e6e7b27b42a7753f31ea9e09d11c65c7e78bb16e418394d"
+RUNTIME_INPUT_BUNDLE_SHA256: str | None = None
+ONE_WAY_SLIPPAGE_BPS = 10.0
+VALIDATION_QUERY_BOUNDS = (date(2018, 1, 2), date(2021, 12, 1))
+HOLDOUT_QUERY_BOUNDS = (date(2021, 12, 1), date(2026, 6, 1))
+VALIDATION_ENTRY_MONTHS = tuple(
+    (year, month)
+    for year in range(2018, 2022)
+    for month in range(1, 13)
+    if (year, month) >= (2018, 3) and (year, month) <= (2021, 11)
+)
+HOLDOUT_ENTRY_MONTHS = tuple(
+    (year, month)
+    for year in range(2022, 2027)
+    for month in range(1, 13)
+    if (year, month) >= (2022, 1) and (year, month) <= (2026, 5)
+)
+_REPORT_PATH = (
+    _REPOSITORY_ROOT / "research" / "reports" / "us_spy_volatility_managed_exposure_v1.json"
+)
+_ADAPTER_PATH = _REPOSITORY_ROOT / "research" / "adapters" / "us_spy_volatility_managed.py"
+_PROJECTION_KEYS = (
+    "available_at_basis",
+    "distribution",
+    "event_type",
+    "ex_date",
+    "payment_date",
+    "record_date",
+    "source_document_sha256",
+    "source_url",
+    "symbol",
+)
+
+
+class InputBlockedError(InputContractError):
+    """Permanent fail-closed input/identity/coverage/chronology error."""
+
+
+@dataclass(frozen=True)
+class RuntimeAuthorization:
+    preregistration_status: str
+    preregistration_json_sha256: str
+    strategy_adapter_sha256: str
+    causal_core_reviewed_head: str
+    calendar_identity_sha256: str
+    qualified_market_rows_sha256: str
+    input_bundle_sha256: str
+
+
+@dataclass(frozen=True)
+class ExecutionPoint:
+    closes: tuple[CloseObservation, ...]
+    actions: tuple[CorporateActionIdentity, ...]
+    decision_at: datetime
+    execution_session: date
+    execution_input: ExecutionInput
+    universe_snapshot: UniverseSnapshotIdentity
+
+
+@dataclass(frozen=True)
+class CohortSimulation:
+    strategy_boundary_navs: tuple[float, ...]
+    benchmark_boundary_navs: tuple[float, ...]
+    strategy_returns: tuple[float, ...]
+    benchmark_returns: tuple[float, ...]
+    strategy_receipts: tuple[ExecutionReceipt, ...]
+    benchmark_receipts: tuple[ExecutionReceipt, ...]
+
+
+@dataclass(frozen=True)
+class TerminalClassification:
+    status: str
+    permanent_closure: bool
+    holdout_opened: bool
+    strategy_candidate_available: bool = False
+
+
+@dataclass(frozen=True)
+class ValidationReceipt:
+    strategy_boundary_navs: tuple[float, ...]
+    benchmark_boundary_navs: tuple[float, ...]
+    result_sha256: str
+
+
+def _sha256(value: object, field: str) -> str:
+    digest = str(value)
+    if len(digest) != 64 or any(character not in "0123456789abcdef" for character in digest):
+        raise InputBlockedError(f"{field} must be a lowercase SHA-256 digest")
+    return digest
+
+
+def _file_sha256(path: Path) -> str:
+    return hashlib.sha256(path.read_bytes()).hexdigest()
+
+
+def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
+    result: dict[str, Any] = {}
+    for key, value in pairs:
+        if key in result:
+            raise InputBlockedError(f"duplicate JSON key: {key}")
+        result[key] = value
+    return result
+
+
+def _iso_date(value: object, field: str) -> date:
+    if type(value) is not str:
+        raise InputBlockedError(f"{field} must be an ISO date string")
+    try:
+        parsed = date.fromisoformat(value)
+    except ValueError as exc:
+        raise InputBlockedError(f"{field} must be an ISO date string") from exc
+    if parsed.isoformat() != value:
+        raise InputBlockedError(f"{field} must use canonical ISO format")
+    return parsed
+
+
+def _projection_rows(projection_bytes: bytes) -> tuple[dict[str, Any], ...]:
+    if type(projection_bytes) is not bytes:
+        raise InputBlockedError("official action projection must be immutable bytes")
+    if hashlib.sha256(projection_bytes).hexdigest() != OFFICIAL_ACTION_PROJECTION_SHA256:
+        raise InputBlockedError("official action projection full hash mismatch")
+    try:
+        text = projection_bytes.decode("utf-8", errors="strict")
+    except UnicodeDecodeError as exc:
+        raise InputBlockedError("official action projection must be UTF-8") from exc
+    lines = text.splitlines()
+    if len(lines) != OFFICIAL_ACTION_COUNT or not text.endswith("\n"):
+        raise InputBlockedError("official action projection must contain exactly 34 JSONL rows")
+    rows: list[dict[str, Any]] = []
+    for line in lines:
+        try:
+            row = json.loads(line, object_pairs_hook=_strict_object)
+        except (json.JSONDecodeError, InputBlockedError) as exc:
+            raise InputBlockedError("official action projection contains invalid JSON") from exc
+        if type(row) is not dict or tuple(row) != _PROJECTION_KEYS:
+            raise InputBlockedError("official action projection row schema/order mismatch")
+        if any(type(value) is not str for value in row.values()):
+            raise InputBlockedError("official action projection values must be strings")
+        if row["symbol"] != "SPY" or row["event_type"] != "CASH_DISTRIBUTION":
+            raise InputBlockedError("official action projection instrument/type mismatch")
+        if row["available_at_basis"] != OFFICIAL_ACTION_AVAILABLE_AT_BASIS:
+            raise InputBlockedError("official action availability basis mismatch")
+        _sha256(row["source_document_sha256"], "source_document_sha256")
+        if not row["source_url"].startswith("https://"):
+            raise InputBlockedError("official action source must be HTTPS")
+        ex_date = _iso_date(row["ex_date"], "ex_date")
+        record_date = _iso_date(row["record_date"], "record_date")
+        payment_date = _iso_date(row["payment_date"], "payment_date")
+        if not ex_date <= record_date <= payment_date:
+            raise InputBlockedError("official action date chronology mismatch")
+        try:
+            amount = Decimal(row["distribution"])
+        except InvalidOperation as exc:
+            raise InputBlockedError("official distribution must be decimal") from exc
+        if not amount.is_finite() or amount <= 0:
+            raise InputBlockedError("official distribution must be finite and positive")
+        rows.append(row)
+    dates = tuple(_iso_date(row["ex_date"], "ex_date") for row in rows)
+    if tuple(sorted(dates)) != dates or len(set(dates)) != len(dates):
+        raise InputBlockedError("official action rows must be uniquely date ordered")
+    return tuple(rows)
+
+
+def official_actions_from_projection(
+    projection_bytes: bytes,
+    calendar: AcceptedSessionCalendar,
+) -> tuple[CorporateActionIdentity, ...]:
+    """Strictly parse the frozen State Street projection into exact action identities."""
+
+    rows = _projection_rows(projection_bytes)
+    actions: list[CorporateActionIdentity] = []
+    for row in rows:
+        ex_date = _iso_date(row["ex_date"], "ex_date")
+        try:
+            session = calendar.session_on(ex_date, as_of=OFFICIAL_ACTION_RETRIEVED_AT)
+        except (TypeError, ValueError) as exc:
+            raise InputBlockedError(
+                "official action ex-date lacks an accepted XNYS session"
+            ) from exc
+        source = SourceIdentity(
+            row["source_url"],
+            row["source_document_sha256"],
+            session.open_at,
+            OFFICIAL_ACTION_RETRIEVED_AT,
+            f"ssga-distribution-{ex_date.isoformat()}",
+        )
+        actions.append(
+            CorporateActionIdentity(
+                "SPY",
+                derived_action_id(ex_date),
+                "cash_dividend",
+                session.open_at,
+                source,
+                "America/New_York",
+                ex_date=ex_date,
+                record_date=_iso_date(row["record_date"], "record_date"),
+                pay_date=_iso_date(row["payment_date"], "payment_date"),
+                cash_amount=Decimal(row["distribution"]),
+                currency="USD",
+                unit="per_share",
+            )
+        )
+    return tuple(actions)
+
+
+def validate_runtime_authorization(
+    authorization: RuntimeAuthorization | None,
+    calendar: AcceptedSessionCalendar,
+) -> None:
+    if not isinstance(authorization, RuntimeAuthorization):
+        raise InputBlockedError(
+            "real execution requires the current JSON identity and merged PR117 identity"
+        )
+    if authorization.preregistration_status != "PREREGISTERED_NOT_EXECUTED":
+        raise InputBlockedError("JSON current state is not PREREGISTERED_NOT_EXECUTED")
+    if _sha256(authorization.preregistration_json_sha256, "preregistration_json_sha256") != (
+        _file_sha256(_REPORT_PATH)
+    ):
+        raise InputBlockedError("preregistration JSON does not match current bytes")
+    if _sha256(authorization.strategy_adapter_sha256, "strategy_adapter_sha256") != (
+        _file_sha256(_ADAPTER_PATH)
+    ):
+        raise InputBlockedError("strategy adapter does not match current bytes")
+    if authorization.causal_core_reviewed_head != PR117_REVIEWED_HEAD:
+        raise InputBlockedError("causal core must equal the exact reviewed PR117 head")
+    if authorization.calendar_identity_sha256 != calendar_identity_sha256(calendar.identity):
+        raise InputBlockedError("runtime calendar identity mismatch")
+    if calendar.identity.source_identity.content_sha256 != QUALIFIED_CALENDAR_PROJECTION_SHA256:
+        raise InputBlockedError("calendar source is not the frozen qualified projection")
+    if authorization.qualified_market_rows_sha256 != QUALIFIED_MARKET_ROWS_SHA256:
+        raise InputBlockedError("qualified market-row aggregate identity mismatch")
+    _sha256(authorization.input_bundle_sha256, "input_bundle_sha256")
+
+
+def assert_zero_distribution_execution_overlap(
+    actions: tuple[CorporateActionIdentity, ...],
+    first_session_executions: tuple[date, ...],
+) -> None:
+    execution_dates = set(first_session_executions)
+    overlaps = tuple(
+        action.action_id
+        for action in actions
+        if action.action_type in {"cash_dividend", "special_dividend"}
+        and action.effective_date in execution_dates
+    )
+    if overlaps:
+        raise InputBlockedError(
+            "distribution/execution overlap drifted from the frozen count of zero"
+        )
+
+
+def _apply_daily_actions(
+    portfolios: tuple[Portfolio, Portfolio],
+    session_date: date,
+    actions: tuple[CorporateActionIdentity, ...],
+) -> None:
+    for portfolio in portfolios:
+        portfolio.start_session(session_date)
+        for action in actions:
+            if action.effective_date != session_date:
+                continue
+            if action.action_type in {"cash_dividend", "special_dividend"}:
+                assert action.cash_amount is not None
+                assert action.ex_date is not None and action.pay_date is not None
+                portfolio.apply_cash_distribution(
+                    "SPY",
+                    event_id=action.action_id,
+                    amount_per_share=float(action.cash_amount),
+                    ex_date=action.ex_date,
+                    pay_date=action.pay_date,
+                )
+            elif action.action_type in {"split", "reverse_split"}:
+                assert action.split_ratio is not None
+                portfolio.apply_split(
+                    "SPY",
+                    float(action.split_ratio),
+                    event_id=action.action_id,
+                )
+            else:
+                raise InputBlockedError("unsupported action in daily accounting")
+
+
+def _source_payload(source: SourceIdentity) -> dict[str, object]:
+    return {
+        "source_url": source.source_url,
+        "content_sha256": source.content_sha256,
+        "available_at": source.available_at.isoformat(),
+        "retrieved_at": source.retrieved_at.isoformat(),
+        "revision_id": source.revision_id,
+        "supersedes_revision_id": source.supersedes_revision_id,
+    }
+
+
+def runtime_market_rows_sha256(points: tuple[ExecutionPoint, ...]) -> str:
+    if type(points) is not tuple or not points:
+        raise InputBlockedError("runtime market rows require execution points")
+    payload: list[dict[str, object]] = []
+    for point in points:
+        if not isinstance(point, ExecutionPoint):
+            raise InputBlockedError("runtime market rows require ExecutionPoint values")
+        payload.append(
+            {
+                "decision_at": point.decision_at.isoformat(),
+                "execution_session": point.execution_session.isoformat(),
+                "closes": [
+                    {
+                        "session_date": close.session_date.isoformat(),
+                        "raw_close": float(close.raw_close).hex(),
+                        "source": _source_payload(close.source),
+                    }
+                    for close in point.closes
+                ],
+                "execution": {
+                    "open_price": None
+                    if point.execution_input.open_price is None
+                    else float(point.execution_input.open_price).hex(),
+                    "decision_price": None
+                    if point.execution_input.decision_price is None
+                    else float(point.execution_input.decision_price).hex(),
+                    "source": _source_payload(point.execution_input.source),
+                    "decision_price_source": None
+                    if point.execution_input.decision_price_source is None
+                    else _source_payload(point.execution_input.decision_price_source),
+                },
+                "universe": {
+                    "effective_session": point.universe_snapshot.effective_session.isoformat(),
+                    "ordered_members_sha256": point.universe_snapshot.ordered_members_sha256,
+                    "lifecycle_coverage_sha256": point.universe_snapshot.lifecycle_coverage_sha256,
+                    "inclusion_rule_sha256": point.universe_snapshot.inclusion_rule_sha256,
+                    "calendar_identity_sha256": point.universe_snapshot.calendar_identity_sha256,
+                    "source": _source_payload(point.universe_snapshot.source_identity),
+                },
+            }
+        )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def runtime_input_bundle_sha256(
+    calendar: AcceptedSessionCalendar,
+    points: tuple[ExecutionPoint, ...],
+    projection_bytes: bytes,
+) -> str:
+    payload = {
+        "calendar_identity_sha256": calendar_identity_sha256(calendar.identity),
+        "qualified_calendar_projection_sha256": QUALIFIED_CALENDAR_PROJECTION_SHA256,
+        "qualified_market_rows_sha256": QUALIFIED_MARKET_ROWS_SHA256,
+        "runtime_market_rows_sha256": runtime_market_rows_sha256(points),
+        "action_projection_sha256": hashlib.sha256(projection_bytes).hexdigest(),
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _point_signal(
+    calendar: AcceptedSessionCalendar,
+    point: ExecutionPoint,
+    official_actions: tuple[CorporateActionIdentity, ...],
+):
+    if not isinstance(point, ExecutionPoint):
+        raise InputBlockedError("execution point identity is required")
+    if point.universe_snapshot.effective_session != point.execution_session:
+        raise InputBlockedError("universe snapshot/execution session mismatch")
+    close_dates = tuple(close.session_date for close in point.closes)
+    relevant = tuple(
+        action for action in official_actions if action.effective_date in set(close_dates[1:])
+    )
+    if point.actions != relevant:
+        raise InputBlockedError("execution point actions do not match exact projection contents")
+    return build_signal_feature(
+        calendar,
+        point.closes,
+        actions=point.actions,
+        expected_action_ids=tuple(action.action_id for action in relevant),
+        decision_at=point.decision_at,
+        execution_session=point.execution_session,
+    )
+
+
+def _rebalance(
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    point: ExecutionPoint,
+    authorization: RuntimeAuthorization,
+    signal_session: date,
+    target: float | None,
+    prior_stage_hash: str,
+):
+    row = point.execution_input
+    if row.symbol != "SPY" or row.market != "us":
+        raise InputBlockedError("execution input must be the fixed US SPY instrument")
+    if row.corporate_actions or row.action_types:
+        raise InputBlockedError("daily actions must not be duplicated in the rebalance input")
+    if signal_session >= point.execution_session:
+        raise InputBlockedError("signal/execution chronology is invalid")
+    weights = {} if target is None else {"SPY": target}
+    result = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=signal_session,
+        decision_at=point.decision_at,
+        execution_inputs=(row,),
+        universe_members=("SPY",),
+        universe_snapshot=point.universe_snapshot,
+        target_weights=lambda context: (
+            weights
+            if context.execution_session.session_date == point.execution_session
+            else (_ for _ in ()).throw(InputBlockedError("execution session drift"))
+        ),
+        strategy_definition_sha256=authorization.preregistration_json_sha256,
+        strategy_adapter_sha256=authorization.strategy_adapter_sha256,
+        slippage_bps=ONE_WAY_SLIPPAGE_BPS,
+        prior_stage_hash=prior_stage_hash,
+    )
+    return result
+
+
+def _simulate_cohorts(
+    calendar: AcceptedSessionCalendar,
+    entry_points: tuple[ExecutionPoint, ...],
+    final_exit: ExecutionPoint,
+    *,
+    daily_sessions: tuple[date, ...],
+    action_projection_bytes: bytes,
+    authorization: RuntimeAuthorization,
+    expected_months: tuple[tuple[int, int], ...],
+) -> CohortSimulation:
+    """Run one fresh strategy/benchmark split solely from injected immutable rows."""
+
+    validate_runtime_authorization(authorization, calendar)
+    official_actions = official_actions_from_projection(action_projection_bytes, calendar)
+    expected_cohorts = len(expected_months)
+    if len(entry_points) != expected_cohorts or expected_cohorts < 2:
+        raise InputBlockedError("split entry cohort count is incomplete")
+    actual_months = tuple(
+        (point.execution_session.year, point.execution_session.month) for point in entry_points
+    )
+    if actual_months != expected_months:
+        raise InputBlockedError("entry points do not match the exact frozen cohort months")
+    last_year, last_month = expected_months[-1]
+    expected_final_month = (last_year + 1, 1) if last_month == 12 else (last_year, last_month + 1)
+    if (
+        final_exit.execution_session.year,
+        final_exit.execution_session.month,
+    ) != expected_final_month:
+        raise InputBlockedError("final exit does not match the exact frozen exit month")
+    all_points = entry_points + (final_exit,)
+    actual_bundle_sha = runtime_input_bundle_sha256(calendar, all_points, action_projection_bytes)
+    if RUNTIME_INPUT_BUNDLE_SHA256 is None:
+        raise InputBlockedError("runtime input bundle identity has not been frozen")
+    if (
+        authorization.input_bundle_sha256 != RUNTIME_INPUT_BUNDLE_SHA256
+        or actual_bundle_sha != RUNTIME_INPUT_BUNDLE_SHA256
+    ):
+        raise InputBlockedError("runtime input bundle content identity mismatch")
+    signals = {
+        point.execution_session: _point_signal(calendar, point, official_actions)
+        for point in all_points
+    }
+    execution_dates = tuple(point.execution_session for point in entry_points) + (
+        final_exit.execution_session,
+    )
+    if any(
+        current >= following for current, following in zip(execution_dates, execution_dates[1:])
+    ):
+        raise InputBlockedError("entry and exit sessions must be strictly chronological")
+    assert_zero_distribution_execution_overlap(official_actions, execution_dates)
+    expected_daily = tuple(
+        day for day in calendar.session_dates if execution_dates[0] <= day <= execution_dates[-1]
+    )
+    if daily_sessions != expected_daily:
+        raise InputBlockedError("daily sessions must be complete, accepted, and consecutive")
+    point_by_date = {point.execution_session: point for point in entry_points}
+    if len(point_by_date) != len(entry_points) or final_exit.execution_session in point_by_date:
+        raise InputBlockedError("duplicate execution point")
+
+    strategy = Portfolio.us(INITIAL_CAPITAL)
+    benchmark = Portfolio.us(INITIAL_CAPITAL)
+    strategy_navs = [INITIAL_CAPITAL]
+    benchmark_navs = [INITIAL_CAPITAL]
+    strategy_receipts: list[ExecutionReceipt] = []
+    benchmark_receipts: list[ExecutionReceipt] = []
+    strategy_stage = "0" * 64
+    benchmark_stage = "0" * 64
+
+    for session_date in daily_sessions:
+        _apply_daily_actions((strategy, benchmark), session_date, official_actions)
+        point = point_by_date.get(session_date)
+        if point is None and session_date != final_exit.execution_session:
+            continue
+        if point is not None:
+            strategy_result = _rebalance(
+                strategy,
+                calendar,
+                point,
+                authorization,
+                signals[point.execution_session].signal_session,
+                signals[point.execution_session].target_weight,
+                strategy_stage,
+            )
+            strategy = strategy_result.portfolio
+            strategy_stage = strategy_result.stage_hash
+            strategy_receipts.extend(strategy_result.receipts)
+            if point is entry_points[0]:
+                benchmark_result = _rebalance(
+                    benchmark,
+                    calendar,
+                    point,
+                    authorization,
+                    signals[point.execution_session].signal_session,
+                    1.0,
+                    benchmark_stage,
+                )
+                benchmark = benchmark_result.portfolio
+                benchmark_stage = benchmark_result.stage_hash
+                benchmark_receipts.extend(benchmark_result.receipts)
+                continue
+            raw_open = point.execution_input.open_price
+            if (
+                isinstance(raw_open, bool)
+                or raw_open is None
+                or not math.isfinite(raw_open)
+                or raw_open <= 0
+            ):
+                raise InputBlockedError("benchmark boundary requires a finite positive raw open")
+            strategy_navs.append(strategy_result.final_nav)
+            benchmark_navs.append(benchmark.nav({"SPY": float(raw_open)}))
+            continue
+
+        strategy_result = _rebalance(
+            strategy,
+            calendar,
+            final_exit,
+            authorization,
+            signals[final_exit.execution_session].signal_session,
+            None,
+            strategy_stage,
+        )
+        benchmark_result = _rebalance(
+            benchmark,
+            calendar,
+            final_exit,
+            authorization,
+            signals[final_exit.execution_session].signal_session,
+            None,
+            benchmark_stage,
+        )
+        strategy = strategy_result.portfolio
+        benchmark = benchmark_result.portfolio
+        strategy_receipts.extend(strategy_result.receipts)
+        benchmark_receipts.extend(benchmark_result.receipts)
+        strategy_navs.append(strategy_result.final_nav)
+        benchmark_navs.append(benchmark_result.final_nav)
+
+    strategy_boundaries = tuple(strategy_navs)
+    benchmark_boundaries = tuple(benchmark_navs)
+    return CohortSimulation(
+        strategy_boundaries,
+        benchmark_boundaries,
+        cohort_returns(strategy_boundaries, expected_cohorts=expected_cohorts),
+        cohort_returns(benchmark_boundaries, expected_cohorts=expected_cohorts),
+        tuple(strategy_receipts),
+        tuple(benchmark_receipts),
+    )
+
+
+def _require_query_bounds(
+    query_start: date,
+    query_end: date,
+    expected: tuple[date, date],
+    stage: str,
+) -> None:
+    if type(query_start) is not date or type(query_end) is not date or query_start > query_end:
+        raise InputBlockedError(f"{stage} query bounds are invalid")
+    if (query_start, query_end) != expected:
+        raise InputBlockedError(f"{stage} query bounds must equal the exact frozen interval")
+
+
+def _validation_receipt_digest(
+    strategy_navs: tuple[float, ...],
+    benchmark_navs: tuple[float, ...],
+) -> str:
+    strategy_returns = cohort_returns(strategy_navs, expected_cohorts=45)
+    benchmark_returns = cohort_returns(benchmark_navs, expected_cohorts=45)
+    decision = validation_gate_decision(
+        strategy_returns,
+        benchmark_returns,
+        strategy_navs,
+        benchmark_navs,
+    )
+    payload = {
+        "stage": "validation",
+        "query_start": VALIDATION_QUERY_BOUNDS[0].isoformat(),
+        "query_end": VALIDATION_QUERY_BOUNDS[1].isoformat(),
+        "strategy_boundary_navs": [float(value).hex() for value in strategy_navs],
+        "benchmark_boundary_navs": [float(value).hex() for value in benchmark_navs],
+        "strategy_returns": [float(value).hex() for value in strategy_returns],
+        "benchmark_returns": [float(value).hex() for value in benchmark_returns],
+        "gates": list(decision.gates),
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def validation_receipt(simulation: CohortSimulation) -> ValidationReceipt:
+    if not isinstance(simulation, CohortSimulation):
+        raise InputBlockedError("validation receipt requires an actual cohort simulation")
+    digest = _validation_receipt_digest(
+        simulation.strategy_boundary_navs,
+        simulation.benchmark_boundary_navs,
+    )
+    return ValidationReceipt(
+        simulation.strategy_boundary_navs,
+        simulation.benchmark_boundary_navs,
+        digest,
+    )
+
+
+def require_holdout_unlocked(receipt: object) -> None:
+    if not isinstance(receipt, ValidationReceipt):
+        raise InputBlockedError("holdout requires an immutable validation receipt")
+    if _sha256(receipt.result_sha256, "validation result_sha256") != (
+        _validation_receipt_digest(
+            receipt.strategy_boundary_navs,
+            receipt.benchmark_boundary_navs,
+        )
+    ):
+        raise InputBlockedError("validation receipt content identity mismatch")
+    strategy_returns = cohort_returns(receipt.strategy_boundary_navs, expected_cohorts=45)
+    benchmark_returns = cohort_returns(receipt.benchmark_boundary_navs, expected_cohorts=45)
+    decision = validation_gate_decision(
+        strategy_returns,
+        benchmark_returns,
+        receipt.strategy_boundary_navs,
+        receipt.benchmark_boundary_navs,
+    )
+    if not decision.all_gates_pass:
+        raise InputBlockedError("holdout requires recomputed all-gates-true validation evidence")
+
+
+def simulate_validation(
+    calendar: AcceptedSessionCalendar,
+    entry_points: tuple[ExecutionPoint, ...],
+    final_exit: ExecutionPoint,
+    *,
+    daily_sessions: tuple[date, ...],
+    action_projection_bytes: bytes,
+    authorization: RuntimeAuthorization,
+    query_start: date,
+    query_end: date,
+) -> CohortSimulation:
+    _require_query_bounds(query_start, query_end, VALIDATION_QUERY_BOUNDS, "validation")
+    return _simulate_cohorts(
+        calendar,
+        entry_points,
+        final_exit,
+        daily_sessions=daily_sessions,
+        action_projection_bytes=action_projection_bytes,
+        authorization=authorization,
+        expected_months=VALIDATION_ENTRY_MONTHS,
+    )
+
+
+def simulate_holdout(
+    validation_result: ValidationReceipt,
+    calendar: AcceptedSessionCalendar,
+    entry_points: tuple[ExecutionPoint, ...],
+    final_exit: ExecutionPoint,
+    *,
+    daily_sessions: tuple[date, ...],
+    action_projection_bytes: bytes,
+    authorization: RuntimeAuthorization,
+    query_start: date,
+    query_end: date,
+) -> CohortSimulation:
+    require_holdout_unlocked(validation_result)
+    _require_query_bounds(query_start, query_end, HOLDOUT_QUERY_BOUNDS, "holdout")
+    return _simulate_cohorts(
+        calendar,
+        entry_points,
+        final_exit,
+        daily_sessions=daily_sessions,
+        action_projection_bytes=action_projection_bytes,
+        authorization=authorization,
+        expected_months=HOLDOUT_ENTRY_MONTHS,
+    )
+
+
+def classify_terminal(*, stage: str, complete: bool, passed: bool) -> TerminalClassification:
+    if not complete:
+        return TerminalClassification("INPUT_BLOCKED", True, False)
+    if stage == "validation":
+        if passed:
+            raise InputContractError("a validation pass unlocks holdout and is not terminal")
+        return TerminalClassification("HISTORICAL_VALIDATION_FAIL", True, False)
+    if stage != "holdout":
+        raise InputContractError("stage must be validation or holdout")
+    if not passed:
+        return TerminalClassification("HISTORICAL_HOLDOUT_FAIL", True, True)
+    return TerminalClassification(
+        "HISTORICAL_PASS_PENDING_EXTERNAL_REVIEW",
+        False,
+        True,
+    )
+
+
+def derived_action_id(ex_date: date) -> str:
+    """Deterministic fallback identity; runtime must still equal PR117's exact tuple."""
+
+    if type(ex_date) is not date:
+        raise InputBlockedError("ex_date must be a date")
+    payload = f"{OFFICIAL_ACTION_PROJECTION_SHA256}|SPY|{ex_date.isoformat()}"
+    return "spy-state-street-" + hashlib.sha256(payload.encode()).hexdigest()
+
+
+def main() -> int:
+    raise SystemExit(
+        "INPUT_BLOCKED: inject current JSON identity and merged PR117 identity; "
+        "this one-off has no real-data loader"
+    )
+
+
+if __name__ == "__main__":
+    main()
