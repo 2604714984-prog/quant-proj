@@ -40,11 +40,19 @@ DecisionPriceBasis = Literal[
     "raw_pre_action_per_old_share",
     "raw_execution_units",
 ]
+ExecutionPriceBasis = Literal[
+    "timestamped_session_open",
+    "retrospective_daily_bar_open_fill",
+]
 TargetWeightCallback = Callable[["DecisionContext"], Mapping[str, float]]
 _RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
 _DECISION_PRICE_BASES = {
     "raw_pre_action_per_old_share",
     "raw_execution_units",
+}
+_EXECUTION_PRICE_BASES = {
+    "timestamped_session_open",
+    "retrospective_daily_bar_open_fill",
 }
 
 
@@ -71,7 +79,7 @@ class TerminalAction:
 
 @dataclass(frozen=True)
 class ExecutionInput:
-    """One execution row with an explicit causal decision-price unit basis."""
+    """One row separating causal sizing inputs from the realized execution event."""
 
     symbol: str
     market: Market
@@ -89,6 +97,8 @@ class ExecutionInput:
     decision_price: float | None = None
     decision_price_source: SourceIdentity | None = None
     decision_price_basis: DecisionPriceBasis | None = None
+    execution_price_effective_at: datetime | None = None
+    execution_price_basis: ExecutionPriceBasis | None = None
 
 
 @dataclass(frozen=True)
@@ -303,8 +313,31 @@ def _inputs(
     for row in values:
         if not isinstance(row.source, SourceIdentity):
             raise MarketDataError("execution source must be a SourceIdentity")
-        if row.market != market or row.source.available_at > execution.open_at:
-            raise MarketDataError("market mismatch or execution source unavailable at open")
+        if row.market != market:
+            raise MarketDataError("execution input market mismatch")
+        if row.execution_price_effective_at is None or row.execution_price_basis is None:
+            raise MarketDataError("execution price effective_at and basis are required")
+        effective_at = require_aware_datetime(
+            row.execution_price_effective_at,
+            "execution_price_effective_at",
+        )
+        if effective_at != execution.open_at:
+            raise MarketDataError(
+                "execution price effective_at must equal the accepted-session open"
+            )
+        if row.execution_price_basis not in _EXECUTION_PRICE_BASES:
+            raise MarketDataError("execution price basis is unsupported")
+        if row.source.available_at < effective_at:
+            raise MarketDataError(
+                "execution price source cannot be available before its market event"
+            )
+        if (
+            row.execution_price_basis == "timestamped_session_open"
+            and row.source.available_at != effective_at
+        ):
+            raise MarketDataError(
+                "timestamped session-open source must be available at the market event"
+            )
         if not isinstance(row.currency, str) or len(row.currency) != 3 \
                 or not row.currency.isalpha() or not row.currency.isupper():
             raise MarketDataError("currency must be a three-letter uppercase code")

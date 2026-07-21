@@ -133,6 +133,9 @@ def _input(
     decision_price: float | None = None,
     decision_price_available_at: datetime = datetime(2000, 1, 1, tzinfo=UTC),
     decision_price_basis: str | None = "raw_pre_action_per_old_share",
+    execution_price_source_available_at: datetime | None = None,
+    execution_price_effective_at: datetime | None = None,
+    execution_price_basis: str | None = "timestamped_session_open",
 ) -> ExecutionInput:
     timezone_name = execution.exchange_timezone
     decision_reference = (
@@ -145,7 +148,12 @@ def _input(
         market,  # type: ignore[arg-type]
         price,
         "USD" if market == "us" else "CNY",
-        _source(source_label or f"bar-{symbol}", execution.open_at),
+        _source(
+            source_label or f"bar-{symbol}",
+            execution.open_at
+            if execution_price_source_available_at is None
+            else execution_price_source_available_at,
+        ),
         _statuses(
             symbol,
             timezone_name,
@@ -164,6 +172,10 @@ def _input(
         decision_reference,
         _source(f"decision-price-{symbol}", decision_price_available_at),
         decision_price_basis,  # type: ignore[arg-type]
+        execution.open_at
+        if execution_price_effective_at is None
+        else execution_price_effective_at,
+        execution_price_basis,  # type: ignore[arg-type]
     )
 
 
@@ -324,10 +336,11 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
                 execution_inputs=(input_row,),
                 target_weights=lambda _: {},
             )
-    late = ExecutionInput(
-        **{**input_row.__dict__, "source": _source("late", execution.open_at + timedelta(seconds=1))}
+    late = replace(
+        input_row,
+        source=_source("late", execution.open_at + timedelta(seconds=1)),
     )
-    with pytest.raises(MarketDataError, match="unavailable at open"):
+    with pytest.raises(MarketDataError, match="timestamped session-open source"):
         _run_static_rebalance(
             portfolio,
             calendar,
@@ -336,6 +349,19 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
             execution_inputs=(late,),
             target_weights=lambda _: {},
         )
+    retrospective = replace(
+        late,
+        execution_price_basis="retrospective_daily_bar_open_fill",
+    )
+    accepted_retrospective = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(retrospective,),
+        target_weights=lambda _: {},
+    )
+    assert accepted_retrospective.context.execution_session == execution
     with pytest.raises(ValueError, match=r"in \[0, 1\]"):
         _run_static_rebalance(
             portfolio,
@@ -345,6 +371,121 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
             execution_inputs=(input_row,),
             target_weights=lambda _: {"AAA": 1.1},
         )
+
+
+def test_execution_price_event_and_late_source_are_explicit_and_fail_closed() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "America/New_York")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.us(10_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+    callback_calls = []
+    base = _input("SPY", "us", execution)
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "target_weights": lambda context: callback_calls.append(context) or {"SPY": 1.0},
+    }
+
+    for bad in (
+        replace(base, execution_price_effective_at=None),
+        replace(base, execution_price_basis=None),
+    ):
+        with pytest.raises(MarketDataError, match="effective_at and basis are required"):
+            _run_static_rebalance(
+                portfolio,
+                calendar,
+                execution_inputs=(bad,),
+                **arguments,
+            )
+    unknown = replace(base, execution_price_basis="official_auction_q")
+    with pytest.raises(MarketDataError, match="execution price basis is unsupported"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            execution_inputs=(unknown,),
+            **arguments,
+        )
+    for offset in (-1, 1):
+        mistimed = replace(
+            base,
+            execution_price_effective_at=(
+                execution.open_at + timedelta(microseconds=offset)
+            ),
+        )
+        with pytest.raises(MarketDataError, match="must equal the accepted-session open"):
+            _run_static_rebalance(
+                portfolio,
+                calendar,
+                execution_inputs=(mistimed,),
+                **arguments,
+            )
+    too_early = replace(
+        base,
+        source=_source("pre-event-open", execution.open_at - timedelta(microseconds=1)),
+        execution_price_basis="retrospective_daily_bar_open_fill",
+    )
+    with pytest.raises(MarketDataError, match="cannot be available before its market event"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            execution_inputs=(too_early,),
+            **arguments,
+        )
+    assert callback_calls == []
+    assert portfolio.__dict__ == before
+
+    late = replace(
+        base,
+        source=_source("eod-open", execution.close_at + timedelta(hours=2)),
+        execution_price_basis="retrospective_daily_bar_open_fill",
+    )
+    retrospective = _run_static_rebalance(
+        portfolio,
+        calendar,
+        execution_inputs=(late,),
+        **arguments,
+    )
+    assert callback_calls == [retrospective.context]
+    assert retrospective.receipts[0].requested_shares == 1_000
+    assert retrospective.receipts[0].price == 10.0
+    assert portfolio.__dict__ == before
+
+
+def test_execution_price_basis_changes_bound_identity_without_changing_receipts() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "America/New_York")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.us(10_000, costs=TransactionCostModel())
+    timestamped = _input("SPY", "us", execution)
+    retrospective = replace(
+        timestamped,
+        execution_price_basis="retrospective_daily_bar_open_fill",
+    )
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "target_weights": lambda _: {"SPY": 1.0},
+    }
+
+    first = _run_static_rebalance(
+        portfolio,
+        calendar,
+        execution_inputs=(timestamped,),
+        **arguments,
+    )
+    second = _run_static_rebalance(
+        portfolio,
+        calendar,
+        execution_inputs=(retrospective,),
+        **arguments,
+    )
+
+    assert first.receipts == second.receipts
+    assert first.input_identity_hash != second.input_identity_hash
+    assert first.stage_hash != second.stage_hash
 
 
 def test_us_sells_before_buys_without_spending_unsettled_t_plus_three_cash() -> None:
