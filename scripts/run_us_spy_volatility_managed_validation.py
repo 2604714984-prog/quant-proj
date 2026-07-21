@@ -53,7 +53,9 @@ OFFICIAL_ACTION_RETRIEVED_AT = datetime.fromisoformat("2026-07-21T08:13:17.58013
 OFFICIAL_ACTION_AVAILABLE_AT_BASIS = (
     "OFFICIAL_SOURCE_RETRIEVED_20260721_HISTORICAL_PUBLICATION_TIME_NOT_BACKDATED"
 )
-PR117_REVIEWED_HEAD = "d065def0625fe20126c1579d8bf4c8c75614a154"
+PR117_REVIEWED_HEAD = "03ddff47b55f558cb93a4340dfeafc04e2953f92"
+PR117_MERGED_MAIN_HEAD = "6897f80325f2499895ea4928aa7a445bb2d73501"
+EXPECTED_INCLUSION_RULE_SHA256 = "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
 QUALIFIED_CALENDAR_PROJECTION_SHA256 = (
     "c5a6a88cb3b616d1207a5a67959879ad514553aec1d3da5367a12afae7c22f9a"
 )
@@ -101,6 +103,7 @@ class RuntimeAuthorization:
     preregistration_json_sha256: str
     strategy_adapter_sha256: str
     causal_core_reviewed_head: str
+    causal_core_merged_main_head: str
     calendar_identity_sha256: str
     qualified_market_rows_sha256: str
     input_bundle_sha256: str
@@ -282,6 +285,8 @@ def validate_runtime_authorization(
         raise InputBlockedError("strategy adapter does not match current bytes")
     if authorization.causal_core_reviewed_head != PR117_REVIEWED_HEAD:
         raise InputBlockedError("causal core must equal the exact reviewed PR117 head")
+    if authorization.causal_core_merged_main_head != PR117_MERGED_MAIN_HEAD:
+        raise InputBlockedError("causal core must equal the merged PR117 main head")
     if authorization.calendar_identity_sha256 != calendar_identity_sha256(calendar.identity):
         raise InputBlockedError("runtime calendar identity mismatch")
     if calendar.identity.source_identity.content_sha256 != QUALIFIED_CALENDAR_PROJECTION_SHA256:
@@ -380,6 +385,7 @@ def runtime_market_rows_sha256(points: tuple[ExecutionPoint, ...]) -> str:
                     "decision_price_source": None
                     if point.execution_input.decision_price_source is None
                     else _source_payload(point.execution_input.decision_price_source),
+                    "decision_price_basis": point.execution_input.decision_price_basis,
                 },
                 "universe": {
                     "effective_session": point.universe_snapshot.effective_session.isoformat(),
@@ -418,6 +424,8 @@ def _point_signal(
 ):
     if not isinstance(point, ExecutionPoint):
         raise InputBlockedError("execution point identity is required")
+    if point.universe_snapshot.inclusion_rule_sha256 != EXPECTED_INCLUSION_RULE_SHA256:
+        raise InputBlockedError("universe snapshot inclusion rule does not match definition")
     if point.universe_snapshot.effective_session != point.execution_session:
         raise InputBlockedError("universe snapshot/execution session mismatch")
     close_dates = tuple(close.session_date for close in point.closes)
@@ -450,6 +458,10 @@ def _rebalance(
         raise InputBlockedError("execution input must be the fixed US SPY instrument")
     if row.corporate_actions or row.action_types:
         raise InputBlockedError("daily actions must not be duplicated in the rebalance input")
+    if row.decision_price_basis != "raw_execution_units":
+        raise InputBlockedError("SPY decision price must use raw_execution_units")
+    if point.universe_snapshot.inclusion_rule_sha256 != EXPECTED_INCLUSION_RULE_SHA256:
+        raise InputBlockedError("universe snapshot inclusion rule does not match definition")
     if signal_session >= point.execution_session:
         raise InputBlockedError("signal/execution chronology is invalid")
     weights = {} if target is None else {"SPY": target}
