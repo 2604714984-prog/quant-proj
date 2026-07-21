@@ -1,0 +1,90 @@
+{
+  "research_id": "A_SHARE_INITIAL_PREINCREASE_FORECAST_DRIFT_V1",
+  "date": "2026-07-21",
+  "market": "A_SHARE",
+  "phase": "input_qualification_terminal",
+  "status": "INPUT_BLOCKED_PERMANENT_CLOSED",
+  "repository": {
+    "branch": "research/a-share-pead-initial-preincrease-terminal-20260721",
+    "base_commit": "2015d8c86c049e4410078c85b860212fd2bd1533",
+    "base_tree": "6c413823fa734c062b638eca1dc0b0d13414d41d"
+  },
+  "frozen_mechanism": {
+    "event": "first earnings forecast announcement",
+    "forecast_type": "预增",
+    "minimum_p_change": 50.0,
+    "previous_parent_net_profit_must_be_positive": true,
+    "entry": "next accepted XSHG session open after announcement date",
+    "holding_period_complete_sessions": 20,
+    "exit": "session 21 open",
+    "one_way_cost_bps": 50,
+    "variants": 1
+  },
+  "source": {
+    "provider_classification": "THIRD_PARTY_TUSHARE_REPLAY_SECONDARY",
+    "endpoint": "forecast_vip",
+    "fiscal_periods_requested": 32,
+    "fiscal_periods_published": 19,
+    "missing_fiscal_periods": [
+      "20180331",
+      "20180630",
+      "20181231",
+      "20190331",
+      "20190630",
+      "20191231",
+      "20200630",
+      "20201231",
+      "20210331",
+      "20230630",
+      "20231231",
+      "20250930",
+      "20251231"
+    ],
+    "database_table": "a_share_research.tushare_forecast_vip_secondary",
+    "published_rows": 27308,
+    "published_symbols": 5343,
+    "available_at_nonnull_rows": 0,
+    "availability_status": "UNKNOWN_CANONICAL_XSHG_CALENDAR_NOT_QUALIFIED"
+  },
+  "outcome_blind_feasibility": {
+    "sh_sz_rows": 26851,
+    "frozen_basic_filter_rows": 6294,
+    "tie_out_pass_rows": 6185,
+    "tie_out_fail_rows": 109,
+    "validation_rows_observed_on_partial_periods": 2283,
+    "retrospective_holdout_rows_observed_on_partial_periods": 3133,
+    "strict_input_coverage_complete": false,
+    "price_or_return_join_performed": false
+  },
+  "decisive_blockers": [
+    "Thirteen of thirty-two frozen fiscal periods are missing, including periods in both validation and retrospective-holdout intervals.",
+    "Every published row has unknown available_at and the historical initial-announcement identity is not primary-source qualified.",
+    "The 20180331 retry returned one first_ann_date later than ann_date chronology conflict.",
+    "A bounded SSE index and document tie-out could not uniquely establish the original-document identity or revision chain.",
+    "The accepted XSHG calendar, PIT listing and ST state, suspension history, price-limit state, and corporate-action-complete holding-period identity remain incomplete."
+  ],
+  "bounded_tie_out": {
+    "period": "20180331",
+    "raw_rows": 1559,
+    "chronology_conflict_rows": 1,
+    "official_index_result": "SSE_INDEX_OBSERVED_DOCUMENT_IDENTITY_UNRESOLVED",
+    "official_detail_result": "HTTP_301_BODY_NOT_OBTAINED",
+    "period_append_authorized": false
+  },
+  "evidence": {
+    "publication_receipt_sha256": "43f98bc366426ef175a678eda63850e62e5a9295b780d2283728d872f46c9139",
+    "acquisition_summary_sha256": "85f924aa5f527e4d9321ea0eceed5f6a6361b2a5c9533352c95391fbcbd6633e",
+    "response_set_sha256": "42f0af53b0a60a131c90228cf00a9cf0552edbad83d2773e7ee06c94fdc05fda",
+    "gap_only_summary_sha256": "be525463b77b5f515251e8595774d240aa87e93e4e3abc2fcc9d393b8ea67ad1",
+    "chronology_diagnostic_sha256": "534a6d4640880b5007d1106845e91c75ce6def3b3ec1a1a02e6373f478adc878",
+    "database_sha256": "f7d35377a9c66e2b0ffd7d0201a6e3954a79df25b3e0b8f36904df1cfef1eeb0"
+  },
+  "terminal_decision": {
+    "outcome_access_authorized": false,
+    "strategy_execution_performed": false,
+    "strategy_candidate_available": false,
+    "reopen_allowed": false,
+    "reason": "The frozen historical validation and holdout inputs cannot be shown complete and causal within the bounded source qualification. Repeated relay retries or row deletion may not repair this lineage."
+  },
+  "boundary_result": "PASS_OUTCOME_BLIND_INPUT_QUALIFICATION_TERMINAL_NO_OUTCOME"
+}
