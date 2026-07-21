@@ -1,7 +1,7 @@
 """Environment-driven project and data paths.
 
-All source, tests, reports, and configuration live in the project repository.
-The mutable DuckDB store is deliberately kept outside it.
+Source, tests, and project documentation live in the repository. Optional
+runtime configuration and the mutable DuckDB store may live outside it.
 """
 
 from __future__ import annotations

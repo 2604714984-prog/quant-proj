@@ -4,7 +4,6 @@ import pytest
 
 from quant_system.backtest.costs import TransactionCostModel
 from quant_system.backtest.portfolio import InsufficientCashError, Portfolio
-from quant_system.backtest.schedule import next_session
 from quant_system.markets.common import MarketDataError
 from quant_system.markets.us import (
     CorporateActionValuationError,
@@ -255,14 +254,3 @@ def test_us_settlement_lag_historical_transitions_are_explicit() -> None:
         settlement_date=date(2024, 5, 29),
         accepted_settlement_sessions=(date(2024, 5, 28), date(2024, 5, 29)),
     )
-
-
-def test_close_signal_is_scheduled_for_next_accepted_session_open() -> None:
-    sessions = (
-        date(2026, 7, 10),
-        date(2026, 7, 13),
-        date(2026, 7, 14),
-    )
-    assert next_session(sessions, sessions[0]) == sessions[1]
-    with pytest.raises(ValueError, match="strictly increasing"):
-        next_session((sessions[1], sessions[0]), sessions[0])

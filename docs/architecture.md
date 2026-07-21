@@ -11,11 +11,10 @@ The active system has two filesystem responsibilities:
 Within the repository:
 
 ~~~text
-config/                    runtime defaults
 src/quant_system/data/     DuckDB reads and append-only writes
 src/quant_system/markets/  market-specific execution constraints
 src/quant_system/backtest/ deterministic portfolio accounting
-src/quant_system/research/ generic identity, split, and inference primitives
+src/quant_system/research/ generic dataset-identity and split primitives
 tests/                     one test suite
 ~~~
 

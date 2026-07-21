@@ -6,7 +6,8 @@ credentials live outside Git under QUANT_DATA_ROOT.
 
 The project deliberately keeps one small runtime surface:
 
-- one configuration file plus environment-variable overrides;
+- built-in defaults plus one optional external configuration file and
+  environment-variable overrides;
 - one CLI (quant);
 - one central DuckDB access layer;
 - small A-share and US market-semantics modules;
@@ -35,6 +36,8 @@ directory. Override paths when needed:
 export QUANT_DATA_ROOT=/home/rongyu/workspace/quant-data
 quant info
 ~~~
+
+Select an external TOML file with `quant --config PATH ...` or `QUANT_CONFIG`.
 
 Market execution is fail-closed: callers must explicitly attest that bar and
 event inputs are complete and available, and settlement/tax rules are selected

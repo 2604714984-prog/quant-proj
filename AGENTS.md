@@ -40,6 +40,12 @@ easy to understand, test, and remove.
   only the feature, selection, and fixed parameters and reuses the shared core.
 - Terminal experiments stay recoverable through Git history and Releases; they
   do not remain as active source, reports, receipts, or checksum sidecars.
-- Use ordinary branches, one PR, CI, and one terminal external review. An
-  intermediate milestone does not need its own review.
+- Use ordinary branches, one PR, and CI. Require external review only for
+  changes to shared data, point-in-time (PIT), unit, or execution contracts;
+  event-loop, portfolio, or market semantics; the first historical `PASS`;
+  any prospective result; the first combination result; or any opening of
+  position-effect or trading boundaries.
+- An ordinary `FAIL` or `INPUT_BLOCKED` terminal result needs only that PR with
+  green CI, one compact terminal result, and permanent closure; it does not
+  require external review. Intermediate milestones do not need review.
 - Do not migrate or reopen rejected legacy strategy families.
