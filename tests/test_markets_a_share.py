@@ -2,7 +2,6 @@ from datetime import date
 
 import pytest
 
-from scripts import run_a_share_relative_strength_once as rs_runner
 from quant_system.backtest.costs import TransactionCostModel
 from quant_system.backtest.portfolio import InsufficientSharesError, Portfolio
 from quant_system.markets.a_share import (
@@ -117,88 +116,6 @@ def test_slippage_inside_limit_tolerance_remains_fillable_without_capping() -> N
     assert buy.price == pytest.approx(10.000099868)
     assert sell.filled is True
     assert sell.price == pytest.approx(8.999929857)
-
-
-def test_public_runner_terminalizes_slippage_cross_without_child_crash(
-    monkeypatch,
-    tmp_path,
-) -> None:
-    run_id = "A_SHARE_RELATIVE_STRENGTH_HISTORICAL_SECONDARY_SCREEN_V3_20260716"
-    bar = rs_runner.SecondaryExecutionBar(
-        "600000.SH",
-        date(2026, 7, 16),
-        9.99,
-        9.99,
-        False,
-        10.0,
-        8.0,
-        10_000_000.0,
-        1_000_000_000.0,
-    )
-    published = {}
-    database_identity = ("1" * 64, 1, "0600")
-    manifest = {
-        "run_id": run_id,
-        "database": {
-            "sha256": database_identity[0],
-            "size_bytes": database_identity[1],
-            "mode": database_identity[2],
-        }
-    }
-
-    def synthetic_execution(_database, _manifest, execution_run_id):
-        assert execution_run_id == run_id
-        receipt = rs_runner._trade(
-            Portfolio.a_share(400_000.0),
-            bar,
-            "buy",
-            100.0,
-            20.0,
-        )
-        assert receipt.reason == "slippage_crosses_up_limit"
-        return {
-            "run_id": execution_run_id,
-            "status": "SYNTHETIC_NO_OUTCOME_TERMINAL",
-            "slippage_crosses_up_limit": 1,
-            "unexpected_exception_count": 0,
-        }
-
-    monkeypatch.setattr(rs_runner, "load_data_manifest", lambda *_: dict(manifest))
-    monkeypatch.setattr(rs_runner, "_database_identity", lambda *_: database_identity)
-    monkeypatch.setattr(rs_runner, "execute_screen", synthetic_execution)
-    monkeypatch.setattr(
-        rs_runner,
-        "_publish",
-        lambda path, report: published.update(path=path, report=report),
-    )
-    output = tmp_path / "synthetic-terminal.json"
-
-    return_code = rs_runner.main(
-        [
-            "--run-id",
-            run_id,
-            "--db",
-            str(tmp_path / "unused.duckdb"),
-            "--data-manifest",
-            str(tmp_path / "unused-manifest.json"),
-            "--expected-data-manifest-sha256",
-            "2" * 64,
-            "--output",
-            str(output),
-            "--execute",
-        ]
-    )
-
-    assert return_code == 0
-    assert published == {
-        "path": output,
-        "report": {
-            "run_id": run_id,
-            "status": "SYNTHETIC_NO_OUTCOME_TERMINAL",
-            "slippage_crosses_up_limit": 1,
-            "unexpected_exception_count": 0,
-        },
-    }
 
 
 @pytest.mark.parametrize(

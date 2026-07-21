@@ -1,6 +1,0 @@
-[database]
-filename = "quant_research.duckdb"
-
-[writer]
-max_rows_per_batch = 100000
-lock_timeout_seconds = 5.0

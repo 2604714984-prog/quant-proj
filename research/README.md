@@ -1,17 +1,10 @@
-# Research workspace
+# Research branches
 
-New strategy research belongs in this repository, but remains separate from the
-runtime data layer.
+Keep one strategy in flight at a time. A research branch may contain one small
+adapter, one outcome-blind definition, and one compact result with its input and
+code identities embedded. Do not create task packs, registries, failure-memory
+directories, checksum sidecars, or a generic runner layer.
 
-Use these subdirectories as needed:
-
-- definitions/ for outcome-blind strategy specifications;
-- reports/ for reproducible research summaries;
-- failure-memory/ for rejected specifications and non-retest constraints.
-
-Large outcomes, input snapshots, databases, and provider payloads stay under the
-external QUANT_DATA_ROOT. A report may reference their immutable hash but should
-not copy the data into Git.
-
-Strategy research must not add broker, paper, live, or automatic trading paths.
-Unvalidated work must not be presented as an actionable candidate.
+Terminal work is recoverable from the PR or a Git Release and is removed from
+the active tree. Databases, snapshots, provider payloads, and credentials stay
+under the external `QUANT_DATA_ROOT`.
