@@ -1,17 +1,20 @@
 """One-off, injected-input SPY volatility-managed historical validation.
 
-This module has no database, provider, network, or file-loading path.  A real run
-remains hard-gated on a current preregistration hash and the merged PR117 identity.
+It can load only one exact private validation bundle and has no database, provider,
+or network path. A real run remains hard-gated on current code and core identities.
 """
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import math
+import os
+import stat
 import sys
 from dataclasses import dataclass
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
@@ -30,12 +33,18 @@ from quant_system.backtest import (  # noqa: E402
     run_static_rebalance,
 )
 from quant_system.data import (  # noqa: E402
+    AcceptedSession,
     AcceptedSessionCalendar,
+    CalendarIdentity,
     CorporateActionIdentity,
     SourceIdentity,
     calendar_identity_sha256,
 )
-from quant_system.markets.universe import UniverseSnapshotIdentity  # noqa: E402
+from quant_system.markets.universe import (  # noqa: E402
+    StatusEvidence,
+    UniverseSnapshotIdentity,
+    validate_universe_snapshot,
+)
 
 from research.adapters.us_spy_volatility_managed import (  # noqa: E402
     INITIAL_CAPITAL,
@@ -58,13 +67,19 @@ OFFICIAL_ACTION_AVAILABLE_AT_BASIS = (
 PR117_REVIEWED_HEAD = "03ddff47b55f558cb93a4340dfeafc04e2953f92"
 PR117_MERGED_MAIN_HEAD = "6897f80325f2499895ea4928aa7a445bb2d73501"
 STATUS_CORE_REVIEWED_HEAD = "da9fb5855e2402804027a6f99109ca146dd81e18"
-EXECUTION_CORE_REVIEWED_HEAD = "0a30c3ccdc430b111b3d5f9c09422a07d18a5037"
+EXECUTION_CORE_REVIEWED_HEAD = "f2b3e622903dae0bf30dafbd4899af67f2571c13"
 EXPECTED_INCLUSION_RULE_SHA256 = "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
 VALIDATION_CALENDAR_PROJECTION_SHA256 = (
     "23b8f4ffe7c82c73a18b1a883da01d6c3b14c31c30725062726b95b6eb12ea31"
 )
 QUALIFIED_MARKET_ROWS_SHA256 = "818ac5f04a072e1d8e6e7b27b42a7753f31ea9e09d11c65c7e78bb16e418394d"
-VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256: str | None = None
+VALIDATION_BUNDLE_FILE_SHA256 = "fcf4b487b1b798c6afcfc774339d2066a45238431253e27b14ed5d1a4cc369c9"
+VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256 = "db865aaaa169f926064a31cd608955557ffef1261e252281f2352d8a45d34cd8"
+VALIDATION_CALENDAR_IDENTITY_SHA256 = "020cb50b360d04c551b539386b99307d4bd9bbdc925504fe2a5a1e5bbb71e4e9"
+VALIDATION_CALENDAR_MAPPING_FILE_SHA256 = "75bb2f0d15d07ca5ab9a58b702665493ddedc4e7321066a141beb46b24667cee"
+VALIDATION_CALENDAR_MAPPING_SHA256 = "36300dd6763fc8be3a53ddd70a1f3b1b6a1b058967bc0a7e6c79cb99b5510530"
+VALIDATION_MARKET_RUNTIME_SHA256 = "6e00567c8a7bc065a542d031b6f441a829b40c236a8b6d8470e4e0513d72a8ee"
+VALIDATION_ACTION_IDENTITY_SHA256 = "25cf12430457b6efd63d26b6db81f485b99392d8d505ba057c0961e26664c35c"
 HOLDOUT_CALENDAR_PROJECTION_SHA256: str | None = None
 HOLDOUT_RUNTIME_INPUT_BUNDLE_SHA256: str | None = None
 VALIDATION_CALENDAR_SESSION_COUNT = 987
@@ -134,6 +149,7 @@ class ExecutionPoint:
     execution_session: date
     execution_input: ExecutionInput
     universe_snapshot: UniverseSnapshotIdentity
+    execution_calendar_revision: AcceptedSessionCalendar | None = None
 
 
 @dataclass(frozen=True)
@@ -198,9 +214,7 @@ def _read_definition() -> tuple[bytes, dict[str, Any]]:
     return payload, record
 
 
-def _definition_inclusion_rule_sha256(record: dict[str, Any] | None = None) -> str:
-    if record is None:
-        _, record = _read_definition()
+def _definition_inclusion_rule_sha256(record: dict[str, Any]) -> str:
     try:
         value = record["outcome_blind_frozen_specification"][
             "expected_inclusion_rule_sha256"
@@ -451,6 +465,13 @@ def calendar_epoch_mapping_sha256(points: tuple[ExecutionPoint, ...]) -> str:
             {
                 "execution_session": point.execution_session.isoformat(),
                 "calendar_identity_sha256": calendar_sha,
+                "execution_calendar_revision_identity_sha256": (
+                    None
+                    if point.execution_calendar_revision is None
+                    else calendar_identity_sha256(
+                        point.execution_calendar_revision.identity
+                    )
+                ),
             }
         )
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
@@ -574,8 +595,7 @@ def _point_signal(
 ):
     if not isinstance(point, ExecutionPoint):
         raise InputBlockedError("execution point identity is required")
-    expected_inclusion = _definition_inclusion_rule_sha256()
-    if point.universe_snapshot.inclusion_rule_sha256 != expected_inclusion:
+    if point.universe_snapshot.inclusion_rule_sha256 != EXPECTED_INCLUSION_RULE_SHA256:
         raise InputBlockedError("universe snapshot inclusion rule does not match definition")
     if point.universe_snapshot.calendar_identity_sha256 != calendar_identity_sha256(
         point.calendar.identity
@@ -637,8 +657,7 @@ def _rebalance(
         or row.decision_price_source != final_close.source
     ):
         raise InputBlockedError("SPY decision price must equal the final causal raw close")
-    expected_inclusion = _definition_inclusion_rule_sha256()
-    if point.universe_snapshot.inclusion_rule_sha256 != expected_inclusion:
+    if point.universe_snapshot.inclusion_rule_sha256 != EXPECTED_INCLUSION_RULE_SHA256:
         raise InputBlockedError("universe snapshot inclusion rule does not match definition")
     if signal_session >= point.execution_session:
         raise InputBlockedError("signal/execution chronology is invalid")
@@ -649,6 +668,7 @@ def _rebalance(
         signal_session=signal_session,
         decision_at=point.decision_at,
         execution_inputs=(row,),
+        execution_calendar_revision=point.execution_calendar_revision,
         universe_members=("SPY",),
         universe_snapshot=point.universe_snapshot,
         target_weights=lambda context: (
@@ -1005,11 +1025,224 @@ def derived_action_id(ex_date: date) -> str:
     return "spy-state-street-" + hashlib.sha256(payload.encode()).hexdigest()
 
 
-def main() -> int:
-    raise SystemExit(
-        "INPUT_BLOCKED: inject current JSON identity and merged PR117 identity; "
-        "this one-off has no real-data loader"
+def _capture_bundle(path: Path) -> bytes:
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    fd = os.open(path, flags)
+    try:
+        before = os.fstat(fd)
+        if not stat.S_ISREG(before.st_mode) or before.st_uid != os.getuid():
+            raise InputBlockedError("bundle must be an owner-controlled regular file")
+        if stat.S_IMODE(before.st_mode) & ~0o600 or not 0 < before.st_size <= 8 * 1024 * 1024:
+            raise InputBlockedError("bundle mode or size is outside the frozen limit")
+        payload = b""
+        while chunk := os.read(fd, 1024 * 1024):
+            payload += chunk
+            if len(payload) > 8 * 1024 * 1024:
+                raise InputBlockedError("bundle exceeds the frozen size limit")
+        after = os.fstat(fd)
+    finally:
+        os.close(fd)
+    current = os.stat(path, follow_symlinks=False)
+    fields = ("st_dev", "st_ino", "st_size", "st_mtime_ns", "st_ctime_ns")
+    if any(getattr(before, key) != getattr(after, key) or getattr(after, key) != getattr(current, key) for key in fields):
+        raise InputBlockedError("bundle changed during descriptor-bound capture")
+    if hashlib.sha256(payload).hexdigest() != VALIDATION_BUNDLE_FILE_SHA256:
+        raise InputBlockedError("bundle raw SHA-256 mismatch")
+    return payload
+
+
+def _source(row: dict[str, Any]) -> SourceIdentity:
+    return SourceIdentity(row["source_url"], row["content_sha256"], datetime.fromisoformat(row["available_at"]), datetime.fromisoformat(row["retrieved_at"]), row["revision_id"], row["supersedes_revision_id"])
+
+
+def _calendar(row: dict[str, Any]) -> AcceptedSessionCalendar:
+    sessions = tuple(
+        AcceptedSession(
+            _iso_date(item["session_date"], "session_date"), datetime.fromisoformat(item["open_at"]),
+            datetime.fromisoformat(item["close_at"]), SourceIdentity(
+                item["source_url"], item["source_document_set_sha256"],
+                datetime.fromisoformat(item["source_available_at"]), OFFICIAL_ACTION_RETRIEVED_AT,
+                item["snapshot_id"],
+            ), item["timezone"], item["early_close"], item["exchange"],
+        )
+        for item in row["session_rows"]
     )
+    identity = row["calendar_identity"]
+    calendar = AcceptedSessionCalendar(
+        sessions,
+        identity=CalendarIdentity(
+            identity["exchange_id"], identity["exchange_timezone"],
+            _iso_date(identity["coverage_start"], "coverage_start"),
+            _iso_date(identity["coverage_end"], "coverage_end"), identity["session_count"],
+            identity["session_dates_sha256"], identity["session_rows_sha256"],
+            _source(identity["source_identity"]),
+        ),
+    )
+    return calendar
+
+
+def _load_validation_bundle(payload: bytes) -> tuple[Any, ...]:
+    try:
+        record = json.loads(
+            payload.decode("utf-8", errors="strict"), object_pairs_hook=_strict_object,
+            parse_constant=lambda value: (_ for _ in ()).throw(InputBlockedError(value)),
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise InputBlockedError("bundle is not strict UTF-8 JSON") from exc
+    if (record["schema_version"], record["stage"], record["symbol"]) != (
+        "us-spy-vol-managed-validation-runtime-input-v1", "validation", "SPY",
+    ) or (record["query_start"], record["query_end"]) != (
+        VALIDATION_QUERY_BOUNDS[0].isoformat(), VALIDATION_QUERY_BOUNDS[1].isoformat(),
+    ):
+        raise InputBlockedError("bundle fixed identity mismatch")
+    reconstruction = _calendar(record["reconstruction_calendar"])
+    epoch_rows = record["calendar_epochs"]
+    epochs = tuple(_calendar(epoch_rows[key]) for key in ("a0", "a1", "b"))
+    by_id = {item.identity.source_identity.revision_id: item for item in epochs}
+    if len(by_id) != 3 or epoch_rows["point_mapping_sha256"] != VALIDATION_CALENDAR_MAPPING_FILE_SHA256:
+        raise InputBlockedError("calendar epoch identity mismatch")
+    projection = record["action_projection_jsonl"].encode()
+    official_actions = official_actions_from_projection(projection, reconstruction)
+    points: list[ExecutionPoint] = []
+    for item in record["execution_points"]:
+        decision = datetime.fromisoformat(item["decision_at"])
+        closes = tuple(
+            CloseObservation(
+                _iso_date(row["session_date"], "close session"), row["raw_close"], _source(row["source"])
+            )
+            for row in item["trailing_22_closes"]
+        )
+        statuses = tuple(
+            StatusEvidence(
+                row["status_id"], row["symbol"], row["kind"], row["value"],
+                _iso_date(row["effective_from"], "effective_from"),
+                None if row["effective_to"] is None else _iso_date(row["effective_to"], "effective_to"),
+                row["exchange_timezone"], _source(row["source"]),
+            )
+            for row in item["status_evidence"]
+        )
+        raw = item["execution"]
+        execution_day = _iso_date(raw["session_date"], "execution session")
+        execution = ExecutionInput(
+            raw["symbol"], raw["market"], raw["raw_open"], raw["currency"],
+            _source(raw["source"]), statuses, decision_price=raw["decision_price"],
+            decision_price_source=_source(raw["decision_price_source"]),
+            decision_price_basis=raw["decision_price_basis"],
+            execution_price_effective_at=datetime.fromisoformat(raw["execution_price_effective_at"]),
+            execution_price_basis=raw["execution_price_basis"],
+        )
+        raw = item["universe_snapshot"]
+        snapshot = UniverseSnapshotIdentity(
+            raw["market"], raw["exchange_id"], _iso_date(raw["effective_session"], "effective_session"),
+            raw["member_count"], raw["ordered_members_sha256"], raw["lifecycle_coverage_sha256"],
+            raw["inclusion_rule_sha256"], raw["calendar_identity_sha256"], _source(raw["source_identity"]),
+        )
+        calendar = by_id[item["decision_calendar_epoch_id"]]
+        revision_id = item["execution_calendar_revision_id"]
+        revision = None if revision_id is None else by_id[revision_id]
+        point = ExecutionPoint(
+            closes, tuple(action for action in official_actions if action.effective_date in {row.session_date for row in closes[1:]}),
+            calendar, decision, execution_day, execution, snapshot, revision,
+        )
+        validate_universe_snapshot(
+            snapshot, market="us", calendar_identity=calendar.identity,
+            session=calendar.session_on(execution_day, as_of=decision), decision_at=decision,
+            members=("SPY",), records_by_symbol={"SPY": statuses},
+        )
+        if closes[-1].session_date.isoformat() != item["signal_session"]:
+            raise InputBlockedError("signal-session identity mismatch")
+        points.append(point)
+    frozen = tuple(points)
+    if len(frozen) != 46 or len(reconstruction.session_dates) != 987:
+        raise InputBlockedError("bundle dimensions mismatch")
+    identities = (calendar_identity_sha256(reconstruction.identity), calendar_epoch_mapping_sha256(frozen),
+                  runtime_market_rows_sha256(frozen), official_actions_identity_sha256(official_actions))
+    if identities != (VALIDATION_CALENDAR_IDENTITY_SHA256, VALIDATION_CALENDAR_MAPPING_SHA256,
+                      VALIDATION_MARKET_RUNTIME_SHA256, VALIDATION_ACTION_IDENTITY_SHA256):
+        raise InputBlockedError("calendar/market/action semantic identity mismatch")
+    if runtime_input_bundle_sha256(reconstruction, frozen, projection) != VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256:
+        raise InputBlockedError("runtime semantic identity mismatch")
+    daily = tuple(_iso_date(row["session_date"], "daily session") for row in record["daily_sessions"])
+    return reconstruction, frozen[:-1], frozen[-1], daily, projection
+
+
+def _target(path: Path) -> None:
+    parent = path.parent.stat()
+    if (not stat.S_ISDIR(parent.st_mode) or parent.st_uid != os.getuid() or stat.S_IMODE(parent.st_mode) & ~0o700 or path.exists() or path.is_symlink()):
+        raise InputBlockedError("claim/result path must be absent beneath an owner-private directory")
+
+
+def _publish(path: Path, record: dict[str, Any]) -> str:
+    _target(path)
+    payload = json.dumps(record, sort_keys=True, separators=(",", ":"), allow_nan=False).encode()
+    temporary = path.with_name(f".{path.name}.{os.getpid()}.tmp")
+    fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        if os.write(fd, payload) != len(payload):
+            raise InputBlockedError("private publication was incomplete")
+        os.fsync(fd)
+        os.link(temporary, path)
+        directory_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+    finally:
+        os.close(fd)
+        temporary.unlink(missing_ok=True)
+    return hashlib.sha256(payload).hexdigest()
+
+
+def _run_once(bundle: Path, claim: Path, result: Path, expected: tuple[str, str, str]) -> int:
+    report_bytes, report = _read_definition()
+    actual = (hashlib.sha256(report_bytes).hexdigest(), _file_sha256(_ADAPTER_PATH), _file_sha256(_RUNNER_PATH))
+    if tuple(_sha256(value, "expected code identity") for value in expected) != actual or report.get("status") != "PREREGISTERED_NOT_EXECUTED":
+        raise InputBlockedError("definition/adapter/runner identity mismatch")
+    if claim == result:
+        raise InputBlockedError("claim and result paths must differ")
+    _target(result)
+    claim_sha = _publish(claim, {"research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1",
+        "stage": "validation", "claimed_at": datetime.now(timezone.utc).isoformat(),
+        "bundle_file_sha256": VALIDATION_BUNDLE_FILE_SHA256, "definition_sha256": actual[0],
+        "adapter_sha256": actual[1], "runner_sha256": actual[2]})
+    calendar, entries, final_exit, daily_sessions, projection = _load_validation_bundle(_capture_bundle(bundle))
+    authorization = RuntimeAuthorization(report["status"], actual[0], actual[1], PR117_REVIEWED_HEAD,
+        PR117_MERGED_MAIN_HEAD, STATUS_CORE_REVIEWED_HEAD, EXECUTION_CORE_REVIEWED_HEAD, actual[2],
+        VALIDATION_CALENDAR_IDENTITY_SHA256, VALIDATION_CALENDAR_MAPPING_SHA256,
+        QUALIFIED_MARKET_ROWS_SHA256, VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256)
+    simulation = simulate_validation(
+        calendar, entries, final_exit, daily_sessions=daily_sessions,
+        action_projection_bytes=projection, authorization=authorization,
+        query_start=VALIDATION_QUERY_BOUNDS[0], query_end=VALIDATION_QUERY_BOUNDS[1],
+    )
+    decision = validation_gate_decision(simulation.strategy_returns, simulation.benchmark_returns,
+        simulation.strategy_boundary_navs, simulation.benchmark_boundary_navs)
+    receipt = validation_receipt(simulation)
+    _publish(result, {
+        "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1", "stage": "validation",
+        "classification": "VALIDATION_PASS_HOLDOUT_LOCKED" if decision.all_gates_pass else "HISTORICAL_VALIDATION_FAIL",
+        "completed": True, "observed_cohorts": decision.observed_cohorts, "gates": dict(decision.gates),
+        "strategy_metrics_hex": {key: float(value).hex() for key, value in vars(decision.strategy).items()},
+        "benchmark_metrics_hex": {key: float(value).hex() for key, value in vars(decision.benchmark).items()},
+        "strategy_boundary_navs_hex": [float(value).hex() for value in simulation.strategy_boundary_navs],
+        "benchmark_boundary_navs_hex": [float(value).hex() for value in simulation.benchmark_boundary_navs],
+        "validation_receipt_sha256": receipt.result_sha256, "claim_sha256": claim_sha,
+        "bundle_file_sha256": VALIDATION_BUNDLE_FILE_SHA256, "runtime_bundle_sha256": VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256,
+        "code_and_core_sha256": {"definition": actual[0], "adapter": actual[1], "runner": actual[2], "causal_core": PR117_REVIEWED_HEAD, "status_core": STATUS_CORE_REVIEWED_HEAD, "execution_core": EXECUTION_CORE_REVIEWED_HEAD}, "input_semantic_sha256": {"reconstruction_calendar": VALIDATION_CALENDAR_IDENTITY_SHA256, "calendar_mapping": VALIDATION_CALENDAR_MAPPING_SHA256, "market_rows": VALIDATION_MARKET_RUNTIME_SHA256, "actions": VALIDATION_ACTION_IDENTITY_SHA256},
+        "holdout_opened": False, "strategy_candidate_available": False,
+    })
+    return 0
+
+
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    for name in ("bundle", "claim", "result"):
+        parser.add_argument(f"--{name}", type=Path, required=True)
+    for name in ("definition", "adapter", "runner"):
+        parser.add_argument(f"--expected-{name}-sha256", required=True)
+    args = parser.parse_args(argv)
+    expected = (args.expected_definition_sha256, args.expected_adapter_sha256, args.expected_runner_sha256)
+    return _run_once(args.bundle, args.claim, args.result, expected)
 
 
 if __name__ == "__main__":

@@ -102,6 +102,30 @@ def _calendar(days: tuple[date, ...]) -> AcceptedSessionCalendar:
     return AcceptedSessionCalendar(sessions, identity=identity)
 
 
+def _calendar_revision(
+    calendar: AcceptedSessionCalendar,
+    *,
+    available_at: datetime,
+    revision_id: str,
+) -> AcceptedSessionCalendar:
+    sessions = tuple(
+        calendar.session_on(day, as_of=datetime(2030, 1, 1, tzinfo=UTC))
+        for day in calendar.session_dates
+    )
+    source = SourceIdentity(
+        f"https://example.test/{revision_id}",
+        hashlib.sha256(revision_id.encode()).hexdigest(),
+        available_at,
+        available_at + timedelta(minutes=1),
+        revision_id,
+        calendar.identity.source_identity.revision_id,
+    )
+    return AcceptedSessionCalendar(
+        sessions,
+        identity=dataclasses.replace(calendar.identity, source_identity=source),
+    )
+
+
 def _close(calendar: AcceptedSessionCalendar, day: date, index: int) -> MODULE.CloseObservation:
     calendar.session_on(day, as_of=datetime(2030, 1, 1, tzinfo=UTC))
     return MODULE.CloseObservation(
@@ -332,7 +356,13 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     execution_gate = frozen["real_execution_gate"]
     assert execution_gate["validation_calendar_exact_session_count"] == 987
     assert execution_gate["validation_official_action_exact_count"] == 15
-    assert execution_gate["validation_runtime_input_bundle_sha256"] is None
+    assert execution_gate["validation_bundle_file_sha256"] == SCRIPT.VALIDATION_BUNDLE_FILE_SHA256
+    assert execution_gate["validation_runtime_input_bundle_sha256"] == (
+        SCRIPT.VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256
+    )
+    assert execution_gate["validation_calendar_mapping_semantic_sha256"] == (
+        SCRIPT.VALIDATION_CALENDAR_MAPPING_SHA256
+    )
     assert execution_gate["holdout_calendar_projection_sha256"] is None
     assert execution_gate["holdout_runtime_input_bundle_sha256"] is None
     actions = frozen["corporate_actions"]
@@ -1027,6 +1057,51 @@ def test_execution_observation_fields_change_runtime_bundle_identity(monkeypatch
         )
 
 
+def test_execution_calendar_revision_is_stage_bound_and_passed_to_shared_core() -> None:
+    days = _business_days(date(2023, 12, 1), date(2024, 2, 6))
+    calendar = _calendar(days)
+    point = _point(
+        calendar,
+        date(2024, 1, 31),
+        date(2024, 2, 1),
+        open_price=120.0,
+        decision_price=106.41,
+        official_actions=(),
+    )
+    execution = calendar.session_on(point.execution_session, as_of=point.decision_at)
+    revision = _calendar_revision(
+        calendar,
+        available_at=execution.open_at,
+        revision_id="post-decision-settlement-revision",
+    )
+    revised = dataclasses.replace(point, execution_calendar_revision=revision)
+    assert SCRIPT.calendar_epoch_mapping_sha256((revised,)) != (
+        SCRIPT.calendar_epoch_mapping_sha256((point,))
+    )
+
+    authorization = _authorization(calendar)
+    signal = SCRIPT._point_signal(point, ())
+    baseline = SCRIPT._rebalance(
+        Portfolio.us(40_000.0),
+        point,
+        authorization,
+        signal.signal_session,
+        None,
+        "0" * 64,
+    )
+    changed = SCRIPT._rebalance(
+        Portfolio.us(40_000.0),
+        revised,
+        authorization,
+        signal.signal_session,
+        None,
+        "0" * 64,
+    )
+    assert baseline.receipts == changed.receipts == ()
+    assert baseline.input_identity_hash != changed.input_identity_hash
+    assert baseline.stage_hash != changed.stage_hash
+
+
 def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch) -> None:
     days = _business_days(date(2023, 12, 1), date(2024, 4, 3))
     calendar = _calendar(days)
@@ -1266,3 +1341,106 @@ def test_validation_bounds_real_gate_and_no_duplicate_adapter_surface() -> None:
         if isinstance(node, ast.Call) and isinstance(node.func, ast.Name)
     }
     assert not ({"open", "exec", "eval", "compile"} & called_names)
+
+
+def test_exact_bundle_capture_rejects_permissions_symlink_and_replacement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tmp_path.chmod(0o700)
+    payload = b'{"fixed":"bundle"}'
+    monkeypatch.setattr(SCRIPT, "VALIDATION_BUNDLE_FILE_SHA256", hashlib.sha256(payload).hexdigest())
+    bundle = tmp_path / "bundle.json"
+    bundle.write_bytes(payload)
+    bundle.chmod(0o600)
+    assert SCRIPT._capture_bundle(bundle) == payload
+
+    bundle.chmod(0o644)
+    with pytest.raises(SCRIPT.InputBlockedError, match="mode or size"):
+        SCRIPT._capture_bundle(bundle)
+    bundle.chmod(0o600)
+    link = tmp_path / "link.json"
+    link.symlink_to(bundle)
+    with pytest.raises(OSError):
+        SCRIPT._capture_bundle(link)
+
+    original_read = SCRIPT.os.read
+    replaced = False
+
+    def replace_after_first_read(fd: int, size: int) -> bytes:
+        nonlocal replaced
+        chunk = original_read(fd, size)
+        if chunk and not replaced:
+            replacement = tmp_path / "replacement.json"
+            replacement.write_bytes(payload)
+            replacement.chmod(0o600)
+            SCRIPT.os.replace(replacement, bundle)
+            replaced = True
+        return chunk
+
+    monkeypatch.setattr(SCRIPT.os, "read", replace_after_first_read)
+    with pytest.raises(SCRIPT.InputBlockedError, match="changed during"):
+        SCRIPT._capture_bundle(bundle)
+
+
+def test_strict_bundle_parser_rejects_duplicate_and_nonfinite_json() -> None:
+    with pytest.raises(SCRIPT.InputBlockedError, match="duplicate JSON key"):
+        SCRIPT._load_validation_bundle(b'{"stage":"validation","stage":"holdout"}')
+    with pytest.raises(SCRIPT.InputBlockedError):
+        SCRIPT._load_validation_bundle(b'{"value":NaN}')
+
+
+def test_one_use_bridge_claims_before_read_and_writes_aggregate_only(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    tmp_path.chmod(0o700)
+    definition = b"{}"
+    definition_sha = hashlib.sha256(definition).hexdigest()
+    code_sha = hashlib.sha256(b"code").hexdigest()
+    claim = tmp_path / "claim.json"
+    result = tmp_path / "result.json"
+    calls: list[str] = []
+
+    monkeypatch.setattr(
+        SCRIPT, "_read_definition",
+        lambda: (definition, {"status": "PREREGISTERED_NOT_EXECUTED"}),
+    )
+    monkeypatch.setattr(SCRIPT, "_file_sha256", lambda path: code_sha)
+
+    def capture(path: Path) -> bytes:
+        assert claim.exists()
+        calls.append("capture")
+        return b"captured"
+
+    monkeypatch.setattr(SCRIPT, "_capture_bundle", capture)
+    monkeypatch.setattr(
+        SCRIPT, "_load_validation_bundle", lambda payload: (object(), (), object(), (), b"projection")
+    )
+    navs = tuple(40_000.0 + index for index in range(46))
+    simulation = SCRIPT.CohortSimulation(navs, navs, (0.0,) * 45, (0.0,) * 45, (), ())
+    monkeypatch.setattr(SCRIPT, "simulate_validation", lambda *args, **kwargs: simulation)
+    metrics = MODULE.PerformanceMetrics(0.1, 0.2, 0.3, 0.4, 0.5, -0.1)
+    gates = tuple((name, True) for name in (
+        "sharpe_difference_positive", "strategy_compounded_net_return_positive",
+        "strategy_annualized_volatility_lower", "strategy_maximum_drawdown_better",
+    ))
+    monkeypatch.setattr(
+        SCRIPT, "validation_gate_decision",
+        lambda *args: MODULE.ValidationDecision(45, metrics, metrics, 0.1, gates),
+    )
+    receipt_sha = hashlib.sha256(b"receipt").hexdigest()
+    monkeypatch.setattr(
+        SCRIPT, "validation_receipt", lambda value: SCRIPT.ValidationReceipt(navs, navs, receipt_sha)
+    )
+
+    assert SCRIPT._run_once(tmp_path / "bundle.json", claim, result, (definition_sha, code_sha, code_sha)) == 0
+    published = json.loads(result.read_text())
+    assert calls == ["capture"]
+    assert published["classification"] == "VALIDATION_PASS_HOLDOUT_LOCKED"
+    assert published["strategy_candidate_available"] is False
+    assert published["holdout_opened"] is False
+    assert published["code_and_core_sha256"]["definition"] == definition_sha
+    assert len(published["strategy_boundary_navs_hex"]) == 46
+    assert "raw_open" not in result.read_text() and "raw_close" not in result.read_text()
+    with pytest.raises(SCRIPT.InputBlockedError, match="must be absent"):
+        SCRIPT._run_once(tmp_path / "bundle.json", claim, tmp_path / "second.json", (definition_sha, code_sha, code_sha))
+    assert calls == ["capture"]
