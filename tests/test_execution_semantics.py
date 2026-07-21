@@ -25,7 +25,11 @@ from quant_system.data import (
     session_rows_sha256,
 )
 from quant_system.markets.common import FillDecision, MarketDataError
-from quant_system.markets.universe import StatusEvidence, evaluate_universe
+from quant_system.markets.universe import (
+    StatusEvidence,
+    evaluate_universe,
+    lifecycle_coverage_sha256,
+)
 
 SHA_A = "a" * 64
 SHA_B = "b" * 64
@@ -793,12 +797,19 @@ def test_universe_uses_accepted_session_and_complete_pit_statuses() -> None:
         as_of=datetime(2026, 7, 13, tzinfo=UTC),
     )
     decision_at = session.open_at - timedelta(microseconds=1)
-    eligible = evaluate_universe("000001.SZ", session, decision_at, _status_records())
+    eligible = evaluate_universe(
+        "000001.SZ",
+        session,
+        decision_at,
+        _status_records(),
+        market="a_share",
+    )
     excluded = evaluate_universe(
         "000001.SZ",
         session,
         decision_at,
         _status_records(st=True),
+        market="a_share",
     )
 
     assert eligible.eligible is True
@@ -843,6 +854,7 @@ def test_universe_selects_one_valid_linear_status_revision() -> None:
         session,
         session.open_at - timedelta(microseconds=1),
         records,
+        market="a_share",
     )
 
     assert decision.eligible is False
@@ -857,7 +869,13 @@ def test_universe_rejects_missing_overlapping_branched_and_late_statuses() -> No
     )
     cutoff = session.open_at - timedelta(microseconds=1)
     with pytest.raises(MarketDataError, match="missing effective suspended"):
-        evaluate_universe("000001.SZ", session, cutoff, _status_records()[:-1])
+        evaluate_universe(
+            "000001.SZ",
+            session,
+            cutoff,
+            _status_records()[:-1],
+            market="a_share",
+        )
 
     records = _status_records()
     records.append(
@@ -873,7 +891,7 @@ def test_universe_rejects_missing_overlapping_branched_and_late_statuses() -> No
         )
     )
     with pytest.raises(MarketDataError, match="overlapping effective st"):
-        evaluate_universe("000001.SZ", session, cutoff, records)
+        evaluate_universe("000001.SZ", session, cutoff, records, market="a_share")
 
     records = _status_records()
     parent = records[2]
@@ -896,7 +914,7 @@ def test_universe_rejects_missing_overlapping_branched_and_late_statuses() -> No
             )
         )
     with pytest.raises(ValueError, match="branched"):
-        evaluate_universe("000001.SZ", session, cutoff, records)
+        evaluate_universe("000001.SZ", session, cutoff, records, market="a_share")
 
     records = _status_records()
     late = records[2]
@@ -911,7 +929,7 @@ def test_universe_rejects_missing_overlapping_branched_and_late_statuses() -> No
         _source("late-st", SHA_C, available_at=cutoff + timedelta(minutes=1)),
     )
     with pytest.raises(MarketDataError, match="unavailable at decision_at"):
-        evaluate_universe("000001.SZ", session, cutoff, records)
+        evaluate_universe("000001.SZ", session, cutoff, records, market="a_share")
 
     records = _status_records()
     drifted = records[2]
@@ -933,7 +951,7 @@ def test_universe_rejects_missing_overlapping_branched_and_late_statuses() -> No
         )
     )
     with pytest.raises(MarketDataError, match="share symbol, kind"):
-        evaluate_universe("000001.SZ", session, cutoff, records)
+        evaluate_universe("000001.SZ", session, cutoff, records, market="a_share")
 
 
 def test_universe_rejects_future_cutoff_calendar_unavailability_and_timezone_reuse() -> None:
@@ -946,6 +964,7 @@ def test_universe_rejects_future_cutoff_calendar_unavailability_and_timezone_reu
         session,
         session.open_at - timedelta(microseconds=1),
         _status_records(),
+        market="a_share",
     )
     assert accepted.eligible is True
 
@@ -954,7 +973,13 @@ def test_universe_rejects_future_cutoff_calendar_unavailability_and_timezone_reu
         session.open_at + timedelta(microseconds=1),
     ):
         with pytest.raises(MarketDataError, match="cannot follow"):
-            evaluate_universe("000001.SZ", session, decision_at, _status_records())
+            evaluate_universe(
+                "000001.SZ",
+                session,
+                decision_at,
+                _status_records(),
+                market="a_share",
+            )
 
     late_session = _session(
         date(2026, 7, 13),
@@ -968,6 +993,7 @@ def test_universe_rejects_future_cutoff_calendar_unavailability_and_timezone_reu
             late_session,
             session.open_at - timedelta(microseconds=1),
             _status_records(),
+            market="a_share",
         )
 
     with pytest.raises(MarketDataError, match="different exchange timezone"):
@@ -976,4 +1002,95 @@ def test_universe_rejects_future_cutoff_calendar_unavailability_and_timezone_reu
             session,
             session.open_at - timedelta(microseconds=1),
             _status_records(exchange_timezone="America/New_York"),
+            market="a_share",
         )
+
+
+def test_us_universe_requires_only_us_lifecycle_kinds() -> None:
+    session = _calendar("America/New_York").session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 13, tzinfo=UTC),
+    )
+    cutoff = session.open_at - timedelta(microseconds=1)
+    records = tuple(
+        record
+        for record in _status_records(exchange_timezone="America/New_York")
+        if record.kind not in {"st", "suspended"}
+    )
+
+    decision = evaluate_universe(
+        "000001.SZ",
+        session,
+        cutoff,
+        records,
+        market="us",
+    )
+
+    assert decision.eligible is True
+    assert tuple(kind for kind, _, _ in decision.evidence) == (
+        "listed",
+        "delisted",
+    )
+    for missing_kind in ("listed", "delisted"):
+        incomplete = tuple(record for record in records if record.kind != missing_kind)
+        with pytest.raises(MarketDataError, match=f"missing effective {missing_kind}"):
+            evaluate_universe(
+                "000001.SZ",
+                session,
+                cutoff,
+                incomplete,
+                market="us",
+            )
+
+    all_records = _status_records(exchange_timezone="America/New_York")
+    for extra_kind in ("st", "suspended"):
+        extra = next(record for record in all_records if record.kind == extra_kind)
+        with pytest.raises(MarketDataError, match="exactly the market-required kinds"):
+            evaluate_universe(
+                "000001.SZ",
+                session,
+                cutoff,
+                (*records, extra),
+                market="us",
+            )
+
+def test_a_share_st_remains_required_and_market_binds_lifecycle_hash() -> None:
+    session = _calendar().session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 13, tzinfo=UTC),
+    )
+    cutoff = session.open_at - timedelta(microseconds=1)
+    records = tuple(_status_records())
+    without_st = tuple(record for record in records if record.kind != "st")
+
+    with pytest.raises(MarketDataError, match="missing effective st"):
+        evaluate_universe(
+            "000001.SZ",
+            session,
+            cutoff,
+            without_st,
+            market="a_share",
+        )
+
+    records_by_symbol = {"000001.SZ": records}
+    a_share_hash = lifecycle_coverage_sha256(
+        ("000001.SZ",),
+        session,
+        cutoff,
+        records_by_symbol,
+        market="a_share",
+    )
+    us_records_by_symbol = {
+        "000001.SZ": tuple(
+            record for record in records if record.kind in {"listed", "delisted"}
+        )
+    }
+    us_hash = lifecycle_coverage_sha256(
+        ("000001.SZ",),
+        session,
+        cutoff,
+        us_records_by_symbol,
+        market="us",
+    )
+
+    assert a_share_hash != us_hash

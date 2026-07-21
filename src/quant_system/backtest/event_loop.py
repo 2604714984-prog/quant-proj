@@ -192,7 +192,13 @@ def run_static_rebalance(
         records_by_symbol={symbol: row.status_records for symbol, row in rows.items()},
     )
     decisions = {
-        symbol: evaluate_universe(symbol, execution, cutoff, row.status_records)
+        symbol: evaluate_universe(
+            symbol,
+            execution,
+            cutoff,
+            row.status_records,
+            market=market,
+        )
         for symbol, row in rows.items()
     }
     _terminal_checks(rows, decisions, execution, cutoff)

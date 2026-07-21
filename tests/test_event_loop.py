@@ -93,9 +93,15 @@ def _statuses(
     *,
     suspended: bool = False,
     delisted: bool = False,
+    include_st: bool = True,
+    include_suspended: bool = True,
     available_at: datetime = datetime(2000, 1, 1, tzinfo=UTC),
 ) -> tuple[StatusEvidence, ...]:
-    values = {"listed": True, "delisted": delisted, "st": False, "suspended": suspended}
+    values = {"listed": True, "delisted": delisted}
+    if include_st:
+        values["st"] = False
+    if include_suspended:
+        values["suspended"] = suspended
     return tuple(
         StatusEvidence(
             f"{symbol}-{kind}",
@@ -140,7 +146,14 @@ def _input(
         price,
         "USD" if market == "us" else "CNY",
         _source(source_label or f"bar-{symbol}", execution.open_at),
-        _statuses(symbol, timezone_name, suspended=suspended, delisted=delisted),
+        _statuses(
+            symbol,
+            timezone_name,
+            suspended=suspended,
+            delisted=delisted,
+            include_st=market == "a_share",
+            include_suspended=market == "a_share",
+        ),
         action_types,
         corporate_actions,
         suspended,
@@ -175,6 +188,7 @@ def _snapshot(
         execution,
         cutoff,
         records,
+        market=inputs[0].market,
     )
     calendar_hash = calendar_identity_sha256(calendar.identity)
     return UniverseSnapshotIdentity(
@@ -646,7 +660,15 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
     assert result.receipts[0].reason == "terminal_delisting"
 
     eligible_row = ExecutionInput(
-        **{**row.__dict__, "status_records": _statuses("DEAD", "America/New_York")}
+        **{
+            **row.__dict__,
+            "status_records": _statuses(
+                "DEAD",
+                "America/New_York",
+                include_st=False,
+                include_suspended=False,
+            ),
+        }
     )
     with pytest.raises(MarketDataError, match="PIT ineligible"):
         _run_static_rebalance(
