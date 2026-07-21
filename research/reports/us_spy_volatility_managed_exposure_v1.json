@@ -10,9 +10,10 @@
   "family_number": null,
   "repository_identity": {
     "branch": "research/us-spy-vol-managed-v1",
-    "implementation_base_head": "a1f2c9ec5af02aeb33e0ac241225f8f8fba3fb71",
-    "implementation_base_tree": "5053beb61266e383147da5f5c9a34b965a29058c",
-    "causal_core_reviewed_head": "d065def0625fe20126c1579d8bf4c8c75614a154",
+    "implementation_base_head": "6897f80325f2499895ea4928aa7a445bb2d73501",
+    "implementation_base_tree": "c46d98bed462a15b65a9b07d63123273521cac30",
+    "causal_core_reviewed_head": "03ddff47b55f558cb93a4340dfeafc04e2953f92",
+    "causal_core_merged_main_head": "6897f80325f2499895ea4928aa7a445bb2d73501",
     "artifact": "research/reports/us_spy_volatility_managed_exposure_v1.json",
     "adapter": "research/adapters/us_spy_volatility_managed.py",
     "one_off_script": "scripts/run_us_spy_volatility_managed_validation.py"
@@ -22,6 +23,8 @@
     "null_hypothesis": "The strategy does not have a higher monthly Sharpe ratio than the matched SPY buy-and-hold benchmark.",
     "instrument": "SPY",
     "instrument_selection": "fixed before outcome access; not a dynamic stock pool",
+    "expected_inclusion_rule": "fixed-spy-universe",
+    "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
     "account_currency": "USD",
     "initial_capital": 40000,
     "state_reset": "validation and holdout each start fresh, independent strategy and benchmark Portfolio.us instances with exactly USD 40000",
@@ -171,7 +174,8 @@
       "current_json_status_required": "PREREGISTERED_NOT_EXECUTED",
       "current_json_actual_byte_sha256_required_at_invocation": true,
       "current_adapter_actual_byte_sha256_required_at_invocation": true,
-      "causal_core_reviewed_head_required_at_invocation": "d065def0625fe20126c1579d8bf4c8c75614a154",
+      "causal_core_reviewed_head_required_at_invocation": "03ddff47b55f558cb93a4340dfeafc04e2953f92",
+      "causal_core_merged_main_head_required_at_invocation": "6897f80325f2499895ea4928aa7a445bb2d73501",
       "exact_action_projection_bytes_required_at_invocation": true,
       "calendar_and_runtime_market_row_content_hashes_required_at_invocation": true,
       "runtime_input_bundle_sha256": null,
@@ -234,7 +238,7 @@
       }
     },
     "external_acceptance_claimed": false,
-    "pr117_merged_identity_supplied_to_this_record": false
+    "pr117_merged_identity_supplied_to_this_record": true
   },
   "adjudication": {
     "outcome_accessed": false,
@@ -243,7 +247,7 @@
     "holdout_opened": false,
     "gate_counts": null,
     "strategy_result": null,
-    "next_action": "after PR117 exact reviewed head is accepted in main, supply hashes of the actual current report and adapter bytes plus the exact private projection/calendar/market identities to the separate validation invocation; otherwise remain INPUT_BLOCKED"
+    "next_action": "materialize and independently verify one exact private validation input bundle against the merged PR117 core, then freeze only its SHA-256 before the one-use validation invocation"
   },
   "boundaries": {
     "provider_or_network_used_by_this_record_task": false,
