@@ -5,14 +5,12 @@ from pathlib import Path
 
 import quant_system.data as data_api
 import quant_system.research as research_api
-from quant_system.data.sec_edgar import SecFact
-from quant_system.research.stats import newey_west_mean_test
 
 
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_data_top_level_excludes_experimental_sec_edgar_api() -> None:
+def test_data_top_level_api_is_small_and_explicit() -> None:
     assert data_api.__all__ == [
         "AcceptedSession",
         "AcceptedSessionCalendar",
@@ -31,31 +29,47 @@ def test_data_top_level_excludes_experimental_sec_edgar_api() -> None:
         "select_source_revision",
     ]
     assert not hasattr(data_api, "SecFact")
-    assert SecFact.__module__ == "quant_system.data.sec_edgar"
 
 
-def test_research_top_level_excludes_experimental_advanced_stats_api() -> None:
+def test_research_top_level_api_is_small_and_explicit() -> None:
     assert research_api.__all__ == [
         "dataset_identity_sha256",
         "purged_embargo_train_mask",
         "walk_forward_masks",
     ]
     assert not hasattr(research_api, "newey_west_mean_test")
-    assert newey_west_mean_test.__module__ == "quant_system.research.stats"
 
 
-def test_one_off_evidence_scripts_forbid_runtime_generalization() -> None:
-    paths = (
-        "scripts/qualify_spy_official_sources.py",
-        "scripts/replay_legacy_us_etf_strategies.py",
-        "scripts/run_p4_system_validation.py",
-        "scripts/run_p4_real_data_validation.py",
+def test_active_tree_has_no_governance_control_plane_or_sidecars() -> None:
+    forbidden = (
+        ROOT / "reports" / "agent_handoff",
+        ROOT / "reports" / "external_audit",
+        ROOT / "reports" / "validation",
     )
-    for relative in paths:
-        tree = ast.parse((ROOT / relative).read_text(encoding="utf-8"))
-        docstring = " ".join((ast.get_docstring(tree) or "").lower().split())
-        assert "frozen_one_off_evidence" in docstring
-        assert "no_generalization" in docstring
-        assert "frozen one-off evidence reproducer" in docstring
-        assert "not a general" in docstring or "not a reusable" in docstring
-        assert "do not import or generalize" in docstring
+    assert all(not path.exists() or not any(path.rglob("*")) for path in forbidden)
+    definitions = tuple((ROOT / "research" / "definitions").glob("*.json"))
+    results = tuple((ROOT / "research" / "reports").glob("*.json"))
+    assert len(definitions) <= 1
+    assert len(results) <= 1
+    assert not tuple(ROOT.rglob("*.sha256"))
+
+
+def test_at_most_one_adapter_and_no_script_to_script_import() -> None:
+    scripts_root = ROOT / "scripts"
+    scripts = tuple(sorted(scripts_root.glob("*.py"))) if scripts_root.exists() else ()
+    assert len(scripts) <= 1
+    for path in scripts:
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom):
+                assert node.module != "scripts"
+                assert not (node.module or "").startswith("scripts.")
+            elif isinstance(node, ast.Import):
+                assert all(not alias.name.startswith("scripts") for alias in node.names)
+
+
+def test_shared_source_does_not_depend_on_specific_family_or_scripts() -> None:
+    forbidden_fragments = ("permanent_portfolio", "quant_system.family", "scripts.")
+    for path in (ROOT / "src" / "quant_system").rglob("*.py"):
+        source = path.read_text(encoding="utf-8")
+        assert all(fragment not in source for fragment in forbidden_fragments)

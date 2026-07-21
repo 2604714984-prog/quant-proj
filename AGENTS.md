@@ -32,17 +32,14 @@ easy to understand, test, and remove.
 - Do not present an unvalidated strategy as a candidate or recommendation.
 - Legacy research results are evidence, not executable dependencies.
 
-## Three-cycle architecture freeze
+## Lightweight repository shape
 
-- For the next three strategy cycles, do not add a CLI, database layer, event
-  loop, evidence framework, manifest schema, registry, agent, or runner
-  framework. Fix concrete defects in the existing path only.
-- Run repeatable, outcome-free data qualification before consuming a one-use
-  strategy result. Input failures must not consume the first outcome run.
-- A strategy adapter should contain only its feature, selection, and fixed
-  parameters, normally in 100--300 lines, while reusing the shared engine.
-- Keep at most four durable run artifacts: definition, snapshot, result, and
-  run receipt. Prefer Git object identity over additional sidecars.
+- Do not add controllers, dispatchers, task packs, callbacks, strategy
+  registries, mechanism atlases, or a runner framework.
+- Keep at most one current strategy adapter on a research branch. It contains
+  only the feature, selection, and fixed parameters and reuses the shared core.
+- Terminal experiments stay recoverable through Git history and Releases; they
+  do not remain as active source, reports, receipts, or checksum sidecars.
+- Use ordinary branches, one PR, CI, and one terminal external review. An
+  intermediate milestone does not need its own review.
 - Do not migrate or reopen rejected legacy strategy families.
-- Only one code-writing strategy family may be active at a time.
-  The active family is stated in the current merged Manager roadmap.

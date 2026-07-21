@@ -13,8 +13,9 @@ The project deliberately keeps one small runtime surface:
 - one deterministic backtest core;
 - one test suite and one CI workflow.
 
-Legacy repositories remain frozen migration sources. They are not runtime
-dependencies and their orchestration layers are not copied into this project.
+Legacy repositories and completed experiments are historical evidence, not
+runtime dependencies. The complete pre-convergence tree is preserved at the
+GitHub Release/tag `archive/pre-governance-convergence-20260721`.
 
 ## Local setup
 
@@ -44,8 +45,9 @@ This is deliberately a small contract rather than a data governance subsystem.
 Production market-data retrieval and broker execution are intentionally not
 part of this rebuild.
 
-## Review material
+## Repository shape
 
-- [2026-07-15 external review brief](docs/external_review_20260715.md)
-- [Minimal architecture](docs/architecture.md)
-- [Migration and recovery record](docs/migration/README.md)
+The active branch contains the runtime, generic research primitives, their
+tests, and the [minimal architecture](docs/architecture.md). Manager roadmaps,
+task packets, mechanism registries, terminal experiment reports, and one-off
+runners are intentionally kept out of the active tree.

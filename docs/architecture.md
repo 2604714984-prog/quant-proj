@@ -15,13 +15,19 @@ config/                    runtime defaults
 src/quant_system/data/     DuckDB reads and append-only writes
 src/quant_system/markets/  market-specific execution constraints
 src/quant_system/backtest/ deterministic portfolio accounting
-src/quant_system/research/ research definitions without outcome data
+src/quant_system/research/ generic identity, split, and inference primitives
 tests/                     one test suite
 ~~~
 
 The project does not reproduce the previous dispatcher, task-packet, registry,
-multi-repository, or product-route layers. A data import is a CLI call that
-validates input, writes in one transaction, and returns a compact receipt.
+mechanism-atlas, multi-repository, or product-route layers. A data import is a
+CLI call that validates input, writes in one transaction, and returns a compact
+receipt.
+
+A strategy is a temporary branch-level adapter over this core, not a second
+application layer. At most one adapter is active at a time. Completed adapters,
+definitions, and results remain recoverable through Git history or a Release
+instead of accumulating in the active tree.
 
 ## Data safety proportional to risk
 
@@ -51,8 +57,5 @@ A-share buys require 100-share board lots. Sells may use board lots, or may
 fully liquidate a remaining odd lot whose identity was created by a recorded
 corporate-action adjustment; arbitrary partial odd-lot sales fail closed.
 
-## Migration rule
-
-The rebuild selectively reimplements accepted behavior. It does not copy whole
-legacy repositories or import their Git histories. Frozen source commit and tree
-identities are recorded in docs/migration/legacy_inventory.json.
+Historical migration identities remain in `docs/migration/`; they are recovery
+records only and grant no current research or execution authority.
