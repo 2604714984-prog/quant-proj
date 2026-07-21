@@ -15,6 +15,7 @@ from datetime import date, datetime
 from decimal import Decimal, InvalidOperation
 from pathlib import Path
 from typing import Any
+from zoneinfo import ZoneInfo
 
 _REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 _SOURCE_ROOT = _REPOSITORY_ROOT / "src"
@@ -38,6 +39,7 @@ from quant_system.markets.universe import UniverseSnapshotIdentity  # noqa: E402
 
 from research.adapters.us_spy_volatility_managed import (  # noqa: E402
     INITIAL_CAPITAL,
+    RETROSPECTIVE_ACTION_BASIS,
     CloseObservation,
     InputContractError,
     build_signal_feature,
@@ -55,12 +57,20 @@ OFFICIAL_ACTION_AVAILABLE_AT_BASIS = (
 )
 PR117_REVIEWED_HEAD = "03ddff47b55f558cb93a4340dfeafc04e2953f92"
 PR117_MERGED_MAIN_HEAD = "6897f80325f2499895ea4928aa7a445bb2d73501"
+STATUS_CORE_REVIEWED_HEAD = "da9fb5855e2402804027a6f99109ca146dd81e18"
+EXECUTION_CORE_REVIEWED_HEAD = "0a30c3ccdc430b111b3d5f9c09422a07d18a5037"
 EXPECTED_INCLUSION_RULE_SHA256 = "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
-QUALIFIED_CALENDAR_PROJECTION_SHA256 = (
-    "c5a6a88cb3b616d1207a5a67959879ad514553aec1d3da5367a12afae7c22f9a"
+VALIDATION_CALENDAR_PROJECTION_SHA256 = (
+    "23b8f4ffe7c82c73a18b1a883da01d6c3b14c31c30725062726b95b6eb12ea31"
 )
 QUALIFIED_MARKET_ROWS_SHA256 = "818ac5f04a072e1d8e6e7b27b42a7753f31ea9e09d11c65c7e78bb16e418394d"
-RUNTIME_INPUT_BUNDLE_SHA256: str | None = None
+VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256: str | None = None
+HOLDOUT_CALENDAR_PROJECTION_SHA256: str | None = None
+HOLDOUT_RUNTIME_INPUT_BUNDLE_SHA256: str | None = None
+VALIDATION_CALENDAR_SESSION_COUNT = 987
+VALIDATION_OFFICIAL_ACTION_COUNT = 15
+HOLDOUT_CALENDAR_SESSION_COUNT: int | None = None
+HOLDOUT_OFFICIAL_ACTION_COUNT: int | None = None
 ONE_WAY_SLIPPAGE_BPS = 10.0
 VALIDATION_QUERY_BOUNDS = (date(2018, 1, 2), date(2021, 12, 1))
 HOLDOUT_QUERY_BOUNDS = (date(2021, 12, 1), date(2026, 6, 1))
@@ -80,6 +90,8 @@ _REPORT_PATH = (
     _REPOSITORY_ROOT / "research" / "reports" / "us_spy_volatility_managed_exposure_v1.json"
 )
 _ADAPTER_PATH = _REPOSITORY_ROOT / "research" / "adapters" / "us_spy_volatility_managed.py"
+_RUNNER_PATH = Path(__file__).resolve()
+_NEW_YORK = ZoneInfo("America/New_York")
 _PROJECTION_KEYS = (
     "available_at_basis",
     "distribution",
@@ -104,7 +116,11 @@ class RuntimeAuthorization:
     strategy_adapter_sha256: str
     causal_core_reviewed_head: str
     causal_core_merged_main_head: str
-    calendar_identity_sha256: str
+    status_core_reviewed_head: str
+    execution_core_reviewed_head: str
+    strategy_runner_sha256: str
+    reconstruction_calendar_identity_sha256: str
+    calendar_epoch_mapping_sha256: str
     qualified_market_rows_sha256: str
     input_bundle_sha256: str
 
@@ -113,6 +129,7 @@ class RuntimeAuthorization:
 class ExecutionPoint:
     closes: tuple[CloseObservation, ...]
     actions: tuple[CorporateActionIdentity, ...]
+    calendar: AcceptedSessionCalendar
     decision_at: datetime
     execution_session: date
     execution_input: ExecutionInput
@@ -162,6 +179,35 @@ def _strict_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
             raise InputBlockedError(f"duplicate JSON key: {key}")
         result[key] = value
     return result
+
+
+def _read_definition() -> tuple[bytes, dict[str, Any]]:
+    try:
+        payload = _REPORT_PATH.read_bytes()
+        record = json.loads(
+            payload.decode("utf-8", errors="strict"),
+            object_pairs_hook=_strict_object,
+            parse_constant=lambda value: (_ for _ in ()).throw(
+                InputBlockedError(f"non-finite JSON constant: {value}")
+            ),
+        )
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise InputBlockedError("strategy definition JSON is invalid") from exc
+    if type(record) is not dict:
+        raise InputBlockedError("strategy definition must be a JSON object")
+    return payload, record
+
+
+def _definition_inclusion_rule_sha256(record: dict[str, Any] | None = None) -> str:
+    if record is None:
+        _, record = _read_definition()
+    try:
+        value = record["outcome_blind_frozen_specification"][
+            "expected_inclusion_rule_sha256"
+        ]
+    except (KeyError, TypeError) as exc:
+        raise InputBlockedError("strategy definition inclusion rule is invalid") from exc
+    return _sha256(value, "expected_inclusion_rule_sha256")
 
 
 def _iso_date(value: object, field: str) -> date:
@@ -227,12 +273,18 @@ def official_actions_from_projection(
     projection_bytes: bytes,
     calendar: AcceptedSessionCalendar,
 ) -> tuple[CorporateActionIdentity, ...]:
-    """Strictly parse the frozen State Street projection into exact action identities."""
+    """Parse all frozen bytes and materialize only the calendar-covered actions."""
 
     rows = _projection_rows(projection_bytes)
     actions: list[CorporateActionIdentity] = []
     for row in rows:
         ex_date = _iso_date(row["ex_date"], "ex_date")
+        if not (
+            calendar.identity.coverage_start
+            <= ex_date
+            <= calendar.identity.coverage_end
+        ):
+            continue
         try:
             session = calendar.session_on(ex_date, as_of=OFFICIAL_ACTION_RETRIEVED_AT)
         except (TypeError, ValueError) as exc:
@@ -242,7 +294,7 @@ def official_actions_from_projection(
         source = SourceIdentity(
             row["source_url"],
             row["source_document_sha256"],
-            session.open_at,
+            OFFICIAL_ACTION_RETRIEVED_AT,
             OFFICIAL_ACTION_RETRIEVED_AT,
             f"ssga-distribution-{ex_date.isoformat()}",
         )
@@ -267,16 +319,22 @@ def official_actions_from_projection(
 
 def validate_runtime_authorization(
     authorization: RuntimeAuthorization | None,
-    calendar: AcceptedSessionCalendar,
+    reconstruction_calendar: AcceptedSessionCalendar,
+    points: tuple[ExecutionPoint, ...] = (),
+    *,
+    expected_calendar_projection_sha256: str = VALIDATION_CALENDAR_PROJECTION_SHA256,
 ) -> None:
     if not isinstance(authorization, RuntimeAuthorization):
         raise InputBlockedError(
             "real execution requires the current JSON identity and merged PR117 identity"
         )
-    if authorization.preregistration_status != "PREREGISTERED_NOT_EXECUTED":
+    report_bytes, report = _read_definition()
+    if report.get("status") != "PREREGISTERED_NOT_EXECUTED":
+        raise InputBlockedError("current JSON status is not PREREGISTERED_NOT_EXECUTED")
+    if authorization.preregistration_status != report["status"]:
         raise InputBlockedError("JSON current state is not PREREGISTERED_NOT_EXECUTED")
     if _sha256(authorization.preregistration_json_sha256, "preregistration_json_sha256") != (
-        _file_sha256(_REPORT_PATH)
+        hashlib.sha256(report_bytes).hexdigest()
     ):
         raise InputBlockedError("preregistration JSON does not match current bytes")
     if _sha256(authorization.strategy_adapter_sha256, "strategy_adapter_sha256") != (
@@ -287,10 +345,32 @@ def validate_runtime_authorization(
         raise InputBlockedError("causal core must equal the exact reviewed PR117 head")
     if authorization.causal_core_merged_main_head != PR117_MERGED_MAIN_HEAD:
         raise InputBlockedError("causal core must equal the merged PR117 main head")
-    if authorization.calendar_identity_sha256 != calendar_identity_sha256(calendar.identity):
-        raise InputBlockedError("runtime calendar identity mismatch")
-    if calendar.identity.source_identity.content_sha256 != QUALIFIED_CALENDAR_PROJECTION_SHA256:
-        raise InputBlockedError("calendar source is not the frozen qualified projection")
+    if authorization.status_core_reviewed_head != STATUS_CORE_REVIEWED_HEAD:
+        raise InputBlockedError("status core must equal the exact reviewed head")
+    if authorization.execution_core_reviewed_head != EXECUTION_CORE_REVIEWED_HEAD:
+        raise InputBlockedError("execution core must equal the exact reviewed head")
+    if authorization.strategy_runner_sha256 != _file_sha256(_RUNNER_PATH):
+        raise InputBlockedError("strategy runner does not match current bytes")
+    if authorization.reconstruction_calendar_identity_sha256 != calendar_identity_sha256(
+        reconstruction_calendar.identity
+    ):
+        raise InputBlockedError("runtime reconstruction calendar identity mismatch")
+    if (
+        reconstruction_calendar.identity.source_identity.content_sha256
+        != _sha256(
+            expected_calendar_projection_sha256,
+            "expected_calendar_projection_sha256",
+        )
+    ):
+        raise InputBlockedError(
+            "reconstruction calendar source is not the frozen ZoneInfo projection"
+        )
+    if points and authorization.calendar_epoch_mapping_sha256 != (
+        calendar_epoch_mapping_sha256(points)
+    ):
+        raise InputBlockedError("runtime rolling calendar epoch mapping mismatch")
+    if _definition_inclusion_rule_sha256(report) != EXPECTED_INCLUSION_RULE_SHA256:
+        raise InputBlockedError("definition inclusion rule does not match frozen code")
     if authorization.qualified_market_rows_sha256 != QUALIFIED_MARKET_ROWS_SHA256:
         raise InputBlockedError("qualified market-row aggregate identity mismatch")
     _sha256(authorization.input_bundle_sha256, "input_bundle_sha256")
@@ -355,6 +435,55 @@ def _source_payload(source: SourceIdentity) -> dict[str, object]:
     }
 
 
+def calendar_epoch_mapping_sha256(points: tuple[ExecutionPoint, ...]) -> str:
+    if type(points) is not tuple or not points:
+        raise InputBlockedError("calendar epoch mapping requires execution points")
+    payload = []
+    for point in points:
+        if not isinstance(point, ExecutionPoint) or not isinstance(
+            point.calendar, AcceptedSessionCalendar
+        ):
+            raise InputBlockedError("calendar epoch mapping requires accepted point calendars")
+        calendar_sha = calendar_identity_sha256(point.calendar.identity)
+        if point.universe_snapshot.calendar_identity_sha256 != calendar_sha:
+            raise InputBlockedError("point universe snapshot/calendar identity mismatch")
+        payload.append(
+            {
+                "execution_session": point.execution_session.isoformat(),
+                "calendar_identity_sha256": calendar_sha,
+            }
+        )
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def official_actions_identity_sha256(
+    actions: tuple[CorporateActionIdentity, ...],
+) -> str:
+    payload = [
+        {
+            "subject_id": action.subject_id,
+            "action_id": action.action_id,
+            "action_type": action.action_type,
+            "effective_at": action.effective_at.isoformat(),
+            "ex_date": None if action.ex_date is None else action.ex_date.isoformat(),
+            "record_date": (
+                None if action.record_date is None else action.record_date.isoformat()
+            ),
+            "pay_date": None if action.pay_date is None else action.pay_date.isoformat(),
+            "cash_amount": (
+                None if action.cash_amount is None else str(action.cash_amount)
+            ),
+            "currency": action.currency,
+            "unit": action.unit,
+            "source": _source_payload(action.source),
+        }
+        for action in actions
+    ]
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def runtime_market_rows_sha256(points: tuple[ExecutionPoint, ...]) -> str:
     if type(points) is not tuple or not points:
         raise InputBlockedError("runtime market rows require execution points")
@@ -366,6 +495,9 @@ def runtime_market_rows_sha256(points: tuple[ExecutionPoint, ...]) -> str:
             {
                 "decision_at": point.decision_at.isoformat(),
                 "execution_session": point.execution_session.isoformat(),
+                "calendar_identity_sha256": calendar_identity_sha256(
+                    point.calendar.identity
+                ),
                 "closes": [
                     {
                         "session_date": close.session_date.isoformat(),
@@ -386,6 +518,12 @@ def runtime_market_rows_sha256(points: tuple[ExecutionPoint, ...]) -> str:
                     if point.execution_input.decision_price_source is None
                     else _source_payload(point.execution_input.decision_price_source),
                     "decision_price_basis": point.execution_input.decision_price_basis,
+                    "execution_price_effective_at": (
+                        None
+                        if point.execution_input.execution_price_effective_at is None
+                        else point.execution_input.execution_price_effective_at.isoformat()
+                    ),
+                    "execution_price_basis": point.execution_input.execution_price_basis,
                 },
                 "universe": {
                     "effective_session": point.universe_snapshot.effective_session.isoformat(),
@@ -402,30 +540,47 @@ def runtime_market_rows_sha256(points: tuple[ExecutionPoint, ...]) -> str:
 
 
 def runtime_input_bundle_sha256(
-    calendar: AcceptedSessionCalendar,
+    reconstruction_calendar: AcceptedSessionCalendar,
     points: tuple[ExecutionPoint, ...],
     projection_bytes: bytes,
 ) -> str:
+    official_actions = official_actions_from_projection(
+        projection_bytes,
+        reconstruction_calendar,
+    )
     payload = {
-        "calendar_identity_sha256": calendar_identity_sha256(calendar.identity),
-        "qualified_calendar_projection_sha256": QUALIFIED_CALENDAR_PROJECTION_SHA256,
+        "reconstruction_calendar_identity_sha256": calendar_identity_sha256(
+            reconstruction_calendar.identity
+        ),
+        "qualified_calendar_projection_sha256": (
+            reconstruction_calendar.identity.source_identity.content_sha256
+        ),
+        "calendar_epoch_mapping_sha256": calendar_epoch_mapping_sha256(points),
         "qualified_market_rows_sha256": QUALIFIED_MARKET_ROWS_SHA256,
         "runtime_market_rows_sha256": runtime_market_rows_sha256(points),
         "action_projection_sha256": hashlib.sha256(projection_bytes).hexdigest(),
+        "stage_official_action_count": len(official_actions),
+        "official_actions_identity_sha256": official_actions_identity_sha256(
+            official_actions
+        ),
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
 
 
 def _point_signal(
-    calendar: AcceptedSessionCalendar,
     point: ExecutionPoint,
     official_actions: tuple[CorporateActionIdentity, ...],
 ):
     if not isinstance(point, ExecutionPoint):
         raise InputBlockedError("execution point identity is required")
-    if point.universe_snapshot.inclusion_rule_sha256 != EXPECTED_INCLUSION_RULE_SHA256:
+    expected_inclusion = _definition_inclusion_rule_sha256()
+    if point.universe_snapshot.inclusion_rule_sha256 != expected_inclusion:
         raise InputBlockedError("universe snapshot inclusion rule does not match definition")
+    if point.universe_snapshot.calendar_identity_sha256 != calendar_identity_sha256(
+        point.calendar.identity
+    ):
+        raise InputBlockedError("execution point calendar does not match its universe snapshot")
     if point.universe_snapshot.effective_session != point.execution_session:
         raise InputBlockedError("universe snapshot/execution session mismatch")
     close_dates = tuple(close.session_date for close in point.closes)
@@ -435,10 +590,11 @@ def _point_signal(
     if point.actions != relevant:
         raise InputBlockedError("execution point actions do not match exact projection contents")
     return build_signal_feature(
-        calendar,
+        point.calendar,
         point.closes,
         actions=point.actions,
         expected_action_ids=tuple(action.action_id for action in relevant),
+        action_evidence_basis=RETROSPECTIVE_ACTION_BASIS,
         decision_at=point.decision_at,
         execution_session=point.execution_session,
     )
@@ -446,7 +602,6 @@ def _point_signal(
 
 def _rebalance(
     portfolio: Portfolio,
-    calendar: AcceptedSessionCalendar,
     point: ExecutionPoint,
     authorization: RuntimeAuthorization,
     signal_session: date,
@@ -460,14 +615,37 @@ def _rebalance(
         raise InputBlockedError("daily actions must not be duplicated in the rebalance input")
     if row.decision_price_basis != "raw_execution_units":
         raise InputBlockedError("SPY decision price must use raw_execution_units")
-    if point.universe_snapshot.inclusion_rule_sha256 != EXPECTED_INCLUSION_RULE_SHA256:
+    if row.execution_price_basis != "retrospective_daily_bar_open_fill":
+        raise InputBlockedError("SPY execution open must use the retrospective daily-bar basis")
+    execution = point.calendar.session_on(point.execution_session, as_of=point.decision_at)
+    if row.execution_price_effective_at != execution.open_at:
+        raise InputBlockedError("SPY execution event must equal the accepted-session open")
+    execution_source_local = row.source.available_at.astimezone(_NEW_YORK)
+    if execution_source_local.date() != point.execution_session or (
+        execution_source_local.hour,
+        execution_source_local.minute,
+        execution_source_local.second,
+        execution_source_local.microsecond,
+    ) != (20, 0, 0, 0):
+        raise InputBlockedError(
+            "SPY retrospective open source must use the same-session 20:00 "
+            "America/New_York convention"
+        )
+    final_close = point.closes[-1]
+    if (
+        row.decision_price != final_close.raw_close
+        or row.decision_price_source != final_close.source
+    ):
+        raise InputBlockedError("SPY decision price must equal the final causal raw close")
+    expected_inclusion = _definition_inclusion_rule_sha256()
+    if point.universe_snapshot.inclusion_rule_sha256 != expected_inclusion:
         raise InputBlockedError("universe snapshot inclusion rule does not match definition")
     if signal_session >= point.execution_session:
         raise InputBlockedError("signal/execution chronology is invalid")
     weights = {} if target is None else {"SPY": target}
     result = run_static_rebalance(
         portfolio,
-        calendar,
+        point.calendar,
         signal_session=signal_session,
         decision_at=point.decision_at,
         execution_inputs=(row,),
@@ -487,7 +665,7 @@ def _rebalance(
 
 
 def _simulate_cohorts(
-    calendar: AcceptedSessionCalendar,
+    reconstruction_calendar: AcceptedSessionCalendar,
     entry_points: tuple[ExecutionPoint, ...],
     final_exit: ExecutionPoint,
     *,
@@ -495,11 +673,36 @@ def _simulate_cohorts(
     action_projection_bytes: bytes,
     authorization: RuntimeAuthorization,
     expected_months: tuple[tuple[int, int], ...],
+    expected_calendar_bounds: tuple[date, date],
+    expected_calendar_session_count: int,
+    expected_official_action_count: int,
+    expected_calendar_projection_sha256: str,
+    expected_input_bundle_sha256: str | None,
 ) -> CohortSimulation:
     """Run one fresh strategy/benchmark split solely from injected immutable rows."""
 
-    validate_runtime_authorization(authorization, calendar)
-    official_actions = official_actions_from_projection(action_projection_bytes, calendar)
+    if reconstruction_calendar.identity.coverage_start != expected_calendar_bounds[0] or (
+        reconstruction_calendar.identity.coverage_end != expected_calendar_bounds[1]
+    ):
+        raise InputBlockedError("stage calendar coverage does not match frozen bounds")
+    if (
+        reconstruction_calendar.identity.session_count != expected_calendar_session_count
+        or len(reconstruction_calendar.session_dates) != expected_calendar_session_count
+    ):
+        raise InputBlockedError("stage calendar session count does not match frozen count")
+    official_actions = official_actions_from_projection(
+        action_projection_bytes,
+        reconstruction_calendar,
+    )
+    if len(official_actions) != expected_official_action_count:
+        raise InputBlockedError("stage official action count does not match frozen count")
+    all_points = entry_points + (final_exit,)
+    validate_runtime_authorization(
+        authorization,
+        reconstruction_calendar,
+        all_points,
+        expected_calendar_projection_sha256=expected_calendar_projection_sha256,
+    )
     expected_cohorts = len(expected_months)
     if len(entry_points) != expected_cohorts or expected_cohorts < 2:
         raise InputBlockedError("split entry cohort count is incomplete")
@@ -515,17 +718,20 @@ def _simulate_cohorts(
         final_exit.execution_session.month,
     ) != expected_final_month:
         raise InputBlockedError("final exit does not match the exact frozen exit month")
-    all_points = entry_points + (final_exit,)
-    actual_bundle_sha = runtime_input_bundle_sha256(calendar, all_points, action_projection_bytes)
-    if RUNTIME_INPUT_BUNDLE_SHA256 is None:
+    actual_bundle_sha = runtime_input_bundle_sha256(
+        reconstruction_calendar,
+        all_points,
+        action_projection_bytes,
+    )
+    if expected_input_bundle_sha256 is None:
         raise InputBlockedError("runtime input bundle identity has not been frozen")
     if (
-        authorization.input_bundle_sha256 != RUNTIME_INPUT_BUNDLE_SHA256
-        or actual_bundle_sha != RUNTIME_INPUT_BUNDLE_SHA256
+        authorization.input_bundle_sha256 != expected_input_bundle_sha256
+        or actual_bundle_sha != expected_input_bundle_sha256
     ):
         raise InputBlockedError("runtime input bundle content identity mismatch")
     signals = {
-        point.execution_session: _point_signal(calendar, point, official_actions)
+        point.execution_session: _point_signal(point, official_actions)
         for point in all_points
     }
     execution_dates = tuple(point.execution_session for point in entry_points) + (
@@ -537,7 +743,9 @@ def _simulate_cohorts(
         raise InputBlockedError("entry and exit sessions must be strictly chronological")
     assert_zero_distribution_execution_overlap(official_actions, execution_dates)
     expected_daily = tuple(
-        day for day in calendar.session_dates if execution_dates[0] <= day <= execution_dates[-1]
+        day
+        for day in reconstruction_calendar.session_dates
+        if execution_dates[0] <= day <= execution_dates[-1]
     )
     if daily_sessions != expected_daily:
         raise InputBlockedError("daily sessions must be complete, accepted, and consecutive")
@@ -562,7 +770,6 @@ def _simulate_cohorts(
         if point is not None:
             strategy_result = _rebalance(
                 strategy,
-                calendar,
                 point,
                 authorization,
                 signals[point.execution_session].signal_session,
@@ -575,7 +782,6 @@ def _simulate_cohorts(
             if point is entry_points[0]:
                 benchmark_result = _rebalance(
                     benchmark,
-                    calendar,
                     point,
                     authorization,
                     signals[point.execution_session].signal_session,
@@ -600,7 +806,6 @@ def _simulate_cohorts(
 
         strategy_result = _rebalance(
             strategy,
-            calendar,
             final_exit,
             authorization,
             signals[final_exit.execution_session].signal_session,
@@ -609,7 +814,6 @@ def _simulate_cohorts(
         )
         benchmark_result = _rebalance(
             benchmark,
-            calendar,
             final_exit,
             authorization,
             signals[final_exit.execution_session].signal_session,
@@ -730,6 +934,11 @@ def simulate_validation(
         action_projection_bytes=action_projection_bytes,
         authorization=authorization,
         expected_months=VALIDATION_ENTRY_MONTHS,
+        expected_calendar_bounds=VALIDATION_QUERY_BOUNDS,
+        expected_calendar_session_count=VALIDATION_CALENDAR_SESSION_COUNT,
+        expected_official_action_count=VALIDATION_OFFICIAL_ACTION_COUNT,
+        expected_calendar_projection_sha256=VALIDATION_CALENDAR_PROJECTION_SHA256,
+        expected_input_bundle_sha256=VALIDATION_RUNTIME_INPUT_BUNDLE_SHA256,
     )
 
 
@@ -747,6 +956,12 @@ def simulate_holdout(
 ) -> CohortSimulation:
     require_holdout_unlocked(validation_result)
     _require_query_bounds(query_start, query_end, HOLDOUT_QUERY_BOUNDS, "holdout")
+    if HOLDOUT_CALENDAR_PROJECTION_SHA256 is None:
+        raise InputBlockedError("holdout calendar identity has not been qualified")
+    if HOLDOUT_RUNTIME_INPUT_BUNDLE_SHA256 is None:
+        raise InputBlockedError("holdout runtime input bundle identity has not been frozen")
+    if HOLDOUT_CALENDAR_SESSION_COUNT is None or HOLDOUT_OFFICIAL_ACTION_COUNT is None:
+        raise InputBlockedError("holdout calendar/action dimensions have not been frozen")
     return _simulate_cohorts(
         calendar,
         entry_points,
@@ -755,6 +970,11 @@ def simulate_holdout(
         action_projection_bytes=action_projection_bytes,
         authorization=authorization,
         expected_months=HOLDOUT_ENTRY_MONTHS,
+        expected_calendar_bounds=HOLDOUT_QUERY_BOUNDS,
+        expected_calendar_session_count=HOLDOUT_CALENDAR_SESSION_COUNT,
+        expected_official_action_count=HOLDOUT_OFFICIAL_ACTION_COUNT,
+        expected_calendar_projection_sha256=HOLDOUT_CALENDAR_PROJECTION_SHA256,
+        expected_input_bundle_sha256=HOLDOUT_RUNTIME_INPUT_BUNDLE_SHA256,
     )
 
 

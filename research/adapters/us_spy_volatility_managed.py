@@ -32,6 +32,12 @@ HOLDOUT_COHORTS = 53
 BOOTSTRAP_RESAMPLES = 10_000
 BOOTSTRAP_SEED = 4601
 BOOTSTRAP_RESTART_PROBABILITY = 1.0 / 6.0
+CONTEMPORANEOUS_ACTION_BASIS = "contemporaneous_point_in_time"
+RETROSPECTIVE_ACTION_BASIS = "retrospective_realized_event_reconstruction"
+_ACTION_EVIDENCE_BASES = {
+    CONTEMPORANEOUS_ACTION_BASIS,
+    RETROSPECTIVE_ACTION_BASIS,
+}
 
 _NEW_YORK = ZoneInfo(EXCHANGE_TIMEZONE)
 _VALIDATION_GATE_NAMES = (
@@ -197,11 +203,19 @@ def _calendar_window(
         raise InputContractError("execution must be the immediately following accepted session")
     for observation, session_date in zip(closes, expected, strict=True):
         try:
-            session = calendar.session_on(session_date, as_of=decision_at)
+            calendar.session_on(session_date, as_of=decision_at)
         except (TypeError, ValueError) as exc:
             raise InputContractError("calendar session identity is unavailable") from exc
-        if observation.source.available_at < session.close_at:
-            raise InputContractError("raw close cannot be available before the accepted close")
+        source_local = observation.source.available_at.astimezone(_NEW_YORK)
+        if source_local.date() != session_date or (
+            source_local.hour,
+            source_local.minute,
+            source_local.second,
+            source_local.microsecond,
+        ) != (20, 0, 0, 0):
+            raise InputContractError(
+                "raw close source must use the same-session 20:00 America/New_York convention"
+            )
         if observation.source.available_at > decision_at:
             raise InputContractError("raw close must be available by decision_at")
     return expected
@@ -213,6 +227,7 @@ def _actions_by_date(
     expected_action_ids: tuple[str, ...],
     return_dates: tuple[date, ...],
     decision_at: datetime,
+    action_evidence_basis: str,
 ) -> dict[date, CorporateActionIdentity]:
     if type(actions) is not tuple or any(
         not isinstance(action, CorporateActionIdentity) for action in actions
@@ -227,6 +242,8 @@ def _actions_by_date(
         raise InputContractError("duplicate action IDs fail closed")
     if actual_ids != expected_action_ids:
         raise InputContractError("runtime action IDs do not exactly match the expected window")
+    if action_evidence_basis not in _ACTION_EVIDENCE_BASES:
+        raise InputContractError("unsupported corporate-action evidence basis")
     usable = set(return_dates)
     indexed: dict[date, CorporateActionIdentity] = {}
     for action in actions:
@@ -242,8 +259,20 @@ def _actions_by_date(
             raise InputContractError("corporate action is not on an accepted session") from exc
         if action.effective_at != session.open_at:
             raise InputContractError("corporate action effective_at must equal XNYS open")
-        if action.source.available_at > action.effective_at:
-            raise InputContractError("corporate action identity was not available by ex-date open")
+        if action.effective_at > decision_at:
+            raise InputContractError("corporate action cannot follow the decision time")
+        if action_evidence_basis == CONTEMPORANEOUS_ACTION_BASIS:
+            if action.source.available_at > action.effective_at:
+                raise InputContractError(
+                    "corporate action identity was not available by ex-date open"
+                )
+        elif (
+            action.source.available_at <= action.effective_at
+            or action.source.available_at != action.source.retrieved_at
+        ):
+            raise InputContractError(
+                "retrospective action source must retain its actual post-event retrieval time"
+            )
         if action.action_type in {"cash_dividend", "special_dividend"}:
             if action.currency != "USD" or action.unit != "per_share":
                 raise InputContractError("cash action must use USD per_share")
@@ -259,6 +288,7 @@ def build_signal_feature(
     *,
     actions: tuple[CorporateActionIdentity, ...] = (),
     expected_action_ids: tuple[str, ...] = (),
+    action_evidence_basis: str = CONTEMPORANEOUS_ACTION_BASIS,
     decision_at: datetime,
     execution_session: date,
 ) -> VolatilitySignal:
@@ -276,6 +306,7 @@ def build_signal_feature(
         expected_action_ids,
         dates[1:],
         decision_at,
+        action_evidence_basis,
     )
     log_returns: list[float] = []
     for previous, current in zip(closes, closes[1:]):

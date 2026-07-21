@@ -96,18 +96,18 @@ def _calendar(days: tuple[date, ...]) -> AcceptedSessionCalendar:
         _source(
             "calendar-identity",
             datetime(2000, 1, 1, tzinfo=UTC),
-            content_sha256=SCRIPT.QUALIFIED_CALENDAR_PROJECTION_SHA256,
+            content_sha256=SCRIPT.VALIDATION_CALENDAR_PROJECTION_SHA256,
         ),
     )
     return AcceptedSessionCalendar(sessions, identity=identity)
 
 
 def _close(calendar: AcceptedSessionCalendar, day: date, index: int) -> MODULE.CloseObservation:
-    session = calendar.session_on(day, as_of=datetime(2030, 1, 1, tzinfo=UTC))
+    calendar.session_on(day, as_of=datetime(2030, 1, 1, tzinfo=UTC))
     return MODULE.CloseObservation(
         day,
         100.0 + index * 0.3 + (index % 4) * 0.11,
-        _source(f"close-{day}", session.close_at + timedelta(minutes=1)),
+        _source(f"close-{day}", datetime.combine(day, time(20), NY)),
     )
 
 
@@ -150,7 +150,7 @@ def _cash_action(
 
 
 def _statuses() -> tuple[StatusEvidence, ...]:
-    values = {"listed": True, "delisted": False, "st": False, "suspended": False}
+    values = {"listed": True, "delisted": False}
     return tuple(
         StatusEvidence(
             f"SPY-{kind}",
@@ -175,17 +175,19 @@ def _execution_input(
     decision_price: float,
 ) -> ExecutionInput:
     execution = calendar.session_on(execution_day, as_of=datetime(2030, 1, 1, tzinfo=UTC))
-    signal = calendar.session_on(signal_day, as_of=datetime(2030, 1, 1, tzinfo=UTC))
+    calendar.session_on(signal_day, as_of=datetime(2030, 1, 1, tzinfo=UTC))
     return ExecutionInput(
         "SPY",
         "us",
         open_price,
         "USD",
-        _source(f"open-{execution_day}", execution.open_at),
+        _source(f"open-{execution_day}", datetime.combine(execution_day, time(20), NY)),
         _statuses(),
         decision_price=decision_price,
-        decision_price_source=_source(f"decision-{signal_day}", signal.close_at),
+        decision_price_source=_source(f"close-{signal_day}", datetime.combine(signal_day, time(20), NY)),
         decision_price_basis="raw_execution_units",
+        execution_price_effective_at=execution.open_at,
+        execution_price_basis="retrospective_daily_bar_open_fill",
     )
 
 
@@ -208,6 +210,7 @@ def _snapshot(
             execution,
             decision_at,
             {"SPY": row.status_records},
+            market="us",
         ),
         INCLUSION_SHA,
         calendar_identity_sha256(calendar.identity),
@@ -254,7 +257,13 @@ def _authorization(
         strategy_adapter_sha256=hashlib.sha256(ADAPTER_PATH.read_bytes()).hexdigest(),
         causal_core_reviewed_head=SCRIPT.PR117_REVIEWED_HEAD,
         causal_core_merged_main_head=SCRIPT.PR117_MERGED_MAIN_HEAD,
-        calendar_identity_sha256=calendar_identity_sha256(calendar.identity),
+        status_core_reviewed_head=SCRIPT.STATUS_CORE_REVIEWED_HEAD,
+        execution_core_reviewed_head=SCRIPT.EXECUTION_CORE_REVIEWED_HEAD,
+        strategy_runner_sha256=hashlib.sha256(SCRIPT_PATH.read_bytes()).hexdigest(),
+        reconstruction_calendar_identity_sha256=calendar_identity_sha256(calendar.identity),
+        calendar_epoch_mapping_sha256=(
+            SCRIPT.calendar_epoch_mapping_sha256(points) if points else "0" * 64
+        ),
         qualified_market_rows_sha256=SCRIPT.QUALIFIED_MARKET_ROWS_SHA256,
         input_bundle_sha256=SCRIPT.runtime_input_bundle_sha256(calendar, points, projection_bytes)
         if points
@@ -272,6 +281,14 @@ def _point(
     official_actions: tuple[CorporateActionIdentity, ...],
 ) -> SCRIPT.ExecutionPoint:
     decision_at = datetime.combine(signal_day, time(20, 5), NY)
+    position = calendar.session_dates.index(signal_day)
+    close_days = calendar.session_dates[position - 21 : position + 1]
+    base_closes = tuple(_close(calendar, day, index) for index, day in enumerate(close_days))
+    scale = decision_price / base_closes[-1].raw_close
+    closes = tuple(
+        dataclasses.replace(close, raw_close=close.raw_close * scale)
+        for close in base_closes
+    )
     row = _execution_input(
         calendar,
         signal_day,
@@ -279,15 +296,13 @@ def _point(
         open_price=open_price,
         decision_price=decision_price,
     )
-    position = calendar.session_dates.index(signal_day)
-    close_days = calendar.session_dates[position - 21 : position + 1]
-    closes = tuple(_close(calendar, day, index) for index, day in enumerate(close_days))
     relevant = tuple(
         action for action in official_actions if action.effective_date in set(close_days[1:])
     )
     return SCRIPT.ExecutionPoint(
         closes,
         relevant,
+        calendar,
         decision_at,
         execution_day,
         row,
@@ -314,6 +329,12 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     assert frozen["calendar_and_signal"]["required_raw_closes"] == 22
     assert frozen["splits"]["validation_entry_cohorts"]["required_count"] == 45
     assert frozen["splits"]["retrospective_holdout_entry_cohorts"]["required_count"] == 53
+    execution_gate = frozen["real_execution_gate"]
+    assert execution_gate["validation_calendar_exact_session_count"] == 987
+    assert execution_gate["validation_official_action_exact_count"] == 15
+    assert execution_gate["validation_runtime_input_bundle_sha256"] is None
+    assert execution_gate["holdout_calendar_projection_sha256"] is None
+    assert execution_gate["holdout_runtime_input_bundle_sha256"] is None
     actions = frozen["corporate_actions"]
     assert actions["official_projection_sha256"] == SCRIPT.OFFICIAL_ACTION_PROJECTION_SHA256
     assert actions["required_event_count"] == 34
@@ -387,6 +408,46 @@ def test_signal_requires_exact_consecutive_month_end_window_and_next_session() -
         )
 
 
+def test_signal_requires_exact_same_session_twenty_hundred_close_availability() -> None:
+    calendar, closes, decision_at, execution = _signal_fixture()
+    first = closes[0]
+    for available_at in (
+        datetime.combine(first.session_date, time(19, 59), NY),
+        datetime.combine(first.session_date, time(20, 1), NY),
+        datetime.combine(first.session_date + timedelta(days=1), time(20), NY),
+    ):
+        bad_source = SourceIdentity(
+            first.source.source_url,
+            first.source.content_sha256,
+            available_at,
+            available_at + timedelta(minutes=1),
+            first.source.revision_id,
+        )
+        bad_closes = (dataclasses.replace(first, source=bad_source),) + closes[1:]
+        with pytest.raises(MODULE.InputContractError, match="same-session 20:00"):
+            MODULE.build_signal_feature(
+                calendar,
+                bad_closes,
+                decision_at=decision_at,
+                execution_session=execution,
+            )
+
+
+def test_zoneinfo_open_is_dst_correct() -> None:
+    winter = _calendar((date(2024, 1, 2),)).session_on(
+        date(2024, 1, 2),
+        as_of=datetime(2030, 1, 1, tzinfo=UTC),
+    )
+    summer = _calendar((date(2024, 7, 1),)).session_on(
+        date(2024, 7, 1),
+        as_of=datetime(2030, 1, 1, tzinfo=UTC),
+    )
+    assert winter.open_at.astimezone(UTC).time() == time(14, 30)
+    assert summer.open_at.astimezone(UTC).time() == time(13, 30)
+    assert datetime.combine(date(2024, 1, 2), time(20), NY).astimezone(UTC).time() == time(1)
+    assert datetime.combine(date(2024, 7, 1), time(20), NY).astimezone(UTC).time() == time(0)
+
+
 def test_signal_action_ids_are_exact_and_official_amount_controls() -> None:
     calendar, closes, decision_at, execution = _signal_fixture()
     action_index = 10
@@ -429,6 +490,84 @@ def test_signal_action_ids_are_exact_and_official_amount_controls() -> None:
             closes,
             actions=(outside,),
             expected_action_ids=(outside.action_id,),
+            decision_at=decision_at,
+            execution_session=execution,
+        )
+
+
+def test_retrospective_action_basis_preserves_actual_retrieval_time() -> None:
+    calendar, closes, decision_at, execution = _signal_fixture()
+    action = _cash_action(closes[10].session_date, "retrospective-action")
+    retrieved_at = datetime(2026, 7, 21, 8, 13, 17, tzinfo=UTC)
+    source = SourceIdentity(
+        action.source.source_url,
+        action.source.content_sha256,
+        retrieved_at,
+        retrieved_at,
+        action.source.revision_id,
+    )
+    action = dataclasses.replace(action, source=source)
+    feature = MODULE.build_signal_feature(
+        calendar,
+        closes,
+        actions=(action,),
+        expected_action_ids=(action.action_id,),
+        action_evidence_basis=MODULE.RETROSPECTIVE_ACTION_BASIS,
+        decision_at=decision_at,
+        execution_session=execution,
+    )
+    assert len(feature.log_total_returns) == 21
+
+    with pytest.raises(MODULE.InputContractError, match="not available by ex-date open"):
+        MODULE.build_signal_feature(
+            calendar,
+            closes,
+            actions=(action,),
+            expected_action_ids=(action.action_id,),
+            decision_at=decision_at,
+            execution_session=execution,
+        )
+    with pytest.raises(MODULE.InputContractError, match="unsupported"):
+        MODULE.build_signal_feature(
+            calendar,
+            closes,
+            actions=(action,),
+            expected_action_ids=(action.action_id,),
+            action_evidence_basis=None,  # type: ignore[arg-type]
+            decision_at=decision_at,
+            execution_session=execution,
+        )
+    backdated_source = SourceIdentity(
+        action.source.source_url,
+        action.source.content_sha256,
+        action.effective_at,
+        action.effective_at,
+        action.source.revision_id,
+    )
+    with pytest.raises(MODULE.InputContractError, match="actual post-event"):
+        MODULE.build_signal_feature(
+            calendar,
+            closes,
+            actions=(dataclasses.replace(action, source=backdated_source),),
+            expected_action_ids=(action.action_id,),
+            action_evidence_basis=MODULE.RETROSPECTIVE_ACTION_BASIS,
+            decision_at=decision_at,
+            execution_session=execution,
+        )
+    mismatched_retrieval = SourceIdentity(
+        action.source.source_url,
+        action.source.content_sha256,
+        retrieved_at,
+        retrieved_at + timedelta(minutes=1),
+        action.source.revision_id,
+    )
+    with pytest.raises(MODULE.InputContractError, match="actual post-event"):
+        MODULE.build_signal_feature(
+            calendar,
+            closes,
+            actions=(dataclasses.replace(action, source=mismatched_retrieval),),
+            expected_action_ids=(action.action_id,),
+            action_evidence_basis=MODULE.RETROSPECTIVE_ACTION_BASIS,
             decision_at=decision_at,
             execution_session=execution,
         )
@@ -504,7 +643,7 @@ def test_holdout_lock_and_terminal_exception_mapping() -> None:
     assert passed.strategy_candidate_available is False
 
 
-def test_holdout_unlock_recomputes_validation_navs_and_digest() -> None:
+def test_holdout_unlock_recomputes_validation_navs_and_digest(monkeypatch) -> None:
     strategy_returns = tuple(0.01 + 0.001 * ((index % 5) - 2) for index in range(45))
     benchmark_returns = tuple(0.04 if index % 2 == 0 else -0.05 for index in range(45))
     simulation = SCRIPT.CohortSimulation(
@@ -517,6 +656,27 @@ def test_holdout_unlock_recomputes_validation_navs_and_digest() -> None:
     )
     receipt = SCRIPT.validation_receipt(simulation)
     SCRIPT.require_holdout_unlocked(receipt)
+
+    holdout_calls: list[object] = []
+    with monkeypatch.context() as guard:
+        guard.setattr(
+            SCRIPT,
+            "_simulate_cohorts",
+            lambda *args, **kwargs: holdout_calls.append((args, kwargs)),
+        )
+        with pytest.raises(SCRIPT.InputBlockedError, match="holdout calendar identity"):
+            SCRIPT.simulate_holdout(
+                receipt,
+                _calendar((date(2021, 12, 1), date(2026, 6, 1))),
+                (),
+                None,  # type: ignore[arg-type]
+                daily_sessions=(),
+                action_projection_bytes=b"",
+                authorization=None,  # type: ignore[arg-type]
+                query_start=date(2021, 12, 1),
+                query_end=date(2026, 6, 1),
+            )
+    assert holdout_calls == []
 
     forged_digest = dataclasses.replace(receipt, result_sha256="0" * 64)
     with pytest.raises(SCRIPT.InputBlockedError, match="content identity"):
@@ -543,14 +703,18 @@ def test_full_action_projection_bytes_bind_every_runtime_field(monkeypatch) -> N
     assert actions[0].cash_amount == Decimal("1.000000")
     assert actions[0].pay_date == actions[0].effective_date + timedelta(days=8)
     assert actions[0].source.content_sha256 == hashlib.sha256(b"official-doc").hexdigest()
-    assert (
-        actions[0].source.available_at
-        == calendar.session_on(
-            actions[0].effective_date,
-            as_of=SCRIPT.OFFICIAL_ACTION_RETRIEVED_AT,
-        ).open_at
-    )
+    assert actions[0].source.available_at == SCRIPT.OFFICIAL_ACTION_RETRIEVED_AT
+    assert actions[0].source.retrieved_at == SCRIPT.OFFICIAL_ACTION_RETRIEVED_AT
     SCRIPT.assert_zero_distribution_execution_overlap(actions, (date(2018, 5, 1),))
+    limited_calendar = _calendar(
+        tuple(day for day in days if day <= date(2018, 2, 28))
+    )
+    stage_actions = SCRIPT.official_actions_from_projection(projection, limited_calendar)
+    assert 0 < len(stage_actions) < SCRIPT.OFFICIAL_ACTION_COUNT
+    assert all(
+        action.effective_date <= limited_calendar.identity.coverage_end
+        for action in stage_actions
+    )
 
     changed = projection.replace(b'"distribution":"1.000000"', b'"distribution":"999.99"')
     with pytest.raises(SCRIPT.InputBlockedError, match="full hash mismatch"):
@@ -562,22 +726,110 @@ def test_full_action_projection_bytes_bind_every_runtime_field(monkeypatch) -> N
         )
 
 
-def test_authorization_binds_actual_files_and_reviewed_core_head() -> None:
-    calendar = _calendar(_business_days(date(2024, 1, 1), date(2024, 2, 2)))
-    authorization = _authorization(calendar)
-    SCRIPT.validate_runtime_authorization(authorization, calendar)
+def test_authorization_binds_every_current_code_and_core_identity(
+    monkeypatch,
+    tmp_path: Path,
+) -> None:
+    calendar = _calendar(_business_days(date(2023, 12, 1), date(2024, 2, 2)))
+    point = _point(
+        calendar,
+        date(2024, 1, 31),
+        date(2024, 2, 1),
+        open_price=120.0,
+        decision_price=106.41,
+        official_actions=(),
+    )
+    authorization = dataclasses.replace(
+        _authorization(calendar),
+        calendar_epoch_mapping_sha256=SCRIPT.calendar_epoch_mapping_sha256((point,)),
+    )
+
+    class OneReadDefinition:
+        calls = 0
+
+        def read_bytes(self) -> bytes:
+            self.calls += 1
+            if self.calls != 1:
+                raise AssertionError("definition bytes were reopened")
+            return REPORT_PATH.read_bytes()
+
+    one_read = OneReadDefinition()
+    monkeypatch.setattr(SCRIPT, "_REPORT_PATH", one_read)
+    SCRIPT.validate_runtime_authorization(authorization, calendar, (point,))
+    assert one_read.calls == 1
+    monkeypatch.setattr(SCRIPT, "_REPORT_PATH", REPORT_PATH)
     forged = dataclasses.replace(authorization, preregistration_json_sha256="0" * 64)
     with pytest.raises(SCRIPT.InputBlockedError, match="current bytes"):
-        SCRIPT.validate_runtime_authorization(forged, calendar)
+        SCRIPT.validate_runtime_authorization(forged, calendar, (point,))
+    wrong_adapter = dataclasses.replace(authorization, strategy_adapter_sha256="a" * 64)
+    with pytest.raises(SCRIPT.InputBlockedError, match="strategy adapter"):
+        SCRIPT.validate_runtime_authorization(wrong_adapter, calendar, (point,))
+    wrong_runner = dataclasses.replace(authorization, strategy_runner_sha256="b" * 64)
+    with pytest.raises(SCRIPT.InputBlockedError, match="strategy runner"):
+        SCRIPT.validate_runtime_authorization(wrong_runner, calendar, (point,))
     wrong_core = dataclasses.replace(authorization, causal_core_reviewed_head="c" * 40)
     with pytest.raises(SCRIPT.InputBlockedError, match="reviewed PR117"):
-        SCRIPT.validate_runtime_authorization(wrong_core, calendar)
+        SCRIPT.validate_runtime_authorization(wrong_core, calendar, (point,))
     wrong_merged_core = dataclasses.replace(
         authorization,
         causal_core_merged_main_head="d" * 40,
     )
     with pytest.raises(SCRIPT.InputBlockedError, match="merged PR117"):
-        SCRIPT.validate_runtime_authorization(wrong_merged_core, calendar)
+        SCRIPT.validate_runtime_authorization(wrong_merged_core, calendar, (point,))
+    wrong_status_core = dataclasses.replace(
+        authorization,
+        status_core_reviewed_head="e" * 40,
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="status core"):
+        SCRIPT.validate_runtime_authorization(wrong_status_core, calendar, (point,))
+    wrong_execution_core = dataclasses.replace(
+        authorization,
+        execution_core_reviewed_head="f" * 40,
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="execution core"):
+        SCRIPT.validate_runtime_authorization(wrong_execution_core, calendar, (point,))
+    wrong_calendar = dataclasses.replace(
+        authorization,
+        reconstruction_calendar_identity_sha256="1" * 64,
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="reconstruction calendar"):
+        SCRIPT.validate_runtime_authorization(wrong_calendar, calendar, (point,))
+    wrong_mapping = dataclasses.replace(
+        authorization,
+        calendar_epoch_mapping_sha256="2" * 64,
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="epoch mapping"):
+        SCRIPT.validate_runtime_authorization(wrong_mapping, calendar, (point,))
+
+    forged_definition = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    forged_definition["outcome_blind_frozen_specification"][
+        "expected_inclusion_rule_sha256"
+    ] = "3" * 64
+    forged_path = tmp_path / "forged-definition.json"
+    forged_path.write_text(json.dumps(forged_definition), encoding="utf-8")
+    monkeypatch.setattr(SCRIPT, "_REPORT_PATH", forged_path)
+    forged_authorization = dataclasses.replace(
+        authorization,
+        preregistration_json_sha256=hashlib.sha256(forged_path.read_bytes()).hexdigest(),
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="definition inclusion rule"):
+        SCRIPT.validate_runtime_authorization(forged_authorization, calendar, (point,))
+
+    forged_definition["outcome_blind_frozen_specification"][
+        "expected_inclusion_rule_sha256"
+    ] = SCRIPT.EXPECTED_INCLUSION_RULE_SHA256
+    forged_definition["status"] = "HISTORICAL_VALIDATION_FAIL"
+    forged_path.write_text(json.dumps(forged_definition), encoding="utf-8")
+    forged_status_authorization = dataclasses.replace(
+        authorization,
+        preregistration_json_sha256=hashlib.sha256(forged_path.read_bytes()).hexdigest(),
+    )
+    with pytest.raises(SCRIPT.InputBlockedError, match="current JSON status"):
+        SCRIPT.validate_runtime_authorization(
+            forged_status_authorization,
+            calendar,
+            (point,),
+        )
 
 
 def test_shared_core_partial_cash_preserves_requested_shares_and_residual_cash() -> None:
@@ -613,6 +865,168 @@ def test_shared_core_partial_cash_preserves_requested_shares_and_residual_cash()
     assert result.portfolio.available_cash == pytest.approx(0.9010000000000105)
 
 
+def test_spy_rebalance_rejects_non_eod_open_and_decision_price_drift(monkeypatch) -> None:
+    days = _business_days(date(2023, 12, 1), date(2024, 2, 2))
+    calendar = _calendar(days)
+    point = _point(
+        calendar,
+        date(2024, 1, 31),
+        date(2024, 2, 1),
+        open_price=120.0,
+        decision_price=106.41,
+        official_actions=(),
+    )
+    signal = SCRIPT._point_signal(point, ())
+    authorization = _authorization(calendar)
+    baseline = SCRIPT._rebalance(
+        Portfolio.us(40_000.0),
+        point,
+        authorization,
+        signal.signal_session,
+        signal.target_weight,
+        "0" * 64,
+    )
+    assert baseline.receipts
+
+    calls: list[object] = []
+
+    def forbidden_rebalance(*args, **kwargs):
+        calls.append((args, kwargs))
+        raise AssertionError("shared callback path must not run")
+
+    monkeypatch.setattr(SCRIPT, "run_static_rebalance", forbidden_rebalance)
+
+    execution = point.calendar.session_on(
+        point.execution_session,
+        as_of=point.decision_at,
+    )
+    backdated_source = _source("backdated-open", execution.open_at)
+    bad_rows = (
+        dataclasses.replace(
+            point.execution_input,
+            source=backdated_source,
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            source=_source(
+                "early-eod-open",
+                datetime.combine(point.execution_session, time(19, 59), NY),
+            ),
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            source=_source(
+                "late-eod-open",
+                datetime.combine(point.execution_session, time(20, 1), NY),
+            ),
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            source=_source(
+                "wrong-day-eod-open",
+                datetime.combine(
+                    point.execution_session + timedelta(days=1),
+                    time(20),
+                    NY,
+                ),
+            ),
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            execution_price_basis="timestamped_session_open",
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            execution_price_effective_at=execution.open_at + timedelta(microseconds=1),
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            decision_price=point.execution_input.decision_price + 1.0,
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            decision_price_source=_source(
+                "wrong-close-source",
+                datetime.combine(date(2024, 1, 31), time(20), NY),
+            ),
+        ),
+    )
+    expected_messages = (
+        "same-session 20:00",
+        "same-session 20:00",
+        "same-session 20:00",
+        "same-session 20:00",
+        "retrospective daily-bar basis",
+        "accepted-session open",
+        "final causal raw close",
+        "final causal raw close",
+    )
+    for row, message in zip(bad_rows, expected_messages, strict=True):
+        bad_point = dataclasses.replace(point, execution_input=row)
+        portfolio = Portfolio.us(40_000.0)
+        before = dict(portfolio.__dict__)
+        with pytest.raises(SCRIPT.InputBlockedError, match=message):
+            SCRIPT._rebalance(
+                portfolio,
+                bad_point,
+                authorization,
+                signal.signal_session,
+                signal.target_weight,
+                "0" * 64,
+            )
+        assert calls == []
+        assert portfolio.__dict__ == before
+
+
+def test_execution_observation_fields_change_runtime_bundle_identity(monkeypatch) -> None:
+    days = _business_days(date(2018, 1, 1), date(2018, 4, 30))
+    calendar = _calendar(days)
+    projection = _projection_bytes(days)
+    monkeypatch.setattr(
+        SCRIPT,
+        "OFFICIAL_ACTION_PROJECTION_SHA256",
+        hashlib.sha256(projection).hexdigest(),
+    )
+    official_actions = SCRIPT.official_actions_from_projection(projection, calendar)
+    point = _point(
+        calendar,
+        date(2018, 3, 30),
+        date(2018, 4, 2),
+        open_price=120.0,
+        decision_price=106.41,
+        official_actions=official_actions,
+    )
+    baseline_rows = SCRIPT.runtime_market_rows_sha256((point,))
+    baseline_bundle = SCRIPT.runtime_input_bundle_sha256(calendar, (point,), projection)
+    changed_rows = (
+        dataclasses.replace(
+            point.execution_input,
+            execution_price_basis="timestamped_session_open",
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            execution_price_effective_at=(
+                point.execution_input.execution_price_effective_at
+                + timedelta(microseconds=1)
+            ),
+        ),
+        dataclasses.replace(
+            point.execution_input,
+            source=_source(
+                "changed-open-source",
+                datetime.combine(point.execution_session, time(20), NY),
+            ),
+        ),
+    )
+    for row in changed_rows:
+        changed = dataclasses.replace(point, execution_input=row)
+        assert SCRIPT.runtime_market_rows_sha256((changed,)) != baseline_rows
+        assert (
+            SCRIPT.runtime_input_bundle_sha256(calendar, (changed,), projection)
+            != baseline_bundle
+        )
+
+
 def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch) -> None:
     days = _business_days(date(2023, 12, 1), date(2024, 4, 3))
     calendar = _calendar(days)
@@ -627,24 +1041,24 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
         calendar,
         date(2024, 1, 31),
         date(2024, 2, 1),
-        open_price=10.0,
-        decision_price=10.0,
+        open_price=120.0,
+        decision_price=106.41,
         official_actions=official_actions,
     )
     second = _point(
         calendar,
         date(2024, 2, 29),
         date(2024, 3, 1),
-        open_price=11.0,
-        decision_price=10.5,
+        open_price=121.0,
+        decision_price=106.41,
         official_actions=official_actions,
     )
     final = _point(
         calendar,
         date(2024, 3, 29),
         date(2024, 4, 1),
-        open_price=12.0,
-        decision_price=11.5,
+        open_price=122.0,
+        decision_price=106.41,
         official_actions=official_actions,
     )
     daily = tuple(day for day in days if date(2024, 2, 1) <= day <= date(2024, 4, 1))
@@ -653,8 +1067,59 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
         (first, second, final),
         projection,
     )
-    monkeypatch.setattr(SCRIPT, "RUNTIME_INPUT_BUNDLE_SHA256", bundle_sha)
     authorization = _authorization(calendar, (first, second, final), projection)
+    stage_contract = {
+        "expected_months": ((2024, 2), (2024, 3)),
+        "expected_calendar_bounds": (
+            calendar.identity.coverage_start,
+            calendar.identity.coverage_end,
+        ),
+        "expected_calendar_session_count": calendar.identity.session_count,
+        "expected_official_action_count": len(official_actions),
+        "expected_calendar_projection_sha256": (
+            calendar.identity.source_identity.content_sha256
+        ),
+    }
+    with pytest.raises(SCRIPT.InputBlockedError, match="official action count"):
+        SCRIPT._simulate_cohorts(
+            calendar,
+            (first, second),
+            final,
+            daily_sessions=daily,
+            action_projection_bytes=projection,
+            authorization=authorization,
+            expected_input_bundle_sha256=None,
+            **{
+                **stage_contract,
+                "expected_official_action_count": len(official_actions) + 1,
+            },
+        )
+    signal_calls: list[object] = []
+    rebalance_calls: list[object] = []
+    with monkeypatch.context() as guard:
+        guard.setattr(
+            SCRIPT,
+            "_point_signal",
+            lambda *args, **kwargs: signal_calls.append((args, kwargs)),
+        )
+        guard.setattr(
+            SCRIPT,
+            "run_static_rebalance",
+            lambda *args, **kwargs: rebalance_calls.append((args, kwargs)),
+        )
+        with pytest.raises(SCRIPT.InputBlockedError, match="has not been frozen"):
+            SCRIPT._simulate_cohorts(
+                calendar,
+                (first, second),
+                final,
+                daily_sessions=daily,
+                action_projection_bytes=projection,
+                authorization=authorization,
+                expected_input_bundle_sha256=None,
+                **stage_contract,
+            )
+    assert signal_calls == []
+    assert rebalance_calls == []
 
     first_run = SCRIPT._simulate_cohorts(
         calendar,
@@ -663,7 +1128,8 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
         daily_sessions=daily,
         action_projection_bytes=projection,
         authorization=authorization,
-        expected_months=((2024, 2), (2024, 3)),
+        expected_input_bundle_sha256=bundle_sha,
+        **stage_contract,
     )
     second_run = SCRIPT._simulate_cohorts(
         calendar,
@@ -672,7 +1138,8 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
         daily_sessions=daily,
         action_projection_bytes=projection,
         authorization=authorization,
-        expected_months=((2024, 2), (2024, 3)),
+        expected_input_bundle_sha256=bundle_sha,
+        **stage_contract,
     )
     assert first_run == second_run
     assert first_run.strategy_boundary_navs[0] == 40_000.0
@@ -685,7 +1152,7 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
     assert first_run.benchmark_receipts[-1].side == "sell"
 
     assert "signal" not in {field.name for field in dataclasses.fields(SCRIPT.ExecutionPoint)}
-    rebuilt = SCRIPT._point_signal(calendar, first, official_actions)
+    rebuilt = SCRIPT._point_signal(first, official_actions)
     assert rebuilt.target_weight == MODULE.target_weight(rebuilt.annualized_volatility)
     wrong_inclusion = dataclasses.replace(
         first,
@@ -695,7 +1162,7 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
         ),
     )
     with pytest.raises(SCRIPT.InputBlockedError, match="inclusion rule"):
-        SCRIPT._point_signal(calendar, wrong_inclusion, official_actions)
+        SCRIPT._point_signal(wrong_inclusion, official_actions)
 
     wrong_basis = dataclasses.replace(
         first,
@@ -710,7 +1177,6 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
     with pytest.raises(SCRIPT.InputBlockedError, match="raw_execution_units"):
         SCRIPT._rebalance(
             Portfolio.us(40_000.0),
-            calendar,
             wrong_basis,
             authorization,
             rebuilt.signal_session,
@@ -727,7 +1193,6 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
     with pytest.raises(SCRIPT.InputBlockedError, match="raw_execution_units"):
         SCRIPT._rebalance(
             Portfolio.us(40_000.0),
-            calendar,
             missing_basis,
             authorization,
             rebuilt.signal_session,
@@ -744,7 +1209,8 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
             daily_sessions=daily,
             action_projection_bytes=projection,
             authorization=forged_authorization,
-            expected_months=((2024, 2), (2024, 3)),
+            expected_input_bundle_sha256=bundle_sha,
+            **stage_contract,
         )
 
 
@@ -761,6 +1227,17 @@ def test_validation_bounds_real_gate_and_no_duplicate_adapter_surface() -> None:
             date(2021, 12, 31),
             SCRIPT.VALIDATION_QUERY_BOUNDS,
             "validation",
+        )
+    with pytest.raises(SCRIPT.InputBlockedError, match="calendar session count"):
+        SCRIPT.simulate_validation(
+            _calendar((date(2018, 1, 2), date(2021, 12, 1))),
+            (),
+            None,  # type: ignore[arg-type]
+            daily_sessions=(),
+            action_projection_bytes=b"",
+            authorization=None,  # type: ignore[arg-type]
+            query_start=date(2018, 1, 2),
+            query_end=date(2021, 12, 1),
         )
     with pytest.raises(SCRIPT.InputBlockedError, match="current JSON"):
         SCRIPT.validate_runtime_authorization(None, _calendar((date(2024, 1, 2),)))
