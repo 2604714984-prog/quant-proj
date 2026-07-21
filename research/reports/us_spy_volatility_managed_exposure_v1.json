@@ -1,18 +1,21 @@
 {
-  "schema_version": "us-spy-volatility-managed-exposure-preregistration-v1",
+  "schema_version": "us-spy-volatility-managed-exposure-preregistration-v3",
   "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1",
   "date": "2026-07-21",
   "market": "US",
   "phase": "OUTCOME_BLIND_PREREGISTRATION",
   "status": "PREREGISTERED_NOT_EXECUTED",
-  "current_status": "input-qualified-retrospective-research-grade-pending-shared-p0",
+  "current_status": "CODE_ONLY_TERMINAL_CONTRACT_FROZEN_REAL_EXECUTION_IDENTITY_BLOCKED",
   "evidence_class": "RETROSPECTIVE_RESEARCH_GRADE_NOT_PAPER_OR_LIVE",
   "family_number": null,
   "repository_identity": {
     "branch": "research/us-spy-vol-managed-v1",
-    "base_head": "d065def0625fe20126c1579d8bf4c8c75614a154",
-    "base_tree": "e67ff78d1b265dc5c8cf4e6870c2e21900acacfe",
-    "artifact": "research/reports/us_spy_volatility_managed_exposure_v1.json"
+    "implementation_base_head": "a1f2c9ec5af02aeb33e0ac241225f8f8fba3fb71",
+    "implementation_base_tree": "5053beb61266e383147da5f5c9a34b965a29058c",
+    "causal_core_reviewed_head": "d065def0625fe20126c1579d8bf4c8c75614a154",
+    "artifact": "research/reports/us_spy_volatility_managed_exposure_v1.json",
+    "adapter": "research/adapters/us_spy_volatility_managed.py",
+    "one_off_script": "scripts/run_us_spy_volatility_managed_validation.py"
   },
   "outcome_blind_frozen_specification": {
     "research_question": "Does unlevered monthly SPY exposure scaled down when trailing realized volatility is high improve risk-adjusted performance relative to fully invested SPY?",
@@ -21,54 +24,90 @@
     "instrument_selection": "fixed before outcome access; not a dynamic stock pool",
     "account_currency": "USD",
     "initial_capital": 40000,
-    "rebalance_frequency": "MONTHLY",
-    "decision_time": "20:05:00 America/New_York on the final accepted XNYS session of each calendar month",
-    "execution_time": "next accepted XNYS session open",
-    "decision_precedes_execution_open": true,
-    "signal": {
+    "state_reset": "validation and holdout each start fresh, independent strategy and benchmark Portfolio.us instances with exactly USD 40000",
+    "calendar_and_signal": {
+      "calendar_type": "AcceptedSessionCalendar",
+      "exchange_id": "XNYS",
+      "exchange_timezone": "America/New_York",
       "required_raw_closes": 22,
       "required_log_total_returns": 21,
-      "return_formula": "g_t=(split_factor_t*raw_close_t+cash_distribution_t)/raw_close_t_minus_1; r_t=log(g_t)",
-      "split_factor_default": 1.0,
-      "cash_distribution_default": 0.0,
-      "adjusted_price_substitution_allowed": false,
-      "annualized_volatility": "sample standard deviation of the 21 log total returns with ddof=1 multiplied by sqrt(252)",
+      "consecutiveness": "the 22 closes must be the exact consecutive accepted sessions ending at the final accepted XNYS session of the signal month",
+      "weekend_or_nonaccepted_substitution": "FORBIDDEN",
+      "decision_time": "20:05:00 America/New_York on that final accepted session",
+      "execution_time": "open of the immediately following accepted session",
+      "later_execution_session": "INPUT_BLOCKED",
+      "return_formula": "g_t=(split_ratio_t*raw_close_t+cash_distribution_t)/raw_close_t_minus_1; r_t=log(g_t)",
+      "annualized_volatility": "sample standard deviation of exactly 21 log total returns with ddof=1 multiplied by sqrt(252)",
       "target_annualized_volatility": 0.1,
       "target_weight": "min(1.0, 0.10 / annualized_volatility)",
-      "nonfinite_or_nonpositive_volatility": "FAIL_CLOSED"
+      "adjusted_price_substitution_allowed": false,
+      "missing_nonfinite_or_nonpositive_value": "INPUT_BLOCKED"
     },
-    "portfolio": {
-      "target_share_rule": "floor(target_notional / causal_decision_time_sizing_price)",
-      "causal_decision_time_sizing_price": "latest accepted raw close available no later than decision_at",
-      "requested_shares_frozen_before_execution_open": true,
-      "execution_open_price_role": "fill observation only; it can never alter requested shares",
+    "shared_execution_and_accounting": {
+      "monthly_orders": "quant_system.backtest.run_static_rebalance only",
+      "daily_session_advancement": "Portfolio.start_session",
+      "cash_distributions": "Portfolio.apply_cash_distribution",
+      "splits": "Portfolio.apply_split",
+      "duplicate_strategy_execution_or_accounting_api": "FORBIDDEN",
+      "target_share_rule": "floor(target_notional / causal decision-time raw close)",
+      "requested_shares": "frozen at decision time and never resized from the execution open",
+      "partial_cash": "accepted shared-core outcome: actual fill may fall to the maximum affordable whole shares; requested shares stay unchanged; residual remains cash; no redistribution or leverage",
       "whole_shares_only": true,
-      "residual_cash_redistribution": false,
       "cash_interest": 0.0,
       "leverage": false,
       "shorting": false,
       "commission_rate": 0.0,
+      "minimum_commission": 0.0,
       "one_way_slippage_bps": 10,
-      "minimum_commission": 0.0
+      "pending_cash_nav_rule": "Portfolio.nav includes pending receivables and unsettled sale proceeds"
+    },
+    "cohort_boundaries": {
+      "entry": "buy/rebalance at the first accepted open of each entry month",
+      "initial_boundary_nav": 40000,
+      "intermediate_strategy_boundary": "NAV after that opening rebalance, including its trade cost exactly once",
+      "intermediate_benchmark_boundary": "raw-open mark with no trade",
+      "final_boundary": "NAV after liquidation at the first accepted open after the final cohort",
+      "cohort_return": "boundary_NAV_i / prior_boundary_NAV - 1",
+      "strategy_lifecycle": "enter at the first entry-month open, rebalance at each subsequent entry-month open, liquidate at final exit",
+      "benchmark_lifecycle": "buy once at the first entry-month open and liquidate only at final exit",
+      "daily_processing": "advance every accepted session, apply actions to both portfolios, and settle pending cash",
+      "month_skipping": "FORBIDDEN"
+    },
+    "metrics": {
+      "return_frequency": "monthly arithmetic cohort returns",
+      "risk_free_rate": 0.0,
+      "sharpe": "sqrt(12) * arithmetic_mean(monthly_returns) / sample_stdev(monthly_returns, ddof=1)",
+      "annualized_volatility": "sample_stdev(monthly_returns, ddof=1) * sqrt(12)",
+      "compounded_net_return": "product(1 + monthly_return) - 1",
+      "maximum_drawdown": "min(boundary_NAV / running_max_boundary_NAV - 1) over initial plus every monthly boundary",
+      "maximum_drawdown_sign": "negative",
+      "zero_or_nonfinite_denominator": "INPUT_BLOCKED",
+      "invalid_or_nonfinite_input": "INPUT_BLOCKED",
+      "silent_month_omission": "FORBIDDEN"
     },
     "corporate_actions": {
-      "split_application_count": "exactly once",
-      "cash_distribution_information_available_at": "ex-date XNYS open",
-      "cash_distribution_entitlement": "ex-date for shares held before the open",
-      "cash_ledger_credit": "pay-date only",
-      "semantic_correction": "information availability at ex-date open and cash arrival at pay-date are distinct; the prior uncommitted record conflated them",
-      "same_session_multiple_ordinary_actions": "fail closed",
+      "identity_types": [
+        "CorporateActionIdentity",
+        "SourceIdentity"
+      ],
+      "official_projection_sha256": "caf871c657e8c1ff258e8733c8ef49409da1c66c911b5a48f2148cdf9cc3f12a",
+      "required_event_count": 34,
+      "runtime_action_identity": "the one-off must hash and strictly parse the exact 34-row projection bytes, deterministically rebuild every action date, type, amount, payment date, document source identity, and ID, and reject any execution-point action that differs",
+      "deterministic_action_id_formula": "spy-state-street- + sha256(official_projection_sha256 + '|SPY|' + ex_date_iso); the one-off derives this ID directly from the exact projection bytes and PR117 does not supply action IDs",
+      "historical_availability_semantics": "ex-date-open availability is a frozen public-information convention used by this retrospective study; it is not represented as historical retrieval evidence",
+      "runtime_window": {
+        "start": "2018-01-02",
+        "end": "2026-06-30"
+      },
+      "window_outside_action": "INPUT_BLOCKED",
+      "same_session_multiple_ordinary_actions": "INPUT_BLOCKED",
       "official_amount_precedence": true,
       "source_conflict_auto_fusion_allowed": false,
-      "missing_ex_record_pay_amount_unit_currency_or_source_hash": "FAIL_CLOSED"
-    },
-    "benchmark": {
-      "name": "SPY_BUY_AND_HOLD",
-      "initial_capital": 40000,
-      "price_and_corporate_action_semantics": "identical to strategy",
-      "whole_shares_only": true,
-      "entry_and_final_exit_one_way_slippage_bps": 10,
-      "split_state_reset": true
+      "split_application_count": "exactly once",
+      "cash_distribution_entitlement": "shares held immediately before ex-date open",
+      "cash_ledger_credit": "pay-date settlement through Portfolio pending cash",
+      "distribution_ex_date_first_session_execution_overlap_count": 0,
+      "overlap_drift_rule": "any nonzero overlap is INPUT_BLOCKED; the count must never change silently"
     },
     "splits": {
       "formation_only": {
@@ -81,66 +120,78 @@
         "required_count": 45
       },
       "purged_entry_cohort": "2021-12",
+      "validation_query_rule": "the query interval must equal 2018-01-02 through 2021-12-01 exactly",
+      "holdout_query_rule": "the separate query interval must equal 2021-12-01 through 2026-06-01 exactly",
       "retrospective_holdout_entry_cohorts": {
         "start_month": "2022-01",
         "end_month": "2026-05",
         "required_count": 53,
         "last_exit_month": "2026-06"
       },
-      "holdout_access_rule": "open exactly once only after every validation gate passes"
+      "holdout_access_rule": "separate invocation only; requires an immutable ValidationReceipt digest recomputed from the exact 46 strategy and benchmark boundary NAVs, derived 45 returns, and all four validation gates"
     },
-    "validation_gates": [
-      "exactly 45 valid cohorts",
-      "strategy monthly Sharpe minus SPY monthly Sharpe is greater than zero",
-      "strategy compounded net return is greater than zero",
-      "strategy annualized volatility is lower than SPY annualized volatility",
-      "strategy maximum drawdown is greater than SPY maximum drawdown under the frozen negative-sign convention"
-    ],
+    "validation_gates": {
+      "required_complete_cohorts": 45,
+      "all_required": true,
+      "gates": [
+        "strategy Sharpe minus benchmark Sharpe is greater than zero",
+        "strategy compounded net return is greater than zero",
+        "strategy annualized volatility is lower than benchmark annualized volatility",
+        "strategy maximum drawdown is greater than benchmark maximum drawdown under the frozen negative-sign convention"
+      ]
+    },
     "holdout_primary_inference": {
-      "required_valid_cohorts": 53,
-      "statistic": "strategy monthly Sharpe minus SPY monthly Sharpe",
+      "required_complete_cohorts": 53,
+      "statistic": "Sharpe(strategy paired monthly returns) - Sharpe(benchmark paired monthly returns)",
       "method": "paired stationary bootstrap",
       "resamples": 10000,
       "seed": 4601,
       "expected_block_length_months": 6,
       "restart_probability": "1/6",
-      "paired_rows": true,
-      "circular_continuation": true,
-      "quantile": "linear-interpolated 5th percentile",
+      "draw_algorithm": "for each replicate initial_index=floor(Random.random()*N); at every later position draw u=Random.random(); if u<1/6 draw a second Random.random() and set floor(random*N), otherwise use (previous+1) modulo N",
+      "invalid_replicate": "INPUT_BLOCKED; no replicate may be skipped",
+      "quantile": "sort all 10000 statistics; h=(n-1)*0.05; linearly interpolate between floor(h) and ceil(h)",
+      "pass_rule": "the interpolated 5th percentile is strictly greater than zero",
       "primary_test_count": 1,
-      "alpha": 0.05,
-      "pass_rule": "one-sided 95 percent lower bound is greater than zero"
+      "discretionary_exception_repair": "FORBIDDEN"
     },
     "holdout_secondary_gates": [
       "strategy compounded net return is greater than zero",
-      "strategy annualized volatility is lower than SPY annualized volatility",
-      "strategy maximum drawdown is greater than SPY maximum drawdown under the frozen negative-sign convention"
+      "strategy annualized volatility is lower than benchmark annualized volatility",
+      "strategy maximum drawdown is greater than benchmark maximum drawdown under the frozen negative-sign convention"
     ],
     "terminal_rules": {
-      "validation_failure": "close without opening holdout",
-      "holdout_failure": "historical screen fail",
-      "validation_and_holdout_pass": "pending external review; strategy_candidate_available remains false"
+      "identity_schema_coverage_action_or_chronology_failure_before_complete_cohorts": "INPUT_BLOCKED; permanent closure",
+      "completed_validation_gate_failure": "HISTORICAL_VALIDATION_FAIL; permanent closure; holdout remains unopened",
+      "completed_holdout_failure": "HISTORICAL_HOLDOUT_FAIL",
+      "validation_and_holdout_pass": "HISTORICAL_PASS_PENDING_EXTERNAL_REVIEW",
+      "strategy_candidate_available_after_any_terminal_state": false
+    },
+    "real_execution_gate": {
+      "current_json_status_required": "PREREGISTERED_NOT_EXECUTED",
+      "current_json_actual_byte_sha256_required_at_invocation": true,
+      "current_adapter_actual_byte_sha256_required_at_invocation": true,
+      "causal_core_reviewed_head_required_at_invocation": "d065def0625fe20126c1579d8bf4c8c75614a154",
+      "exact_action_projection_bytes_required_at_invocation": true,
+      "calendar_and_runtime_market_row_content_hashes_required_at_invocation": true,
+      "runtime_input_bundle_sha256": null,
+      "runtime_input_bundle_state": "NOT_YET_FROZEN_REAL_EXECUTION_REMAINS_INPUT_BLOCKED",
+      "real_data_loader_present": false,
+      "default_cli_state": "INPUT_BLOCKED",
+      "network_database_or_provider_access_in_one_off": false
     },
     "forbidden_changes": [
-      "change the 21-session window",
+      "change the 21-return or 22-close signal window",
       "change the 10 percent volatility target",
-      "change cost or benchmark semantics",
-      "change the split dates",
-      "add smoothing, a volatility floor, a hysteresis band, or a minimum weight",
-      "reuse or repair US31, US36, US41, US46, the 200-day trend, three-ETF inverse-volatility, or dual-momentum lineages"
+      "change costs, benchmark, cohort boundaries, or state reset semantics",
+      "change validation or holdout dates or cohort counts",
+      "change the action projection, exact runtime IDs, or zero-overlap assertion silently",
+      "change bootstrap draw order, seed, resample count, statistic, or quantile",
+      "add smoothing, a volatility floor, a hysteresis band, a minimum weight, leverage, redistribution, or discretionary repair"
     ]
   },
   "input_qualification_evidence": {
-    "qualification_status": "INPUT_QUALIFIED_RETROSPECTIVE_RESEARCH_GRADE_PENDING_SHARED_P0",
-    "database_snapshot": {
-      "sha256_before": "f7d35377a9c66e2b0ffd7d0201a6e3954a79df25b3e0b8f36904df1cfef1eeb0",
-      "sha256_after": "f7d35377a9c66e2b0ffd7d0201a6e3954a79df25b3e0b8f36904df1cfef1eeb0",
-      "size_bytes": 4672466944,
-      "mode": "0600",
-      "wal_present": false,
-      "unchanged": true,
-      "canonical_write_performed": false
-    },
+    "qualification_status": "INPUT_QUALIFIED_RETROSPECTIVE_RESEARCH_GRADE_IDENTITY_GATE_REQUIRED",
     "tiingo_raw_eod": {
       "snapshot_id": "tiingo_raw_20260711T142010Z_5c24877d23cfc4a0",
       "source_document_sha256": "695494dd12f3c8b9a1e2946ba1de8f594c69026185a5e25a6bbfce8503d569e4",
@@ -152,9 +203,7 @@
       "raw_close_nonnull": 2134,
       "row_hash_nonnull": 2134,
       "row_hash_unique": 2134,
-      "ordered_date_and_row_hash_sha256": "818ac5f04a072e1d8e6e7b27b42a7753f31ea9e09d11c65c7e78bb16e418394d",
-      "signal_availability": "raw close is usable only after the corresponding accepted XNYS close and no later than the 20:05 decision",
-      "next_session_raw_open_role": "execution fill observation only"
+      "ordered_date_and_row_hash_sha256": "818ac5f04a072e1d8e6e7b27b42a7753f31ea9e09d11c65c7e78bb16e418394d"
     },
     "xnys_calendar": {
       "projection_sha256": "c5a6a88cb3b616d1207a5a67959879ad514553aec1d3da5367a12afae7c22f9a",
@@ -167,16 +216,10 @@
     "official_state_street_distributions": {
       "raw_xlsx_sha256": "cfd06fd32bda2928de72cfb5531cf486010c1fccc12f53051033a52b3b1da261",
       "projection_sha256": "caf871c657e8c1ff258e8733c8ef49409da1c66c911b5a48f2148cdf9cc3f12a",
+      "retrieved_at": "2026-07-21T08:13:17.580138+00:00",
+      "availability_note": "current retrieval with historical publication time not backdated; ex-date-open is a frozen retrospective semantic convention, not a historical retrieval timestamp",
       "events": 34,
       "coverage_complete_by_date": true,
-      "official_control_fields": [
-        "amount",
-        "ex_date",
-        "record_date",
-        "pay_date"
-      ],
-      "short_term_capital_gain_nonzero_events": 0,
-      "long_term_capital_gain_nonzero_events": 0,
       "tiingo_amount_comparison": {
         "exact_matches": 26,
         "rounding_differences": 7,
@@ -190,38 +233,8 @@
         "resolution": "official State Street value controls every event; Tiingo is comparison-only and no automatic fusion is allowed"
       }
     },
-    "corporate_action_and_lifecycle": {
-      "sec_2016_spy_prospectus_sha256": "3facae3c521cf9ee4818c6132419cc54d6bfd45e12b01bdc190781a65c67416f",
-      "tiingo_metadata_source_document_sha256": "1e9d3ed244f3c738ab4345f1e31053c46bf0654efa8fc4d3dca79cc981b964fd",
-      "tiingo_metadata_row_sha256": "c45e68cb9b8084b3abecc2cbf4c507b56ce22234510d6133d99b621a2edcfba2",
-      "continuous_accepted_sessions": 2134,
-      "state_street_official_event_coverage": "2018-2026",
-      "split_factor_rows": 2134,
-      "nonunit_split_factor_rows": 0,
-      "reported_split_events": 0,
-      "lifecycle_rule": "the fixed SPY identity is supported by the prospectus, official events, and continuous accepted sessions; any missing open or identity cohort fails closed",
-      "split_conflict_rule": "Tiingo and official evidence report no split; any later conflict fails closed"
-    },
-    "regulatory_semantic_basis": [
-      {
-        "authority": "FINRA Rule 11140",
-        "url": "https://www.finra.org/rules-guidance/rulebooks/finra-rules/11140",
-        "role": "supports definitive dividend information and dates reaching market organizations before ex-date",
-        "local_document_sha256": null
-      },
-      {
-        "authority": "Securities Exchange Act Rule 10b-17",
-        "url": "https://www.ecfr.gov/current/title-17/chapter-II/part-240/section-240.10b-17",
-        "role": "supports advance notice of distributions before the record date",
-        "local_document_sha256": null
-      }
-    ],
-    "aggregate_artifacts": {
-      "qualification_summary_sha256": "bbbda56f82caeb370c8d2eeea1a15bc76ff39ccc9e623029cade17f266373238",
-      "retrieval_manifest_sha256": "4f1ffda06c68656b4dd107c9e1896b9bd8ecf06075b8ae4d4f0086baec9e3f73"
-    },
-    "shared_p0_pending": "shared P0 PR must be externally accepted and merged before outcome access; the code-only adapter and synthetic tests are already independently validated",
-    "external_acceptance_claimed": false
+    "external_acceptance_claimed": false,
+    "pr117_merged_identity_supplied_to_this_record": false
   },
   "adjudication": {
     "outcome_accessed": false,
@@ -230,9 +243,7 @@
     "holdout_opened": false,
     "gate_counts": null,
     "strategy_result": null,
-    "adjusted_close_or_inferred_event_substitution_allowed": false,
-    "shortening_or_changing_the_frozen_splits_allowed": false,
-    "next_action": "after the shared P0 PR is externally accepted and merged, execute validation exactly once; open holdout only if every frozen validation gate passes"
+    "next_action": "after PR117 exact reviewed head is accepted in main, supply hashes of the actual current report and adapter bytes plus the exact private projection/calendar/market identities to the separate validation invocation; otherwise remain INPUT_BLOCKED"
   },
   "boundaries": {
     "provider_or_network_used_by_this_record_task": false,
@@ -244,6 +255,6 @@
     "live_authorized": false,
     "auto_trading_authorized": false
   },
-  "boundary_result": "PASS_OUTCOME_BLIND_PREREGISTRATION_NO_OUTCOME",
+  "boundary_result": "PASS_OUTCOME_BLIND_CODE_ONLY_TERMINAL_CONTRACT_NO_OUTCOME",
   "strategy_candidate_available": false
 }
