@@ -3,12 +3,22 @@
 from __future__ import annotations
 
 from collections import defaultdict
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import date, datetime
+import hashlib
+import json
 from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from quant_system.data import AcceptedSession, SourceIdentity, select_source_revision
+from quant_system.data import (
+    AcceptedSession,
+    CalendarIdentity,
+    SourceIdentity,
+    calendar_identity_sha256,
+    select_source_revision,
+)
+from quant_system.data.source_identity import require_sha256
 
 from .common import (
     MarketDataError,
@@ -70,6 +80,138 @@ class UniverseDecision:
     evidence: tuple[tuple[StatusKind, str, SourceIdentity], ...]
 
 
+@dataclass(frozen=True)
+class UniverseSnapshotIdentity:
+    """Immutable identity of the complete candidate set for one decision session."""
+
+    market: Literal["a_share", "us"]
+    exchange_id: str
+    effective_session: date
+    member_count: int
+    ordered_members_sha256: str
+    lifecycle_coverage_sha256: str
+    inclusion_rule_sha256: str
+    calendar_identity_sha256: str
+    source_identity: SourceIdentity
+
+    def __post_init__(self) -> None:
+        if self.market not in {"a_share", "us"}:
+            raise MarketDataError("universe market must be a_share or us")
+        object.__setattr__(
+            self,
+            "exchange_id",
+            require_nonempty_text(self.exchange_id, "exchange_id"),
+        )
+        require_date(self.effective_session, "effective_session")
+        if type(self.member_count) is not int or self.member_count < 1:
+            raise MarketDataError("member_count must be a positive integer")
+        for field_name in (
+            "ordered_members_sha256",
+            "lifecycle_coverage_sha256",
+            "inclusion_rule_sha256",
+            "calendar_identity_sha256",
+        ):
+            try:
+                digest = require_sha256(getattr(self, field_name), field_name)
+            except ValueError as exc:
+                raise MarketDataError(str(exc)) from exc
+            object.__setattr__(self, field_name, digest)
+        if not isinstance(self.source_identity, SourceIdentity):
+            raise MarketDataError("universe source_identity must be a SourceIdentity")
+
+
+def ordered_members_sha256(members: tuple[str, ...]) -> str:
+    """Hash one strictly sorted, unique candidate-member tuple."""
+
+    frozen = _members(members)
+    encoded = json.dumps(
+        frozen,
+        ensure_ascii=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def lifecycle_coverage_sha256(
+    members: tuple[str, ...],
+    session: AcceptedSession,
+    decision_at: datetime,
+    records_by_symbol: Mapping[str, tuple[StatusEvidence, ...]],
+) -> str:
+    """Hash selected PIT lifecycle records for the accepted candidate members."""
+
+    frozen = _members(members)
+    cutoff = require_aware_datetime(decision_at, "decision_at")
+    selected: list[dict[str, object]] = []
+    for symbol in frozen:
+        if symbol not in records_by_symbol:
+            raise MarketDataError("every universe member requires lifecycle records")
+        records = tuple(records_by_symbol[symbol])
+        if any(
+            not isinstance(record, StatusEvidence) or record.symbol != symbol
+            for record in records
+        ):
+            raise MarketDataError("lifecycle records must match their universe member")
+        chosen = _select_status_records(symbol, session, cutoff, records)
+        for kind in REQUIRED_STATUS_KINDS:
+            record = chosen[kind]
+            selected.append(
+                {
+                    "status_id": record.status_id,
+                    "symbol": record.symbol,
+                    "kind": record.kind,
+                    "value": record.value,
+                    "effective_from": record.effective_from.isoformat(),
+                    "effective_to": (
+                        None if record.effective_to is None else record.effective_to.isoformat()
+                    ),
+                    "exchange_timezone": record.exchange_timezone,
+                    "source": _source_payload(record.source),
+                }
+            )
+    encoded = json.dumps(selected, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def validate_universe_snapshot(
+    identity: UniverseSnapshotIdentity,
+    *,
+    market: Literal["a_share", "us"],
+    calendar_identity: CalendarIdentity,
+    session: AcceptedSession,
+    decision_at: datetime,
+    members: tuple[str, ...],
+    records_by_symbol: Mapping[str, tuple[StatusEvidence, ...]],
+) -> None:
+    """Fail closed unless runtime candidates equal the accepted PIT snapshot."""
+
+    if not isinstance(identity, UniverseSnapshotIdentity):
+        raise MarketDataError("universe_snapshot must be a UniverseSnapshotIdentity")
+    cutoff = require_aware_datetime(decision_at, "decision_at")
+    frozen = _members(members)
+    if identity.market != market or identity.exchange_id != calendar_identity.exchange_id:
+        raise MarketDataError("universe snapshot market or exchange mismatch")
+    if identity.calendar_identity_sha256 != calendar_identity_sha256(calendar_identity):
+        raise MarketDataError("universe snapshot calendar identity mismatch")
+    if identity.effective_session != session.session_date:
+        raise MarketDataError("universe snapshot effective_session mismatch")
+    if identity.source_identity.available_at > cutoff:
+        raise MarketDataError("universe snapshot was unavailable at decision_at")
+    if identity.member_count != len(frozen):
+        raise MarketDataError("universe snapshot member_count mismatch")
+    if identity.ordered_members_sha256 != ordered_members_sha256(frozen):
+        raise MarketDataError("universe snapshot ordered_members_sha256 mismatch")
+    candidate_records = {symbol: records_by_symbol[symbol] for symbol in frozen}
+    lifecycle_hash = lifecycle_coverage_sha256(
+        frozen,
+        session,
+        cutoff,
+        candidate_records,
+    )
+    if identity.lifecycle_coverage_sha256 != lifecycle_hash:
+        raise MarketDataError("universe snapshot lifecycle_coverage_sha256 mismatch")
+
+
 def evaluate_universe(
     symbol: str,
     session: AcceptedSession,
@@ -87,8 +229,36 @@ def evaluate_universe(
     if session.source.available_at > cutoff:
         raise MarketDataError("accepted-session source was unavailable at decision_at")
     frozen = tuple(records)
+    selected = _select_status_records(symbol, session, cutoff, frozen)
+
+    reasons: list[str] = []
+    if not selected["listed"].value:
+        reasons.append("not_listed")
+    if selected["delisted"].value:
+        reasons.append("delisted")
+    if selected["st"].value:
+        reasons.append("st")
+    if selected["suspended"].value:
+        reasons.append("suspended")
+    evidence = tuple(
+        (kind, selected[kind].status_id, selected[kind].source)
+        for kind in REQUIRED_STATUS_KINDS
+    )
+    return UniverseDecision(not reasons, tuple(reasons), evidence)
+
+
+def _select_status_records(
+    symbol: str,
+    session: AcceptedSession,
+    cutoff: datetime,
+    frozen: tuple[StatusEvidence, ...],
+) -> dict[StatusKind, StatusEvidence]:
     if any(not isinstance(record, StatusEvidence) for record in frozen):
         raise MarketDataError("records must contain only StatusEvidence values")
+    if any(record.source.available_at > cutoff for record in frozen):
+        raise MarketDataError(
+            "status records include future evidence unavailable at decision_at"
+        )
     global_identities: dict[str, list[StatusEvidence]] = defaultdict(list)
     for record in frozen:
         global_identities[record.status_id].append(record)
@@ -140,17 +310,27 @@ def evaluate_universe(
             raise MarketDataError(f"overlapping effective {kind} identities")
         selected[kind] = matches[0]
 
-    reasons: list[str] = []
-    if not selected["listed"].value:
-        reasons.append("not_listed")
-    if selected["delisted"].value:
-        reasons.append("delisted")
-    if selected["st"].value:
-        reasons.append("st")
-    if selected["suspended"].value:
-        reasons.append("suspended")
-    evidence = tuple(
-        (kind, selected[kind].status_id, selected[kind].source)
-        for kind in REQUIRED_STATUS_KINDS
-    )
-    return UniverseDecision(not reasons, tuple(reasons), evidence)
+    return selected
+
+
+def _members(members: tuple[str, ...]) -> tuple[str, ...]:
+    if type(members) is not tuple or not members:
+        raise MarketDataError("universe_members must be a nonempty immutable tuple")
+    if any(not isinstance(symbol, str) or not symbol.strip() for symbol in members):
+        raise MarketDataError("universe members must be nonempty strings")
+    if any(any(ord(character) < 32 for character in symbol) for symbol in members):
+        raise MarketDataError("universe members cannot contain C0 control characters")
+    if members != tuple(sorted(set(members))):
+        raise MarketDataError("universe_members must be sorted and unique")
+    return members
+
+
+def _source_payload(source: SourceIdentity) -> dict[str, object]:
+    return {
+        "source_url": source.source_url,
+        "content_sha256": source.content_sha256,
+        "available_at": source.available_at.isoformat(),
+        "retrieved_at": source.retrieved_at.isoformat(),
+        "revision_id": source.revision_id,
+        "supersedes_revision_id": source.supersedes_revision_id,
+    }

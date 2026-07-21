@@ -16,7 +16,14 @@ from quant_system.backtest.capacity import (
     assess_capacity,
 )
 from quant_system.backtest.portfolio import Portfolio
-from quant_system.data import AcceptedSession, AcceptedSessionCalendar, SourceIdentity
+from quant_system.data import (
+    AcceptedSession,
+    AcceptedSessionCalendar,
+    CalendarIdentity,
+    SourceIdentity,
+    session_dates_sha256,
+    session_rows_sha256,
+)
 from quant_system.markets.common import FillDecision, MarketDataError
 from quant_system.markets.universe import StatusEvidence, evaluate_universe
 
@@ -80,38 +87,50 @@ def _session(
         closed,
         _source(revision_id, sha256, available_at=source_available_at),
         exchange_timezone,
+        exchange_id="XSHG" if exchange_timezone == SHANGHAI else "XNYS",
     )
 
 
 def _calendar(exchange_timezone: str = SHANGHAI) -> AcceptedSessionCalendar:
-    return AcceptedSessionCalendar(
-        (
-            _session(
-                date(2026, 7, 10),
-                revision_id="cal-10",
-                sha256="1" * 64,
-                exchange_timezone=exchange_timezone,
-            ),
-            _session(
-                date(2026, 7, 13),
-                revision_id="cal-13",
-                sha256="2" * 64,
-                exchange_timezone=exchange_timezone,
-            ),
-            _session(
-                date(2026, 7, 14),
-                revision_id="cal-14",
-                sha256="3" * 64,
-                exchange_timezone=exchange_timezone,
-            ),
-            _session(
-                date(2026, 7, 15),
-                revision_id="cal-15",
-                sha256="4" * 64,
-                exchange_timezone=exchange_timezone,
-            ),
-        )
+    rows = (
+        _session(
+            date(2026, 7, 10),
+            revision_id="cal-10",
+            sha256="1" * 64,
+            exchange_timezone=exchange_timezone,
+        ),
+        _session(
+            date(2026, 7, 13),
+            revision_id="cal-13",
+            sha256="2" * 64,
+            exchange_timezone=exchange_timezone,
+        ),
+        _session(
+            date(2026, 7, 14),
+            revision_id="cal-14",
+            sha256="3" * 64,
+            exchange_timezone=exchange_timezone,
+        ),
+        _session(
+            date(2026, 7, 15),
+            revision_id="cal-15",
+            sha256="4" * 64,
+            exchange_timezone=exchange_timezone,
+        ),
     )
+    dates = tuple(row.session_date for row in rows)
+    rows_sha = session_rows_sha256(rows)
+    identity = CalendarIdentity(
+        "XSHG" if exchange_timezone == SHANGHAI else "XNYS",
+        exchange_timezone,
+        dates[0],
+        dates[-1],
+        len(dates),
+        session_dates_sha256(dates),
+        rows_sha,
+        _source("calendar-aggregate", SHA_A),
+    )
+    return AcceptedSessionCalendar(rows, identity=identity)
 
 
 def _capacity_observation(
@@ -891,7 +910,7 @@ def test_universe_rejects_missing_overlapping_branched_and_late_statuses() -> No
         late.exchange_timezone,
         _source("late-st", SHA_C, available_at=cutoff + timedelta(minutes=1)),
     )
-    with pytest.raises(MarketDataError, match="missing effective st"):
+    with pytest.raises(MarketDataError, match="unavailable at decision_at"):
         evaluate_universe("000001.SZ", session, cutoff, records)
 
     records = _status_records()

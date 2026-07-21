@@ -20,7 +20,12 @@ from quant_system.markets.common import (
     FillDecision, MarketDataError, is_finite_number, is_positive_price,
     require_aware_datetime, require_nonempty_text,
 )
-from quant_system.markets.universe import StatusEvidence, evaluate_universe
+from quant_system.markets.universe import (
+    StatusEvidence,
+    UniverseSnapshotIdentity,
+    evaluate_universe,
+    validate_universe_snapshot,
+)
 from quant_system.markets.us import (
     CorporateActionValuationError, KNOWN_ACTION_TYPES, TERMINAL_ACTION_TYPES,
     cash_settlement_lag_sessions,
@@ -31,8 +36,16 @@ from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
 from .portfolio import Portfolio, Position, Trade
 
 Market = Literal["a_share", "us"]
+DecisionPriceBasis = Literal[
+    "raw_pre_action_per_old_share",
+    "raw_execution_units",
+]
 TargetWeightCallback = Callable[["DecisionContext"], Mapping[str, float]]
 _RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
+_DECISION_PRICE_BASES = {
+    "raw_pre_action_per_old_share",
+    "raw_execution_units",
+}
 
 
 @dataclass(frozen=True)
@@ -58,6 +71,8 @@ class TerminalAction:
 
 @dataclass(frozen=True)
 class ExecutionInput:
+    """One execution row with an explicit causal decision-price unit basis."""
+
     symbol: str
     market: Market
     open_price: float | None
@@ -71,6 +86,9 @@ class ExecutionInput:
     down_limit: float | None = None
     capacity: CapacityObservation | None = None
     terminal_action: TerminalAction | None = None
+    decision_price: float | None = None
+    decision_price_source: SourceIdentity | None = None
+    decision_price_basis: DecisionPriceBasis | None = None
 
 
 @dataclass(frozen=True)
@@ -106,6 +124,8 @@ class StaticRebalanceResult:
     receipt_hashes: tuple[str, ...]
     stage_hash: str
     final_nav: float
+    strategy_definition_sha256: str
+    strategy_adapter_sha256: str
 
 
 def run_static_rebalance(
@@ -115,7 +135,11 @@ def run_static_rebalance(
     signal_session: date,
     decision_at: datetime,
     execution_inputs: tuple[ExecutionInput, ...],
+    universe_members: tuple[str, ...],
+    universe_snapshot: UniverseSnapshotIdentity,
     target_weights: TargetWeightCallback,
+    strategy_definition_sha256: str,
+    strategy_adapter_sha256: str,
     capacity_policy: CapacityPolicy | None = None,
     max_positions: int | None = None,
     slippage_bps: float = 0.0,
@@ -124,6 +148,8 @@ def run_static_rebalance(
     """Run one static rebalance on a copy; caller state stays unchanged."""
     if not isinstance(portfolio, Portfolio) or not isinstance(calendar, AcceptedSessionCalendar):
         raise TypeError("portfolio and calendar have invalid types")
+    definition_sha = _sha256(strategy_definition_sha256, "strategy_definition_sha256")
+    adapter_sha = _sha256(strategy_adapter_sha256, "strategy_adapter_sha256")
     cutoff = require_aware_datetime(decision_at, "decision_at")
     signal = calendar.session_on(signal_session, as_of=cutoff)
     execution = calendar.next_session(signal_session, as_of=cutoff)
@@ -137,11 +163,34 @@ def run_static_rebalance(
         type(max_positions) is not int or max_positions < 1
     ):
         raise ValueError("max_positions must be a positive integer or None")
-    rows = _inputs(execution_inputs, portfolio, execution)
+    rows = _inputs(execution_inputs, portfolio, execution, cutoff)
     working = deepcopy(portfolio)
     working.start_session(execution.session_date)
     if set(working.positions) - rows.keys():
         raise MarketDataError("every held symbol requires an execution input")
+    member_set = set(universe_members)
+    if member_set - rows.keys():
+        raise MarketDataError("every universe member requires an execution input")
+    terminal_successors = {
+        row.terminal_action.successor_symbol
+        for row in rows.values()
+        if row.terminal_action is not None and row.terminal_action.successor_symbol
+    }
+    unexplained_rows = set(rows) - member_set - set(working.positions) - terminal_successors
+    if unexplained_rows:
+        raise MarketDataError(
+            "nonmember execution inputs are limited to held or terminal-maintenance symbols"
+        )
+    market: Market = "us" if portfolio.us_cash_settlement else "a_share"
+    validate_universe_snapshot(
+        universe_snapshot,
+        market=market,
+        calendar_identity=calendar.identity,
+        session=execution,
+        decision_at=cutoff,
+        members=universe_members,
+        records_by_symbol={symbol: row.status_records for symbol, row in rows.items()},
+    )
     decisions = {
         symbol: evaluate_universe(symbol, execution, cutoff, row.status_records)
         for symbol, row in rows.items()
@@ -149,12 +198,16 @@ def run_static_rebalance(
     _terminal_checks(rows, decisions, execution, cutoff)
     receipts: list[ExecutionReceipt] = []
     _actions(working, rows, execution, cutoff, receipts)
-    eligible = tuple(sorted(symbol for symbol, item in decisions.items() if item.eligible))
+    eligible = tuple(symbol for symbol in universe_members if decisions[symbol].eligible)
+    _require_decision_prices(eligible, working, rows, cutoff)
     context = DecisionContext(signal, execution, cutoff, eligible)
     weights = _weights(target_weights(context), eligible)
-    nav = working.nav(_marks(working, rows))
+    nav = working.nav(_decision_marks(working, rows))
     desired = {
-        symbol: _lot(nav * dict(weights).get(symbol, 0) / _open(rows[symbol]), working.lot_size)
+        symbol: _lot(
+            nav * dict(weights).get(symbol, 0) / _decision_price(rows[symbol]),
+            working.lot_size,
+        )
         for symbol in eligible
     }
     desired.update({symbol: 0.0 for symbol in working.positions if symbol not in desired})
@@ -202,10 +255,15 @@ def run_static_rebalance(
         max_positions,
         slippage_bps,
         cutoff,
+        universe_members,
+        universe_snapshot,
+        definition_sha,
+        adapter_sha,
     )
     receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, prior_stage_hash)
     return StaticRebalanceResult(working, context, weights, tuple(receipts), identity,
-                                 receipt_hashes, stage_hash, final_nav)
+                                 receipt_hashes, stage_hash, final_nav,
+                                 definition_sha, adapter_sha)
 
 
 def blocked_exit_from_receipt(
@@ -225,7 +283,8 @@ def blocked_exit_from_receipt(
 
 
 def _inputs(
-    values: tuple[ExecutionInput, ...], portfolio: Portfolio, execution: AcceptedSession
+    values: tuple[ExecutionInput, ...], portfolio: Portfolio, execution: AcceptedSession,
+    cutoff: datetime,
 ) -> dict[str, ExecutionInput]:
     if type(values) is not tuple or not values or any(not isinstance(row, ExecutionInput) for row in values):
         raise TypeError("execution_inputs must be a nonempty immutable tuple")
@@ -244,9 +303,35 @@ def _inputs(
                 or not row.currency.isalpha() or not row.currency.isupper():
             raise MarketDataError("currency must be a three-letter uppercase code")
         if type(row.status_records) is not tuple or any(
-            not isinstance(item, StatusEvidence) for item in row.status_records
+            not isinstance(item, StatusEvidence) or item.symbol != row.symbol
+            for item in row.status_records
         ):
-            raise MarketDataError("status_records must be an immutable identity tuple")
+            raise MarketDataError(
+                "status_records must be immutable identities for the execution symbol"
+            )
+        if any(item.source.available_at > cutoff for item in row.status_records):
+            raise MarketDataError(
+                "status_records include future evidence unavailable at decision_at"
+            )
+        decision_fields = (
+            row.decision_price,
+            row.decision_price_source,
+            row.decision_price_basis,
+        )
+        supplied = tuple(value is not None for value in decision_fields)
+        if any(supplied) and not all(supplied):
+            raise MarketDataError(
+                "decision price, source, and basis must be supplied together"
+            )
+        if row.decision_price is not None:
+            if not is_positive_price(row.decision_price):
+                raise MarketDataError("decision price must be finite and positive")
+            if not isinstance(row.decision_price_source, SourceIdentity):
+                raise MarketDataError("decision price requires a SourceIdentity")
+            if row.decision_price_source.available_at > cutoff:
+                raise MarketDataError("decision price was unavailable at decision_at")
+            if row.decision_price_basis not in _DECISION_PRICE_BASES:
+                raise MarketDataError("decision price basis is unsupported")
         if type(row.action_types) is not tuple or row.action_types != tuple(sorted(set(row.action_types))):
             raise MarketDataError("action_types must be sorted and unique")
         if set(row.action_types) - KNOWN_ACTION_TYPES:
@@ -266,6 +351,20 @@ def _inputs(
             for item in row.corporate_actions
         ):
             raise MarketDataError("corporate_actions must be immutable identities for symbol")
+        current_action_ids = tuple(item.action_id for item in row.corporate_actions)
+        if len(current_action_ids) != len(set(current_action_ids)):
+            raise MarketDataError("action IDs must be globally unique")
+        if len(current_action_ids) > 1:
+            raise CorporateActionValuationError(
+                "multiple same-session ordinary actions require an explicit order and unit basis"
+            )
+        if (
+            current_action_ids
+            and row.decision_price_basis != "raw_pre_action_per_old_share"
+        ):
+            raise CorporateActionValuationError(
+                "ordinary actions require raw_pre_action_per_old_share decision prices"
+            )
         action_ids.extend(item.action_id for item in row.corporate_actions)
         if row.capacity is not None and (
             not isinstance(row.capacity, CapacityObservation) or row.capacity.subject_id != row.symbol
@@ -364,6 +463,12 @@ def _order(
     if policy is not None:
         if row.capacity is None:
             raise MarketDataError("capacity policy requires an observation")
+        observed = calendar.session_on(
+            row.capacity.observed_session.session_date,
+            as_of=cutoff,
+        )
+        if observed != row.capacity.observed_session:
+            raise MarketDataError("capacity observation uses a different calendar identity")
         cap = assess_capacity(row.symbol, requested, decision.price, row.currency, row.capacity,
                               policy, decision_at=cutoff, execution_session=execution)
         if not cap.allowed:
@@ -423,6 +528,29 @@ def _marks(portfolio: Portfolio, rows: Mapping[str, ExecutionInput]) -> dict[str
     return marks
 
 
+def _require_decision_prices(
+    eligible: tuple[str, ...],
+    portfolio: Portfolio,
+    rows: Mapping[str, ExecutionInput],
+    cutoff: datetime,
+) -> None:
+    required = set(eligible) | set(portfolio.positions)
+    for symbol in required:
+        row = rows[symbol]
+        if row.decision_price is None or row.decision_price_source is None:
+            raise MarketDataError(f"{symbol} lacks a qualified decision-time sizing price")
+        if row.decision_price_source.available_at > cutoff:
+            raise MarketDataError(f"{symbol} decision-time sizing price is late")
+        _decision_price(row)
+
+
+def _decision_marks(
+    portfolio: Portfolio,
+    rows: Mapping[str, ExecutionInput],
+) -> dict[str, float]:
+    return {symbol: _decision_price(rows[symbol]) for symbol in portfolio.positions}
+
+
 def _fill(row: ExecutionInput, side: str, slippage: float) -> FillDecision:
     if row.market == "us":
         return us_fill(side, row.open_price, action_types=row.action_types,
@@ -435,6 +563,41 @@ def _open(row: ExecutionInput) -> float:
     if not is_positive_price(row.open_price):
         raise MarketDataError(f"{row.symbol} lacks a qualified positive open")
     return float(row.open_price)
+
+
+def _decision_price(row: ExecutionInput) -> float:
+    if not is_positive_price(row.decision_price):
+        raise MarketDataError(f"{row.symbol} lacks a qualified decision-time sizing price")
+    if row.decision_price_basis not in _DECISION_PRICE_BASES:
+        raise MarketDataError(f"{row.symbol} lacks a supported decision price basis")
+    if (
+        row.corporate_actions
+        and row.decision_price_basis != "raw_pre_action_per_old_share"
+    ):
+        raise CorporateActionValuationError(
+            "ordinary actions require raw_pre_action_per_old_share decision prices"
+        )
+    price = float(row.decision_price)
+    if row.decision_price_basis == "raw_execution_units":
+        return price
+    for action in sorted(row.corporate_actions, key=lambda item: item.action_id):
+        if action.action_type in {"split", "reverse_split"}:
+            assert action.split_ratio is not None
+            price /= float(action.split_ratio)
+        elif action.action_type in {"cash_dividend", "special_dividend"}:
+            if action.unit != "per_share" or action.currency != row.currency:
+                raise MarketDataError("cash action has incompatible unit or currency")
+            assert action.cash_amount is not None
+            price -= float(action.cash_amount)
+        else:
+            raise CorporateActionValuationError(
+                "decision-time sizing cannot adjust an unsupported corporate action"
+            )
+        if not is_positive_price(price):
+            raise MarketDataError(
+                f"{row.symbol} corporate actions make the sizing price nonpositive"
+            )
+    return price
 
 
 def _lot(shares: float, size: int) -> float:
@@ -479,13 +642,22 @@ def _identity(
     rows: Mapping[str, ExecutionInput], portfolio: Portfolio,
     weights: tuple[tuple[str, float], ...], policy: CapacityPolicy | None,
     max_positions: int | None, slippage: float, cutoff: datetime,
+    universe_members: tuple[str, ...],
+    universe_snapshot: UniverseSnapshotIdentity,
+    strategy_definition_sha256: str,
+    strategy_adapter_sha256: str,
 ) -> str:
     payload = {
         "context": context,
+        "calendar_identity": calendar.identity,
         "calendar": tuple(calendar.session_on(day, as_of=cutoff) for day in calendar.session_dates),
         "inputs": tuple(rows[symbol] for symbol in sorted(rows)),
         "portfolio": portfolio.__dict__,
         "weights": weights,
+        "universe_members": universe_members,
+        "universe_snapshot": universe_snapshot,
+        "strategy_definition_sha256": strategy_definition_sha256,
+        "strategy_adapter_sha256": strategy_adapter_sha256,
         "capacity_policy": policy,
         "slippage_bps": slippage,
     }
@@ -524,3 +696,11 @@ def _hashes(
         current = hashlib.sha256(f"{current}|{payload}".encode()).hexdigest()
         hashes.append(current)
     return tuple(hashes), current
+
+
+def _sha256(value: str, field: str) -> str:
+    if not isinstance(value, str) or len(value) != 64 or any(
+        char not in "0123456789abcdef" for char in value
+    ):
+        raise ValueError(f"{field} must be a lowercase SHA-256 digest")
+    return value

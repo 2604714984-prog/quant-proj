@@ -15,6 +15,7 @@ def test_data_top_level_api_is_small_and_explicit() -> None:
         "AcceptedSession",
         "AcceptedSessionCalendar",
         "AppendResult",
+        "CalendarIdentity",
         "CalendarIdentityError",
         "CorporateActionIdentity",
         "DatabaseInfo",
@@ -23,10 +24,13 @@ def test_data_top_level_api_is_small_and_explicit() -> None:
         "SourceIdentity",
         "SourceIdentityError",
         "append_rows",
+        "calendar_identity_sha256",
         "database_info",
         "query",
         "select_corporate_action_revision",
         "select_source_revision",
+        "session_dates_sha256",
+        "session_rows_sha256",
     ]
     assert not hasattr(data_api, "SecFact")
 
