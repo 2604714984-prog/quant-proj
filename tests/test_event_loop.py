@@ -1,4 +1,5 @@
 from copy import deepcopy
+from dataclasses import replace
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 import hashlib
@@ -19,20 +20,37 @@ from quant_system.backtest import (
 from quant_system.data import (
     AcceptedSession,
     AcceptedSessionCalendar,
+    CalendarIdentity,
     CorporateActionIdentity,
     SourceIdentity,
+    calendar_identity_sha256,
+    session_dates_sha256,
+    session_rows_sha256,
 )
 from quant_system.markets.common import MarketDataError
-from quant_system.markets.universe import StatusEvidence
+from quant_system.markets.universe import (
+    StatusEvidence,
+    UniverseSnapshotIdentity,
+    lifecycle_coverage_sha256,
+    ordered_members_sha256,
+)
 from quant_system.markets.us import CorporateActionValuationError
 
 UTC = timezone.utc
+DEFINITION_SHA = hashlib.sha256(b"fixture-strategy-definition-v1").hexdigest()
+ADAPTER_SHA = hashlib.sha256(b"fixture-strategy-adapter-v1").hexdigest()
+INCLUSION_RULE_SHA = hashlib.sha256(b"fixture-universe-inclusion-rule-v1").hexdigest()
 
 
-def _source(label: str, available_at: datetime) -> SourceIdentity:
+def _source(
+    label: str,
+    available_at: datetime,
+    *,
+    content_sha256: str | None = None,
+) -> SourceIdentity:
     return SourceIdentity(
         f"https://example.test/{label}",
-        hashlib.sha256(label.encode()).hexdigest(),
+        content_sha256 or hashlib.sha256(label.encode()).hexdigest(),
         available_at,
         available_at + timedelta(minutes=1),
         label,
@@ -41,19 +59,32 @@ def _source(label: str, available_at: datetime) -> SourceIdentity:
 
 def _session(day: date, timezone_name: str, label: str) -> AcceptedSession:
     zone = ZoneInfo(timezone_name)
+    exchange_id = "XNYS" if timezone_name == "America/New_York" else "XSHG"
     return AcceptedSession(
         day,
         datetime.combine(day, time(9, 30), zone),
         datetime.combine(day, time(16 if timezone_name == "America/New_York" else 15), zone),
         _source(f"calendar-{label}", datetime(2000, 1, 1, tzinfo=UTC)),
         timezone_name,
+        exchange_id=exchange_id,
     )
 
 
 def _calendar(days: tuple[date, ...], timezone_name: str) -> AcceptedSessionCalendar:
-    return AcceptedSessionCalendar(
-        tuple(_session(day, timezone_name, str(index)) for index, day in enumerate(days))
+    rows = tuple(_session(day, timezone_name, str(index)) for index, day in enumerate(days))
+    dates = tuple(row.session_date for row in rows)
+    rows_sha = session_rows_sha256(rows)
+    identity = CalendarIdentity(
+        "XNYS" if timezone_name == "America/New_York" else "XSHG",
+        timezone_name,
+        dates[0],
+        dates[-1],
+        len(dates),
+        session_dates_sha256(dates),
+        rows_sha,
+        _source("calendar-aggregate", datetime(2000, 1, 1, tzinfo=UTC)),
     )
+    return AcceptedSessionCalendar(rows, identity=identity)
 
 
 def _statuses(
@@ -93,8 +124,15 @@ def _input(
     capacity: CapacityObservation | None = None,
     terminal: TerminalAction | None = None,
     source_label: str | None = None,
+    decision_price: float | None = None,
+    decision_price_available_at: datetime = datetime(2000, 1, 1, tzinfo=UTC),
 ) -> ExecutionInput:
     timezone_name = execution.exchange_timezone
+    decision_reference = (
+        (10.0 if price is None else float(price))
+        if decision_price is None
+        else decision_price
+    )
     return ExecutionInput(
         symbol,
         market,  # type: ignore[arg-type]
@@ -109,7 +147,68 @@ def _input(
         None,
         capacity,
         terminal,
+        decision_reference,
+        _source(f"decision-price-{symbol}", decision_price_available_at),
     )
+
+
+def _snapshot(
+    calendar: AcceptedSessionCalendar,
+    execution: AcceptedSession,
+    decision_at: datetime,
+    inputs: tuple[ExecutionInput, ...],
+    members: tuple[str, ...],
+    *,
+    source_label: str = "universe-snapshot",
+) -> UniverseSnapshotIdentity:
+    cutoff = min(decision_at, execution.open_at - timedelta(microseconds=1))
+    records = {
+        row.symbol: row.status_records
+        for row in inputs
+        if row.symbol in members
+    }
+    member_hash = ordered_members_sha256(members)
+    lifecycle_hash = lifecycle_coverage_sha256(
+        members,
+        execution,
+        cutoff,
+        records,
+    )
+    calendar_hash = calendar_identity_sha256(calendar.identity)
+    return UniverseSnapshotIdentity(
+        market=inputs[0].market,
+        exchange_id=calendar.identity.exchange_id,
+        effective_session=execution.session_date,
+        member_count=len(members),
+        ordered_members_sha256=member_hash,
+        lifecycle_coverage_sha256=lifecycle_hash,
+        inclusion_rule_sha256=INCLUSION_RULE_SHA,
+        calendar_identity_sha256=calendar_hash,
+        source_identity=_source(source_label, datetime(2000, 1, 1, tzinfo=UTC)),
+    )
+
+
+def _run_static_rebalance(
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    **kwargs,
+):
+    inputs = kwargs["execution_inputs"]
+    members = kwargs.setdefault(
+        "universe_members",
+        tuple(sorted(row.symbol for row in inputs)),
+    )
+    execution = calendar.next_session(
+        kwargs["signal_session"],
+        as_of=kwargs["decision_at"],
+    )
+    kwargs.setdefault(
+        "universe_snapshot",
+        _snapshot(calendar, execution, kwargs["decision_at"], inputs, members),
+    )
+    kwargs.setdefault("strategy_definition_sha256", DEFINITION_SHA)
+    kwargs.setdefault("strategy_adapter_sha256", ADAPTER_SHA)
+    return run_static_rebalance(portfolio, calendar, **kwargs)
 
 
 def test_static_rebalance_uses_frozen_callback_and_is_deterministic() -> None:
@@ -134,7 +233,7 @@ def test_static_rebalance_uses_frozen_callback_and_is_deterministic() -> None:
         return {"AAA": 0.5, "BBB": 0.5}
 
     before = deepcopy(portfolio.__dict__)
-    first = run_static_rebalance(
+    first = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -142,7 +241,7 @@ def test_static_rebalance_uses_frozen_callback_and_is_deterministic() -> None:
         execution_inputs=inputs,
         target_weights=strategy,
     )
-    second = run_static_rebalance(
+    second = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -169,7 +268,7 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
     input_row = _input("AAA", "a_share", execution)
 
     with pytest.raises(MarketDataError, match="between signal close"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -177,7 +276,7 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
             execution_inputs=(input_row,),
             target_weights=lambda _: {},
         )
-    accepted_at_close = run_static_rebalance(
+    accepted_at_close = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -186,7 +285,7 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
         target_weights=lambda _: {},
     )
     assert accepted_at_close.context.decision_at == signal.close_at
-    accepted = run_static_rebalance(
+    accepted = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -201,7 +300,7 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
         execution.open_at + timedelta(microseconds=1),
     ):
         with pytest.raises(MarketDataError, match="strictly before next-session open"):
-            run_static_rebalance(
+            _run_static_rebalance(
                 portfolio,
                 calendar,
                 signal_session=days[0],
@@ -213,7 +312,7 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
         **{**input_row.__dict__, "source": _source("late", execution.open_at + timedelta(seconds=1))}
     )
     with pytest.raises(MarketDataError, match="unavailable at open"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -222,7 +321,7 @@ def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
             target_weights=lambda _: {},
         )
     with pytest.raises(ValueError, match=r"in \[0, 1\]"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -241,7 +340,7 @@ def test_us_sells_before_buys_without_spending_unsettled_t_plus_three_cash() -> 
     portfolio.start_session(days[0])
     portfolio.buy("OLD", 10, 10, days[0])
 
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -273,7 +372,7 @@ def test_capacity_and_suspension_leave_blocked_exit_held_and_convertible() -> No
     portfolio.buy("AAA", 100, 10, days[0])
     suspended = _input("AAA", "a_share", execution, price=None, suspended=True)
 
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -294,7 +393,7 @@ def test_capacity_and_suspension_leave_blocked_exit_held_and_convertible() -> No
         "CNY",
         _source("capacity-AAA", signal.close_at),
     )
-    capped = run_static_rebalance(
+    capped = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -316,7 +415,7 @@ def test_max_positions_counts_a_blocked_exit_before_replacement_buy() -> None:
     portfolio.start_session(days[0])
     portfolio.buy("AAA", 100, 10, days[0])
 
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -348,7 +447,7 @@ def test_max_positions_allows_replacement_after_successful_exit() -> None:
     portfolio.start_session(days[0])
     portfolio.buy("AAA", 100, 10, days[0])
 
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -377,7 +476,7 @@ def test_max_positions_allows_existing_symbol_adjustment_at_the_cap() -> None:
     portfolio.start_session(days[0])
     portfolio.buy("AAA", 100, 10, days[0])
 
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -407,7 +506,7 @@ def test_max_positions_uses_sorted_new_symbol_order_deterministically() -> None:
     portfolio.start_session(days[0])
     portfolio.buy("AAA", 100, 10, days[0])
 
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -444,15 +543,15 @@ def test_max_positions_validation_and_default_identity_compatibility(value) -> N
         "target_weights": lambda _: {"AAA": 0.5},
     }
 
-    default = run_static_rebalance(portfolio, calendar, **arguments)
-    explicit_none = run_static_rebalance(portfolio, calendar, max_positions=None, **arguments)
-    nonbinding_cap = run_static_rebalance(portfolio, calendar, max_positions=10, **arguments)
+    default = _run_static_rebalance(portfolio, calendar, **arguments)
+    explicit_none = _run_static_rebalance(portfolio, calendar, max_positions=None, **arguments)
+    nonbinding_cap = _run_static_rebalance(portfolio, calendar, max_positions=10, **arguments)
     assert default.input_identity_hash == explicit_none.input_identity_hash
     assert default.stage_hash == explicit_none.stage_hash
     assert default.portfolio.__dict__ == nonbinding_cap.portfolio.__dict__
     assert default.input_identity_hash != nonbinding_cap.input_identity_hash
     with pytest.raises(ValueError, match="positive integer or None"):
-        run_static_rebalance(portfolio, calendar, max_positions=value, **arguments)
+        _run_static_rebalance(portfolio, calendar, max_positions=value, **arguments)
 
 
 def test_distribution_identity_credits_prior_holder_and_raw_label_is_rejected() -> None:
@@ -477,12 +576,20 @@ def test_distribution_identity_credits_prior_holder_and_raw_label_is_rejected() 
         currency="USD",
         unit="per_share",
     )
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
         decision_at=signal.close_at,
-        execution_inputs=(_input("ABC", "us", execution, corporate_actions=(action,)),),
+        execution_inputs=(
+            _input(
+                "ABC",
+                "us",
+                execution,
+                corporate_actions=(action,),
+                decision_price=10,
+            ),
+        ),
         target_weights=lambda _: {"ABC": 0.1},
     )
     assert result.receipts[0].side == "distribution"
@@ -490,7 +597,7 @@ def test_distribution_identity_credits_prior_holder_and_raw_label_is_rejected() 
     assert result.receipts[0].reason == "entitlement:5"
 
     with pytest.raises(CorporateActionValuationError, match="rich identity"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -524,7 +631,7 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
         action_types=("delisting",),
         terminal=terminal,
     )
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -540,7 +647,7 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
         **{**row.__dict__, "status_records": _statuses("DEAD", "America/New_York")}
     )
     with pytest.raises(MarketDataError, match="PIT ineligible"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -549,7 +656,7 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
             target_weights=lambda _: {"DEAD": 1.0},
         )
 
-    empty = run_static_rebalance(
+    empty = _run_static_rebalance(
         Portfolio.us(1_000, costs=TransactionCostModel()),
         calendar,
         signal_session=days[0],
@@ -567,7 +674,7 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
         terminal.source,
     )
     with pytest.raises(MarketDataError, match="effective date"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -585,7 +692,7 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
     )
     before = deepcopy(portfolio.__dict__)
     with pytest.raises(MarketDataError, match="follows execution open"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -605,7 +712,7 @@ def test_missing_halt_mark_fails_and_identity_or_prior_stage_changes_hash() -> N
     execution = calendar.session_on(days[1], as_of=signal.close_at)
     portfolio = Portfolio.us(1_000, costs=TransactionCostModel())
     base = _input("ABC", "us", execution)
-    first = run_static_rebalance(
+    first = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -614,7 +721,7 @@ def test_missing_halt_mark_fails_and_identity_or_prior_stage_changes_hash() -> N
         target_weights=lambda _: {},
     )
     changed = _input("ABC", "us", execution, source_label="different-partition")
-    second = run_static_rebalance(
+    second = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -627,7 +734,7 @@ def test_missing_halt_mark_fails_and_identity_or_prior_stage_changes_hash() -> N
     assert first.input_identity_hash != second.input_identity_hash
     assert first.stage_hash != second.stage_hash
 
-    numeric_change = run_static_rebalance(
+    numeric_change = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
@@ -637,7 +744,7 @@ def test_missing_halt_mark_fails_and_identity_or_prior_stage_changes_hash() -> N
     )
     assert numeric_change.input_identity_hash != first.input_identity_hash
     with pytest.raises(ValueError, match="slippage_bps"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -650,16 +757,24 @@ def test_missing_halt_mark_fails_and_identity_or_prior_stage_changes_hash() -> N
     portfolio.start_session(days[0])
     portfolio.buy("ABC", 10, 10, days[0])
     portfolio.positions["ABC"].last_accepted_mark = None
-    halted = _input("ABC", "us", execution, price=None, action_types=("trading_halt",))
-    with pytest.raises(Exception, match="prior accepted valuation"):
-        run_static_rebalance(
-            portfolio,
-            calendar,
-            signal_session=days[0],
-            decision_at=signal.close_at,
-            execution_inputs=(halted,),
-            target_weights=lambda _: {},
-        )
+    halted = _input(
+        "ABC",
+        "us",
+        execution,
+        price=None,
+        action_types=("trading_halt",),
+        decision_price=10,
+    )
+    halted_result = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(halted,),
+        target_weights=lambda _: {},
+    )
+    assert halted_result.final_nav == pytest.approx(1_000)
+    assert halted_result.receipts[0].reason == "confirmed_halt"
 
 
 def test_same_day_distribution_receipt_reconciles_immediate_cash() -> None:
@@ -676,16 +791,124 @@ def test_same_day_distribution_receipt_reconciles_immediate_cash() -> None:
         ex_date=days[1], record_date=days[1], pay_date=days[1],
         cash_amount=Decimal("0.5"), currency="USD", unit="per_share",
     )
-    result = run_static_rebalance(
+    result = _run_static_rebalance(
         portfolio,
         calendar,
         signal_session=days[0],
         decision_at=signal.close_at,
-        execution_inputs=(_input("ABC", "us", execution, corporate_actions=(action,)),),
+        execution_inputs=(
+            _input(
+                "ABC",
+                "us",
+                execution,
+                corporate_actions=(action,),
+                decision_price=10,
+            ),
+        ),
         target_weights=lambda _: {"ABC": 0.1},
     )
     assert result.receipts[0].cash_change == pytest.approx(5)
     assert result.receipts[0].cash_after == pytest.approx(905)
+
+
+def test_engine_adjusts_pre_action_decision_price_for_split_and_distribution() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
+    calendar = _calendar(days, "America/New_York")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+
+    split_portfolio = Portfolio.us(10_000, costs=TransactionCostModel())
+    split_portfolio.start_session(days[0])
+    split_portfolio.buy("ABC", 10, 100, days[0])
+    split = CorporateActionIdentity(
+        "ABC",
+        "abc-split-2-for-1",
+        "split",
+        execution.open_at,
+        _source("abc-split-source", signal.close_at),
+        "America/New_York",
+        ex_date=days[1],
+        split_ratio=Decimal("2"),
+    )
+    split_result = _run_static_rebalance(
+        split_portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input(
+                "ABC",
+                "us",
+                execution,
+                price=50,
+                corporate_actions=(split,),
+                decision_price=100,
+            ),
+        ),
+        target_weights=lambda _: {"ABC": 1.0},
+    )
+    split_buy = next(item for item in split_result.receipts if item.side == "buy")
+    assert split_buy.requested_shares == 180
+    assert split_result.portfolio.positions["ABC"].shares == 200
+
+    distribution_portfolio = Portfolio.us(10_000, costs=TransactionCostModel())
+    distribution_portfolio.start_session(days[0])
+    distribution_portfolio.buy("ABC", 10, 100, days[0])
+    distribution = CorporateActionIdentity(
+        "ABC",
+        "abc-cash-10",
+        "cash_dividend",
+        execution.open_at,
+        _source("abc-cash-source", signal.close_at),
+        "America/New_York",
+        ex_date=days[1],
+        record_date=days[1],
+        pay_date=days[2],
+        cash_amount=Decimal("10"),
+        currency="USD",
+        unit="per_share",
+    )
+    distribution_input = _input(
+        "ABC",
+        "us",
+        execution,
+        price=90,
+        corporate_actions=(distribution,),
+        decision_price=100,
+    )
+    distribution_result = _run_static_rebalance(
+        distribution_portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(distribution_input,),
+        target_weights=lambda _: {"ABC": 1.0},
+    )
+    distribution_buy = next(
+        item for item in distribution_result.receipts if item.side == "buy"
+    )
+    assert distribution_buy.requested_shares == 101
+    assert distribution_result.portfolio.positions["ABC"].shares == 110
+    assert distribution_result.portfolio.pending_cash_total == pytest.approx(100)
+
+
+    with pytest.raises(CorporateActionValuationError, match="explicit order and unit basis"):
+        _run_static_rebalance(
+            Portfolio.us(10_000, costs=TransactionCostModel()),
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(
+                _input(
+                    "ABC",
+                    "us",
+                    execution,
+                    corporate_actions=(split, distribution),
+                    decision_price=100,
+                ),
+            ),
+            target_weights=lambda _: {"ABC": 1.0},
+        )
 
 
 def test_invalid_weights_and_late_or_duplicate_actions_leave_caller_unchanged() -> None:
@@ -706,7 +929,7 @@ def test_invalid_weights_and_late_or_duplicate_actions_leave_caller_unchanged() 
     late_row = _input("ABC", "us", execution, corporate_actions=(late,))
 
     with pytest.raises(MarketDataError, match="late"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -715,7 +938,7 @@ def test_invalid_weights_and_late_or_duplicate_actions_leave_caller_unchanged() 
             target_weights=lambda _: {},
         )
     with pytest.raises(MarketDataError, match="globally unique"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -726,7 +949,7 @@ def test_invalid_weights_and_late_or_duplicate_actions_leave_caller_unchanged() 
             target_weights=lambda _: {},
         )
     with pytest.raises(ValueError, match="numeric"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -741,7 +964,7 @@ def test_invalid_weights_and_late_or_duplicate_actions_leave_caller_unchanged() 
         cash_amount=Decimal("0.5"), currency="USD", unit="per_share",
     )
     with pytest.raises(MarketDataError, match="after execution open"):
-        run_static_rebalance(
+        _run_static_rebalance(
             portfolio,
             calendar,
             signal_session=days[0],
@@ -752,7 +975,7 @@ def test_invalid_weights_and_late_or_duplicate_actions_leave_caller_unchanged() 
             target_weights=lambda _: {},
         )
     with pytest.raises(MarketDataError, match="unknown US action"):
-        run_static_rebalance(
+        _run_static_rebalance(
             Portfolio.us(1_000, costs=TransactionCostModel()),
             calendar,
             signal_session=days[0],
@@ -761,3 +984,370 @@ def test_invalid_weights_and_late_or_duplicate_actions_leave_caller_unchanged() 
             target_weights=lambda _: {},
         )
     assert portfolio.__dict__ == before
+
+
+def test_requested_shares_use_decision_prices_not_next_open_prices() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("HOLD", 100, 10, days[0])
+
+    low_open = (
+        _input("HOLD", "a_share", execution, price=10, decision_price=10),
+        _input("NEW", "a_share", execution, price=10, decision_price=10),
+    )
+    high_open = (
+        _input("HOLD", "a_share", execution, price=25, decision_price=10),
+        _input("NEW", "a_share", execution, price=25, decision_price=10),
+    )
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "target_weights": lambda _: {"HOLD": 0.5, "NEW": 0.5},
+    }
+    low = _run_static_rebalance(
+        portfolio,
+        calendar,
+        execution_inputs=low_open,
+        **arguments,
+    )
+    high = _run_static_rebalance(
+        portfolio,
+        calendar,
+        execution_inputs=high_open,
+        **arguments,
+    )
+
+    def requested(result):
+        return tuple(
+            (item.symbol, item.side, item.requested_shares) for item in result.receipts
+        )
+
+    assert requested(low) == requested(high)
+    assert {item.price for item in low.receipts if item.filled_shares} == {10.0}
+    assert {item.price for item in high.receipts if item.filled_shares} == {25.0}
+    assert low.portfolio.__dict__ != high.portfolio.__dict__
+
+
+@pytest.mark.parametrize("bad_price", [0.0, -1.0, float("nan"), float("inf")])
+def test_decision_price_must_be_present_finite_positive_and_timely(bad_price) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+    base = _input("AAA", "a_share", execution)
+    bad = ExecutionInput(**{**base.__dict__, "decision_price": bad_price})
+
+    with pytest.raises(MarketDataError, match="decision price must be finite and positive"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(bad,),
+            target_weights=lambda _: {"AAA": 1.0},
+        )
+    missing = ExecutionInput(
+        **{
+            **base.__dict__,
+            "decision_price": None,
+            "decision_price_source": None,
+        }
+    )
+    callback_calls = []
+    with pytest.raises(MarketDataError, match="lacks a qualified decision-time sizing price"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(missing,),
+            target_weights=lambda context: callback_calls.append(context) or {"AAA": 1.0},
+        )
+    assert callback_calls == []
+    late = _input(
+        "AAA",
+        "a_share",
+        execution,
+        decision_price_available_at=execution.open_at,
+    )
+    with pytest.raises(MarketDataError, match="unavailable at decision_at"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(late,),
+            target_weights=lambda _: {"AAA": 1.0},
+        )
+    assert portfolio.__dict__ == before
+
+
+def test_strategy_hashes_are_required_and_bound_to_stage_identity() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    inputs = (_input("AAA", "a_share", execution),)
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "execution_inputs": inputs,
+        "target_weights": lambda _: {"AAA": 0.5},
+    }
+    baseline = _run_static_rebalance(portfolio, calendar, **arguments)
+    definition_changed = _run_static_rebalance(
+        portfolio,
+        calendar,
+        strategy_definition_sha256="1" * 64,
+        **arguments,
+    )
+    adapter_changed = _run_static_rebalance(
+        portfolio,
+        calendar,
+        strategy_adapter_sha256="2" * 64,
+        **arguments,
+    )
+
+    assert baseline.receipts == definition_changed.receipts == adapter_changed.receipts
+    assert len(
+        {
+            baseline.input_identity_hash,
+            definition_changed.input_identity_hash,
+            adapter_changed.input_identity_hash,
+        }
+    ) == 3
+    assert len({baseline.stage_hash, definition_changed.stage_hash, adapter_changed.stage_hash}) == 3
+    assert baseline.strategy_definition_sha256 == DEFINITION_SHA
+    assert baseline.strategy_adapter_sha256 == ADAPTER_SHA
+
+    called = False
+
+    def callback(_):
+        nonlocal called
+        called = True
+        return {}
+
+    with pytest.raises(ValueError, match="strategy_definition_sha256"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            **{**arguments, "target_weights": callback},
+            strategy_definition_sha256="A" * 64,
+        )
+    assert called is False
+
+
+def test_universe_snapshot_rejects_missing_member_and_lifecycle_drift() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    alive = _input("ALIVE", "a_share", execution)
+    delisted = _input("DEAD", "a_share", execution, delisted=True)
+    full_inputs = (alive, delisted)
+    full_members = ("ALIVE", "DEAD")
+    frozen = _snapshot(calendar, execution, signal.close_at, full_inputs, full_members)
+
+    with pytest.raises(MarketDataError, match="member_count mismatch"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(alive,),
+            universe_members=("ALIVE",),
+            universe_snapshot=frozen,
+            target_weights=lambda _: {},
+        )
+
+    listed = alive.status_records[0]
+    drifted_statuses = (
+        replace(listed, value=False),
+        *alive.status_records[1:],
+    )
+    drifted = ExecutionInput(**{**alive.__dict__, "status_records": drifted_statuses})
+    alive_snapshot = _snapshot(
+        calendar,
+        execution,
+        signal.close_at,
+        (alive,),
+        ("ALIVE",),
+    )
+    with pytest.raises(MarketDataError, match="lifecycle_coverage_sha256 mismatch"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(drifted,),
+            universe_members=("ALIVE",),
+            universe_snapshot=alive_snapshot,
+            target_weights=lambda _: {},
+        )
+    future_statuses = (
+        replace(
+            alive.status_records[0],
+            source=_source("future-listing-revision", execution.open_at),
+        ),
+        *alive.status_records[1:],
+    )
+    future = replace(alive, status_records=future_statuses)
+    with pytest.raises(MarketDataError, match="future evidence"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(future,),
+            universe_members=("ALIVE",),
+            universe_snapshot=alive_snapshot,
+            target_weights=lambda _: {},
+        )
+
+
+def test_universe_candidates_are_separate_from_held_maintenance_rows() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("OLD", 100, 10, days[0])
+    old = _input("OLD", "a_share", execution)
+    new = _input("NEW", "a_share", execution)
+    snapshot = _snapshot(
+        calendar,
+        execution,
+        signal.close_at,
+        (old, new),
+        ("NEW",),
+    )
+    seen = []
+
+    result = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(old, new),
+        universe_members=("NEW",),
+        universe_snapshot=snapshot,
+        target_weights=lambda context: seen.append(context.eligible_symbols) or {"NEW": 0.5},
+    )
+
+    assert seen == [("NEW",)]
+    assert result.receipts[0].symbol == "OLD" and result.receipts[0].side == "sell"
+    with pytest.raises(MarketDataError, match="not PIT eligible"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(old, new),
+            universe_members=("NEW",),
+            universe_snapshot=snapshot,
+            target_weights=lambda _: {"OLD": 0.5},
+        )
+    changed_old = replace(
+        old,
+        status_records=(replace(old.status_records[0], value=False), *old.status_records[1:]),
+    )
+    changed_result = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(changed_old, new),
+        universe_members=("NEW",),
+        universe_snapshot=snapshot,
+        target_weights=lambda _: {"NEW": 0.5},
+    )
+    assert changed_result.input_identity_hash != result.input_identity_hash
+
+
+def test_universe_snapshot_source_is_causal_and_changes_input_identity() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    inputs = (_input("AAA", "a_share", execution),)
+    first_snapshot = _snapshot(
+        calendar,
+        execution,
+        signal.close_at,
+        inputs,
+        ("AAA",),
+        source_label="universe-v1",
+    )
+    second_snapshot = _snapshot(
+        calendar,
+        execution,
+        signal.close_at,
+        inputs,
+        ("AAA",),
+        source_label="universe-v2",
+    )
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "execution_inputs": inputs,
+        "universe_members": ("AAA",),
+        "target_weights": lambda _: {},
+    }
+    first = _run_static_rebalance(
+        portfolio,
+        calendar,
+        universe_snapshot=first_snapshot,
+        **arguments,
+    )
+    second = _run_static_rebalance(
+        portfolio,
+        calendar,
+        universe_snapshot=second_snapshot,
+        **arguments,
+    )
+    assert first.receipts == second.receipts == ()
+    assert first.input_identity_hash != second.input_identity_hash
+    late_snapshot = replace(
+        first_snapshot,
+        source_identity=_source(
+            "universe-late",
+            execution.open_at,
+            content_sha256=first_snapshot.source_identity.content_sha256,
+        ),
+    )
+    with pytest.raises(MarketDataError, match="unavailable at decision_at"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            universe_snapshot=late_snapshot,
+            **arguments,
+        )
+
+    rows = tuple(
+        calendar.session_on(day, as_of=signal.close_at) for day in calendar.session_dates
+    )
+    other_calendar_identity = replace(
+        calendar.identity,
+        source_identity=_source(
+            "other-calendar-snapshot",
+            datetime(2000, 1, 1, tzinfo=UTC),
+        ),
+    )
+    other_calendar = AcceptedSessionCalendar(rows, identity=other_calendar_identity)
+    with pytest.raises(MarketDataError, match="calendar identity mismatch"):
+        _run_static_rebalance(
+            portfolio,
+            other_calendar,
+            universe_snapshot=first_snapshot,
+            **arguments,
+        )
