@@ -87,6 +87,51 @@ def _calendar(days: tuple[date, ...], timezone_name: str) -> AcceptedSessionCale
     return AcceptedSessionCalendar(rows, identity=identity)
 
 
+def _calendar_revision(
+    days: tuple[date, ...],
+    timezone_name: str,
+    *,
+    available_at: datetime,
+    revision_id: str,
+    supersedes_revision_id: str = "calendar-aggregate",
+    changed_session: date | None = None,
+    semantic_change: str | None = None,
+) -> AcceptedSessionCalendar:
+    rows_list: list[AcceptedSession] = []
+    for index, day in enumerate(days):
+        row = _session(day, timezone_name, f"{revision_id}-{index}")
+        if day == changed_session:
+            if semantic_change == "open":
+                row = replace(row, open_at=row.open_at + timedelta(minutes=1))
+            elif semantic_change == "close":
+                row = replace(row, close_at=row.close_at - timedelta(hours=1))
+            elif semantic_change == "early_close":
+                row = replace(row, is_early_close=not row.is_early_close)
+            else:
+                raise AssertionError("semantic_change must identify a changed field")
+        rows_list.append(row)
+    rows = tuple(rows_list)
+    dates = tuple(row.session_date for row in rows)
+    identity = CalendarIdentity(
+        "XNYS" if timezone_name == "America/New_York" else "XSHG",
+        timezone_name,
+        dates[0],
+        dates[-1],
+        len(dates),
+        session_dates_sha256(dates),
+        session_rows_sha256(rows),
+        SourceIdentity(
+            f"https://example.test/{revision_id}",
+            hashlib.sha256(revision_id.encode()).hexdigest(),
+            available_at,
+            available_at + timedelta(minutes=1),
+            revision_id,
+            supersedes_revision_id,
+        ),
+    )
+    return AcceptedSessionCalendar(rows, identity=identity)
+
+
 def _statuses(
     symbol: str,
     timezone_name: str,
@@ -486,6 +531,217 @@ def test_execution_price_basis_changes_bound_identity_without_changing_receipts(
     assert first.receipts == second.receipts
     assert first.input_identity_hash != second.input_identity_hash
     assert first.stage_hash != second.stage_hash
+
+
+def test_execution_calendar_revision_skips_announced_closure_for_t_plus_two() -> None:
+    days = (
+        date(2018, 11, 30),
+        date(2018, 12, 3),
+        date(2018, 12, 4),
+        date(2018, 12, 5),
+        date(2018, 12, 6),
+        date(2018, 12, 7),
+    )
+    revised_days = tuple(day for day in days if day != date(2018, 12, 5))
+    calendar = _calendar(days, "America/New_York")
+    signal = calendar.session_on(days[0], as_of=datetime(2018, 11, 30, 22, tzinfo=UTC))
+    execution = calendar.next_session(days[0], as_of=signal.close_at)
+    decision_at = datetime(2018, 11, 30, 20, 5, tzinfo=ZoneInfo("America/New_York"))
+    revision = _calendar_revision(
+        revised_days,
+        "America/New_York",
+        available_at=datetime(2018, 12, 1, 12, tzinfo=ZoneInfo("America/New_York")),
+        revision_id="bush-closure-revision",
+    )
+    assert revision.session_on(days[0], as_of=execution.open_at).source != (
+        calendar.session_on(days[0], as_of=decision_at).source
+    )
+
+    def portfolio() -> Portfolio:
+        value = Portfolio.us(1_000.0, costs=TransactionCostModel())
+        value.start_session(days[0])
+        value.buy("SPY", 10, 10, days[0])
+        return value
+
+    row = _input("SPY", "us", execution)
+    first = _run_static_rebalance(
+        portfolio(),
+        calendar,
+        signal_session=days[0],
+        decision_at=decision_at,
+        execution_inputs=(row,),
+        execution_calendar_revision=revision,
+        target_weights=lambda _: {},
+    )
+    assert first.receipts[-1].side == "sell"
+    assert first.portfolio.pending_cash[0].settlement_date == date(2018, 12, 6)
+
+    other_revision = _calendar_revision(
+        revised_days,
+        "America/New_York",
+        available_at=datetime(2018, 12, 1, 12, tzinfo=ZoneInfo("America/New_York")),
+        revision_id="bush-closure-revision-copy",
+    )
+    second = _run_static_rebalance(
+        portfolio(),
+        calendar,
+        signal_session=days[0],
+        decision_at=decision_at,
+        execution_inputs=(row,),
+        execution_calendar_revision=other_revision,
+        target_weights=lambda _: {},
+    )
+    assert first.receipts == second.receipts
+    assert first.input_identity_hash != second.input_identity_hash
+    assert first.stage_hash != second.stage_hash
+
+
+def test_execution_calendar_revision_fails_closed_before_callback() -> None:
+    days = (
+        date(2018, 11, 30),
+        date(2018, 12, 3),
+        date(2018, 12, 4),
+        date(2018, 12, 5),
+        date(2018, 12, 6),
+        date(2018, 12, 7),
+    )
+    revised_days = tuple(day for day in days if day != date(2018, 12, 5))
+    calendar = _calendar(days, "America/New_York")
+    execution = calendar.next_session(
+        days[0],
+        as_of=datetime(2018, 11, 30, 20, 5, tzinfo=ZoneInfo("America/New_York")),
+    )
+    decision_at = datetime(2018, 11, 30, 20, 5, tzinfo=ZoneInfo("America/New_York"))
+    row = _input("SPY", "us", execution)
+    invalid = (
+        (
+            _calendar_revision(
+                revised_days,
+                "America/New_York",
+                available_at=decision_at - timedelta(microseconds=1),
+                revision_id="already-known",
+            ),
+            "after decision",
+        ),
+        (
+            _calendar_revision(
+                revised_days,
+                "America/New_York",
+                available_at=execution.open_at + timedelta(microseconds=1),
+                revision_id="too-late",
+            ),
+            "by execution open",
+        ),
+        (
+            _calendar_revision(
+                revised_days,
+                "America/New_York",
+                available_at=execution.open_at,
+                revision_id="wrong-parent",
+                supersedes_revision_id="other-calendar",
+            ),
+            "must supersede",
+        ),
+        (
+            _calendar_revision(
+                revised_days[:-1],
+                "America/New_York",
+                available_at=execution.open_at,
+                revision_id="short-coverage",
+            ),
+            "preserve exchange, timezone, and coverage",
+        ),
+        (
+            _calendar_revision(
+                (days[0],) + days[2:],
+                "America/New_York",
+                available_at=execution.open_at,
+                revision_id="changed-execution",
+            ),
+            "cannot change the execution session",
+        ),
+        (
+            _calendar_revision(
+                revised_days,
+                "America/New_York",
+                available_at=execution.open_at,
+                revision_id="changed-open",
+                changed_session=execution.session_date,
+                semantic_change="open",
+            ),
+            "cannot change the execution session",
+        ),
+        (
+            _calendar_revision(
+                revised_days,
+                "America/New_York",
+                available_at=execution.open_at,
+                revision_id="changed-close",
+                changed_session=execution.session_date,
+                semantic_change="close",
+            ),
+            "cannot change the execution session",
+        ),
+        (
+            _calendar_revision(
+                revised_days,
+                "America/New_York",
+                available_at=execution.open_at,
+                revision_id="changed-early-close",
+                changed_session=execution.session_date,
+                semantic_change="early_close",
+            ),
+            "cannot change the execution session",
+        ),
+        (
+            _calendar_revision(
+                revised_days,
+                "Asia/Shanghai",
+                available_at=execution.open_at,
+                revision_id="wrong-market-calendar",
+            ),
+            "preserve exchange, timezone, and coverage",
+        ),
+    )
+    for revision, message in invalid:
+        callback_calls: list[object] = []
+        original = Portfolio.us(1_000.0, costs=TransactionCostModel())
+        before = deepcopy(original.__dict__)
+        with pytest.raises(MarketDataError, match=message):
+            _run_static_rebalance(
+                original,
+                calendar,
+                signal_session=days[0],
+                decision_at=decision_at,
+                execution_inputs=(row,),
+                execution_calendar_revision=revision,
+                target_weights=lambda context: callback_calls.append(context) or {},
+            )
+        assert callback_calls == []
+        assert original.__dict__ == before
+
+    a_days = (date(2018, 11, 30), date(2018, 12, 3), date(2018, 12, 4))
+    a_calendar = _calendar(a_days, "Asia/Shanghai")
+    a_execution = a_calendar.next_session(
+        a_days[0],
+        as_of=datetime(2018, 11, 30, 16, tzinfo=ZoneInfo("Asia/Shanghai")),
+    )
+    a_revision = _calendar_revision(
+        a_days,
+        "Asia/Shanghai",
+        available_at=a_execution.open_at,
+        revision_id="a-share-revision",
+    )
+    with pytest.raises(MarketDataError, match="US-settlement-only"):
+        _run_static_rebalance(
+            Portfolio.a_share(1_000.0, costs=TransactionCostModel()),
+            a_calendar,
+            signal_session=a_days[0],
+            decision_at=datetime(2018, 11, 30, 16, tzinfo=ZoneInfo("Asia/Shanghai")),
+            execution_inputs=(_input("AAA", "a_share", a_execution),),
+            execution_calendar_revision=a_revision,
+            target_weights=lambda _: {},
+        )
 
 
 def test_us_sells_before_buys_without_spending_unsettled_t_plus_three_cash() -> None:

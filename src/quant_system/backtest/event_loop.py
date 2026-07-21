@@ -145,6 +145,7 @@ def run_static_rebalance(
     signal_session: date,
     decision_at: datetime,
     execution_inputs: tuple[ExecutionInput, ...],
+    execution_calendar_revision: AcceptedSessionCalendar | None = None,
     universe_members: tuple[str, ...],
     universe_snapshot: UniverseSnapshotIdentity,
     target_weights: TargetWeightCallback,
@@ -167,6 +168,13 @@ def run_static_rebalance(
         raise MarketDataError(
             "decision_at must be between signal close and strictly before next-session open"
         )
+    settlement_calendar, settlement_as_of = _execution_calendar(
+        calendar,
+        execution_calendar_revision,
+        execution,
+        cutoff,
+        portfolio,
+    )
     if not is_finite_number(slippage_bps) or not 0 <= float(slippage_bps) < 10_000:
         raise ValueError("slippage_bps must be finite and in [0, 10000)")
     if max_positions is not None and (
@@ -258,8 +266,20 @@ def run_static_rebalance(
                         "max_positions_after_blocked_exit",
                     )
                     continue
-                _order(working, calendar, execution, cutoff, rows[symbol], side, requested,
-                       capacity_policy, slippage_bps, receipts)
+                _order(
+                    working,
+                    calendar,
+                    settlement_calendar,
+                    settlement_as_of,
+                    execution,
+                    cutoff,
+                    rows[symbol],
+                    side,
+                    requested,
+                    capacity_policy,
+                    slippage_bps,
+                    receipts,
+                )
     final_nav = working.nav(_marks(working, rows))
     identity = _identity(
         context,
@@ -275,11 +295,74 @@ def run_static_rebalance(
         universe_snapshot,
         definition_sha,
         adapter_sha,
+        execution_calendar_revision,
     )
     receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, prior_stage_hash)
     return StaticRebalanceResult(working, context, weights, tuple(receipts), identity,
                                  receipt_hashes, stage_hash, final_nav,
                                  definition_sha, adapter_sha)
+
+
+def _execution_calendar(
+    decision_calendar: AcceptedSessionCalendar,
+    revision: AcceptedSessionCalendar | None,
+    execution: AcceptedSession,
+    cutoff: datetime,
+    portfolio: Portfolio,
+) -> tuple[AcceptedSessionCalendar, datetime]:
+    if revision is None:
+        return decision_calendar, cutoff
+    if not portfolio.us_cash_settlement:
+        raise MarketDataError("execution calendar revisions are US-settlement-only")
+    if not isinstance(revision, AcceptedSessionCalendar):
+        raise TypeError("execution_calendar_revision must be an AcceptedSessionCalendar")
+    original_identity = decision_calendar.identity
+    revised_identity = revision.identity
+    if (
+        revised_identity.exchange_id != original_identity.exchange_id
+        or revised_identity.exchange_timezone != original_identity.exchange_timezone
+        or revised_identity.coverage_start != original_identity.coverage_start
+        or revised_identity.coverage_end != original_identity.coverage_end
+    ):
+        raise MarketDataError(
+            "execution calendar revision must preserve exchange, timezone, and coverage"
+        )
+    revised_source = revised_identity.source_identity
+    if revised_source.supersedes_revision_id != original_identity.source_identity.revision_id:
+        raise MarketDataError("execution calendar revision must supersede the decision calendar")
+    if not cutoff < revised_source.available_at <= execution.open_at:
+        raise MarketDataError(
+            "execution calendar revision must become available after decision and by execution open"
+        )
+    original_prefix = tuple(
+        _session_semantics(decision_calendar.session_on(day, as_of=cutoff))
+        for day in decision_calendar.session_dates
+        if day <= execution.session_date
+    )
+    revised_prefix = tuple(
+        _session_semantics(revision.session_on(day, as_of=execution.open_at))
+        for day in revision.session_dates
+        if day <= execution.session_date
+    )
+    if revised_prefix != original_prefix:
+        raise MarketDataError(
+            "execution calendar revision cannot change the execution session or earlier history"
+        )
+    after = execution.session_date
+    for _ in range(cash_settlement_lag_sessions(after)):
+        after = revision.next_session(after, as_of=execution.open_at).session_date
+    return revision, execution.open_at
+
+
+def _session_semantics(session: AcceptedSession) -> tuple[object, ...]:
+    return (
+        session.session_date,
+        session.open_at,
+        session.close_at,
+        session.exchange_timezone,
+        session.exchange_id,
+        session.is_early_close,
+    )
 
 
 def blocked_exit_from_receipt(
@@ -489,8 +572,15 @@ def _actions(
 
 
 def _order(
-    portfolio: Portfolio, calendar: AcceptedSessionCalendar, execution: AcceptedSession,
-    cutoff: datetime, row: ExecutionInput, side: str, requested: float,
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    settlement_calendar: AcceptedSessionCalendar,
+    settlement_as_of: datetime,
+    execution: AcceptedSession,
+    cutoff: datetime,
+    row: ExecutionInput,
+    side: str,
+    requested: float,
     policy: CapacityPolicy | None, slippage_bps: float, receipts: list[ExecutionReceipt],
 ) -> None:
     decision = _fill(row, side, slippage_bps)
@@ -523,7 +613,15 @@ def _order(
         trade = portfolio.buy(row.symbol, filled, decision.price, execution.session_date)
         reason = "partial_cash" if filled < requested else "filled"
     else:
-        trade = _sell(portfolio, calendar, row.symbol, filled, decision.price, execution, cutoff)
+        trade = _sell(
+            portfolio,
+            settlement_calendar,
+            row.symbol,
+            filled,
+            decision.price,
+            execution,
+            settlement_as_of,
+        )
         reason = "filled"
     _receipt(receipts, trade.symbol, trade.side, requested, trade.shares, trade.price,
              trade.costs.commission, trade.costs.sell_tax, trade.cash_change,
@@ -685,6 +783,7 @@ def _identity(
     universe_snapshot: UniverseSnapshotIdentity,
     strategy_definition_sha256: str,
     strategy_adapter_sha256: str,
+    execution_calendar_revision: AcceptedSessionCalendar | None,
 ) -> str:
     payload = {
         "context": context,
@@ -700,6 +799,17 @@ def _identity(
         "capacity_policy": policy,
         "slippage_bps": slippage,
     }
+    if execution_calendar_revision is not None:
+        payload["execution_calendar_revision_identity"] = (
+            execution_calendar_revision.identity
+        )
+        payload["execution_calendar_revision"] = tuple(
+            execution_calendar_revision.session_on(
+                day,
+                as_of=context.execution_session.open_at,
+            )
+            for day in execution_calendar_revision.session_dates
+        )
     if max_positions is not None:
         payload["max_positions"] = max_positions
     encoded = json.dumps(_normal(payload), sort_keys=True, separators=(",", ":"))
