@@ -3,7 +3,7 @@
   "research_id": "C7_SPY_VARIANCE_RISK_PREMIUM_V1",
   "mechanism_id": "M119_02_SPY_VARIANCE_RISK_PREMIUM_STATE",
   "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE7",
-  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_PENDING",
+  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_READY",
   "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
   "selection_without_outcomes": {
     "source": "Issue 119 outcome-free mechanism card M119-02",
@@ -144,6 +144,13 @@
     },
     "independent_outcome_free_recompute": true,
     "status": "PASS_STATE_SUPPORT"
+  },
+  "code_identity": {
+    "adapter_sha256": "1248feb8a33e0f045a0fa8363dfff1e377b1dbb2f64a876c916e66b31701ab4e",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "runner_role": "branch-only removable one-use adapter; not shared infrastructure"
   },
   "terminal_rules": {
     "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
