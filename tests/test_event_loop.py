@@ -209,6 +209,7 @@ def _input(
     execution_price_source_available_at: datetime | None = None,
     execution_price_effective_at: datetime | None = None,
     execution_price_basis: str | None = "timestamped_session_open",
+    limit_regime: str = "no_limit",
 ) -> ExecutionInput:
     timezone_name = execution.exchange_timezone
     decision_reference = (
@@ -249,6 +250,7 @@ def _input(
         if execution_price_effective_at is None
         else execution_price_effective_at,
         execution_price_basis,  # type: ignore[arg-type]
+        limit_regime if market == "a_share" else None,  # type: ignore[arg-type]
     )
 
 
@@ -2167,6 +2169,7 @@ def _controlled_input(symbol: str, execution: AcceptedSession) -> ExecutionInput
         decision_price_basis="raw_execution_units",
         execution_price_effective_at=execution.open_at,
         execution_price_basis="timestamped_session_open",
+        limit_regime="no_limit",
     )
 
 
@@ -2249,6 +2252,54 @@ def test_callable_interface_is_permanently_experimental() -> None:
     )
     assert result.interface_grade == "UNTRUSTED_EXPERIMENT"
     assert result.strategy_candidate_available is False
+
+
+def test_suspension_evidence_conflict_fails_before_callback_or_trade() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.next_session(days[0], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("AAA", 100, 10.0, days[0])
+    row = replace(
+        _input("AAA", "a_share", execution, suspended=True),
+        is_suspended=False,
+    )
+    before = deepcopy(portfolio.__dict__)
+    callback_calls: list[object] = []
+
+    with pytest.raises(MarketDataError, match="suspension status conflicts"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(row,),
+            target_weights=lambda context: callback_calls.append(context) or {},
+        )
+    assert callback_calls == []
+    assert portfolio.__dict__ == before
+
+
+def test_applicable_limit_regime_missing_limits_fails_before_callback() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.next_session(days[0], as_of=signal.close_at)
+    row = _input("AAA", "a_share", execution, limit_regime="applies")
+    callback_calls: list[object] = []
+
+    with pytest.raises(MarketDataError, match="requires both limit fields"):
+        _run_static_rebalance(
+            Portfolio.a_share(10_000, costs=TransactionCostModel()),
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(row,),
+            target_weights=lambda context: callback_calls.append(context) or {},
+        )
+    assert callback_calls == []
 
 
 def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Path) -> None:

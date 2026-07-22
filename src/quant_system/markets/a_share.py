@@ -9,6 +9,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date
 import math
+from typing import Literal
 
 from .common import (
     FillDecision,
@@ -27,6 +28,7 @@ class AShareBar:
     up_limit: float | None = None
     down_limit: float | None = None
     data_qualified: bool = False
+    limit_regime: Literal["applies", "no_limit"] | None = None
 
 
 STAMP_TAX_REDUCTION_DATE = date(2023, 8, 28)
@@ -55,8 +57,14 @@ def decide_fill(
         )
     if type(bar.is_suspended) is not bool:
         raise MarketDataError("is_suspended must be boolean")
+    if bar.limit_regime not in {"applies", "no_limit"}:
+        raise MarketDataError("A-share bar requires an explicit limit_regime")
     up_limit = _optional_limit(bar.up_limit, "up_limit")
     down_limit = _optional_limit(bar.down_limit, "down_limit")
+    if bar.limit_regime == "applies" and (up_limit is None or down_limit is None):
+        raise MarketDataError("applicable limit regime requires both limit fields")
+    if bar.limit_regime == "no_limit" and (up_limit is not None or down_limit is not None):
+        raise MarketDataError("no-limit regime cannot carry limit fields")
     if up_limit is not None and down_limit is not None and down_limit > up_limit:
         raise MarketDataError("down_limit cannot exceed up_limit")
     if bar.is_suspended:

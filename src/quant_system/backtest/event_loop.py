@@ -25,6 +25,7 @@ from quant_system.markets.common import (
 )
 from quant_system.markets.universe import (
     StatusEvidence,
+    UniverseDecision,
     UniverseMaterialization,
     UniverseSnapshotIdentity,
     evaluate_universe,
@@ -49,6 +50,7 @@ ExecutionPriceBasis = Literal[
     "retrospective_daily_bar_open_fill",
     "confirmed_no_open_event",
 ]
+LimitRegime = Literal["applies", "no_limit"]
 TargetWeightCallback = Callable[["DecisionContext"], Mapping[str, float]]
 _RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
 _DECISION_PRICE_BASES = {
@@ -106,6 +108,7 @@ class ExecutionInput:
     decision_price_basis: DecisionPriceBasis | None = None
     execution_price_effective_at: datetime | None = None
     execution_price_basis: ExecutionPriceBasis | None = None
+    limit_regime: LimitRegime | None = None
 
 
 @dataclass(frozen=True)
@@ -351,6 +354,7 @@ def run_static_rebalance(
         )
         for symbol, row in rows.items()
     }
+    _require_matching_suspension(rows, decisions)
     _terminal_checks(rows, decisions, execution, cutoff)
     receipts: list[ExecutionReceipt] = []
     _actions(working, rows, execution, cutoff, receipts)
@@ -710,11 +714,25 @@ def _inputs(
             raise CorporateActionValuationError("ordinary action requires a rich identity")
         if type(row.is_suspended) is not bool:
             raise MarketDataError("is_suspended must be boolean")
+        if row.market == "a_share" and row.limit_regime not in {"applies", "no_limit"}:
+            raise MarketDataError("A-share input requires an explicit limit_regime")
+        if row.market == "a_share" and row.limit_regime == "applies" and (
+            row.up_limit is None or row.down_limit is None
+        ):
+            raise MarketDataError("applicable limit regime requires both limit fields")
+        if row.market == "a_share" and row.limit_regime == "no_limit" and (
+            row.up_limit is not None or row.down_limit is not None
+        ):
+            raise MarketDataError("no-limit regime cannot carry limit fields")
         if row.market == "a_share" and (row.action_types or row.corporate_actions
                                         or row.terminal_action is not None):
             raise MarketDataError("US action fields cannot be used for A-share inputs")
-        if row.market == "us" and (row.is_suspended or row.up_limit is not None
-                                   or row.down_limit is not None):
+        if row.market == "us" and (
+            row.is_suspended
+            or row.up_limit is not None
+            or row.down_limit is not None
+            or row.limit_regime is not None
+        ):
             raise MarketDataError("A-share fields cannot be used for US inputs")
         if type(row.corporate_actions) is not tuple or any(
             not isinstance(item, CorporateActionIdentity) or item.subject_id != row.symbol
@@ -756,6 +774,21 @@ def _inputs(
     if len(action_ids) != len(set(action_ids)):
         raise MarketDataError("action IDs must be globally unique")
     return rows
+
+
+def _require_matching_suspension(
+    rows: Mapping[str, ExecutionInput],
+    decisions: Mapping[str, UniverseDecision],
+) -> None:
+    for symbol, row in rows.items():
+        if row.market != "a_share":
+            continue
+        decision = decisions[symbol]
+        status_suspended = "suspended" in decision.reasons
+        if status_suspended != row.is_suspended:
+            raise MarketDataError(
+                f"{symbol} suspension status conflicts with execution input"
+            )
 
 
 def _terminal_checks(
@@ -947,8 +980,18 @@ def _fill(row: ExecutionInput, side: str, slippage: float) -> FillDecision:
     if row.market == "us":
         return us_fill(side, row.open_price, action_types=row.action_types,
                        data_qualified=True, slippage_bps=slippage)
-    return a_share_fill(side, AShareBar(row.open_price, row.is_suspended, row.up_limit,
-                                        row.down_limit, True), slippage_bps=slippage)
+    return a_share_fill(
+        side,
+        AShareBar(
+            row.open_price,
+            row.is_suspended,
+            row.up_limit,
+            row.down_limit,
+            True,
+            row.limit_regime,
+        ),
+        slippage_bps=slippage,
+    )
 
 
 def _open(row: ExecutionInput) -> float:
