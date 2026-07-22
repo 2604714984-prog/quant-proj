@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+from contextlib import contextmanager
 from datetime import date, datetime
 from decimal import Decimal
 import hashlib
@@ -10,7 +11,7 @@ import json
 import os
 from pathlib import Path
 import stat
-from typing import Any
+from typing import Any, Iterator
 
 from . import __version__
 from .config import AppSettings, load_settings
@@ -68,7 +69,8 @@ def _signature(value: os.stat_result) -> tuple[int, int, int, int, int]:
     )
 
 
-def _capture_bytes(path: Path) -> bytes:
+@contextmanager
+def _pinned_input(path: Path) -> Iterator[int]:
     candidate = path.expanduser()
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -84,34 +86,87 @@ def _capture_bytes(path: Path) -> bytes:
             or (before.st_dev, before.st_ino) != (linked.st_dev, linked.st_ino)
         ):
             raise ValueError(f"input is not a regular file: {candidate}")
-        chunks: list[bytes] = []
-        while chunk := os.read(descriptor, 1024 * 1024):
-            chunks.append(chunk)
+        yield descriptor
         after = os.fstat(descriptor)
         linked_after = os.stat(candidate, follow_symlinks=False)
         if _signature(before) != _signature(after) or _signature(before) != _signature(
             linked_after
         ):
             raise ValueError("input changed while it was being captured")
-        return b"".join(chunks)
     except OSError as exc:
         raise ValueError("input changed while it was being captured") from exc
     finally:
         os.close(descriptor)
 
 
-def _rows(path: Path) -> tuple[list[dict[str, Any]], str]:
-    raw_bytes = _capture_bytes(path)
+def _capture_bytes(path: Path, *, max_bytes: int) -> bytes:
+    chunks: list[bytes] = []
+    byte_count = 0
+    with _pinned_input(path) as descriptor:
+        while chunk := os.read(descriptor, min(64 * 1024, max_bytes + 1 - byte_count)):
+            byte_count += len(chunk)
+            if byte_count > max_bytes:
+                raise ValueError(f"input exceeds byte limit: {max_bytes}")
+            chunks.append(chunk)
+    return b"".join(chunks)
+
+
+def _jsonl_rows(
+    path: Path,
+    *,
+    max_bytes: int,
+    max_rows: int,
+) -> tuple[list[dict[str, Any]], str]:
+    rows: list[dict[str, Any]] = []
+    digest = hashlib.sha256()
+    buffer = b""
+    byte_count = 0
+
+    def add_line(raw_line: bytes) -> None:
+        if not raw_line.strip():
+            return
+        try:
+            value = _loads(raw_line.decode("utf-8"))
+        except UnicodeDecodeError as exc:
+            raise ValueError("input must be UTF-8") from exc
+        if not isinstance(value, dict):
+            raise ValueError("input must be a JSON array or JSONL objects")
+        rows.append(value)
+        if len(rows) > max_rows:
+            raise ValueError(f"input exceeds row limit: {max_rows}")
+
+    with _pinned_input(path) as descriptor:
+        while chunk := os.read(descriptor, min(64 * 1024, max_bytes + 1 - byte_count)):
+            byte_count += len(chunk)
+            if byte_count > max_bytes:
+                raise ValueError(f"input exceeds byte limit: {max_bytes}")
+            digest.update(chunk)
+            buffer += chunk
+            while b"\n" in buffer:
+                line, buffer = buffer.split(b"\n", 1)
+                add_line(line)
+        add_line(buffer)
+    return rows, digest.hexdigest()
+
+
+def _rows(
+    path: Path,
+    *,
+    max_bytes: int,
+    max_rows: int,
+) -> tuple[list[dict[str, Any]], str]:
+    if path.suffix.lower() == ".jsonl":
+        return _jsonl_rows(path, max_bytes=max_bytes, max_rows=max_rows)
+    raw_bytes = _capture_bytes(path, max_bytes=max_bytes)
     try:
         text = raw_bytes.decode("utf-8")
     except UnicodeDecodeError as exc:
         raise ValueError("input must be UTF-8") from exc
-    if path.suffix.lower() == ".jsonl":
-        raw = [_loads(line) for line in text.splitlines() if line.strip()]
-    else:
-        raw = _loads(text)
+    raw = _loads(text)
     if not isinstance(raw, list) or any(not isinstance(row, dict) for row in raw):
         raise ValueError("input must be a JSON array or JSONL objects")
+    if len(raw) > max_rows:
+        raise ValueError(f"input exceeds row limit: {max_rows}")
     return raw, hashlib.sha256(raw_bytes).hexdigest()
 
 
@@ -200,7 +255,11 @@ def main(argv: list[str] | None = None) -> int:
     if args.data_command == "query":
         _print(query(db_path, args.sql, max_rows=args.max_rows).to_dict())
         return 0
-    rows, input_sha256 = _rows(args.input)
+    rows, input_sha256 = _rows(
+        args.input,
+        max_bytes=settings.writer.max_input_bytes,
+        max_rows=settings.writer.max_rows_per_batch,
+    )
     if args.source_sha256 != input_sha256:
         raise ValueError("source_sha256 does not match the captured input bytes")
     keys = tuple(key.strip() for key in args.keys.split(",") if key.strip())

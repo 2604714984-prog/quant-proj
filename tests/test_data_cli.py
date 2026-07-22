@@ -56,6 +56,24 @@ def _controlled_args(tmp_path: Path) -> list[str]:
     ]
 
 
+def _limited_config(tmp_path: Path, *, max_rows: int, max_bytes: int) -> Path:
+    config = tmp_path / "settings.toml"
+    config.write_text(
+        "\n".join(
+            (
+                "[database]",
+                'filename = "test.duckdb"',
+                "[writer]",
+                f"max_rows_per_batch = {max_rows}",
+                f"max_input_bytes = {max_bytes}",
+                "lock_timeout_seconds = 0",
+            )
+        ),
+        encoding="utf-8",
+    )
+    return config
+
+
 def test_append_cli_is_dry_run_by_default(
     tmp_path: Path,
     capsys,
@@ -181,6 +199,72 @@ def test_append_cli_rejects_source_hash_mismatch(
                 "a" * 64,
             ]
         )
+
+
+@pytest.mark.parametrize(
+    ("suffix", "contents", "max_rows", "max_bytes", "message"),
+    [
+        (".json", '[{"value":"' + "x" * 1024 + '"}]', 10, 128, "byte limit"),
+        (".jsonl", '{"value":1}\n{"value":2}\n{"value":3}\n', 2, 1024, "row limit"),
+    ],
+)
+def test_append_cli_limits_input_before_any_database_write(
+    tmp_path: Path,
+    monkeypatch,
+    suffix: str,
+    contents: str,
+    max_rows: int,
+    max_bytes: int,
+    message: str,
+) -> None:
+    db = _database(tmp_path / "test.duckdb")
+    before = _sha256(db)
+    rows = tmp_path / f"rows{suffix}"
+    rows.write_text(contents, encoding="utf-8")
+    config = _limited_config(tmp_path, max_rows=max_rows, max_bytes=max_bytes)
+    project = Path(__file__).resolve().parents[1]
+    monkeypatch.setenv("QUANT_PROJECT_ROOT", str(project))
+    monkeypatch.setenv("QUANT_DATA_ROOT", str(tmp_path))
+    real_read = cli_module.os.read
+
+    def bounded_read(descriptor: int, size: int) -> bytes:
+        assert size <= 64 * 1024
+        return real_read(descriptor, size)
+
+    monkeypatch.setattr(cli_module.os, "read", bounded_read)
+    with pytest.raises(ValueError, match=message):
+        main(
+            [
+                "--config",
+                str(config),
+                "data",
+                "append",
+                "--db",
+                str(db),
+                "--schema",
+                "market",
+                "--table",
+                "daily",
+                "--keys",
+                "symbol,trade_date",
+                "--input",
+                str(rows),
+                "--batch-id",
+                "batch-limit",
+                "--source-sha256",
+                _sha256(rows),
+                *_controlled_args(tmp_path),
+                "--execute",
+            ]
+        )
+
+    assert _sha256(db) == before
+    with duckdb.connect(str(db), read_only=True) as connection:
+        assert connection.execute("SELECT count(*) FROM market.daily").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM information_schema.tables "
+            "WHERE table_schema='_quant_meta'"
+        ).fetchone() == (0,)
 
 
 def test_append_cli_rejects_duplicate_json_keys(
