@@ -338,6 +338,10 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     record = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     frozen = record["outcome_blind_frozen_specification"]
 
+    assert record["schema_version"] == "us-spy-volatility-managed-exposure-preregistration-v9"
+    assert record["supersedes_report_sha256"] == (
+        "120f2f6a7d85adca0778f644add220ccc53505c4f6b6d3c9bfe70302ec14b053"
+    )
     assert record["status"] == "PREREGISTERED_NOT_EXECUTED"
     assert record["strategy_candidate_available"] is False
     assert record["adjudication"]["outcome_accessed"] is False
@@ -359,12 +363,75 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     assert record["repository_identity"]["causal_core_merged_main_head"] == (
         SCRIPT.PR117_MERGED_MAIN_HEAD
     )
+    distinctness = frozen["mechanism_distinctness"]
+    assert tuple(
+        row["closed_lineage"] for row in distinctness["strongest_duplicate_arguments"]
+    ) == (
+        "SPY_200_DAY_TREND_CASH",
+        "THREE_ETF_INVERSE_VOLATILITY_ALLOCATION",
+        "SPY_QQQ_GLD_DUAL_MOMENTUM",
+        "SESSION_DECOMPOSITION_V1",
+    )
+    assert all(
+        row["strongest_argument"] and row["why_not_duplicate"]
+        for row in distinctness["strongest_duplicate_arguments"]
+    )
+    assert "price-derived behavior" in distinctness["selection_without_outcomes"]
     assert frozen["expected_inclusion_rule"] == "fixed-spy-universe"
     assert frozen["expected_inclusion_rule_sha256"] == INCLUSION_SHA
     assert INCLUSION_SHA == hashlib.sha256(b"fixed-spy-universe").hexdigest()
-    assert frozen["calendar_and_signal"]["required_raw_closes"] == 22
-    assert frozen["splits"]["validation_entry_cohorts"]["required_count"] == 45
-    assert frozen["splits"]["retrospective_holdout_entry_cohorts"]["required_count"] == 53
+    signal = frozen["calendar_and_signal"]
+    assert signal["required_raw_closes"] == 22
+    assert signal["required_log_total_returns"] == 21
+    assert signal["parameter_provenance"] == {
+        "primary_economic_source": (
+            "Moreira and Muir, Volatility-Managed Portfolios, Journal of Finance "
+            "72(4), 2017, DOI 10.1111/jofi.12513"
+        ),
+        "mechanism_taken_from_source": (
+            "Use lagged realized volatility to reduce exposure when conditional risk "
+            "is high, with decisions formed at a monthly frequency."
+        ),
+        "observation_window_source": (
+            "The source-motivated prior complete month is operationalized once as "
+            "exactly 21 consecutive log total returns from 22 accepted-session closes; "
+            "21 was not selected from a tested grid."
+        ),
+        "target_source": (
+            "The 10 percent annualized target is inherited unchanged from superseded "
+            "outcome-blind preregistration SHA256 "
+            "120f2f6a7d85adca0778f644add220ccc53505c4f6b6d3c9bfe70302ec14b053 as "
+            "a fixed unlevered account risk budget; it is not estimated, optimized, or "
+            "selected from outcomes."
+        ),
+    }
+    assert signal["exposure_floor"] == 0.0
+    assert signal["exposure_cap"] == 1.0
+    assert signal["robustness_variant"] == "NONE"
+    splits = frozen["splits"]
+    assert splits["historical_evidence_ceiling"] == (
+        "all observations through 2026-06-30 are retrospective secondary evidence; no "
+        "interval is described as untouched validation, holdout, or prospective evidence"
+    )
+    assert splits["validation_entry_cohorts"]["required_count"] == 45
+    assert splits["retrospective_holdout_entry_cohorts"]["required_count"] == 53
+    assert splits["purged_entry_cohort"] == "2021-12"
+    assert splits["cross_boundary_holding_interval_count"] == 1
+    assert splits["cross_boundary_holding_intervals"] == [
+        {
+            "entry_boundary": "first accepted open of 2021-12",
+            "exit_boundary": "first accepted open of 2022-01",
+            "assignment": "PURGED_FROM_BOTH_STAGES",
+            "reason": (
+                "The interval crosses from RETROSPECTIVE_SECONDARY_SCREEN_A into "
+                "RETROSPECTIVE_SECONDARY_INFERENCE_B and therefore cannot supply a "
+                "return to either stage."
+            ),
+        }
+    ]
+    assert "both its first-accepted-open entry boundary" in (
+        splits["holding_interval_assignment_rule"]
+    )
     execution_gate = frozen["real_execution_gate"]
     assert execution_gate["validation_calendar_exact_session_count"] == 987
     assert execution_gate["validation_official_action_exact_count"] == 15
