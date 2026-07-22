@@ -1,0 +1,51 @@
+{
+  "schema_version": "compact-terminal-result-v1",
+  "research_id": "C7_SPY_VARIANCE_RISK_PREMIUM_V1",
+  "mechanism_id": "M119_02_SPY_VARIANCE_RISK_PREMIUM_STATE",
+  "classification": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+  "definition_sha256": "c08464b342f53e679f6d3f59a856a830e7728b6aa536060c5a72cf414af40da3",
+  "adapter_sha256": "1248feb8a33e0f045a0fa8363dfff1e377b1dbb2f64a876c916e66b31701ab4e",
+  "runner_sha256": "a2ec11c80098191d6dad29fa0e0528fb7f45d204ee64a68f5fd85039ec50eb86",
+  "signal_input_sha256": "12ff1ceed8432670e4327cd0dc115a4bb5a021b43216bf528bd28d195456eaff",
+  "code_commit": "81fcf3b4c1daa524856094edd8f3fa1f478f1413",
+  "validation": {
+    "claim_sha256": "78ce65a44a5cb020046c50735d0abaf0051d668185da6f799811f2f300613bab",
+    "result_sha256": "85dcd24691ab0cfae50f5fc3144b4205c4ad9620d9e46f7a29a150b753fd4bb7",
+    "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_PASS_HOLDOUT_UNLOCKED",
+    "gate_count": 3,
+    "passed_gate_count": 3
+  },
+  "retrospective_holdout": {
+    "claim_sha256": "f7c5ff14170b112fa2cff20a334037b751759dbac148b007929388fd522a04e4",
+    "result_sha256": "1d6f283e3ed810482a7dc8c7efdcc3315382d3a1b7821ec8aeca1eae0e1038b5",
+    "classification": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "gate_count": 5,
+    "passed_gate_count": 2,
+    "failed_gates": [
+      "strategy_terminal_net_wealth_strictly_above_spy",
+      "centered_null_one_sided_p_at_most_0_00078125",
+      "uncentered_type7_0_00078125_lower_bound_strictly_positive"
+    ]
+  },
+  "program_multiplicity": {
+    "cycle7_familywise_alpha": 0.00078125,
+    "alpha_consumed": true,
+    "alpha_recycled": false,
+    "cycle1_to_cycle7_union_bound": 0.09921875
+  },
+  "database": {
+    "write": false,
+    "sha256_before_and_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a"
+  },
+  "terminal_rules": {
+    "lineage_closed": true,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "external_review_requested": false
+}
