@@ -503,6 +503,13 @@ def run_candidate_rebalance(
     universe_materialization.verify_current_bytes()
     universe_members = universe_materialization.members
     universe_snapshot = universe_materialization.snapshot
+    if (
+        decision_artifact.dataset_identity_sha256
+        != universe_materialization.materialization_sha256
+    ):
+        raise MarketDataError(
+            "decision artifact dataset identity must match the frozen partition manifest"
+        )
     _require_candidate_sources(
         calendar,
         execution_inputs,

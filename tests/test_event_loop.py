@@ -2294,7 +2294,12 @@ def _cost_assumptions(
     )
 
 
-def _captured_decision_artifact(tmp_path: Path, decision_at: datetime) -> DecisionArtifact:
+def _captured_decision_artifact(
+    tmp_path: Path,
+    decision_at: datetime,
+    *,
+    dataset_identity_sha256: str = "d" * 64,
+) -> DecisionArtifact:
     feature = tmp_path / "feature.json"
     definition = tmp_path / "definition.json"
     adapter = tmp_path / "adapter.py"
@@ -2307,7 +2312,7 @@ def _captured_decision_artifact(tmp_path: Path, decision_at: datetime) -> Decisi
         strategy_definition_path=definition,
         strategy_adapter_path=adapter,
         decision_at=decision_at,
-        dataset_identity_sha256="d" * 64,
+        dataset_identity_sha256=dataset_identity_sha256,
         split_identity_sha256="e" * 64,
     )
 
@@ -2527,13 +2532,17 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         execution,
         observed_session=calendar.session_on(days[0], as_of=decision_at),
     )
-    artifact = _captured_decision_artifact(tmp_path, decision_at)
     materialization = _controlled_materialization(
         tmp_path,
         calendar,
         execution,
         decision_at,
         (row,),
+    )
+    artifact = _captured_decision_artifact(
+        tmp_path,
+        decision_at,
+        dataset_identity_sha256=materialization.materialization_sha256,
     )
 
     result = run_candidate_rebalance(
@@ -2571,13 +2580,17 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
         execution,
         observed_session=calendar.session_on(days[0], as_of=decision_at),
     )
-    artifact = _captured_decision_artifact(tmp_path, decision_at)
     materialization = _controlled_materialization(
         tmp_path,
         calendar,
         execution,
         decision_at,
         (row,),
+    )
+    artifact = _captured_decision_artifact(
+        tmp_path,
+        decision_at,
+        dataset_identity_sha256=materialization.materialization_sha256,
     )
     portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
@@ -2620,13 +2633,17 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(tmp_path: Pa
         execution,
         observed_session=calendar.session_on(days[0], as_of=decision_at),
     )
-    artifact = _captured_decision_artifact(tmp_path, decision_at)
     materialization = _controlled_materialization(
         tmp_path,
         calendar,
         execution,
         decision_at,
         (row,),
+    )
+    artifact = _captured_decision_artifact(
+        tmp_path,
+        decision_at,
+        dataset_identity_sha256=materialization.materialization_sha256,
     )
     arguments = {
         "signal_session": days[0],
@@ -2659,6 +2676,44 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(tmp_path: Pa
     assert base.cost_assumptions_sha256 != stressed.cost_assumptions_sha256
     assert gross.interface_grade == "GROSS_ONLY_EXPERIMENT"
     assert gross.strategy_candidate_available is False
+
+
+def test_candidate_rejects_partition_manifest_drift_before_mutation(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    row = _controlled_input(
+        "AAA",
+        execution,
+        observed_session=calendar.session_on(days[0], as_of=decision_at),
+    )
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
+    )
+    artifact = _captured_decision_artifact(tmp_path, decision_at)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+
+    with pytest.raises(MarketDataError, match="frozen partition manifest"):
+        run_candidate_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=decision_at,
+            execution_inputs=(row,),
+            universe_materialization=materialization,
+            decision_artifact=artifact,
+            cost_assumptions=_cost_assumptions(),
+        )
+    assert portfolio.__dict__ == before
 
 
 def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) -> None:

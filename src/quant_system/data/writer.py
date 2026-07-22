@@ -19,6 +19,8 @@ from typing import Any, Iterator, Sequence
 
 import duckdb
 
+from .source_identity import SourceIdentity, require_trusted_source
+
 
 class DataWriteError(RuntimeError):
     """Raised when an append cannot be completed without mutation ambiguity."""
@@ -31,11 +33,22 @@ METADATA_COLUMNS = (
     ("batch_id", "VARCHAR", "NO"),
     ("target", "VARCHAR", "NO"),
     ("source_sha256", "VARCHAR", "NO"),
+    ("source_identity_json", "VARCHAR", "NO"),
+    ("code_sha256", "VARCHAR", "NO"),
+    ("config_sha256", "VARCHAR", "NO"),
+    ("contract_version", "VARCHAR", "NO"),
     ("batch_sha256", "VARCHAR", "NO"),
     ("row_count", "BIGINT", "NO"),
     ("inserted_rows", "BIGINT", "NO"),
     ("existing_rows", "BIGINT", "NO"),
     ("completed_at", "TIMESTAMP WITH TIME ZONE", "NO"),
+)
+TARGET_CONTRACT_COLUMNS = (
+    ("target", "VARCHAR", "NO"),
+    ("ordered_natural_keys", "VARCHAR", "NO"),
+    ("schema_sha256", "VARCHAR", "NO"),
+    ("canonical_owner", "VARCHAR", "NO"),
+    ("contract_version", "VARCHAR", "NO"),
 )
 
 
@@ -48,6 +61,10 @@ class AppendResult:
     existing_rows: int
     batch_sha256: str
     source_sha256: str
+    source_capture_receipt_sha256: str
+    code_sha256: str
+    config_sha256: str
+    contract_version: str
     status: str
 
     def to_dict(self) -> dict[str, Any]:
@@ -62,6 +79,35 @@ def _identifier(value: str, label: str) -> str:
 
 def _quote(value: str) -> str:
     return f'"{_identifier(value, "SQL identifier")}"'
+
+
+def _stable_text(value: str, label: str) -> str:
+    if (
+        not isinstance(value, str)
+        or not value.strip()
+        or any(ord(character) < 32 for character in value)
+    ):
+        raise DataWriteError(f"{label} must be nonempty and contain no control characters")
+    return value.strip()
+
+
+def _source_identity_json(source: SourceIdentity) -> str:
+    payload = {
+        "available_at": source.available_at.isoformat(),
+        "capture_byte_count": source.capture_byte_count,
+        "capture_receipt_sha256": source.capture_receipt_sha256,
+        "content_sha256": source.content_sha256,
+        "provider_id": source.provider_id,
+        "publication_evidence_sha256": source.publication_evidence_sha256,
+        "retrieved_at": source.retrieved_at.isoformat(),
+        "revision_id": source.revision_id,
+        "source_family_id": source.source_family_id,
+        "source_url": source.source_url,
+        "subject_id": source.subject_id,
+        "supersedes_revision_id": source.supersedes_revision_id,
+        "url_migration_receipt_sha256": source.url_migration_receipt_sha256,
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
 
 
 def _inode(value: os.stat_result) -> tuple[int, int]:
@@ -199,13 +245,21 @@ def _validate_inputs(
     natural_keys: Sequence[str],
     *,
     batch_id: str,
-    source_sha256: str,
+    source_identity: SourceIdentity,
+    code_sha256: str,
+    config_sha256: str,
     max_rows: int,
 ) -> tuple[tuple[str, ...], str]:
     if not BATCH_ID.fullmatch(batch_id):
         raise DataWriteError("invalid batch_id")
-    if not SHA256.fullmatch(source_sha256):
-        raise DataWriteError("invalid source_sha256")
+    try:
+        require_trusted_source(source_identity)
+    except ValueError as exc:
+        raise DataWriteError("controlled writer requires a trusted SourceIdentity") from exc
+    if not SHA256.fullmatch(code_sha256):
+        raise DataWriteError("invalid code_sha256")
+    if not SHA256.fullmatch(config_sha256):
+        raise DataWriteError("invalid config_sha256")
     if not rows or len(rows) > max_rows:
         raise DataWriteError("batch is empty or exceeds max_rows")
     if not natural_keys or len(set(natural_keys)) != len(natural_keys):
@@ -260,6 +314,22 @@ def _target_columns(
     return tuple(str(row[0]) for row in rows)
 
 
+def _target_schema_sha256(
+    connection: duckdb.DuckDBPyConnection,
+    schema: str,
+    table: str,
+) -> str:
+    rows = connection.execute(
+        "SELECT column_name, data_type, is_nullable FROM information_schema.columns "
+        "WHERE table_schema = ? AND table_name = ? ORDER BY ordinal_position",
+        [schema, table],
+    ).fetchall()
+    if not rows:
+        raise DataWriteError("target table does not exist")
+    encoded = json.dumps(rows, separators=(",", ":"), default=str).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _floating_columns(
     connection: duckdb.DuckDBPyConnection,
     schema: str,
@@ -282,29 +352,68 @@ def _ensure_metadata(connection: duckdb.DuckDBPyConnection) -> None:
     connection.execute(
         "CREATE TABLE IF NOT EXISTS _quant_meta.ingest_runs ("
         "batch_id VARCHAR PRIMARY KEY, target VARCHAR NOT NULL, "
-        "source_sha256 VARCHAR NOT NULL, batch_sha256 VARCHAR NOT NULL, "
+        "source_sha256 VARCHAR NOT NULL, source_identity_json VARCHAR NOT NULL, "
+        "code_sha256 VARCHAR NOT NULL, config_sha256 VARCHAR NOT NULL, "
+        "contract_version VARCHAR NOT NULL, batch_sha256 VARCHAR NOT NULL, "
         "row_count BIGINT NOT NULL, inserted_rows BIGINT NOT NULL, "
         "existing_rows BIGINT NOT NULL, completed_at TIMESTAMPTZ NOT NULL)"
     )
-    columns = tuple(
-        tuple(str(value) for value in row)
-        for row in connection.execute(
-            "SELECT column_name, data_type, is_nullable "
-            "FROM information_schema.columns "
-            "WHERE table_schema='_quant_meta' AND table_name='ingest_runs' "
-            "ORDER BY ordinal_position"
-        ).fetchall()
+    connection.execute(
+        "CREATE TABLE IF NOT EXISTS _quant_meta.target_contracts ("
+        "target VARCHAR PRIMARY KEY, ordered_natural_keys VARCHAR NOT NULL, "
+        "schema_sha256 VARCHAR NOT NULL, canonical_owner VARCHAR NOT NULL, "
+        "contract_version VARCHAR NOT NULL)"
     )
-    primary_keys = tuple(
-        tuple(str(value) for value in row[0])
-        for row in connection.execute(
-            "SELECT constraint_column_names FROM duckdb_constraints() "
-            "WHERE schema_name='_quant_meta' AND table_name='ingest_runs' "
-            "AND constraint_type='PRIMARY KEY' ORDER BY constraint_index"
-        ).fetchall()
-    )
-    if columns != METADATA_COLUMNS or primary_keys != (("batch_id",),):
-        raise DataWriteError("metadata table does not match the immutable contract")
+    for table, expected_columns, expected_primary_key in (
+        ("ingest_runs", METADATA_COLUMNS, ("batch_id",)),
+        ("target_contracts", TARGET_CONTRACT_COLUMNS, ("target",)),
+    ):
+        columns = tuple(
+            tuple(str(value) for value in row)
+            for row in connection.execute(
+                "SELECT column_name, data_type, is_nullable "
+                "FROM information_schema.columns "
+                "WHERE table_schema='_quant_meta' AND table_name=? "
+                "ORDER BY ordinal_position",
+                [table],
+            ).fetchall()
+        )
+        primary_keys = tuple(
+            tuple(str(value) for value in row[0])
+            for row in connection.execute(
+                "SELECT constraint_column_names FROM duckdb_constraints() "
+                "WHERE schema_name='_quant_meta' AND table_name=? "
+                "AND constraint_type='PRIMARY KEY' ORDER BY constraint_index",
+                [table],
+            ).fetchall()
+        )
+        if columns != expected_columns or primary_keys != (expected_primary_key,):
+            raise DataWriteError("metadata table does not match the immutable contract")
+
+
+def _bind_target_contract(
+    connection: duckdb.DuckDBPyConnection,
+    *,
+    target: str,
+    keys: tuple[str, ...],
+    schema_sha256: str,
+    canonical_owner: str,
+    contract_version: str,
+) -> None:
+    key_json = json.dumps(keys, separators=(",", ":"))
+    expected = (key_json, schema_sha256, canonical_owner, contract_version)
+    previous = connection.execute(
+        "SELECT ordered_natural_keys, schema_sha256, canonical_owner, contract_version "
+        "FROM _quant_meta.target_contracts WHERE target=?",
+        [target],
+    ).fetchone()
+    if previous is None:
+        connection.execute(
+            "INSERT INTO _quant_meta.target_contracts VALUES (?, ?, ?, ?, ?)",
+            [target, *expected],
+        )
+    elif tuple(previous) != expected:
+        raise DataWriteError("target contract keys, schema, owner, or version changed")
 
 
 def _validate_previous(
@@ -312,12 +421,26 @@ def _validate_previous(
     *,
     target: str,
     source_sha256: str,
+    source_identity_json: str,
+    code_sha256: str,
+    config_sha256: str,
+    contract_version: str,
     batch_sha256: str,
     row_count: int,
 ) -> tuple[int, int, int]:
-    if previous[:4] != (target, source_sha256, batch_sha256, row_count):
+    expected = (
+        target,
+        source_sha256,
+        source_identity_json,
+        code_sha256,
+        config_sha256,
+        contract_version,
+        batch_sha256,
+        row_count,
+    )
+    if previous[:8] != expected:
         raise DataWriteError("batch_id is already bound to different input")
-    stored = tuple(int(value) for value in previous[3:6])
+    stored = tuple(int(value) for value in previous[7:10])
     stored_rows, stored_inserted, stored_existing = stored
     if (
         min(stored) < 0
@@ -336,7 +459,11 @@ def append_rows(
     natural_keys: Sequence[str],
     rows: Sequence[dict[str, Any]],
     batch_id: str,
-    source_sha256: str,
+    source_identity: SourceIdentity,
+    code_sha256: str,
+    config_sha256: str,
+    canonical_owner: str,
+    contract_version: str,
     max_rows: int = 100_000,
     lock_timeout_seconds: float = 5.0,
 ) -> AppendResult:
@@ -357,9 +484,15 @@ def append_rows(
         rows,
         natural_keys,
         batch_id=batch_id,
-        source_sha256=source_sha256,
+        source_identity=source_identity,
+        code_sha256=code_sha256,
+        config_sha256=config_sha256,
         max_rows=max_rows,
     )
+    canonical_owner = _stable_text(canonical_owner, "canonical_owner")
+    contract_version = _stable_text(contract_version, "contract_version")
+    source_sha256 = source_identity.content_sha256
+    source_json = _source_identity_json(source_identity)
     keys = tuple(natural_keys)
     target = f"{schema}.{table}"
     qualified = f"{_quote(schema)}.{_quote(table)}"
@@ -375,8 +508,18 @@ def append_rows(
                 if columns != expected_columns:
                     raise DataWriteError("input columns do not match target order")
                 _ensure_metadata(connection)
+                schema_sha256 = _target_schema_sha256(connection, schema, table)
+                _bind_target_contract(
+                    connection,
+                    target=target,
+                    keys=keys,
+                    schema_sha256=schema_sha256,
+                    canonical_owner=canonical_owner,
+                    contract_version=contract_version,
+                )
                 previous = connection.execute(
-                    "SELECT target, source_sha256, batch_sha256, row_count, "
+                    "SELECT target, source_sha256, source_identity_json, code_sha256, "
+                    "config_sha256, contract_version, batch_sha256, row_count, "
                     "inserted_rows, existing_rows FROM _quant_meta.ingest_runs "
                     "WHERE batch_id = ?",
                     [batch_id],
@@ -386,6 +529,10 @@ def append_rows(
                         previous,
                         target=target,
                         source_sha256=source_sha256,
+                        source_identity_json=source_json,
+                        code_sha256=code_sha256,
+                        config_sha256=config_sha256,
+                        contract_version=contract_version,
                         batch_sha256=batch_sha256,
                         row_count=len(rows),
                     )
@@ -484,6 +631,12 @@ def append_rows(
                         existing_rows=existing_rows,
                         batch_sha256=batch_sha256,
                         source_sha256=source_sha256,
+                        source_capture_receipt_sha256=(
+                            source_identity.capture_receipt_sha256 or ""
+                        ),
+                        code_sha256=code_sha256,
+                        config_sha256=config_sha256,
+                        contract_version=contract_version,
                         status="IDEMPOTENT_REPLAY",
                     )
 
@@ -495,11 +648,16 @@ def append_rows(
                         f"WHERE NOT EXISTS (SELECT 1 FROM {qualified} t WHERE {join})"
                     )
                 connection.execute(
-                    "INSERT INTO _quant_meta.ingest_runs VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                    "INSERT INTO _quant_meta.ingest_runs VALUES "
+                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         batch_id,
                         target,
                         source_sha256,
+                        source_json,
+                        code_sha256,
+                        config_sha256,
+                        contract_version,
                         batch_sha256,
                         len(rows),
                         inserted_rows,
@@ -538,5 +696,9 @@ def append_rows(
         existing_rows=existing_rows,
         batch_sha256=batch_sha256,
         source_sha256=source_sha256,
+        source_capture_receipt_sha256=source_identity.capture_receipt_sha256 or "",
+        code_sha256=code_sha256,
+        config_sha256=config_sha256,
+        contract_version=contract_version,
         status="COMPLETED",
     )

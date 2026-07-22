@@ -14,7 +14,7 @@ from typing import Any
 
 from . import __version__
 from .config import AppSettings, load_settings
-from .data import append_rows, database_info, query
+from .data import append_rows, capture_source_file, database_info, query
 
 
 def _json_default(value: Any) -> Any:
@@ -160,6 +160,18 @@ def _parser() -> argparse.ArgumentParser:
     append.add_argument("--input", type=Path, required=True)
     append.add_argument("--batch-id", required=True)
     append.add_argument("--source-sha256", required=True)
+    append.add_argument("--publication-evidence", type=Path)
+    append.add_argument("--source-url")
+    append.add_argument("--available-at")
+    append.add_argument("--retrieved-at")
+    append.add_argument("--revision-id")
+    append.add_argument("--source-family-id")
+    append.add_argument("--provider-id")
+    append.add_argument("--subject-id")
+    append.add_argument("--code-sha256")
+    append.add_argument("--config-sha256")
+    append.add_argument("--canonical-owner")
+    append.add_argument("--contract-version")
     append.add_argument("--execute", action="store_true")
     return parser
 
@@ -205,6 +217,36 @@ def main(argv: list[str] | None = None) -> int:
             }
         )
         return 0
+    controlled_fields = (
+        "publication_evidence",
+        "source_url",
+        "available_at",
+        "retrieved_at",
+        "revision_id",
+        "source_family_id",
+        "provider_id",
+        "subject_id",
+        "code_sha256",
+        "config_sha256",
+        "canonical_owner",
+        "contract_version",
+    )
+    missing = tuple(name for name in controlled_fields if getattr(args, name) is None)
+    if missing:
+        raise ValueError(f"controlled append is missing required fields: {', '.join(missing)}")
+    source_receipt = capture_source_file(
+        args.input,
+        publication_evidence_path=args.publication_evidence,
+        source_url=args.source_url,
+        available_at=datetime.fromisoformat(args.available_at),
+        retrieved_at=datetime.fromisoformat(args.retrieved_at),
+        revision_id=args.revision_id,
+        source_family_id=args.source_family_id,
+        provider_id=args.provider_id,
+        subject_id=args.subject_id,
+    )
+    if source_receipt.source.content_sha256 != input_sha256:
+        raise ValueError("captured source changed after row parsing")
     result = append_rows(
         db_path,
         schema=args.schema,
@@ -212,7 +254,11 @@ def main(argv: list[str] | None = None) -> int:
         natural_keys=keys,
         rows=rows,
         batch_id=args.batch_id,
-        source_sha256=args.source_sha256,
+        source_identity=source_receipt.source,
+        code_sha256=args.code_sha256,
+        config_sha256=args.config_sha256,
+        canonical_owner=args.canonical_owner,
+        contract_version=args.contract_version,
         max_rows=settings.writer.max_rows_per_batch,
         lock_timeout_seconds=settings.writer.lock_timeout_seconds,
     )

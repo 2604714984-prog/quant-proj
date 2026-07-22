@@ -1,4 +1,6 @@
 from decimal import Decimal
+from datetime import datetime, timezone
+import json
 import os
 from pathlib import Path
 import shutil
@@ -8,10 +10,28 @@ import pytest
 
 import quant_system.data.writer as writer_module
 from quant_system.data.writer import DataWriteError, append_rows
+from quant_system.data import SourceIdentity, capture_source_bytes
 
 
 SOURCE_A = "a" * 64
 SOURCE_B = "b" * 64
+UTC = timezone.utc
+CODE_SHA = "c" * 64
+CONFIG_SHA = "d" * 64
+
+
+def _source(label: str):
+    return capture_source_bytes(
+        label.encode(),
+        publication_evidence=b"fixture publication receipt",
+        source_url="https://example.test/writer-source",
+        available_at=datetime(2026, 7, 14, tzinfo=UTC),
+        retrieved_at=datetime(2026, 7, 14, 0, 1, tzinfo=UTC),
+        revision_id=label,
+        source_family_id="writer-fixture",
+        provider_id="fixture-provider",
+        subject_id="market.daily",
+    ).source
 
 
 def _database(path: Path, *, close_type: str = "DOUBLE") -> Path:
@@ -51,7 +71,11 @@ def _append(path: Path, rows: list[dict[str, object]], batch: str, source: str):
         natural_keys=("symbol", "trade_date"),
         rows=rows,
         batch_id=batch,
-        source_sha256=source,
+        source_identity=_source(source),
+        code_sha256=CODE_SHA,
+        config_sha256=CONFIG_SHA,
+        canonical_owner="quant-system",
+        contract_version="market.daily.v1",
     )
 
 
@@ -78,6 +102,101 @@ def test_append_and_exact_replay_are_idempotent(tmp_path: Path) -> None:
             "SELECT inserted_rows, existing_rows FROM _quant_meta.ingest_runs "
             "WHERE batch_id='batch-001'"
         ).fetchone() == (2, 0)
+
+
+def test_target_contract_rejects_key_and_schema_drift(tmp_path: Path) -> None:
+    path = _database(tmp_path / "test.duckdb")
+    _append(path, _rows(), "batch-001", SOURCE_A)
+
+    with pytest.raises(DataWriteError, match="target contract"):
+        append_rows(
+            path,
+            schema="market",
+            table="daily",
+            natural_keys=("trade_date", "symbol"),
+            rows=_rows(),
+            batch_id="batch-002",
+            source_identity=_source(SOURCE_B),
+            code_sha256=CODE_SHA,
+            config_sha256=CONFIG_SHA,
+            canonical_owner="quant-system",
+            contract_version="market.daily.v1",
+        )
+
+    with duckdb.connect(str(path)) as connection:
+        connection.execute("ALTER TABLE market.daily ADD COLUMN venue VARCHAR")
+    changed_rows = [dict(row, venue="XSHG") for row in _rows()]
+    with pytest.raises(DataWriteError, match="target contract"):
+        append_rows(
+            path,
+            schema="market",
+            table="daily",
+            natural_keys=("symbol", "trade_date"),
+            rows=changed_rows,
+            batch_id="batch-003",
+            source_identity=_source("schema-drift"),
+            code_sha256=CODE_SHA,
+            config_sha256=CONFIG_SHA,
+            canonical_owner="quant-system",
+            contract_version="market.daily.v1",
+        )
+
+
+def test_writer_rejects_manual_source_identity_before_write(tmp_path: Path) -> None:
+    path = _database(tmp_path / "test.duckdb")
+    manual = SourceIdentity(
+        source_url="https://example.test/manual",
+        content_sha256=SOURCE_A,
+        available_at=datetime(2026, 7, 14, tzinfo=UTC),
+        retrieved_at=datetime(2026, 7, 14, 0, 1, tzinfo=UTC),
+        revision_id="manual",
+        source_family_id="writer-fixture",
+        provider_id="fixture-provider",
+        subject_id="market.daily",
+    )
+
+    with pytest.raises(DataWriteError, match="trusted SourceIdentity"):
+        append_rows(
+            path,
+            schema="market",
+            table="daily",
+            natural_keys=("symbol", "trade_date"),
+            rows=_rows(),
+            batch_id="batch-001",
+            source_identity=manual,
+            code_sha256=CODE_SHA,
+            config_sha256=CONFIG_SHA,
+            canonical_owner="quant-system",
+            contract_version="market.daily.v1",
+        )
+    with duckdb.connect(str(path), read_only=True) as connection:
+        assert connection.execute("SELECT count(*) FROM market.daily").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM information_schema.tables "
+            "WHERE table_schema='_quant_meta'"
+        ).fetchone() == (0,)
+
+
+def test_ingest_receipt_persists_structured_lineage(tmp_path: Path) -> None:
+    path = _database(tmp_path / "test.duckdb")
+    result = _append(path, _rows(), "batch-001", SOURCE_A)
+
+    with duckdb.connect(str(path), read_only=True) as connection:
+        lineage = connection.execute(
+            "SELECT source_identity_json, code_sha256, config_sha256, contract_version "
+            "FROM _quant_meta.ingest_runs WHERE batch_id='batch-001'"
+        ).fetchone()
+        contract = connection.execute(
+            "SELECT ordered_natural_keys, schema_sha256, canonical_owner, contract_version "
+            "FROM _quant_meta.target_contracts WHERE target='market.daily'"
+        ).fetchone()
+    assert json.loads(lineage[0])["capture_receipt_sha256"] == (
+        result.source_capture_receipt_sha256
+    )
+    assert lineage[1:] == (CODE_SHA, CONFIG_SHA, "market.daily.v1")
+    assert json.loads(contract[0]) == ["symbol", "trade_date"]
+    assert len(contract[1]) == 64
+    assert contract[2:] == ("quant-system", "market.daily.v1")
 
 
 @pytest.mark.parametrize("close_type", ["FLOAT", "REAL", "DOUBLE"])
@@ -206,7 +325,11 @@ def test_public_writer_rejects_private_metadata_schema(tmp_path: Path) -> None:
             natural_keys=("batch_id",),
             rows=[{"batch_id": "forged"}],
             batch_id="batch-001",
-            source_sha256=SOURCE_A,
+            source_identity=_source(SOURCE_A),
+            code_sha256=CODE_SHA,
+            config_sha256=CONFIG_SHA,
+            canonical_owner="quant-system",
+            contract_version="market.daily.v1",
         )
 
 

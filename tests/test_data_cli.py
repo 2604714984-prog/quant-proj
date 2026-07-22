@@ -25,6 +25,37 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _controlled_args(tmp_path: Path) -> list[str]:
+    publication = tmp_path / "publication.txt"
+    publication.write_text("published fixture", encoding="utf-8")
+    return [
+        "--publication-evidence",
+        str(publication),
+        "--source-url",
+        "https://example.test/rows",
+        "--available-at",
+        "2026-07-14T00:00:00+00:00",
+        "--retrieved-at",
+        "2026-07-14T00:01:00+00:00",
+        "--revision-id",
+        "rows-v1",
+        "--source-family-id",
+        "market-daily",
+        "--provider-id",
+        "fixture-provider",
+        "--subject-id",
+        "market.daily",
+        "--code-sha256",
+        "c" * 64,
+        "--config-sha256",
+        "d" * 64,
+        "--canonical-owner",
+        "quant-system",
+        "--contract-version",
+        "market.daily.v1",
+    ]
+
+
 def test_append_cli_is_dry_run_by_default(
     tmp_path: Path,
     capsys,
@@ -108,6 +139,7 @@ def test_append_cli_requires_execute_and_then_writes(
             "batch-001",
             "--source-sha256",
             _sha256(rows),
+            *_controlled_args(tmp_path),
             "--execute",
         ]
     )
@@ -285,6 +317,7 @@ def test_append_cli_rejects_hardlink_boundary_alias(
                 "batch-001",
                 "--source-sha256",
                 _sha256(rows),
+                *_controlled_args(tmp_path),
                 "--execute",
             ]
         )
