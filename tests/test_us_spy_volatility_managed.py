@@ -338,9 +338,9 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     record = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     frozen = record["outcome_blind_frozen_specification"]
 
-    assert record["schema_version"] == "us-spy-volatility-managed-exposure-preregistration-v9"
+    assert record["schema_version"] == "us-spy-volatility-managed-exposure-preregistration-v10"
     assert record["supersedes_report_sha256"] == (
-        "120f2f6a7d85adca0778f644add220ccc53505c4f6b6d3c9bfe70302ec14b053"
+        "98a7aa9eceb4cb798b5cd1605986df1055dc14871f960b4e804b4143bd27f6d7"
     )
     assert record["status"] == "PREREGISTERED_NOT_EXECUTED"
     assert record["strategy_candidate_available"] is False
@@ -362,6 +362,12 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     )
     assert record["repository_identity"]["causal_core_merged_main_head"] == (
         SCRIPT.PR117_MERGED_MAIN_HEAD
+    )
+    assert record["repository_identity"]["status_core_reviewed_head"] == (
+        SCRIPT.STATUS_CORE_REVIEWED_HEAD
+    )
+    assert record["repository_identity"]["execution_core_reviewed_head"] == (
+        SCRIPT.EXECUTION_CORE_REVIEWED_HEAD
     )
     distinctness = frozen["mechanism_distinctness"]
     assert tuple(
