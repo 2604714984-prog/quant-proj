@@ -1,0 +1,122 @@
+{
+  "research_id": "US_TOP50_QUARTERLY_RESIDUAL_MOMENTUM_V1",
+  "date": "2026-07-23",
+  "market": "US_EQUITIES",
+  "phase": "DISCOVERY_EXECUTION_AND_ADJUDICATION",
+  "status": "rejected",
+  "result": "DISCOVERY_FAIL",
+  "permanently_closed": true,
+  "family_number": null,
+  "family_number_status": "NOT_ASSIGNED",
+  "formal_run_count": 1,
+  "rerun": false,
+  "strategy_candidate_available": false,
+  "repository": {
+    "path": "/home/rongyu/workspace/.wt-us-top50-quarterly-residual-momentum-v1",
+    "branch": "research/us-top50-quarterly-residual-momentum-v1",
+    "execution_base_head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "execution_base_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "execution_dirty_state": "three intended preregistered research files only"
+  },
+  "lineage": {
+    "adaptive_follow_up_to": "US_TOP50_MARKET_RESIDUAL_MOMENTUM_V1",
+    "statistically_independent_of_parent": false,
+    "only_strategy_change": "quarterly_instead_of_monthly_formation_and_rebalance",
+    "parent_annual_turnover": 2.0866190816827457,
+    "quarterly_annual_turnover": 1.3467628514673953,
+    "relative_turnover_reduction": 0.35457177436463216
+  },
+  "input": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "database_path": "/home/rongyu/workspace/quant-data/backups/quant_research.before_tushare_completion_20260723_6b29e56e8ccc.duckdb",
+    "database_sha256_before_and_after": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "database_unchanged": true,
+    "qualified_identity_path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_data_materialization_v0_9_gsd/qualified_identity.json",
+    "qualified_identity_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "stock_count": 46,
+    "survivorship_bias": true,
+    "central_database_writes": false
+  },
+  "execution": {
+    "command": "/home/rongyu/workspace/quant-proj/.venv/bin/python scripts/us_top50_quarterly_residual_momentum_v1.py --repo /home/rongyu/workspace/.wt-us-top50-quarterly-residual-momentum-v1 --db /home/rongyu/workspace/quant-data/backups/quant_research.before_tushare_completion_20260723_6b29e56e8ccc.duckdb --identity /home/rongyu/workspace/quant-data/staging/us_current_top50_data_materialization_v0_9_gsd/qualified_identity.json --staging /home/rongyu/workspace/quant-data/staging/us_top50_quarterly_residual_momentum_v1",
+    "evaluation": ["2018-04-02", "2026-07-22"],
+    "formation_count": 34,
+    "eligible_min": 43,
+    "eligible_max": 45
+  },
+  "metrics": {
+    "strategy_base": {
+      "cagr": 0.3367261767767018,
+      "volatility": 0.252687580772445,
+      "sharpe": 1.277580279587232,
+      "max_drawdown": -0.34012438082428886
+    },
+    "benchmark_base": {
+      "cagr": 0.28599069729789983,
+      "volatility": 0.20866507585312155,
+      "sharpe": 1.3124206025114946,
+      "max_drawdown": -0.31691228065822585
+    },
+    "strategy_stress": {
+      "cagr": 0.33132651399548085,
+      "volatility": 0.25270563252621525,
+      "sharpe": 1.2607494159577222,
+      "max_drawdown": -0.340124380824289
+    },
+    "benchmark_stress": {
+      "cagr": 0.28512261385830473,
+      "volatility": 0.20866823313165606,
+      "sharpe": 1.308290926407925,
+      "max_drawdown": -0.31691228065822574
+    },
+    "cagr_excess": 0.05073547947880197,
+    "sharpe_margin": -0.034840322924262646,
+    "stress_annualized_excess": 0.046203900137176124,
+    "annual_turnover": 1.3467628514673953,
+    "subperiod_relative_positive": {
+      "2018-2019": false,
+      "2020-2022": true,
+      "2023-latest": true
+    }
+  },
+  "gates": {
+    "cagr_excess": true,
+    "sharpe": false,
+    "drawdown": true,
+    "stress_excess": true,
+    "turnover": false,
+    "subperiods": true,
+    "eligible_stocks": true,
+    "complete_formations": true,
+    "pass_count": 6,
+    "total_count": 8
+  },
+  "decisive_failures": [
+    "Strategy Sharpe was 1.277580279587232 versus benchmark 1.3124206025114946; the frozen gate required a margin of at least positive 0.05, leaving a shortfall of 0.08484032292426265.",
+    "Annual turnover was 1.3467628514673953, above the frozen maximum of 1.25."
+  ],
+  "artifacts": {
+    "contract_path": "research/definitions/us_top50_quarterly_residual_momentum_v1.json",
+    "contract_sha256": "3e798e6d2ebfb120868ea79a5c76fa787d1aa695ef77f8aef43d2112f92458d9",
+    "adapter_path": "scripts/us_top50_quarterly_residual_momentum_v1.py",
+    "adapter_sha256": "823b403b53f19203008cc109af181570c0a00c559a3d0f6af605d6f9f03c5ab6",
+    "test_path": "tests/test_us_top50_quarterly_residual_momentum_v1.py",
+    "test_sha256": "7ace23f95227ffcc1cbdcfefc85d9a819f59ed417a48805a59f86bbc37888ecc",
+    "preoutcome_receipt_path": "/home/rongyu/workspace/quant-data/staging/us_top50_quarterly_residual_momentum_v1/preoutcome_receipt.json",
+    "preoutcome_receipt_sha256": "4640a199fc0f33fa19c72eb758fabc7bba7121d41240a2e5984e6efcc2bd4dd6",
+    "formal_marker_path": "/home/rongyu/workspace/quant-data/staging/us_top50_quarterly_residual_momentum_v1/formal_run_started.json",
+    "formal_marker_sha256": "d4cfeb1e02087230bcb8296eb3dcf0a2510c6fc7a263d8731bee114a31c84434",
+    "raw_result_path": "/home/rongyu/workspace/quant-data/staging/us_top50_quarterly_residual_momentum_v1/discovery_result.json",
+    "raw_result_sha256": "9a4e80dfafb8d00cd5d2279490a810c9f5f449528aa7108cceb7e2aceb6e9560"
+  },
+  "pit_validation_status": "NOT_STARTED_DISCOVERY_FAIL",
+  "next_research_action": "Close this adaptive residual-momentum lane and select a genuinely distinct outcome-blind economic hypothesis; do not try another rebalance frequency, turnover threshold, or rank buffer.",
+  "boundaries": {
+    "recommendation": false,
+    "current_holdings_output": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false
+  }
+}
