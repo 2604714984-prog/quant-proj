@@ -48,12 +48,16 @@ def _source(
     *,
     content_sha256: str | None = None,
 ) -> SourceIdentity:
+    revision_id = "".join(character if ord(character) >= 32 else "-" for character in label)
     return SourceIdentity(
-        f"https://example.test/{label}",
-        content_sha256 or hashlib.sha256(label.encode()).hexdigest(),
-        available_at,
-        available_at + timedelta(minutes=1),
-        label,
+        source_url="https://example.test/source",
+        content_sha256=content_sha256 or hashlib.sha256(label.encode()).hexdigest(),
+        available_at=available_at,
+        retrieved_at=available_at + timedelta(minutes=1),
+        revision_id=revision_id,
+        source_family_id="fixture-source",
+        provider_id="fixture-provider",
+        subject_id="fixture-subject",
     )
 
 
@@ -134,12 +138,15 @@ def _calendar_revision(
         session_dates_sha256(dates),
         session_rows_sha256(rows),
         SourceIdentity(
-            f"https://example.test/{revision_id}",
-            hashlib.sha256(revision_id.encode()).hexdigest(),
-            available_at,
-            available_at + timedelta(minutes=1),
-            revision_id,
-            supersedes_revision_id,
+            source_url="https://example.test/source",
+            content_sha256=hashlib.sha256(revision_id.encode()).hexdigest(),
+            available_at=available_at,
+            retrieved_at=available_at + timedelta(minutes=1),
+            revision_id=revision_id,
+            source_family_id="fixture-source",
+            provider_id="fixture-provider",
+            subject_id="fixture-subject",
+            supersedes_revision_id=supersedes_revision_id,
         ),
     )
     return AcceptedSessionCalendar(rows, identity=identity)

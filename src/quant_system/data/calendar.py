@@ -286,5 +286,11 @@ def _source_payload(source: SourceIdentity) -> dict[str, object]:
         "available_at": source.available_at.isoformat(),
         "retrieved_at": source.retrieved_at.isoformat(),
         "revision_id": source.revision_id,
+        "source_family_id": source.source_family_id,
+        "provider_id": source.provider_id,
+        "subject_id": source.subject_id,
         "supersedes_revision_id": source.supersedes_revision_id,
+        "capture_receipt_sha256": source.capture_receipt_sha256,
+        "publication_evidence_sha256": source.publication_evidence_sha256,
+        "url_migration_receipt_sha256": source.url_migration_receipt_sha256,
     }

@@ -65,11 +65,14 @@ def _source(
     supersedes: str | None = None,
 ) -> SourceIdentity:
     return SourceIdentity(
-        source_url=f"https://example.test/{revision_id}",
+        source_url="https://example.test/source",
         content_sha256=sha256,
         available_at=available_at,
         retrieved_at=available_at + timedelta(minutes=1),
         revision_id=revision_id,
+        source_family_id="fixture-source",
+        provider_id="fixture-provider",
+        subject_id="fixture-subject",
         supersedes_revision_id=supersedes,
     )
 

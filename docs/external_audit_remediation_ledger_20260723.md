@@ -30,8 +30,8 @@ real-data, provider, Release-asset, or independent-review evidence requirements.
 
 | Finding ID | Priority | Status | Files and functions | Commit SHA | Tests and execution commands | Result | DB writes | Provider requests | Unverified matters |
 |---|---|---|---|---|---|---|---:|---:|---|
-| QF-001 | P0 | OPEN_CONFIRMED | `data/source_identity.py`; trusted capture entry | PENDING | PENDING | PENDING | 0 | 0 | Real provider publication evidence is not part of fixture tests. |
-| QF-015 | P0 | OPEN_CONFIRMED | `SourceIdentity`; `select_source_revision` | PENDING | PENDING | PENDING | 0 | 0 | Formal URL-migration receipt evidence remains external. |
+| QF-001 | P0 | CODE_FIXED_EXTERNAL_EVIDENCE_PENDING | `data/source_identity.py::capture_source_file`; `capture_source_bytes`; `require_trusted_source` | THIS_COMMIT_PENDING | `pytest -q tests/test_source_capture.py tests/test_accepted_calendar.py tests/test_execution_semantics.py tests/test_event_loop.py`; focused Ruff | `77 passed`; Ruff passed | 0 | 0 | Real provider publication evidence is not part of fixture tests. |
+| QF-015 | P0 | CODE_FIXED_EXTERNAL_EVIDENCE_PENDING | `SourceIdentity`; `select_source_revision` | THIS_COMMIT_PENDING | Same QF-001/QF-015 focused suite | `77 passed`; Ruff passed | 0 | 0 | Formal URL-migration receipt evidence remains external. |
 | QF-002 | P0 | OPEN_CONFIRMED | `backtest/event_loop.py`; candidate decision input | PENDING | PENDING | PENDING | 0 | 0 | Python cannot provide a general-purpose sandbox; controlled candidate input must avoid callables. |
 | QF-003 | P0 | OPEN_CONFIRMED | `markets/universe.py`; universe materialization | PENDING | PENDING | PENDING | 0 | 0 | A real complete historical source partition remains external evidence. |
 | QF-007 | P0 | OPEN_CONFIRMED | `event_loop._inputs`; `markets/a_share.py::decide_fill` | PENDING | PENDING | PENDING | 0 | 0 | Real exchange status receipts remain external evidence. |
