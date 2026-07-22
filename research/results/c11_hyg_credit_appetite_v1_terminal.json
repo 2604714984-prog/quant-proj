@@ -1,0 +1,61 @@
+{
+  "schema_version": "c11-hyg-credit-appetite-terminal-v1",
+  "research_id": "C11_HYG_MONTHLY_CREDIT_RISK_APPETITE_SPY_CASH_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE11",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "program_alpha": 0.000048828125,
+  "alpha_consumed": true,
+  "alpha_recycled": false,
+  "validation": {
+    "observed_intervals": 28,
+    "gates_passed": 0,
+    "gates_total": 3,
+    "gates": {
+      "strategy_terminal_net_wealth_strictly_above_spy": false,
+      "arithmetic_mean_paired_active_return_strictly_positive": false,
+      "strategy_maximum_drawdown_no_worse_than_spy": false
+    },
+    "private_claim_sha256": "8f9faa827b9532d9fbd9028dd1ed5c148a674ed9a6fc45d6abf8b4411e7b0658",
+    "private_result_sha256": "d20ac195952d297801b821d7ddf5a2af20be821949347e0f684fa7667f258bed",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "retrospective_holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "reason": "validation did not pass all three frozen gates"
+  },
+  "frozen_identities": {
+    "pre_outcome_commit": "e0e10c025e5aa0439fe655a2815908b810e159b4",
+    "pre_outcome_tree": "c8f0d3baf8ee2110c13d9a346616d7b5cc3267b9",
+    "definition_sha256": "9c2da02dfd6ef8c7bb1730c35a97a515cec169f90caac9d380f30acdb5180c40",
+    "adapter_sha256": "b4b402925adf6b909de0dce2de105dac0010fa3b1734b0c0effe92fa04684a84",
+    "runner_sha256": "88b6ac8d82265904f14e32ffb5847706d715fd552c4f1af1d942c3f3acbe1abc",
+    "signal_packet_sha256": "7831756f046b9d9c408c6efe594cb8ccac075b9693e5cea3c21785fd6f1023ab",
+    "materialization_receipt_sha256": "d10c392b7fe1bb766277f0ff9ba50b8f5c8845be22df868500b9030cfda37ea5",
+    "ishares_raw_sha256": "70625774a68c54f47f6049f654db7e691e86210a1582c7e6f47ded1f1ffe0c0d",
+    "yahoo_raw_sha256": "45752ea8382418cda7cf690663a14bd54df8856721f0827a45860aeaef36f77a",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4"
+  },
+  "method_interpretation": {
+    "result": "the frozen completed-month HYG total-return state did not beat passive SPY on terminal wealth or average active return and did not improve maximum drawdown in validation",
+    "parameter_repair_allowed": false,
+    "rerun_allowed": false,
+    "closed_lineage_may_not_be_rescued_by_lqd_ratio_threshold_lookback_moving_average_persistence_or_source_change": true,
+    "runner_retention": "branch-only removable failure evidence; not shared infrastructure"
+  },
+  "boundaries": {
+    "external_review_requested": false,
+    "database_access_by_runner": false,
+    "database_write": false,
+    "provider_or_network_call_by_runner": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
