@@ -598,12 +598,14 @@ def test_confirmed_no_open_halt_accepts_preopen_source_and_binds_identity() -> N
 
 
 def test_confirmed_no_open_event_contract_fails_before_callback() -> None:
-    days = (date(2026, 7, 13), date(2026, 7, 14))
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
     calendar = _calendar(days, "America/New_York")
     signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
     execution = calendar.session_on(days[1], as_of=signal.close_at)
     notice_at = execution.open_at - timedelta(hours=1, minutes=30)
     portfolio = Portfolio.us(1_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("ABC", 10, 10, days[0])
     before = deepcopy(portfolio.__dict__)
     callback_calls: list[object] = []
     arguments = {
@@ -628,8 +630,32 @@ def test_confirmed_no_open_event_contract_fails_before_callback() -> None:
         execution_price_source_available_at=notice_at,
         execution_price_basis="confirmed_no_open_event",
     )
+    distribution = CorporateActionIdentity(
+        "ABC",
+        "abc-dividend-no-open-v1",
+        "cash_dividend",
+        execution.open_at,
+        _source("abc-dividend-no-open-source", signal.close_at),
+        "America/New_York",
+        ex_date=days[1],
+        record_date=days[1],
+        pay_date=days[2],
+        cash_amount=Decimal("0.5"),
+        currency="USD",
+        unit="per_share",
+    )
+    unsupported_rich_action = _input(
+        "ABC",
+        "us",
+        execution,
+        price=None,
+        corporate_actions=(distribution,),
+        decision_price=10,
+        execution_price_source_available_at=notice_at,
+        execution_price_basis="confirmed_no_open_event",
+    )
 
-    with pytest.raises(MarketDataError, match="requires a halt or rich action identity"):
+    with pytest.raises(MarketDataError, match="requires a halt or terminal action identity"):
         _run_static_rebalance(
             portfolio,
             calendar,
@@ -641,6 +667,13 @@ def test_confirmed_no_open_event_contract_fails_before_callback() -> None:
             portfolio,
             calendar,
             execution_inputs=(positive_price,),
+            **arguments,
+        )
+    with pytest.raises(MarketDataError, match="requires a halt or terminal action identity"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            execution_inputs=(unsupported_rich_action,),
             **arguments,
         )
 

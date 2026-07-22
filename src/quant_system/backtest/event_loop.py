@@ -535,10 +535,9 @@ def _inputs(
         if confirmed_no_open and not (
             "trading_halt" in row.action_types
             or row.terminal_action is not None
-            or bool(row.corporate_actions)
         ):
             raise MarketDataError(
-                "confirmed no-open event requires a halt or rich action identity"
+                "confirmed no-open event requires a halt or terminal action identity"
             )
     if len(action_ids) != len(set(action_ids)):
         raise MarketDataError("action IDs must be globally unique")
