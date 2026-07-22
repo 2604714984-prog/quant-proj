@@ -1,0 +1,59 @@
+{
+  "schema_version": "c8-nfci-monthly-impulse-terminal-v1",
+  "research_id": "C8_NFCI_MONTHLY_TIGHTENING_IMPULSE_SPY_CASH_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE8",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "program_alpha": 0.000390625,
+  "alpha_consumed": true,
+  "alpha_recycled": false,
+  "validation": {
+    "observed_intervals": 28,
+    "gates_passed": 1,
+    "gates_total": 3,
+    "gates": {
+      "strategy_terminal_net_wealth_strictly_above_spy": false,
+      "arithmetic_mean_paired_active_return_strictly_positive": false,
+      "strategy_maximum_drawdown_no_worse_than_spy": true
+    },
+    "private_claim_sha256": "6ad2fa3162fcc72260616ca9659ea9430075d4cbe09cd3acc9924e1ca92d8d0c",
+    "private_result_sha256": "0f1885af742fe0d2008beb5ab93358a42d86edede029f5c6502b172e8ba777d4",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "retrospective_holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "reason": "validation did not pass all three frozen gates"
+  },
+  "frozen_identities": {
+    "pre_outcome_commit": "a978d76b3af51c25d3901762af301fb49d107fd1",
+    "pre_outcome_tree": "33ad05258f1448b4d68fd4ab2111380f8c003b27",
+    "definition_sha256": "4c929abe70f23a0d2dea2c810e8b964cf1789c51e501cc41598f0ccbd1f53bb1",
+    "adapter_sha256": "b515ca7c177ad4cc70ad14b35fe819e80748a2a036b4e17758c9f7bbb9578c50",
+    "runner_sha256": "4db3d73caaa680ce234891ee8316fd1526c8a1fec5b5abe318d8c30423302b7f",
+    "signal_packet_sha256": "ded8bf9b68ac96ff6fe690727a9987970048bd1529e6239dc3ca9a37126990ce",
+    "materialization_receipt_sha256": "868345db03b61d5517ebd1851abbeba835132010d6d7a8883c82ba221fec7466",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "database_sha256_before_and_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a"
+  },
+  "method_interpretation": {
+    "result": "the frozen NFCI tightening-impulse rule did not beat passive SPY on terminal wealth or average monthly active return in validation; only the drawdown gate passed",
+    "parameter_repair_allowed": false,
+    "rerun_allowed": false,
+    "closed_lineage_may_not_be_rescued_by_threshold_window_smoothing_or_source_change": true,
+    "runner_retention": "branch-only removable failure evidence; not shared infrastructure"
+  },
+  "boundaries": {
+    "external_review_requested": false,
+    "database_write": false,
+    "provider_or_network_call": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}

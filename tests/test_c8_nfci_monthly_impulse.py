@@ -175,8 +175,15 @@ def test_capture_rejects_symlinks(tmp_path: Path) -> None:
         runner._capture(link, hashlib.sha256(b"{}").hexdigest(), max_bytes=10)
 
 
-def test_real_one_use_targets_are_pristine_before_first_run() -> None:
-    assert not runner.VALIDATION_CLAIM.exists()
-    assert not runner.VALIDATION_RESULT.exists()
+def test_real_one_use_state_is_pristine_or_terminal_without_holdout() -> None:
+    if not runner.VALIDATION_CLAIM.exists():
+        assert not runner.VALIDATION_RESULT.exists()
+        assert not runner.HOLDOUT_CLAIM.exists()
+        assert not runner.HOLDOUT_RESULT.exists()
+        return
+    assert runner.VALIDATION_RESULT.exists()
+    result = json.loads(runner.VALIDATION_RESULT.read_text(encoding="utf-8"))
+    assert result["classification"] == "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL"
+    assert result["decision"]["all_gates_pass"] is False
     assert not runner.HOLDOUT_CLAIM.exists()
     assert not runner.HOLDOUT_RESULT.exists()
