@@ -1,0 +1,59 @@
+{
+  "schema_version": "c9-dgs10-monthly-yield-impulse-terminal-v1",
+  "research_id": "C9_DGS10_MONTHLY_YIELD_IMPULSE_SPY_CASH_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE9",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "program_alpha": 0.0001953125,
+  "alpha_consumed": true,
+  "alpha_recycled": false,
+  "validation": {
+    "observed_intervals": 28,
+    "gates_passed": 1,
+    "gates_total": 3,
+    "gates": {
+      "strategy_terminal_net_wealth_strictly_above_spy": false,
+      "arithmetic_mean_paired_active_return_strictly_positive": false,
+      "strategy_maximum_drawdown_no_worse_than_spy": true
+    },
+    "private_claim_sha256": "70ba4dc4d3181932f413656efbbe40b9b05bf7ae0504f3439e5aca39e47e9faf",
+    "private_result_sha256": "8b8c93ccd1d654c9277f1ec5a77385f755244b7f812dd2f4577940994da5c8f0",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "retrospective_holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "reason": "validation did not pass all three frozen gates"
+  },
+  "frozen_identities": {
+    "pre_outcome_commit": "a670c69ef9b0acf3f780b0ba98ef89a5a344901e",
+    "pre_outcome_tree": "3c479cce1dbec132bc5f76bef2aa4e7990d17a61",
+    "definition_sha256": "cfb52fb64b63e82f11b32207483fb18746334138e80b2d72324e046dfbe88260",
+    "adapter_sha256": "ab824bb41653ba5bfb7294efae29fda0f7ae1a4a9a53a102487363c05315ed93",
+    "runner_sha256": "bb310271843c1a83b72c44a8478456d36bd71edd9af0807d02f9e842e273964c",
+    "signal_packet_sha256": "85e152675eef78c60665e8741151a90d3653f8ab4173960fb24a5b376fa55ce9",
+    "materialization_receipt_sha256": "d985276e0b6bd25bda71b66ba304b7307b0611cac382522de1e13aa3e0942319",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "database_sha256_before_and_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a"
+  },
+  "method_interpretation": {
+    "result": "the frozen DGS10 monthly yield-rise rule did not beat passive SPY on terminal wealth or average monthly active return in validation; only the drawdown gate passed",
+    "parameter_repair_allowed": false,
+    "rerun_allowed": false,
+    "closed_lineage_may_not_be_rescued_by_threshold_window_smoothing_or_source_change": true,
+    "runner_retention": "branch-only removable failure evidence; not shared infrastructure"
+  },
+  "boundaries": {
+    "external_review_requested": false,
+    "database_write": false,
+    "provider_or_network_call": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
