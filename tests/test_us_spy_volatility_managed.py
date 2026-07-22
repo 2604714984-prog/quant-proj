@@ -270,6 +270,38 @@ def _navs(returns: tuple[float, ...]) -> tuple[float, ...]:
     return tuple(values)
 
 
+def _synthetic_preexecution_definition_bytes() -> bytes:
+    """Return a unit-test-only preregistration state from the frozen contract."""
+    record = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    record["schema_version"] = "synthetic-preexecution-fixture-v1"
+    record["supersedes_report_sha256"] = (
+        "98a7aa9eceb4cb798b5cd1605986df1055dc14871f960b4e804b4143bd27f6d7"
+    )
+    record["phase"] = "OUTCOME_BLIND_PREREGISTRATION"
+    record["status"] = "PREREGISTERED_NOT_EXECUTED"
+    record["current_status"] = "SYNTHETIC_TEST_ONLY_NOT_EXECUTED"
+    record["boundary_result"] = "PASS_OUTCOME_BLIND_CODE_ONLY_TERMINAL_CONTRACT_NO_OUTCOME"
+    record["input_qualification_evidence"]["qualification_status"] = (
+        "VALIDATION_PRIVATE_RUNTIME_BUNDLE_IDENTITY_QUALIFIED_NOT_EXECUTED"
+    )
+    record["adjudication"] = {
+        "outcome_accessed": False,
+        "strategy_executed": False,
+        "screen_a_opened": False,
+        "inference_b_opened": False,
+        "legacy_private_transport_opened": {
+            "validation": False,
+            "holdout": False,
+        },
+        "gate_counts": None,
+        "strategy_result": None,
+        "next_action": "unit-test-only authorization validation",
+    }
+    record.pop("folded_terminal_result_source_sha256")
+    record.pop("screen_a_terminal_result")
+    return json.dumps(record, sort_keys=True, separators=(",", ":")).encode("ascii")
+
+
 def _authorization(
     calendar: AcceptedSessionCalendar,
     points: tuple[SCRIPT.ExecutionPoint, ...] = (),
@@ -334,17 +366,55 @@ def _point(
     )
 
 
-def test_preregistration_freezes_complete_terminal_contract_without_outcome() -> None:
+def test_terminal_record_preserves_frozen_contract_and_closes_failed_lineage() -> None:
     record = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
     frozen = record["outcome_blind_frozen_specification"]
 
-    assert record["schema_version"] == "us-spy-volatility-managed-exposure-preregistration-v10"
+    assert record["schema_version"] == "us-spy-volatility-managed-exposure-terminal-v11"
     assert record["supersedes_report_sha256"] == (
-        "98a7aa9eceb4cb798b5cd1605986df1055dc14871f960b4e804b4143bd27f6d7"
+        "73c5fcd7bd706b3af949b4350e1f18823583392bc9765aac228e761800343464"
     )
-    assert record["status"] == "PREREGISTERED_NOT_EXECUTED"
+    assert record["status"] == "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL"
     assert record["strategy_candidate_available"] is False
-    assert record["adjudication"]["outcome_accessed"] is False
+    assert record["adjudication"] == {
+        "outcome_accessed": True,
+        "strategy_executed": True,
+        "screen_a_opened": True,
+        "inference_b_opened": False,
+        "legacy_private_transport_opened": {
+            "validation": True,
+            "holdout": False,
+        },
+        "gate_counts": {"passed": 3, "required": 4, "total": 4},
+        "strategy_result": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",
+        "next_action": (
+            "permanently close M119-01 without rerun or parameter repair and advance "
+            "to the independently defined M119-03 yield-curve-state mechanism"
+        ),
+    }
+    terminal_result = record["screen_a_terminal_result"]
+    assert terminal_result["observed_cohorts"] == 45
+    assert terminal_result["one_use_execution_consumed"] is True
+    assert terminal_result["rerun_authorized"] is False
+    assert terminal_result["gates"] == {
+        "sharpe_difference_positive": False,
+        "strategy_compounded_net_return_positive": True,
+        "strategy_annualized_volatility_lower": True,
+        "strategy_maximum_drawdown_better": True,
+    }
+    assert terminal_result["adjudication"]["lineage_closed"] is True
+    assert terminal_result["adjudication"]["parameter_repair_allowed"] is False
+    assert terminal_result["adjudication"]["inference_b_opened"] is False
+    assert terminal_result["identity"]["definition_sha256"] == (
+        "73c5fcd7bd706b3af949b4350e1f18823583392bc9765aac228e761800343464"
+    )
+    assert record["folded_terminal_result_source_sha256"] == (
+        "1914868950d01d706eb56bf4f69f80a00c72b28a28730ac3fc0223565a753351"
+    )
+    assert record["input_qualification_evidence"]["qualification_status"] == (
+        "VALIDATION_PRIVATE_RUNTIME_BUNDLE_IDENTITY_QUALIFIED_AND_CONSUMED_"
+        "SCREEN_A_TERMINAL"
+    )
     program = record["program_multiplicity"]
     assert program["program_family_id"] == MODULE.PROGRAM_FAMILY_ID
     assert tuple(program["frozen_mechanism_order"]) == MODULE.PROGRAM_MECHANISM_ORDER
@@ -471,7 +541,7 @@ def test_preregistration_freezes_complete_terminal_contract_without_outcome() ->
     }
     serialized = REPORT_PATH.read_text(encoding="utf-8")
     assert "shared P0" not in serialized
-    assert '"strategy_result": null' in serialized
+    assert '"strategy_result": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL"' in serialized
 
 
 def test_signal_requires_exact_consecutive_month_end_window_and_next_session() -> None:
@@ -897,10 +967,14 @@ def test_authorization_binds_every_current_code_and_core_identity(
         decision_price=106.41,
         official_actions=(),
     )
+    definition = _synthetic_preexecution_definition_bytes()
     authorization = dataclasses.replace(
         _authorization(calendar),
+        preregistration_json_sha256=hashlib.sha256(definition).hexdigest(),
         calendar_epoch_mapping_sha256=SCRIPT.calendar_epoch_mapping_sha256((point,)),
     )
+    preregistration_path = tmp_path / "synthetic-preregistration.json"
+    preregistration_path.write_bytes(definition)
 
     class OneReadDefinition:
         calls = 0
@@ -909,13 +983,13 @@ def test_authorization_binds_every_current_code_and_core_identity(
             self.calls += 1
             if self.calls != 1:
                 raise AssertionError("definition bytes were reopened")
-            return REPORT_PATH.read_bytes()
+            return definition
 
     one_read = OneReadDefinition()
     monkeypatch.setattr(SCRIPT, "_REPORT_PATH", one_read)
     SCRIPT.validate_runtime_authorization(authorization, calendar, (point,))
     assert one_read.calls == 1
-    monkeypatch.setattr(SCRIPT, "_REPORT_PATH", REPORT_PATH)
+    monkeypatch.setattr(SCRIPT, "_REPORT_PATH", preregistration_path)
     forged = dataclasses.replace(authorization, preregistration_json_sha256="0" * 64)
     with pytest.raises(SCRIPT.InputBlockedError, match="current bytes"):
         SCRIPT.validate_runtime_authorization(forged, calendar, (point,))
@@ -959,7 +1033,7 @@ def test_authorization_binds_every_current_code_and_core_identity(
     with pytest.raises(SCRIPT.InputBlockedError, match="epoch mapping"):
         SCRIPT.validate_runtime_authorization(wrong_mapping, calendar, (point,))
 
-    forged_definition = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
+    forged_definition = json.loads(definition)
     forged_definition["outcome_blind_frozen_specification"][
         "expected_inclusion_rule_sha256"
     ] = "3" * 64
@@ -988,6 +1062,15 @@ def test_authorization_binds_every_current_code_and_core_identity(
             calendar,
             (point,),
         )
+
+
+def test_current_terminal_report_cannot_reauthorize_execution() -> None:
+    calendar = _calendar(_business_days(date(2023, 12, 1), date(2024, 2, 2)))
+    with pytest.raises(
+        SCRIPT.InputBlockedError,
+        match="current JSON status is not PREREGISTERED_NOT_EXECUTED",
+    ):
+        SCRIPT.validate_runtime_authorization(_authorization(calendar), calendar)
 
 
 def test_shared_core_partial_cash_preserves_requested_shares_and_residual_cash() -> None:
@@ -1270,7 +1353,16 @@ def test_cohort_simulation_resets_state_and_records_exact_boundaries(monkeypatch
         (first, second, final),
         projection,
     )
-    authorization = _authorization(calendar, (first, second, final), projection)
+    definition = _synthetic_preexecution_definition_bytes()
+    monkeypatch.setattr(
+        SCRIPT,
+        "_read_definition",
+        lambda: (definition, json.loads(definition)),
+    )
+    authorization = dataclasses.replace(
+        _authorization(calendar, (first, second, final), projection),
+        preregistration_json_sha256=hashlib.sha256(definition).hexdigest(),
+    )
     stage_contract = {
         "expected_months": ((2024, 2), (2024, 3)),
         "expected_calendar_bounds": (

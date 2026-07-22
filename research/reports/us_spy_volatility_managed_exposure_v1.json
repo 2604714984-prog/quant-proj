@@ -1,12 +1,12 @@
 {
-  "schema_version": "us-spy-volatility-managed-exposure-preregistration-v10",
-  "supersedes_report_sha256": "98a7aa9eceb4cb798b5cd1605986df1055dc14871f960b4e804b4143bd27f6d7",
+  "schema_version": "us-spy-volatility-managed-exposure-terminal-v11",
+  "supersedes_report_sha256": "73c5fcd7bd706b3af949b4350e1f18823583392bc9765aac228e761800343464",
   "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1",
   "date": "2026-07-22",
   "market": "US",
-  "phase": "OUTCOME_BLIND_PREREGISTRATION",
-  "status": "PREREGISTERED_NOT_EXECUTED",
-  "current_status": "PR120_CORE_FROZEN_RETROSPECTIVE_SCREEN_A_NOT_EXECUTED",
+  "phase": "RETROSPECTIVE_SECONDARY_ADJUDICATION",
+  "status": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",
+  "current_status": "M119_01_PERMANENTLY_CLOSED_SCREEN_A_FAIL",
   "evidence_class": "RETROSPECTIVE_SECONDARY_NOT_PAPER_OR_LIVE",
   "family_number": null,
   "program_multiplicity": {
@@ -315,7 +315,7 @@
     ]
   },
   "input_qualification_evidence": {
-    "qualification_status": "VALIDATION_PRIVATE_RUNTIME_BUNDLE_IDENTITY_QUALIFIED_NOT_EXECUTED",
+    "qualification_status": "VALIDATION_PRIVATE_RUNTIME_BUNDLE_IDENTITY_QUALIFIED_AND_CONSUMED_SCREEN_A_TERMINAL",
     "tiingo_raw_eod": {
       "snapshot_id": "tiingo_raw_20260711T142010Z_5c24877d23cfc4a0",
       "source_document_sha256": "695494dd12f3c8b9a1e2946ba1de8f594c69026185a5e25a6bbfce8503d569e4",
@@ -386,18 +386,88 @@
     "external_acceptance_claimed": false,
     "pr117_merged_identity_supplied_to_this_record": true
   },
+  "folded_terminal_result_source_sha256": "1914868950d01d706eb56bf4f69f80a00c72b28a28730ac3fc0223565a753351",
+  "screen_a_terminal_result": {
+    "schema_version": "us-spy-volatility-managed-screen-a-terminal-v1",
+    "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1",
+    "mechanism_id": "M119-01_US_SPY_REALIZED_VOL_SCALING",
+    "research_stage": "RETROSPECTIVE_SECONDARY_SCREEN_A",
+    "classification": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",
+    "evidence_class": "RETROSPECTIVE_SECONDARY",
+    "claimed_at": "2026-07-22T05:27:30.795046+00:00",
+    "one_use_execution_consumed": true,
+    "rerun_authorized": false,
+    "observed_cohorts": 45,
+    "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE1",
+    "program_alpha": 0.025,
+    "identity": {
+      "definition_sha256": "73c5fcd7bd706b3af949b4350e1f18823583392bc9765aac228e761800343464",
+      "adapter_sha256": "1afe0fe776a606c2df1d85bdb9b6f1b0769059b32dc052a0405bfd5663317bf1",
+      "runner_sha256": "b11988eaf805f486822a9d4d0914476f7d91d3e4184ead743163ea40a54fb705",
+      "bundle_file_sha256": "fcf4b487b1b798c6afcfc774339d2066a45238431253e27b14ed5d1a4cc369c9",
+      "runtime_bundle_sha256": "db865aaaa169f926064a31cd608955557ffef1261e252281f2352d8a45d34cd8",
+      "claim_sha256": "c5754eb1a78183f2373bfda8747be2cd7cd8fbcbe31deeddbab74a81643aa0bc",
+      "private_result_sha256": "5363b22b8afc78d657bb6863aeae20710edf64154d3032cfc2eb60913ca1985b",
+      "screen_a_receipt_sha256": "d06c046f8651d68bfcc42dbf4c3f1ce8c058b1096f16add46ec8118c075d7407",
+      "merged_shared_core": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+      "reviewed_execution_core": "547a647dc0f4cbbf4b0b4f89351e77874d2dfaa6"
+    },
+    "gates": {
+      "sharpe_difference_positive": false,
+      "strategy_compounded_net_return_positive": true,
+      "strategy_annualized_volatility_lower": true,
+      "strategy_maximum_drawdown_better": true
+    },
+    "strategy_metrics_hex": {
+      "monthly_arithmetic_mean": "0x1.b88e8f40fc5bfp-8",
+      "monthly_sample_stdev": "0x1.0f83a886d0dfdp-5",
+      "sharpe": "0x1.67bb9088659c7p-1",
+      "compounded_net_return": "0x1.46f3077e61764p-2",
+      "annualized_volatility": "0x1.d646cbb3327a5p-4",
+      "maximum_drawdown": "-0x1.01a979a994c80p-3"
+    },
+    "benchmark_metrics_hex": {
+      "monthly_arithmetic_mean": "0x1.d3425c578ee5ep-7",
+      "monthly_sample_stdev": "0x1.bcddda7a86f99p-5",
+      "sharpe": "0x1.d1b95ad8645dcp-1",
+      "compounded_net_return": "0x1.8b1d47c9cf33ap-1",
+      "annualized_volatility": "0x1.81440acddfb14p-3",
+      "maximum_drawdown": "-0x1.c5c3650649408p-3"
+    },
+    "adjudication": {
+      "screen_a_passed": false,
+      "inference_b_opened": false,
+      "lineage_closed": true,
+      "parameter_repair_allowed": false,
+      "failure_reason": "The strategy Sharpe ratio was not greater than the matched fully invested SPY benchmark Sharpe ratio.",
+      "strategy_candidate_available": false
+    },
+    "boundaries": {
+      "provider_or_network_call": false,
+      "database_write": false,
+      "prospective_outcome_access": false,
+      "shadow": false,
+      "paper": false,
+      "broker": false,
+      "live": false
+    }
+  },
   "adjudication": {
-    "outcome_accessed": false,
-    "strategy_executed": false,
-    "screen_a_opened": false,
+    "outcome_accessed": true,
+    "strategy_executed": true,
+    "screen_a_opened": true,
     "inference_b_opened": false,
     "legacy_private_transport_opened": {
-      "validation": false,
+      "validation": true,
       "holdout": false
     },
-    "gate_counts": null,
-    "strategy_result": null,
-    "next_action": "independently accept this outcome-blind Issue 119 amendment and final code identities; only then may the current CLI consume the retrospective-secondary screen-A claim exactly once"
+    "gate_counts": {
+      "passed": 3,
+      "required": 4,
+      "total": 4
+    },
+    "strategy_result": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",
+    "next_action": "permanently close M119-01 without rerun or parameter repair and advance to the independently defined M119-03 yield-curve-state mechanism"
   },
   "boundaries": {
     "provider_or_network_used_by_this_record_task": false,
@@ -409,6 +479,6 @@
     "live_authorized": false,
     "auto_trading_authorized": false
   },
-  "boundary_result": "PASS_OUTCOME_BLIND_CODE_ONLY_TERMINAL_CONTRACT_NO_OUTCOME",
+  "boundary_result": "PASS_RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL_LINEAGE_CLOSED",
   "strategy_candidate_available": false
 }
