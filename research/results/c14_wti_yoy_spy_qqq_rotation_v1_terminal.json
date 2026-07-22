@@ -1,0 +1,66 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C14_WTI_YOY_SPY_QQQ_ROTATION_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE14",
+  "created_at": "2026-07-22T23:52:06.882096Z",
+  "classification": "INPUT_BLOCKED_STATE_SUPPORT",
+  "evidence_class": "OUTCOME_BLIND_INPUT_QUALIFICATION",
+  "outcome_blind_freeze": {
+    "issue": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5052789207",
+    "sole_signal": "monthly MCOILWTICO year-on-year change above zero selects SPY, otherwise QQQ",
+    "validation_support_minimum": "20 intervals, at least four SPY and four QQQ intervals, and at least two transitions in each direction",
+    "cycle14_familywise_alpha": 0.000006103515625,
+    "cycle1_to_cycle14_union_bound": 0.099993896484375,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "materialization_attempt": {
+    "staging_root": "/home/rongyu/workspace/quant-data/staging/c14_wti_yoy_spy_qqq_rotation_v1",
+    "fred_route": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=MCOILWTICO&cosd=2018-01-01&coed=2026-04-01",
+    "fred_response_sha256": "d360b695cd7f209a3f0163e1930d9686c9d1cc16806ec55c1a03ce923952ef60",
+    "fred_response_bytes": 1734,
+    "eia_definition_route": "https://www.eia.gov/dnav/pet/TblDefs/pet_pri_spt_tbldef2.asp",
+    "eia_definition_response_sha256": "65b0049527b3c5646722fba027e362c759088a1d9bcbafcb40b3cddfdc69122d",
+    "eia_definition_response_bytes": 12816,
+    "network_requests": 2,
+    "retries": 0,
+    "redirects": 0,
+    "input_packet_created": false,
+    "materialization_receipt_created": false
+  },
+  "mechanical_blocker": {
+    "stage": "validation",
+    "complete_intervals": 28,
+    "spy_intervals": 23,
+    "qqq_intervals": 5,
+    "spy_to_qqq_transitions": 1,
+    "qqq_to_spy_transitions": 1,
+    "failed_requirements": [
+      "spy_to_qqq_transitions_at_least_2",
+      "qqq_to_spy_transitions_at_least_2"
+    ],
+    "interpretation": "the frozen rule lacks sufficient state switching in validation; this is an input-support block, not a return-based strategy failure"
+  },
+  "warehouse_integrity": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_opened": false,
+    "database_write": false
+  },
+  "terminal_state": {
+    "strategy_outcomes_opened": false,
+    "validation_run": false,
+    "retrospective_holdout_opened": false,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "source_switch_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by relaxing transition support, changing the zero threshold, using Brent, smoothing, acceleration, persistence, alternate lags, price filters, volatility filters, or source substitution."
+}
