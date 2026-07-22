@@ -12,7 +12,6 @@ from pathlib import Path
 from typing import Any
 
 import duckdb
-import numpy as np
 
 
 SNAPSHOT_ID = "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723"
@@ -89,7 +88,7 @@ def paired_returns(
     stop: int,
     calendar: list[date],
     prices: dict[str, dict[date, float]],
-) -> tuple[np.ndarray, np.ndarray]:
+) -> tuple[list[float], list[float]]:
     stock_returns: list[float] = []
     market_returns: list[float] = []
     for index in range(start, stop):
@@ -98,24 +97,45 @@ def paired_returns(
             continue
         stock_returns.append(prices[symbol][current] / prices[symbol][prior] - 1)
         market_returns.append(prices["SPY"][current] / prices["SPY"][prior] - 1)
-    return np.asarray(stock_returns), np.asarray(market_returns)
+    return stock_returns, market_returns
 
 
 def residual_score(
-    estimate_stock: np.ndarray,
-    estimate_market: np.ndarray,
-    signal_stock: np.ndarray,
-    signal_market: np.ndarray,
+    estimate_stock: list[float],
+    estimate_market: list[float],
+    signal_stock: list[float],
+    signal_market: list[float],
 ) -> float | None:
-    if len(estimate_stock) < 450 or len(signal_stock) < 220:
+    if (
+        len(estimate_stock) < 450
+        or len(signal_stock) < 220
+        or len(estimate_stock) != len(estimate_market)
+        or len(signal_stock) != len(signal_market)
+    ):
         return None
-    design = np.column_stack((np.ones(len(estimate_market)), estimate_market))
-    alpha, beta = np.linalg.lstsq(design, estimate_stock, rcond=None)[0]
-    residuals = signal_stock - alpha - beta * signal_market
-    scale = float(np.std(residuals, ddof=1))
+    estimate_count = len(estimate_market)
+    market_mean = sum(estimate_market) / estimate_count
+    stock_mean = sum(estimate_stock) / estimate_count
+    denominator = sum((value - market_mean) ** 2 for value in estimate_market)
+    if denominator <= 0:
+        return None
+    beta = sum(
+        (market - market_mean) * (stock - stock_mean)
+        for market, stock in zip(estimate_market, estimate_stock)
+    ) / denominator
+    alpha = stock_mean - beta * market_mean
+    residuals = [
+        stock - alpha - beta * market
+        for stock, market in zip(signal_stock, signal_market)
+    ]
+    residual_mean = sum(residuals) / len(residuals)
+    residual_variance = sum(
+        (value - residual_mean) ** 2 for value in residuals
+    ) / (len(residuals) - 1)
+    scale = math.sqrt(residual_variance)
     if not math.isfinite(scale) or scale <= 0:
         return None
-    score = float(np.mean(residuals) / scale * math.sqrt(252))
+    score = residual_mean / scale * math.sqrt(252)
     return score if math.isfinite(score) else None
 
 

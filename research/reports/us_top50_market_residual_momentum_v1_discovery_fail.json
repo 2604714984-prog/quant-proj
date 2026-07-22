@@ -71,7 +71,7 @@
     "source_preregistration_sha256": "137a489a4722a9fac6ec7fbf9eeb2bd0918f14c1c2032c37fe6d9661d9a42982",
     "preservation_contract_sha256": "351ebcb17ae2ce038141ad0b5d6006b99f8f19de7a85a67a97fa176a4ae8fd4d",
     "formal_runner_sha256": "3ee812217df9167e6a2d7896929b7db11e1e0dd7ae0b8205ff08cd9a3ee06fb5",
-    "preservation_adapter_sha256": "81dd6d4ac8999be157e403ca13016a52f7d588efaaade0d41205fd7e31c1272a",
+    "preservation_adapter_sha256": "dbeb898fcc85551a6baff6a560798ad37bc7c9c529a77f8fc3517272cf279cbb",
     "raw_result_sha256": "6577204dff1dbd507a8bd0b79e5cbc318fc7002ddf85beab84165f901551be06"
   },
   "next_action": "Use a separately identified, outcome-blind, low-turnover residual-momentum preregistration; do not repair or reopen this identity."
