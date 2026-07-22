@@ -179,6 +179,7 @@ class StaticRebalanceResult:
     final_nav: float
     strategy_definition_sha256: str
     strategy_adapter_sha256: str
+    execution_evidence_grade: str = "UNCLASSIFIED"
     interface_grade: str = "UNTRUSTED_EXPERIMENT"
     decision_artifact_sha256: str | None = None
     dataset_identity_sha256: str | None = None
@@ -475,9 +476,19 @@ def run_static_rebalance(
         execution_calendar_revision_rows,
     )
     receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, prior_stage_hash)
-    return StaticRebalanceResult(working, context, weights, tuple(receipts), identity,
-                                 receipt_hashes, stage_hash, final_nav,
-                                 definition_sha, adapter_sha)
+    return StaticRebalanceResult(
+        working,
+        context,
+        weights,
+        tuple(receipts),
+        identity,
+        receipt_hashes,
+        stage_hash,
+        final_nav,
+        definition_sha,
+        adapter_sha,
+        execution_evidence_grade=_execution_evidence_grade(rows),
+    )
 
 
 def run_candidate_rebalance(
@@ -589,6 +600,8 @@ def run_candidate_rebalance(
         interface_grade=(
             "GROSS_ONLY_EXPERIMENT"
             if cost_assumptions.gross_only
+            else "RETROSPECTIVE_RESEARCH_ONLY"
+            if "RETROSPECTIVE" in result.execution_evidence_grade
             else "CONTROLLED_CANDIDATE_INPUT"
         ),
         decision_artifact_sha256=decision_artifact.artifact_sha256,
@@ -625,6 +638,19 @@ def _require_cost_model(
             raise MarketDataError("A-share regulatory fee assumption must match its schedule")
     elif portfolio.costs.sell_tax_rate != base.regulatory_fee_rate:
         raise MarketDataError("portfolio regulatory fees must match base cost assumptions")
+
+
+def _execution_evidence_grade(rows: Mapping[str, ExecutionInput]) -> str:
+    bases = {row.execution_price_basis for row in rows.values()}
+    if bases == {"timestamped_session_open"}:
+        return "TIMESTAMPED_EXECUTION"
+    if bases == {"retrospective_daily_bar_open_fill"}:
+        return "RETROSPECTIVE_EXECUTION"
+    if bases == {"confirmed_no_open_event"}:
+        return "CONFIRMED_NO_OPEN"
+    if "retrospective_daily_bar_open_fill" in bases:
+        return "MIXED_RETROSPECTIVE"
+    return "MIXED_CONFIRMED_NO_OPEN"
 
 
 def _require_candidate_sources(

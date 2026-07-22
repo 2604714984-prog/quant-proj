@@ -2464,6 +2464,44 @@ def test_callable_interface_is_permanently_experimental() -> None:
     assert result.strategy_candidate_available is False
 
 
+def test_execution_basis_produces_visible_evidence_grade() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.next_session(days[0], as_of=signal.close_at)
+    timestamped_row = _input("AAA", "a_share", execution)
+    retrospective_row = _input(
+        "AAA",
+        "a_share",
+        execution,
+        execution_price_source_available_at=execution.close_at,
+        execution_price_basis="retrospective_daily_bar_open_fill",
+    )
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "target_weights": lambda _: {"AAA": 0.5},
+    }
+    timestamped = _run_static_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        execution_inputs=(timestamped_row,),
+        **arguments,
+    )
+    retrospective = _run_static_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        execution_inputs=(retrospective_row,),
+        **arguments,
+    )
+
+    assert timestamped.receipts == retrospective.receipts
+    assert timestamped.execution_evidence_grade == "TIMESTAMPED_EXECUTION"
+    assert retrospective.execution_evidence_grade == "RETROSPECTIVE_EXECUTION"
+    assert timestamped.input_identity_hash != retrospective.input_identity_hash
+    assert retrospective.strategy_candidate_available is False
+
+
 def test_suspension_evidence_conflict_fails_before_callback_or_trade() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14))
     calendar = _calendar(days, "Asia/Shanghai")
@@ -2648,6 +2686,51 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     assert result.adverse_stage_hash is not None
     assert result.base_fx_adjusted_final_nav is not None
     assert result.adverse_fx_adjusted_final_nav is not None
+    assert result.strategy_candidate_available is False
+
+
+def test_candidate_retrospective_execution_is_research_only(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    row = replace(
+        _controlled_input(
+            "AAA",
+            execution,
+            observed_session=calendar.session_on(days[0], as_of=decision_at),
+        ),
+        source=_captured_source("retrospective-open", execution.close_at),
+        execution_price_basis="retrospective_daily_bar_open_fill",
+    )
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
+    )
+    artifact = _captured_decision_artifact(
+        tmp_path,
+        decision_at,
+        dataset_identity_sha256=materialization.materialization_sha256,
+    )
+    result = run_candidate_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        signal_session=days[0],
+        decision_at=decision_at,
+        execution_inputs=(row,),
+        universe_materialization=materialization,
+        decision_artifact=artifact,
+        cost_assumptions=_cost_assumptions(),
+    )
+
+    assert result.execution_evidence_grade == "RETROSPECTIVE_EXECUTION"
+    assert result.interface_grade == "RETROSPECTIVE_RESEARCH_ONLY"
     assert result.strategy_candidate_available is False
 
 
