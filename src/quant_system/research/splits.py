@@ -2,11 +2,195 @@
 
 from __future__ import annotations
 
+from collections import defaultdict
+from dataclasses import dataclass
 from datetime import date, datetime, timedelta
-from typing import Sequence, TypeAlias
+import hashlib
+import json
+from typing import Literal, Sequence, TypeAlias
 
 
 DateLike: TypeAlias = date | datetime
+EvaluationMethod = Literal["non_overlapping", "hac", "block_bootstrap"]
+
+
+def _time_text(value: DateLike) -> str:
+    if isinstance(value, datetime):
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("split datetimes must be timezone-aware")
+        return value.isoformat()
+    if type(value) is date:
+        return value.isoformat()
+    raise TypeError("split times must be dates or datetimes")
+
+
+@dataclass(frozen=True)
+class SplitSample:
+    sample_id: str
+    entity_id: str
+    observed_at: DateLike
+    label_end_at: DateLike
+    fold_id: str
+    overlap_group: str
+
+
+@dataclass(frozen=True)
+class SplitManifest:
+    samples: tuple[SplitSample, ...]
+    manifest_sha256: str
+
+
+@dataclass(frozen=True)
+class SplitEvaluation:
+    method: EvaluationMethod
+    selected_sample_ids: tuple[str, ...]
+    nominal_n: int
+    effective_n: float
+    overlap_corrected: bool
+    manifest_sha256: str
+
+
+def build_split_manifest(
+    *,
+    entity_ids: Sequence[str],
+    observed_at: Sequence[DateLike],
+    label_end_at: Sequence[DateLike],
+    fold_ids: Sequence[str],
+) -> SplitManifest:
+    """Build stable panel sample IDs and connected interval-overlap groups."""
+
+    entities = tuple(entity_ids)
+    observations = tuple(observed_at)
+    labels = tuple(label_end_at)
+    folds = tuple(fold_ids)
+    count = len(entities)
+    if count == 0 or any(len(values) != count for values in (observations, labels, folds)):
+        raise ValueError("split manifest columns must have one nonempty common length")
+    expected_type = type(observations[0])
+    if expected_type not in {date, datetime}:
+        raise TypeError("observed_at must contain dates or datetimes")
+    rows: list[dict[str, object]] = []
+    seen_keys: set[tuple[str, DateLike]] = set()
+    for entity, observed, label_end, fold in zip(
+        entities,
+        observations,
+        labels,
+        folds,
+        strict=True,
+    ):
+        if not isinstance(entity, str) or not entity.strip():
+            raise ValueError("entity_id must be nonempty")
+        if not isinstance(fold, str) or not fold.strip():
+            raise ValueError("fold_id must be nonempty")
+        if type(observed) is not expected_type or type(label_end) is not expected_type:
+            raise TypeError("split times must use one consistent temporal type")
+        observed_text = _time_text(observed)
+        label_text = _time_text(label_end)
+        if label_end < observed:
+            raise ValueError("label_end_at cannot precede observed_at")
+        key = (entity, observed)
+        if key in seen_keys:
+            raise ValueError("entity_id and observed_at must identify one panel sample")
+        seen_keys.add(key)
+        sample_id = hashlib.sha256(
+            f"{entity}|{observed_text}|{label_text}|{fold}".encode()
+        ).hexdigest()
+        rows.append(
+            {
+                "entity": entity,
+                "observed": observed,
+                "label_end": label_end,
+                "fold": fold,
+                "sample_id": sample_id,
+            }
+        )
+    overlap_by_sample: dict[str, str] = {}
+    by_fold: dict[str, list[dict[str, object]]] = defaultdict(list)
+    for row in rows:
+        by_fold[str(row["fold"])].append(row)
+    for fold, fold_rows in sorted(by_fold.items()):
+        ordered = sorted(
+            fold_rows,
+            key=lambda row: (row["observed"], row["label_end"], row["sample_id"]),
+        )
+        group_index = -1
+        group_end: DateLike | None = None
+        for row in ordered:
+            observed = row["observed"]
+            label_end = row["label_end"]
+            assert isinstance(observed, (date, datetime))
+            assert isinstance(label_end, (date, datetime))
+            if group_end is None or observed > group_end:
+                group_index += 1
+                group_end = label_end
+            elif label_end > group_end:
+                group_end = label_end
+            group = hashlib.sha256(f"{fold}|{group_index}".encode()).hexdigest()
+            overlap_by_sample[str(row["sample_id"])] = group
+    samples = tuple(
+        SplitSample(
+            sample_id=str(row["sample_id"]),
+            entity_id=str(row["entity"]),
+            observed_at=row["observed"],  # type: ignore[arg-type]
+            label_end_at=row["label_end"],  # type: ignore[arg-type]
+            fold_id=str(row["fold"]),
+            overlap_group=overlap_by_sample[str(row["sample_id"])],
+        )
+        for row in sorted(rows, key=lambda item: str(item["sample_id"]))
+    )
+    payload = tuple(sample.__dict__ for sample in samples)
+    digest = hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=_time_text).encode()
+    ).hexdigest()
+    return SplitManifest(samples, digest)
+
+
+def evaluate_split(
+    manifest: SplitManifest,
+    *,
+    selected_sample_ids: Sequence[str],
+    method: EvaluationMethod,
+    effective_n: float,
+) -> SplitEvaluation:
+    if not isinstance(manifest, SplitManifest):
+        raise TypeError("manifest must be a SplitManifest")
+    selected = tuple(selected_sample_ids)
+    if not selected or len(selected) != len(set(selected)):
+        raise ValueError("selected_sample_ids must be nonempty and unique")
+    by_id = {sample.sample_id: sample for sample in manifest.samples}
+    if not set(selected) <= set(by_id):
+        raise ValueError("selected sample is absent from split manifest")
+    if method not in {"non_overlapping", "hac", "block_bootstrap"}:
+        raise ValueError("unsupported split evaluation method")
+    selected_samples = tuple(by_id[sample_id] for sample_id in selected)
+    overlapping = any(
+        left.fold_id == right.fold_id
+        and left.observed_at <= right.label_end_at
+        and right.observed_at <= left.label_end_at
+        for index, left in enumerate(selected_samples)
+        for right in selected_samples[index + 1 :]
+    )
+    if method == "non_overlapping" and overlapping:
+        raise ValueError("non-overlapping evaluation selected overlapping labels")
+    if not isinstance(effective_n, (int, float)) or isinstance(effective_n, bool):
+        raise ValueError("effective_n must be numeric")
+    if not 0 < float(effective_n) <= len(selected):
+        raise ValueError("effective_n must be in (0, nominal_n]")
+    if method == "non_overlapping" and float(effective_n) != len(selected):
+        raise ValueError("non-overlapping evaluation effective_n must equal nominal_n")
+    return SplitEvaluation(
+        method,
+        selected,
+        len(selected),
+        float(effective_n),
+        method in {"hac", "block_bootstrap"} or not overlapping,
+        manifest.manifest_sha256,
+    )
+
+
+def require_split_evaluation_for_candidate(evaluation: SplitEvaluation) -> None:
+    if not isinstance(evaluation, SplitEvaluation) or not evaluation.overlap_corrected:
+        raise ValueError("candidate significance requires overlap correction")
 
 
 def _validate_time_axis(values: Sequence[DateLike], *, name: str) -> tuple[DateLike, ...]:

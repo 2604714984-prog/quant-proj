@@ -3,7 +3,13 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 
 from quant_system.research.identity import dataset_identity_sha256
-from quant_system.research.splits import purged_embargo_train_mask, walk_forward_masks
+from quant_system.research.splits import (
+    build_split_manifest,
+    evaluate_split,
+    purged_embargo_train_mask,
+    require_split_evaluation_for_candidate,
+    walk_forward_masks,
+)
 
 
 def test_purge_removes_cross_boundary_labels_and_post_test_embargo() -> None:
@@ -101,6 +107,50 @@ def test_split_inputs_fail_closed_on_ambiguous_time_or_labels() -> None:
             test_end=date(2026, 1, 2),
             embargo=timedelta(microseconds=1),
         )
+
+
+def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
+    observations = tuple(date(2026, 1, day) for day in range(1, 8))
+    labels = tuple(value + timedelta(days=5) for value in observations)
+    manifest = build_split_manifest(
+        entity_ids=("AAA",) * len(observations),
+        observed_at=observations,
+        label_end_at=labels,
+        fold_ids=("test-1",) * len(observations),
+    )
+
+    assert len(manifest.samples) == 7
+    assert len({sample.sample_id for sample in manifest.samples}) == 7
+    assert len({sample.overlap_group for sample in manifest.samples}) < 7
+    with pytest.raises(ValueError, match="overlapping labels"):
+        evaluate_split(
+            manifest,
+            selected_sample_ids=tuple(sample.sample_id for sample in manifest.samples),
+            method="non_overlapping",
+            effective_n=7,
+        )
+    corrected = evaluate_split(
+        manifest,
+        selected_sample_ids=tuple(sample.sample_id for sample in manifest.samples),
+        method="hac",
+        effective_n=2.5,
+    )
+    require_split_evaluation_for_candidate(corrected)
+    assert corrected.nominal_n == 7
+    assert corrected.effective_n == 2.5
+
+
+def test_same_day_multi_security_panel_has_distinct_stable_sample_ids() -> None:
+    observed = date(2026, 1, 5)
+    manifest = build_split_manifest(
+        entity_ids=("AAA", "BBB"),
+        observed_at=(observed, observed),
+        label_end_at=(observed + timedelta(days=5),) * 2,
+        fold_ids=("test-1", "test-1"),
+    )
+
+    assert len({sample.sample_id for sample in manifest.samples}) == 2
+    assert len({sample.overlap_group for sample in manifest.samples}) == 1
 
 
 def _identity(**overrides: object) -> str:
