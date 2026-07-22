@@ -96,7 +96,11 @@ def _calendar_revision(
     supersedes_revision_id: str = "calendar-aggregate",
     changed_session: date | None = None,
     semantic_change: str | None = None,
+    late_source_session: date | None = None,
+    late_source_available_at: datetime | None = None,
 ) -> AcceptedSessionCalendar:
+    if (late_source_session is None) != (late_source_available_at is None):
+        raise AssertionError("late source session and available_at must be paired")
     rows_list: list[AcceptedSession] = []
     for index, day in enumerate(days):
         row = _session(day, timezone_name, f"{revision_id}-{index}")
@@ -109,6 +113,15 @@ def _calendar_revision(
                 row = replace(row, is_early_close=not row.is_early_close)
             else:
                 raise AssertionError("semantic_change must identify a changed field")
+        if day == late_source_session:
+            assert late_source_available_at is not None
+            row = replace(
+                row,
+                source=_source(
+                    f"{revision_id}-{index}-late",
+                    late_source_available_at,
+                ),
+            )
         rows_list.append(row)
     rows = tuple(rows_list)
     dates = tuple(row.session_date for row in rows)
@@ -533,6 +546,108 @@ def test_execution_price_basis_changes_bound_identity_without_changing_receipts(
     assert first.stage_hash != second.stage_hash
 
 
+def test_confirmed_no_open_halt_accepts_preopen_source_and_binds_identity() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "America/New_York")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    halt_notice_at = execution.open_at - timedelta(hours=1, minutes=30)
+    portfolio = Portfolio.us(1_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("ABC", 10, 10, days[0])
+    before = deepcopy(portfolio.__dict__)
+    first_row = _input(
+        "ABC",
+        "us",
+        execution,
+        price=None,
+        action_types=("trading_halt",),
+        decision_price=10,
+        source_label="halt-notice-v1",
+        execution_price_source_available_at=halt_notice_at,
+        execution_price_basis="confirmed_no_open_event",
+    )
+    second_row = replace(
+        first_row,
+        source=_source("halt-notice-v2", halt_notice_at),
+    )
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "target_weights": lambda _: {},
+    }
+
+    first = _run_static_rebalance(
+        portfolio,
+        calendar,
+        execution_inputs=(first_row,),
+        **arguments,
+    )
+    second = _run_static_rebalance(
+        portfolio,
+        calendar,
+        execution_inputs=(second_row,),
+        **arguments,
+    )
+
+    assert first.receipts[0].reason == "confirmed_halt"
+    assert first.receipts == second.receipts
+    assert first.input_identity_hash != second.input_identity_hash
+    assert first.stage_hash != second.stage_hash
+    assert portfolio.__dict__ == before
+
+
+def test_confirmed_no_open_event_contract_fails_before_callback() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "America/New_York")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    notice_at = execution.open_at - timedelta(hours=1, minutes=30)
+    portfolio = Portfolio.us(1_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+    callback_calls: list[object] = []
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": signal.close_at,
+        "target_weights": lambda context: callback_calls.append(context) or {},
+    }
+    unexplained = _input(
+        "ABC",
+        "us",
+        execution,
+        price=None,
+        execution_price_source_available_at=notice_at,
+        execution_price_basis="confirmed_no_open_event",
+    )
+    positive_price = _input(
+        "ABC",
+        "us",
+        execution,
+        price=10,
+        action_types=("trading_halt",),
+        execution_price_source_available_at=notice_at,
+        execution_price_basis="confirmed_no_open_event",
+    )
+
+    with pytest.raises(MarketDataError, match="requires a halt or rich action identity"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            execution_inputs=(unexplained,),
+            **arguments,
+        )
+    with pytest.raises(MarketDataError, match="requires open_price=None"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            execution_inputs=(positive_price,),
+            **arguments,
+        )
+
+    assert callback_calls == []
+    assert portfolio.__dict__ == before
+
+
 def test_execution_calendar_revision_skips_announced_closure_for_t_plus_two() -> None:
     days = (
         date(2018, 11, 30),
@@ -742,6 +857,46 @@ def test_execution_calendar_revision_fails_closed_before_callback() -> None:
             execution_calendar_revision=a_revision,
             target_weights=lambda _: {},
         )
+
+
+def test_execution_calendar_revision_rejects_late_unrelated_row_before_callback() -> None:
+    days = (
+        date(2018, 11, 30),
+        date(2018, 12, 3),
+        date(2018, 12, 4),
+        date(2018, 12, 5),
+        date(2018, 12, 6),
+        date(2018, 12, 7),
+    )
+    revised_days = tuple(day for day in days if day != date(2018, 12, 5))
+    calendar = _calendar(days, "America/New_York")
+    decision_at = datetime(2018, 11, 30, 20, 5, tzinfo=ZoneInfo("America/New_York"))
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    revision = _calendar_revision(
+        revised_days,
+        "America/New_York",
+        available_at=datetime(2018, 12, 1, 12, tzinfo=ZoneInfo("America/New_York")),
+        revision_id="late-unrelated-row",
+        late_source_session=date(2018, 12, 7),
+        late_source_available_at=execution.open_at + timedelta(microseconds=1),
+    )
+    portfolio = Portfolio.us(1_000.0, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+    callback_calls: list[object] = []
+
+    with pytest.raises(MarketDataError, match="every execution calendar revision row"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=decision_at,
+            execution_inputs=(_input("SPY", "us", execution),),
+            execution_calendar_revision=revision,
+            target_weights=lambda context: callback_calls.append(context) or {},
+        )
+
+    assert callback_calls == []
+    assert portfolio.__dict__ == before
 
 
 def test_us_sells_before_buys_without_spending_unsettled_t_plus_three_cash() -> None:
@@ -1043,6 +1198,7 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
         delisted=True,
         action_types=("delisting",),
         terminal=terminal,
+        execution_price_basis="confirmed_no_open_event",
     )
     result = _run_static_rebalance(
         portfolio,
@@ -1185,6 +1341,7 @@ def test_missing_halt_mark_fails_and_identity_or_prior_stage_changes_hash() -> N
         price=None,
         action_types=("trading_halt",),
         decision_price=10,
+        execution_price_basis="confirmed_no_open_event",
     )
     halted_result = _run_static_rebalance(
         portfolio,
