@@ -44,7 +44,14 @@ def test_data_top_level_api_is_small_and_explicit() -> None:
 def test_research_top_level_api_is_small_and_explicit() -> None:
     assert research_api.__all__ == [
         "dataset_identity_sha256",
+        "ExperimentEvent",
+        "ExperimentManifest",
+        "freeze_experiment_manifest",
+        "preregister_trial",
         "purged_embargo_train_mask",
+        "record_holdout_result",
+        "require_adjusted_holdout_for_candidate",
+        "verify_experiment_manifest",
         "walk_forward_masks",
     ]
     assert not hasattr(research_api, "newey_west_mean_test")
