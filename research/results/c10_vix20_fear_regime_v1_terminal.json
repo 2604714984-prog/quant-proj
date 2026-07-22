@@ -1,0 +1,63 @@
+{
+  "schema_version": "c10-vix20-fear-regime-terminal-v1",
+  "research_id": "C10_VIX_20_FEAR_REGIME_SPY_CASH_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE10",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "program_alpha": 0.00009765625,
+  "alpha_consumed": true,
+  "alpha_recycled": false,
+  "validation": {
+    "observed_intervals": 28,
+    "gates_passed": 1,
+    "gates_total": 3,
+    "gates": {
+      "strategy_terminal_net_wealth_strictly_above_spy": false,
+      "arithmetic_mean_paired_active_return_strictly_positive": false,
+      "strategy_maximum_drawdown_no_worse_than_spy": true
+    },
+    "private_claim_sha256": "6bf6b701e6088ffe850b4ef4af0bf2eb927ec0add307cf32ed756ee189129067",
+    "private_result_sha256": "9011c7eb770d534d8e55b08781875d2592517c5dedf7e854acaa25835b6c561b",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "retrospective_holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "reason": "validation did not pass all three frozen gates"
+  },
+  "frozen_identities": {
+    "pre_outcome_commit": "3c194078d096dcfee8b4e0c9d7184c1dca9532c5",
+    "pre_outcome_tree": "aed97e6ddec8f9be4d5efb773695aeaf23cd44fd",
+    "definition_sha256": "d3927e200bf67896e238738005483f0f36ee01437f7f44540adb0c04ab6dbe9d",
+    "adapter_sha256": "2f9062980b687bdcfeeccee64847140916e2308622bdd5b3910ae296814def43",
+    "runner_sha256": "52e1dd21cfaf8559b66960860ef1c2d6fcf3507bf456b76689648d5a8dadaaec",
+    "signal_packet_sha256": "a180ee203a19dcdcba9afd015f3a81d6632b24d74f6d6fde039f2fee07352ed9",
+    "materialization_receipt_sha256": "b0bc6168b9c91ed310e10b8bf69bae92a93e06091e0faba84ca2a5520e6181c0",
+    "official_vix_raw_sha256": "6bb2b56b85dd581c7dddacbc282f1e48d0d6d3b41824c45bcc5f7eb4803faf33",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "database_snapshot_bound_by_input_packet_sha256": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a"
+  },
+  "method_interpretation": {
+    "result": "the frozen month-end VIX level rule did not beat passive SPY on terminal wealth or average monthly active return in validation; only the drawdown gate passed",
+    "parameter_repair_allowed": false,
+    "rerun_allowed": false,
+    "closed_lineage_may_not_be_rescued_by_threshold_window_smoothing_persistence_term_structure_or_source_change": true,
+    "runner_retention": "branch-only removable failure evidence; not shared infrastructure"
+  },
+  "boundaries": {
+    "external_review_requested": false,
+    "database_access_by_runner": false,
+    "database_write": false,
+    "provider_or_network_call": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
