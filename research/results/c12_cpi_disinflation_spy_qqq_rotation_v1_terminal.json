@@ -1,0 +1,82 @@
+{
+  "schema_version": "c12-cpi-disinflation-spy-qqq-rotation-terminal-v1",
+  "research_id": "C12_CPI_DISINFLATION_SPY_QQQ_ROTATION_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE12",
+  "classification": "INPUT_BLOCKED_OFFICIAL_CPI_OBSERVATION_UNAVAILABLE",
+  "evidence_class": "OFFICIAL_INPUT_IDENTITY_NEGATIVE_EVIDENCE",
+  "program_alpha": 0.0000244140625,
+  "alpha_consumed": true,
+  "alpha_recycled": false,
+  "input_qualification": {
+    "status": "FAIL_CLOSED",
+    "official_series_id": "CUUR0000SA0",
+    "official_endpoint": "https://api.bls.gov/publicAPI/v1/timeseries/data/",
+    "request_body": {
+      "seriesid": [
+        "CUUR0000SA0"
+      ],
+      "startyear": "2019",
+      "endyear": "2026"
+    },
+    "retrieved_at_utc": "2026-07-22T23:17:56Z",
+    "official_response_sha256": "9e735060ca23c5a030a94f4633ee956bfdbc265be215eefb15c8920971d82b84",
+    "official_response_rows": 90,
+    "blocking_observation": {
+      "year": "2025",
+      "period": "M10",
+      "period_name": "October",
+      "value": "-",
+      "footnote_code": "X",
+      "footnote_text": "Data unavailable due to the 2025 lapse in appropriations"
+    },
+    "affected_frozen_split": "retrospective_holdout",
+    "affected_reference_month": "2025-10",
+    "reason": "the sole frozen signal requires the official October 2025 CPI-U level; the controlling official response states that the observation is unavailable",
+    "proxy_interpolation_or_signal_rule_change_allowed": false
+  },
+  "market_source_observations": {
+    "strategy_outcome_values_parsed": false,
+    "qqq_yahoo_raw_response_sha256": "7e427c88bedc5d05669f097d5c6d68b4329b127ef055c9c50bf7dde46438cfcd",
+    "qqq_nasdaq_dividend_response_sha256": "50bab02358e317de28d410246ed112b8d6a997175d262cf2617c27d245fe8aaf",
+    "qqq_invesco_product_response_sha256": "4377d6095082c80d07368b9d1ebed64bbe3a32d2295425e5976bb510ea3e988c",
+    "use_in_adjudication": "none; the signal input failed before market outcomes were opened"
+  },
+  "validation": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "reason": "the frozen full-input contract failed before outcome access"
+  },
+  "retrospective_holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "reason": "input qualification failed and validation was never opened"
+  },
+  "frozen_identities": {
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "database_snapshot_sha256_before_and_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "database_wal_absent_after": true
+  },
+  "method_interpretation": {
+    "result": "this is an input-contract failure, not evidence for or against the economic strategy",
+    "parameter_repair_allowed": false,
+    "rerun_allowed": false,
+    "closed_lineage_may_not_be_rescued_by_proxy_cpi_interpolation_alternate_series_release_timing_or_source_change": true,
+    "temporary_materializer_retention": "removable local diagnostic code; not shared infrastructure"
+  },
+  "boundaries": {
+    "external_review_requested": false,
+    "central_database_opened": false,
+    "database_write": false,
+    "strategy_outcome_access": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
