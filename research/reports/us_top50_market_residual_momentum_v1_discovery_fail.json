@@ -1,0 +1,78 @@
+{
+  "identity": "US_TOP50_MARKET_RESIDUAL_MOMENTUM_V1",
+  "date": "2026-07-23",
+  "result": "DISCOVERY_FAIL",
+  "permanently_closed": true,
+  "formal_run_count": 1,
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "input": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "qualified_identity_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "qualified_stocks": 46,
+    "survivorship_bias": true
+  },
+  "evaluation": [
+    "2018-02-01",
+    "2026-07-22"
+  ],
+  "formation_count": 102,
+  "eligible_min": 43,
+  "eligible_max": 45,
+  "strategy_base": {
+    "cagr": 0.3498052636544877,
+    "volatility": 0.25482292148378005,
+    "sharpe": 1.3080494608885556,
+    "max_drawdown": -0.3260572832269565
+  },
+  "benchmark_base": {
+    "cagr": 0.2604411515075189,
+    "volatility": 0.20933482252534075,
+    "sharpe": 1.2134159378969598,
+    "max_drawdown": -0.31601905666122576
+  },
+  "strategy_stress": {
+    "cagr": 0.3413732111486216,
+    "volatility": 0.25482358420500767,
+    "sharpe": 1.2827145010732213,
+    "max_drawdown": -0.32609325357805585
+  },
+  "benchmark_stress": {
+    "cagr": 0.2590894171560725,
+    "volatility": 0.2093316369353262,
+    "sharpe": 1.207446335097434,
+    "max_drawdown": -0.31606456921308734
+  },
+  "stress_annualized_excess": 0.08228379399254915,
+  "annual_turnover": 2.0866190816827457,
+  "subperiod_relative_positive": {
+    "2018-2019": false,
+    "2020-2022": true,
+    "2023-latest": true
+  },
+  "gates": {
+    "cagr_excess": true,
+    "sharpe": true,
+    "drawdown": true,
+    "stress_excess": true,
+    "turnover": false,
+    "subperiods": true
+  },
+  "decisive_failures": [
+    "Annual turnover was 2.0866190816827457, above the frozen maximum of 2.0.",
+    "The discovery universe is current-constituent and therefore survivorship biased."
+  ],
+  "artifacts": {
+    "source_preregistration_sha256": "137a489a4722a9fac6ec7fbf9eeb2bd0918f14c1c2032c37fe6d9661d9a42982",
+    "preservation_contract_sha256": "351ebcb17ae2ce038141ad0b5d6006b99f8f19de7a85a67a97fa176a4ae8fd4d",
+    "formal_runner_sha256": "3ee812217df9167e6a2d7896929b7db11e1e0dd7ae0b8205ff08cd9a3ee06fb5",
+    "preservation_adapter_sha256": "81dd6d4ac8999be157e403ca13016a52f7d588efaaade0d41205fd7e31c1272a",
+    "raw_result_sha256": "6577204dff1dbd507a8bd0b79e5cbc318fc7002ddf85beab84165f901551be06"
+  },
+  "next_action": "Use a separately identified, outcome-blind, low-turnover residual-momentum preregistration; do not repair or reopen this identity."
+}

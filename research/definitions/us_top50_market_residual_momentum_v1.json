@@ -1,0 +1,64 @@
+{
+  "identity": "US_TOP50_MARKET_RESIDUAL_MOMENTUM_V1",
+  "date": "2026-07-23",
+  "phase": "TERMINAL_PRESERVATION",
+  "provenance": {
+    "source_preregistration": "us_top50_residual_profitability_v1.json",
+    "source_preregistration_sha256": "137a489a4722a9fac6ec7fbf9eeb2bd0918f14c1c2032c37fe6d9661d9a42982",
+    "extracted_without_parameter_change": true,
+    "outcome_dependent_parameter_change": false
+  },
+  "input": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "qualified_identity_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "qualified_stocks": 46,
+    "universe": "current Top-50-derived qualified US equities plus SPY benchmark data",
+    "survivorship_bias": true
+  },
+  "signal": {
+    "formation": "month-end close",
+    "beta_window": "504 daily returns ending t-253; OLS stock return on intercept and SPY return; minimum 450 paired observations",
+    "momentum_window": "daily returns t-252 through t-21 inclusive; frozen alpha and beta; minimum 220 paired observations",
+    "score": "mean(residual) / sample_std(residual) * sqrt(252); finite positive standard deviation required"
+  },
+  "portfolio": {
+    "selection": "Top 10 by descending score",
+    "retention_buffer": "retain existing holdings while rank is 15 or better",
+    "tie_break": "ascending symbol",
+    "weighting": "equal 10 percent",
+    "benchmark": "same-date residual-eligible qualified stocks, equal weighted",
+    "execution": "next-session close; target applies afterward"
+  },
+  "costs_bps_one_way": {
+    "base": 15,
+    "stress": 30
+  },
+  "subperiods": [
+    "2018-2019",
+    "2020-2022",
+    "2023-latest"
+  ],
+  "gates": {
+    "cagr_excess_strict_min": 0.01,
+    "sharpe_margin_min": 0.05,
+    "drawdown_shortfall_max": 0.05,
+    "stress_excess_strict_positive": true,
+    "annual_turnover_max": 2.0,
+    "positive_subperiods_min": 2
+  },
+  "run_control": {
+    "maximum_formal_runs": 1,
+    "variants_or_repairs": false,
+    "permanent_close_on_fail": true
+  },
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "current_holdings_output": false,
+    "recommendation": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false
+  }
+}
