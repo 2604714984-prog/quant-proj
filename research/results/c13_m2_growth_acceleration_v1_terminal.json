@@ -1,0 +1,62 @@
+{
+  "schema_version": "c13-m2-growth-acceleration-terminal-v1",
+  "research_id": "C13_M2_GROWTH_ACCELERATION_SPY_QQQ_ROTATION_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE13",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "program_alpha": 0.00001220703125,
+  "alpha_consumed": true,
+  "alpha_recycled": false,
+  "validation": {
+    "observed_intervals": 28,
+    "gates_passed": 1,
+    "gates_total": 3,
+    "gates": {
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator": false,
+      "arithmetic_mean_paired_active_return_strictly_positive": false,
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator": true
+    },
+    "private_claim_sha256": "43793d2e69dd2a082782809badd1d032f98c7bce9b7135602c1250f95eab6aa4",
+    "private_result_sha256": "51feb76c8699815e995149af5ba421162ef96f143b3cf929df28f671b0eb6163",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "retrospective_holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "reason": "validation did not pass all three frozen gates"
+  },
+  "frozen_identities": {
+    "pre_outcome_commit": "d8798c851bc6af954f97b671a5a31c0620af7957",
+    "pre_outcome_tree": "b2652a79f9f0dab61f031a02d3d4b4536c09a036",
+    "definition_sha256": "0dc32e279da5975f87ea3e405cb7601d8c1540fe23c5abe4b832a6901e059a45",
+    "adapter_sha256": "e1b285a11f5fcee86cee2c340905653fd8a51e970ec1be1a16a14d85fa1c547b",
+    "runner_sha256": "93dac4b2d6f7adcfe30e8ca899b8f01c6cfb13e024b27d002ddeba42782647fa",
+    "input_packet_sha256": "e1ab6583a1b8a0711961c9386135f73fd4e981394bf72e7a170a4d982fdd08ff",
+    "materialization_receipt_sha256": "383a2c4899e64505874c4bb2d8838c0f764dbe58aab9c8ea11d40687efeec0dc",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "database_snapshot_sha256": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a"
+  },
+  "method_interpretation": {
+    "result": "the frozen M2 growth-acceleration SPY/QQQ rule did not beat the monthly 50/50 comparator on terminal wealth or average paired active return in validation; only the drawdown gate passed",
+    "may_2020_h6_definition_change_remains_a_limitation": true,
+    "parameter_repair_allowed": false,
+    "rerun_allowed": false,
+    "closed_lineage_may_not_be_rescued_by_level_threshold_smoothing_real_m2_alternate_aggregate_persistence_or_source_change": true,
+    "runner_retention": "branch-only removable failure evidence; not shared infrastructure"
+  },
+  "boundaries": {
+    "external_review_requested": false,
+    "database_access_by_runner": false,
+    "database_write": false,
+    "provider_or_network_call_by_runner": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
