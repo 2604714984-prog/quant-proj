@@ -2,18 +2,26 @@ from __future__ import annotations
 
 import hashlib
 import json
-from datetime import date, datetime, timedelta, timezone
+import os
+import subprocess
+import sys
+from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from zoneinfo import ZoneInfo
 
 import pytest
 
 import scripts.run_us_spy_h15_10y3m_state_once as RUNNER
+import research.adapters.us_spy_h15_10y3m_state as ADAPTER
 from research.adapters.us_spy_h15_10y3m_state import (
     InputContractError,
     RateObservation,
     cohort_returns,
+    inference_decision,
+    paired_stationary_bootstrap_lower_bounds,
     screen_decision,
+    stationary_bootstrap_indices,
     target_weight,
 )
 
@@ -143,6 +151,118 @@ def test_nonzero_near_constant_path_fails_closed_instead_of_inflating_sharpe() -
         screen_decision(near_constant, near_constant)
 
 
+def _navs(returns: tuple[float, ...]) -> tuple[float, ...]:
+    navs = [40_000.0]
+    for value in returns:
+        navs.append(navs[-1] * (1.0 + value))
+    return tuple(navs)
+
+
+def test_inference_stationary_bootstrap_has_a_literal_golden_path() -> None:
+    assert stationary_bootstrap_indices(8)[:5] == (
+        (6, 7, 0, 5, 6, 7, 0, 1),
+        (0, 1, 2, 3, 4, 5, 6, 4),
+        (6, 7, 0, 1, 2, 3, 4, 5),
+        (7, 0, 1, 0, 1, 2, 2, 3),
+        (2, 3, 4, 5, 0, 1, 2, 3),
+    )
+
+    production_paths = stationary_bootstrap_indices()
+    assert len(production_paths) == 10_000
+    assert all(len(path) == 53 and min(path) >= 0 and max(path) <= 52 for path in production_paths)
+    payload = json.dumps(production_paths, separators=(",", ":")).encode()
+    assert hashlib.sha256(payload).hexdigest() == (
+        "4d7ef3071cec0da43f827a0428bde2e411243ac7c393553705f672fcb6e15398"
+    )
+
+
+def test_inference_requires_unlock_and_exactly_53_paired_cohorts(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    strategy_returns = tuple(0.01 + 0.001 * (index % 5) for index in range(53))
+    benchmark_returns = tuple(0.006 + 0.002 * (index % 7) for index in range(53))
+    with pytest.raises(InputContractError, match="locked"):
+        inference_decision(
+            _navs(strategy_returns),
+            _navs(benchmark_returns),
+            screen_a_unlocked=False,
+        )
+    with pytest.raises(InputContractError, match="no monthly cohort"):
+        inference_decision(
+            _navs(strategy_returns[:-1]),
+            _navs(benchmark_returns[:-1]),
+            screen_a_unlocked=True,
+        )
+
+    monkeypatch.setattr(
+        ADAPTER,
+        "paired_stationary_bootstrap_lower_bounds",
+        lambda strategy, benchmark: (0.2, 0.1),
+    )
+    decision = inference_decision(
+        _navs(strategy_returns),
+        _navs(benchmark_returns),
+        screen_a_unlocked=True,
+    )
+    assert decision.observed_cohorts == 53
+    assert decision.all_gates_pass is True
+    assert dict(decision.gates) == {
+        "local_lower_bound_positive": True,
+        "program_lower_bound_positive": True,
+    }
+
+
+@pytest.mark.parametrize(
+    ("bounds", "expected"),
+    [
+        ((0.0, 0.01), False),
+        ((-0.01, 0.01), False),
+        ((0.2, -0.01), False),
+        ((0.2, 0.0), False),
+        ((0.2, 0.01), True),
+    ],
+)
+def test_inference_requires_both_strictly_positive_bounds(
+    monkeypatch: pytest.MonkeyPatch,
+    bounds: tuple[float, float],
+    expected: bool,
+) -> None:
+    strategy = tuple(0.01 + 0.001 * (index % 5) for index in range(53))
+    benchmark = tuple(0.006 + 0.002 * (index % 7) for index in range(53))
+    monkeypatch.setattr(
+        ADAPTER,
+        "paired_stationary_bootstrap_lower_bounds",
+        lambda left, right: bounds,
+    )
+    decision = inference_decision(
+        _navs(strategy), _navs(benchmark), screen_a_unlocked=True
+    )
+    assert decision.all_gates_pass is expected
+
+
+def test_inference_bootstrap_fails_closed_on_zero_variance_or_invalid_replicate(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    benchmark = tuple(0.01 if index % 2 else -0.01 for index in range(53))
+    with pytest.raises(InputContractError, match="zero standard deviation"):
+        paired_stationary_bootstrap_lower_bounds((0.0,) * 53, benchmark)
+
+    strategy = tuple(0.02 if index % 2 else -0.01 for index in range(53))
+    monkeypatch.setattr(
+        ADAPTER,
+        "stationary_bootstrap_indices",
+        lambda sample_size=53: ((0,) * 53,),
+    )
+    with pytest.raises(InputContractError, match="invalid bootstrap replicate"):
+        paired_stationary_bootstrap_lower_bounds(strategy, benchmark)
+
+
+def test_inference_quantiles_use_frozen_linear_interpolation() -> None:
+    ordered = [0.0, 1.0, 2.0, 3.0]
+    assert ADAPTER._linear_quantile(ordered, 0.05) == pytest.approx(0.15)
+    assert ADAPTER._linear_quantile(ordered, 0.015) == pytest.approx(0.045)
+
+
 def test_target_weight_rejects_observation_after_local_decision_date() -> None:
     decision_at = datetime(2021, 6, 30, 23, tzinfo=timezone.utc)
     future_date = decision_at.date() + timedelta(days=1)
@@ -192,6 +312,50 @@ def test_definition_freezes_the_outcome_blind_data_amendment_and_inputs() -> Non
     assert record["inference_b_if_unlocked"]["locked_before_screen_a_pass"] is True
     assert record["boundaries"]["outcome_accessed"] is False
     assert record["strategy_candidate_available"] is False
+
+
+def test_inference_definition_freezes_exact_inputs_statistics_and_terminal_rules() -> None:
+    path = ROOT / "research" / "definitions" / "us_spy_h15_10y3m_state_v1.json"
+    payload = path.read_bytes()
+    assert hashlib.sha256(payload).hexdigest() == RUNNER.INFERENCE_B_DEFINITION_SHA256
+    RUNNER._require_inference_contract(
+        payload,
+        hashlib.sha256((ROOT / "research/adapters/us_spy_h15_10y3m_state.py").read_bytes()).hexdigest(),
+    )
+    record = json.loads(payload)
+    freeze = record["inference_b_execution_freeze"]
+    assert freeze["stage_contract"]["required_complete_cohorts"] == 53
+    assert freeze["stage_contract"]["terminal_exit_month"] == "2026-06"
+    assert freeze["bootstrap_contract"]["program_alpha"] == 0.015
+    assert freeze["terminal_rules"]["rerun_after_any_claim"] is False
+    assert record["strategy_candidate_available"] is False
+
+
+def test_inference_runner_ignores_environment_data_root_redirect(
+    tmp_path: Path,
+) -> None:
+    redirected = tmp_path / "alternate-data-root"
+    redirected.mkdir()
+    environment = os.environ.copy()
+    environment["QUANT_DATA_ROOT"] = str(redirected)
+    environment["QUANT_PROJECT_ROOT"] = str(tmp_path / "alternate-project")
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            (
+                "import scripts.run_us_spy_h15_10y3m_state_once as runner; "
+                "print(runner.DATA_ROOT)"
+            ),
+        ],
+        cwd=ROOT,
+        env=environment,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    assert Path(completed.stdout.strip()) == ROOT.parent / "quant-data"
+    assert Path(completed.stdout.strip()) != redirected
 
 
 def _month_sequence(
@@ -280,6 +444,149 @@ def test_runner_maps_exactly_45_h15_rows_without_substitution() -> None:
         )
 
 
+def test_inference_h15_maps_exactly_53_rows_and_rejects_month_drift() -> None:
+    rows = []
+    points = []
+    for year, month in _month_sequence(2021, 12, 53):
+        signal_session = date(year, month, 28)
+        decision_at = datetime(year, month, 28, 20, 5, tzinfo=timezone.utc)
+        observation_date = signal_session - timedelta(days=1)
+        points.append(SimpleNamespace(signal_session=signal_session, decision_at=decision_at))
+        rows.append(
+            {
+                "decision_at": decision_at.isoformat(),
+                "signal_month": signal_session.isoformat()[:7],
+                "selected_observation_date": observation_date.isoformat(),
+                "staleness_days": 1,
+                "DGS10": {
+                    "value_percent": 1.5,
+                    "available_at": decision_at.isoformat(),
+                    "row_sha": "1" * 64,
+                },
+                "DGS3MO": {
+                    "value_percent": 0.5,
+                    "available_at": decision_at.isoformat(),
+                    "row_sha": "2" * 64,
+                },
+            }
+        )
+    terminal = SimpleNamespace(
+        signal_session=date(2026, 5, 29),
+        decision_at=datetime(2026, 5, 29, 20, 5, tzinfo=timezone.utc),
+    )
+    record = {
+        "schema_version": "us-spy-h15-10y3m-state-inference-b-v1",
+        "stage": "inference_b_input",
+        "source_table": "us_macro_research.alfred_h15_yield_observations_research",
+        "source_class": "OFFICIAL_ALFRED_H15",
+        "runtime_bundle_sha256": RUNNER.INFERENCE_B_BUNDLE_SHA256,
+        "row_count": 53,
+        "response_set_sha256": (
+            "338a8da0720f16045cd3325a5dc07241292c149e836bce1149af3de8bb97cc14"
+        ),
+        "db_postwrite_sha256": RUNNER.INFERENCE_B_DATABASE_SHA256,
+        "raw_response_sha256": {
+            "DGS10": "b59608fa97f00d945292ea77472079d419eee582b0a5ee5af4a2dfa3f5a2f55c",
+            "DGS3MO": "6ec27c0460be9365e3648d3f1ed10e4af685aaf232065c1ae19d67cd70766fcf",
+        },
+        "selection_proof": {
+            "algorithm_id": "ALFRED_H15_LATEST_COMMON_ELIGIBLE_OBSERVATION_V1",
+            "query_sha256": RUNNER.INFERENCE_B_H15_SELECTION_QUERY_SHA256,
+            "replayed_db_sha256": RUNNER.INFERENCE_B_DATABASE_SHA256,
+            "decisions_verified": 53,
+            "mismatch_count": 0,
+            "later_eligible_common_count": 0,
+        },
+        "rows": rows,
+    }
+    payload = json.dumps(record, separators=(",", ":")).encode()
+    kwargs = {
+        "schema_version": "us-spy-h15-10y3m-state-inference-b-v1",
+        "stage": "inference_b_input",
+        "spy_bundle_sha256": RUNNER.INFERENCE_B_BUNDLE_SHA256,
+        "row_count": 53,
+        "selection_query_sha256": RUNNER.INFERENCE_B_H15_SELECTION_QUERY_SHA256,
+        "database_sha256": RUNNER.INFERENCE_B_DATABASE_SHA256,
+        "bundle_hash_field": "runtime_bundle_sha256",
+    }
+    assert RUNNER._load_h15(payload, tuple(points) + (terminal,), **kwargs) == (1.0,) * 53
+    record["rows"][1]["signal_month"] = "2022-02"
+    with pytest.raises(RUNNER.InputBlockedError, match="signal month mismatch"):
+        RUNNER._load_h15(
+            json.dumps(record, separators=(",", ":")).encode(),
+            tuple(points) + (terminal,),
+            **kwargs,
+        )
+
+
+def test_inference_schedule_requires_exact_signal_decision_and_next_open() -> None:
+    class Calendar:
+        def __init__(self, signal: date, execution: date) -> None:
+            self.session_dates = (signal, execution)
+            self.execution = execution
+
+        def next_session(self, after: date, *, as_of: datetime) -> SimpleNamespace:
+            assert after == self.session_dates[0]
+            assert as_of.tzinfo is not None
+            return SimpleNamespace(session_date=self.execution)
+
+    timezone_new_york = ZoneInfo("America/New_York")
+    points = []
+    for index, (year, month) in enumerate(RUNNER.INFERENCE_SIGNAL_MONTHS):
+        signal = date(year, month, 28)
+        entry_year, entry_month = (
+            RUNNER.INFERENCE_ENTRY_MONTHS[index]
+            if index < 53
+            else (2026, 6)
+        )
+        execution = date(entry_year, entry_month, 1)
+        points.append(
+            SimpleNamespace(
+                signal_session=signal,
+                decision_at=datetime.combine(signal, time(20, 5), timezone_new_york),
+                execution_session=execution,
+                terminal_exit=index == 53,
+                calendar=Calendar(signal, execution),
+            )
+        )
+    frozen = tuple(points)
+    RUNNER._require_stage_schedule(
+        frozen,
+        entry_months=RUNNER.INFERENCE_ENTRY_MONTHS,
+        signal_months=RUNNER.INFERENCE_SIGNAL_MONTHS,
+        terminal_month=(2026, 6),
+    )
+    frozen[0].decision_at = datetime.combine(
+        frozen[0].signal_session,
+        time(20, 6),
+        timezone_new_york,
+    )
+    with pytest.raises(RUNNER.InputBlockedError, match="20:05 ET"):
+        RUNNER._require_stage_schedule(
+            frozen,
+            entry_months=RUNNER.INFERENCE_ENTRY_MONTHS,
+            signal_months=RUNNER.INFERENCE_SIGNAL_MONTHS,
+            terminal_month=(2026, 6),
+        )
+    frozen[0].decision_at = datetime.combine(
+        frozen[0].signal_session,
+        time(20, 5),
+        timezone_new_york,
+    )
+    frozen[0].calendar.session_dates = (
+        frozen[0].signal_session,
+        frozen[0].signal_session + timedelta(days=1),
+        frozen[0].execution_session,
+    )
+    with pytest.raises(RUNNER.InputBlockedError, match="final accepted session"):
+        RUNNER._require_stage_schedule(
+            frozen,
+            entry_months=RUNNER.INFERENCE_ENTRY_MONTHS,
+            signal_months=RUNNER.INFERENCE_SIGNAL_MONTHS,
+            terminal_month=(2026, 6),
+        )
+
+
 def test_runner_simulation_keeps_monthly_boundaries_and_stage_chains(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -344,97 +651,195 @@ def test_runner_simulation_keeps_monthly_boundaries_and_stage_chains(
     assert calls[-1][2] == benchmark_hashes[0]
 
 
-def test_runner_claim_is_consumed_before_any_input_capture(
+def test_inference_unlock_recomputes_screen_a_before_any_new_outcome(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    strategy_returns = tuple(0.012 + 0.002 * ((index % 5) - 2) for index in range(45))
+    benchmark_returns = tuple(
+        0.01 + 0.04 * (1 if index % 2 else -1) for index in range(45)
+    )
+    strategy_navs = _navs(strategy_returns)
+    benchmark_navs = _navs(benchmark_returns)
+    decision = screen_decision(strategy_navs, benchmark_navs)
+    assert decision.all_gates_pass
+    public = tmp_path / "public.json"
+    public.write_bytes(b'{"screen_a":"pass"}')
+    monkeypatch.setattr(RUNNER, "SCREEN_A_PUBLIC_REPORT", public)
+    monkeypatch.setattr(
+        RUNNER, "SCREEN_A_PUBLIC_REPORT_SHA256", hashlib.sha256(public.read_bytes()).hexdigest()
+    )
+    record = {
+        "schema_version": "us-spy-h15-10y3m-state-screen-a-private-result-v1",
+        "research_id": "US_SPY_H15_10Y3M_STATE_V1",
+        "mechanism_id": RUNNER.MECHANISM_ID,
+        "program_family_id": RUNNER.PROGRAM_FAMILY_ID,
+        "program_alpha": RUNNER.PROGRAM_ALPHA,
+        "stage": "RETROSPECTIVE_SECONDARY_SCREEN_A",
+        "classification": "RETROSPECTIVE_SECONDARY_SCREEN_A_PASS_INFERENCE_B_UNLOCKED",
+        "observed_cohorts": 45,
+        "gates": dict(decision.gates),
+        "strategy_metrics_hex": {
+            key: float(value).hex() for key, value in vars(decision.strategy).items()
+        },
+        "benchmark_metrics_hex": {
+            key: float(value).hex() for key, value in vars(decision.benchmark).items()
+        },
+        "sharpe_difference_hex": float(decision.sharpe_difference).hex(),
+        "strategy_boundary_navs_hex": [float(value).hex() for value in strategy_navs],
+        "benchmark_boundary_navs_hex": [float(value).hex() for value in benchmark_navs],
+        "identity": {
+            "definition_sha256": RUNNER.SCREEN_A_DEFINITION_SHA256,
+            "adapter_sha256": RUNNER.SCREEN_A_ADAPTER_SHA256,
+            "runner_sha256": RUNNER.SCREEN_A_RUNNER_SHA256,
+            "base_bundle_sha256": RUNNER.BASE_BUNDLE_SHA256,
+            "h15_input_sha256": RUNNER.H15_INPUT_SHA256,
+            "core_commit": RUNNER.CORE_COMMIT,
+            "core_tree": RUNNER.CORE_TREE,
+            "core_source_sha256": RUNNER.CORE_SOURCE_SHA256,
+            "claim_sha256": RUNNER.SCREEN_A_CLAIM_SHA256,
+        },
+        "one_use_execution_consumed": True,
+        "rerun_authorized": False,
+        "inference_b_opened": False,
+        "strategy_candidate_available": False,
+        "shadow": False,
+        "paper": False,
+        "broker": False,
+        "live": False,
+    }
+    payload = json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+    RUNNER._require_screen_a_unlocked(payload)
+    record["strategy_boundary_navs_hex"][-1] = float(1.0).hex()
+    with pytest.raises(RUNNER.InputBlockedError):
+        RUNNER._require_screen_a_unlocked(
+            json.dumps(record, sort_keys=True, separators=(",", ":")).encode()
+        )
+
+
+def _prepare_inference_runner(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> tuple[tuple[str, str], dict[str, Path]]:
     tmp_path.chmod(0o700)
-    definition = tmp_path / "definition.json"
     adapter = tmp_path / "adapter.py"
     runner = tmp_path / "runner.py"
-    definition.write_text('{"status":"PREREGISTERED_NOT_EXECUTED"}', encoding="utf-8")
     adapter.write_bytes(b"adapter")
     runner.write_bytes(b"runner")
-    monkeypatch.setattr(RUNNER, "DEFINITION", definition)
+    private = tmp_path / "private"
+    private.mkdir(mode=0o700)
+    paths = {
+        "screen": tmp_path / "screen.json",
+        "bundle": tmp_path / "bundle.json",
+        "h15": tmp_path / "h15.json",
+        "claim": private / "claim.json",
+        "result": private / "result.json",
+    }
     monkeypatch.setattr(RUNNER, "ADAPTER", adapter)
     monkeypatch.setattr(RUNNER, "RUNNER", runner)
-    claim = tmp_path / "claim.json"
-    result = tmp_path / "result.json"
+    monkeypatch.setattr(RUNNER, "SCREEN_A_PRIVATE_RESULT", paths["screen"])
+    monkeypatch.setattr(RUNNER, "INFERENCE_B_BUNDLE", paths["bundle"])
+    monkeypatch.setattr(RUNNER, "INFERENCE_B_H15", paths["h15"])
+    monkeypatch.setattr(RUNNER, "INFERENCE_B_CLAIM", paths["claim"])
+    monkeypatch.setattr(RUNNER, "INFERENCE_B_RESULT", paths["result"])
+    contract = json.loads(
+        (ROOT / "research/definitions/us_spy_h15_10y3m_state_v1.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    freeze = contract["inference_b_execution_freeze"]
+    adapter_sha256 = hashlib.sha256(adapter.read_bytes()).hexdigest()
+    freeze["implementation"]["adapter_sha256"] = adapter_sha256
+    inference_definition = tmp_path / "inference.json"
+    inference_definition.write_text(
+        json.dumps(contract, sort_keys=True, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(RUNNER, "DEFINITION", inference_definition)
+    monkeypatch.setattr(
+        RUNNER,
+        "INFERENCE_B_DEFINITION_SHA256",
+        hashlib.sha256(inference_definition.read_bytes()).hexdigest(),
+    )
+    monkeypatch.setattr(RUNNER, "_require_core_identity", lambda: None)
+    return (
+        adapter_sha256,
+        hashlib.sha256(runner.read_bytes()).hexdigest(),
+    ), paths
+
+
+def test_inference_runner_claim_is_consumed_before_fixed_capture_sequence(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected, paths = _prepare_inference_runner(tmp_path, monkeypatch)
     captures = []
 
-    def fail_capture(*args, **kwargs):
-        assert claim.exists()
-        captures.append(args[0])
-        raise RUNNER.InputBlockedError("synthetic capture stop")
+    def fail_on_h15(path: Path, *args, **kwargs) -> bytes:
+        assert paths["claim"].exists()
+        captures.append(path)
+        if path == paths["h15"]:
+            raise RUNNER.InputBlockedError("synthetic capture stop")
+        return b"synthetic"
 
-    monkeypatch.setattr(RUNNER, "_capture", fail_capture)
-    expected = tuple(
-        hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in (definition, adapter, runner)
-    )
-    mismatch_claim = tmp_path / "mismatch-claim.json"
+    monkeypatch.setattr(RUNNER, "_capture", fail_on_h15)
+    monkeypatch.setattr(RUNNER, "_require_screen_a_unlocked", lambda payload: None)
     with pytest.raises(RUNNER.InputBlockedError, match="identity mismatch"):
-        RUNNER._run_once(
-            tmp_path / "bundle.json",
-            tmp_path / "h15.json",
-            mismatch_claim,
-            tmp_path / "mismatch-result.json",
-            ("0" * 64, expected[1], expected[2]),
-        )
-    assert not mismatch_claim.exists()
+        RUNNER._run_inference_once(("0" * 64, expected[1]))
+    assert not paths["claim"].exists()
 
     with pytest.raises(RUNNER.InputBlockedError, match="synthetic capture stop"):
-        RUNNER._run_once(
-            tmp_path / "bundle.json",
-            tmp_path / "h15.json",
-            claim,
-            result,
-            expected,
-        )
-    assert captures == [tmp_path / "bundle.json"]
-    assert claim.stat().st_mode & 0o777 == 0o600
-    blocked = json.loads(result.read_text(encoding="utf-8"))
+        RUNNER._run_inference_once(expected)
+    assert captures == [paths["screen"], paths["bundle"], paths["h15"]]
+    assert paths["claim"].stat().st_mode & 0o777 == 0o600
+    blocked = json.loads(paths["result"].read_text(encoding="utf-8"))
     assert blocked["classification"] == "INPUT_BLOCKED"
-    assert blocked["error_type"] == "InputBlockedError"
+    assert blocked["inference_attempt_consumed"] is True
+    assert blocked["inference_outcome_opened"] is True
+    assert blocked["rerun_authorized"] is False
     assert blocked["strategy_candidate_available"] is False
     with pytest.raises(RUNNER.InputBlockedError, match="must be absent"):
-        RUNNER._run_once(
-            tmp_path / "bundle.json",
-            tmp_path / "h15.json",
-            claim,
-            result,
-            expected,
-        )
-    assert captures == [tmp_path / "bundle.json"]
+        RUNNER._run_inference_once(expected)
+    assert captures == [paths["screen"], paths["bundle"], paths["h15"]]
 
 
-def test_runner_publishes_only_private_aggregate_terminal_result(
+@pytest.mark.parametrize(
+    ("passes", "classification"),
+    [
+        (True, "RETROSPECTIVE_SECONDARY_PASS_PENDING_EXTERNAL_REVIEW"),
+        (False, "RETROSPECTIVE_SECONDARY_INFERENCE_B_FAIL"),
+    ],
+)
+def test_inference_runner_publishes_only_private_aggregate_terminal_result(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    passes: bool,
+    classification: str,
 ) -> None:
-    tmp_path.chmod(0o700)
-    definition = tmp_path / "definition.json"
-    adapter = tmp_path / "adapter.py"
-    runner = tmp_path / "runner.py"
-    definition.write_text('{"status":"PREREGISTERED_NOT_EXECUTED"}', encoding="utf-8")
-    adapter.write_bytes(b"adapter")
-    runner.write_bytes(b"runner")
-    monkeypatch.setattr(RUNNER, "DEFINITION", definition)
-    monkeypatch.setattr(RUNNER, "ADAPTER", adapter)
-    monkeypatch.setattr(RUNNER, "RUNNER", runner)
+    expected, paths = _prepare_inference_runner(tmp_path, monkeypatch)
     monkeypatch.setattr(RUNNER, "_capture", lambda *args, **kwargs: b"synthetic")
+    monkeypatch.setattr(RUNNER, "_require_screen_a_unlocked", lambda payload: None)
     monkeypatch.setattr(
         RUNNER,
         "_load_bundle",
-        lambda payload: (object(), (object(),) * 46, (), ()),
+        lambda payload, **kwargs: (
+            object(),
+            (object(),) * 54,
+            (date(2022, 1, 1),) * 1106,
+            (),
+        ),
     )
-    monkeypatch.setattr(RUNNER, "_load_h15", lambda payload, points: (1.0,) * 45)
-    navs = tuple(40_000.0 + index for index in range(46))
     monkeypatch.setattr(
         RUNNER,
-        "_simulate",
-        lambda *args: (navs, navs, ("1" * 64,) * 46, ("2" * 64,) * 2),
+        "_load_h15",
+        lambda payload, points, **kwargs: (1.0,) * 53,
     )
+    navs = tuple(40_000.0 + index for index in range(54))
+    def simulate_with_frozen_definition(*args):
+        assert args[-2] == RUNNER.INFERENCE_B_DEFINITION_SHA256
+        return navs, navs, ("1" * 64,) * 54, ("2" * 64,) * 2
+
+    monkeypatch.setattr(RUNNER, "_simulate", simulate_with_frozen_definition)
     metrics = SimpleNamespace(
         monthly_arithmetic_mean=0.01,
         monthly_sample_stdev=0.02,
@@ -444,42 +849,75 @@ def test_runner_publishes_only_private_aggregate_terminal_result(
         maximum_drawdown=-0.05,
     )
     decision = SimpleNamespace(
-        all_gates_pass=False,
-        observed_cohorts=45,
+        all_gates_pass=passes,
+        observed_cohorts=53,
         gates=(
-            ("sharpe_difference_positive", False),
-            ("strategy_compounded_net_return_positive", True),
-            ("strategy_annualized_volatility_lower", True),
-            ("strategy_maximum_drawdown_better", True),
+            ("local_lower_bound_positive", passes),
+            ("program_lower_bound_positive", passes),
         ),
         strategy=metrics,
         benchmark=metrics,
-        sharpe_difference=-0.1,
+        observed_sharpe_difference=0.1,
+        local_lower_bound=0.02 if passes else -0.01,
+        program_lower_bound=0.01 if passes else -0.02,
     )
-    monkeypatch.setattr(RUNNER, "screen_decision", lambda *args: decision)
-    expected = tuple(
-        hashlib.sha256(path.read_bytes()).hexdigest()
-        for path in (definition, adapter, runner)
-    )
-    claim = tmp_path / "claim.json"
-    result = tmp_path / "result.json"
+    monkeypatch.setattr(RUNNER, "inference_decision", lambda *args, **kwargs: decision)
 
-    RUNNER._run_once(
-        tmp_path / "bundle.json",
-        tmp_path / "h15.json",
-        claim,
-        result,
-        expected,
-    )
-    published = json.loads(result.read_text(encoding="utf-8"))
-    assert published["classification"] == "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL"
+    RUNNER._run_inference_once(expected)
+    published = json.loads(paths["result"].read_text(encoding="utf-8"))
+    assert published["classification"] == classification
     assert published["strategy_candidate_available"] is False
-    assert published["inference_b_opened"] is False
+    assert published["inference_outcome_opened"] is True
     assert published["rerun_authorized"] is False
-    assert published["observed_cohorts"] == 45
-    assert "raw_open" not in result.read_text(encoding="utf-8")
-    assert "value_percent" not in result.read_text(encoding="utf-8")
-    assert claim.stat().st_mode & 0o777 == 0o600
+    assert published["observed_cohorts"] == 53
+    assert len(published["strategy_boundary_navs_hex"]) == 54
+    text = paths["result"].read_text(encoding="utf-8")
+    assert "raw_open" not in text
+    assert "value_percent" not in text
+    assert "selected_observation_date" not in text
+    assert paths["claim"].stat().st_mode & 0o777 == 0o600
+
+
+def test_invalid_inference_statistic_is_terminal_fail_not_input_blocked(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    expected, paths = _prepare_inference_runner(tmp_path, monkeypatch)
+    monkeypatch.setattr(RUNNER, "_capture", lambda *args, **kwargs: b"synthetic")
+    monkeypatch.setattr(RUNNER, "_require_screen_a_unlocked", lambda payload: None)
+    monkeypatch.setattr(
+        RUNNER,
+        "_load_bundle",
+        lambda payload, **kwargs: (
+            object(),
+            (object(),) * 54,
+            (date(2022, 1, 1),) * 1106,
+            (),
+        ),
+    )
+    monkeypatch.setattr(
+        RUNNER,
+        "_load_h15",
+        lambda payload, points, **kwargs: (1.0,) * 53,
+    )
+    navs = tuple(40_000.0 + index for index in range(54))
+    monkeypatch.setattr(
+        RUNNER,
+        "_simulate",
+        lambda *args: (navs, navs, ("1" * 64,) * 54, ("2" * 64,) * 2),
+    )
+
+    def invalid(*args, **kwargs):
+        raise InputContractError("zero standard deviation")
+
+    monkeypatch.setattr(RUNNER, "inference_decision", invalid)
+    RUNNER._run_inference_once(expected)
+    published = json.loads(paths["result"].read_text(encoding="utf-8"))
+    assert published["classification"] == "RETROSPECTIVE_SECONDARY_INFERENCE_B_FAIL"
+    assert published["inference_failure_reason"] == (
+        "FAIL_CLOSED_INVALID_INFERENCE_STATISTIC"
+    )
+    assert published["rerun_authorized"] is False
 
 
 def test_runner_capture_and_json_fail_closed_on_identity_or_parser_drift(

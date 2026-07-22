@@ -129,6 +129,94 @@
     "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
     "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80"
   },
+  "inference_b_execution_freeze": {
+    "lineage": {
+      "parent_definition_sha256": "d33d7143c982f178308f165de5f42c99ce773642e2e36897490de0504bf58d20",
+      "screen_a_execution_commit": "44bcd9a1ffcd78db030d1bbf5de21b4f72c5c532",
+      "screen_a_private_result_sha256": "bb9ec3c4dffda8d02ed401f1f91f03e6ff9987d6ca4259ccf4b4d59cfc8f4ae6",
+      "screen_a_claim_sha256": "962d97a029a1f0c1c0416fcdee1a71d8ccca75be998d62345c3c55a2da475053",
+      "screen_a_public_report_sha256": "40af63646f096d8b472ffc94147e62636138796e56b5e3ebad012b7a89933fa4"
+    },
+    "paths": {
+      "screen_a_private_result": "private_results/us_spy_h15_10y3m_state_v1_screen_a_44bcd9a1/result.json",
+      "runtime_bundle": "staging/us_spy_h15_10y3m_state_v1/us_spy_h15_inference_b_runtime_input_v1.json",
+      "h15_input": "staging/us_spy_h15_10y3m_state_v1/h15_inference_b_signal_input_v1.json",
+      "claim": "private_results/us_spy_h15_10y3m_state_v1_inference_b_v1/claim.json",
+      "result": "private_results/us_spy_h15_10y3m_state_v1_inference_b_v1/result.json"
+    },
+    "stage_contract": {
+      "label": "RETROSPECTIVE_SECONDARY_INFERENCE_B",
+      "entry_months": "2022-01 through 2026-05 inclusive",
+      "signal_months": "2021-12 through 2026-04 inclusive",
+      "terminal_signal_month": "2026-05",
+      "terminal_exit_month": "2026-06",
+      "purged_interval": "2021-12 open through 2022-01 open",
+      "query_start": "2021-12-01",
+      "query_end": "2026-06-01",
+      "required_complete_cohorts": 53,
+      "required_execution_points": 54,
+      "reconstruction_session_count": 2134,
+      "required_daily_session_count": 1106,
+      "calendar_epoch_count": 2,
+      "corporate_action_count": 34
+    },
+    "bootstrap_contract": {
+      "primary_statistic": "monthly Sharpe(strategy) minus monthly Sharpe(SPY)",
+      "method": "paired stationary bootstrap",
+      "resamples": 10000,
+      "expected_block_months": 6,
+      "restart_probability": "1/6",
+      "seed": 11903,
+      "rng": "Python random.Random MT19937 random() sequence",
+      "index_algorithm": "first=floor(U*n); thereafter restart with probability 1/6 to floor(U*n), otherwise advance prior index by one modulo n",
+      "pairing": "one shared index path resamples strategy and SPY monthly returns",
+      "replicate_statistic": "sqrt(12)*mean(strategy)/sample_stdev(strategy) minus sqrt(12)*mean(SPY)/sample_stdev(SPY)",
+      "quantile_interpolation": "linear rank=(N-1)*alpha",
+      "local_alpha": 0.05,
+      "program_alpha": 0.015,
+      "invalid_replicate_rule": "any nonfinite statistic or zero standard deviation is a terminal fail-closed result",
+      "gates": [
+        "local one-sided lower bound is strictly positive",
+        "program one-sided lower bound is strictly positive"
+      ]
+    },
+    "input_identities": {
+      "runtime_bundle_schema": "us-spy-h15-10y3m-state-inference-b-runtime-input-v1",
+      "runtime_bundle_sha256": "de12312c73b37d5caed957fad71327e457232a4c6004bb616261a060ae56b574",
+      "h15_schema": "us-spy-h15-10y3m-state-inference-b-v1",
+      "h15_sha256": "8e3f8e30bb016ee94fe120fb82bc3586f0728753207327cf9bf440e5ad1ae05c",
+      "h15_selection_query_sha256": "82a385452e36159e2fe96b7b725ce8078481f185fad6a7bf8474f7dbf9ccb12a",
+      "h15_database_sha256": "4e7bd0792241087c7c4da05de32b75a7450baa1dda0342a326ef4c02aa42a92e",
+      "h15_response_set_sha256": "338a8da0720f16045cd3325a5dc07241292c149e836bce1149af3de8bb97cc14",
+      "h15_rows": 53
+    },
+    "implementation": {
+      "adapter_sha256": "e408371fa8e5c86bba41eca41c0d507b1fd34c48f8c17de396e71b15cb3db447",
+      "runner_sha256_bound_at_one_use_invocation": true,
+      "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+      "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+      "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80"
+    },
+    "terminal_rules": {
+      "pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_EXTERNAL_REVIEW",
+      "fail": "RETROSPECTIVE_SECONDARY_INFERENCE_B_FAIL",
+      "pre_inference_error": "INPUT_BLOCKED",
+      "claim_and_result_paths_are_single_use": true,
+      "rerun_after_any_claim": false,
+      "inference_attempt_consumed_at_claim": true,
+      "inference_outcome_opened_at_runtime_bundle_capture_attempt": true
+    },
+    "boundaries": {
+      "network_or_provider_call": false,
+      "database_write": false,
+      "parameter_change": false,
+      "strategy_candidate_available": false,
+      "shadow": false,
+      "paper": false,
+      "broker": false,
+      "live": false
+    }
+  },
   "terminal_rules": {
     "screen_a_fail": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",
     "input_blocked": "INPUT_BLOCKED",

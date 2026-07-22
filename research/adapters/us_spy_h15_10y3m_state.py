@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import random
 import statistics
 from dataclasses import dataclass
 from datetime import date, datetime
@@ -13,6 +14,7 @@ PROGRAM_FAMILY_ID = "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE1"
 PROGRAM_ALPHA = 0.015
 INITIAL_CAPITAL = 40_000.0
 SCREEN_COHORTS = 45
+INFERENCE_COHORTS = 53
 ONE_WAY_SLIPPAGE_BPS = 10.0
 MAX_STALENESS_DAYS = 7
 TEN_YEAR_SERIES = "DGS10"
@@ -21,6 +23,8 @@ EXCHANGE_TIMEZONE = "America/New_York"
 BOOTSTRAP_RESAMPLES = 10_000
 BOOTSTRAP_SEED = 11_903
 BOOTSTRAP_EXPECTED_BLOCK_MONTHS = 6
+BOOTSTRAP_RESTART_PROBABILITY = 1.0 / BOOTSTRAP_EXPECTED_BLOCK_MONTHS
+LOCAL_INFERENCE_ALPHA = 0.05
 CONSTANT_RETURN_TOLERANCE = 1e-12
 
 _NEW_YORK = ZoneInfo(EXCHANGE_TIMEZONE)
@@ -29,6 +33,10 @@ _GATE_NAMES = (
     "strategy_compounded_net_return_positive",
     "strategy_annualized_volatility_lower",
     "strategy_maximum_drawdown_better",
+)
+_INFERENCE_GATE_NAMES = (
+    "local_lower_bound_positive",
+    "program_lower_bound_positive",
 )
 
 
@@ -103,6 +111,25 @@ class ScreenDecision:
         return (
             self.observed_cohorts == SCREEN_COHORTS
             and tuple(name for name, _ in self.gates) == _GATE_NAMES
+            and all(passed is True for _, passed in self.gates)
+        )
+
+
+@dataclass(frozen=True)
+class InferenceDecision:
+    observed_cohorts: int
+    strategy: PerformanceMetrics
+    benchmark: PerformanceMetrics
+    observed_sharpe_difference: float
+    local_lower_bound: float
+    program_lower_bound: float
+    gates: tuple[tuple[str, bool], ...]
+
+    @property
+    def all_gates_pass(self) -> bool:
+        return (
+            self.observed_cohorts == INFERENCE_COHORTS
+            and tuple(name for name, _ in self.gates) == _INFERENCE_GATE_NAMES
             and all(passed is True for _, passed in self.gates)
         )
 
@@ -220,3 +247,119 @@ def screen_decision(
         ),
     )
     return ScreenDecision(SCREEN_COHORTS, strategy, benchmark, sharpe_difference, gates)
+
+
+def stationary_bootstrap_indices(
+    sample_size: int = INFERENCE_COHORTS,
+) -> tuple[tuple[int, ...], ...]:
+    """Return the exact frozen paired stationary-bootstrap index paths."""
+
+    if type(sample_size) is not int or sample_size < 2:
+        raise InputContractError("sample_size must be an integer of at least two")
+    generator = random.Random(BOOTSTRAP_SEED)
+    paths: list[tuple[int, ...]] = []
+    for _ in range(BOOTSTRAP_RESAMPLES):
+        path = [math.floor(generator.random() * sample_size)]
+        for _ in range(1, sample_size):
+            if generator.random() < BOOTSTRAP_RESTART_PROBABILITY:
+                path.append(math.floor(generator.random() * sample_size))
+            else:
+                path.append((path[-1] + 1) % sample_size)
+        paths.append(tuple(path))
+    return tuple(paths)
+
+
+def _linear_quantile(ordered: list[float], probability: float) -> float:
+    if not ordered:
+        raise InputContractError("bootstrap statistics cannot be empty")
+    probability = _finite(probability, "quantile probability")
+    if not 0.0 < probability < 1.0:
+        raise InputContractError("quantile probability must be inside (0, 1)")
+    rank = (len(ordered) - 1) * probability
+    lower = math.floor(rank)
+    upper = math.ceil(rank)
+    return _finite(
+        ordered[lower] + (rank - lower) * (ordered[upper] - ordered[lower]),
+        "bootstrap lower bound",
+    )
+
+
+def paired_stationary_bootstrap_lower_bounds(
+    strategy_returns: tuple[float, ...],
+    benchmark_returns: tuple[float, ...],
+) -> tuple[float, float]:
+    """Compute the frozen local and program one-sided lower bounds."""
+
+    if (
+        type(strategy_returns) is not tuple
+        or type(benchmark_returns) is not tuple
+        or len(strategy_returns) != INFERENCE_COHORTS
+        or len(benchmark_returns) != INFERENCE_COHORTS
+    ):
+        raise InputContractError("inference bootstrap requires exactly 53 paired rows")
+    strategy = tuple(_finite(value, "strategy return") for value in strategy_returns)
+    benchmark = tuple(_finite(value, "benchmark return") for value in benchmark_returns)
+    if statistics.stdev(strategy) <= 0.0 or statistics.stdev(benchmark) <= 0.0:
+        raise InputContractError("zero standard deviation fails inference closed")
+
+    statistics_: list[float] = []
+    for path in stationary_bootstrap_indices():
+        strategy_sample = tuple(strategy[index] for index in path)
+        benchmark_sample = tuple(benchmark[index] for index in path)
+        strategy_stdev = statistics.stdev(strategy_sample)
+        benchmark_stdev = statistics.stdev(benchmark_sample)
+        if (
+            not math.isfinite(strategy_stdev)
+            or strategy_stdev <= 0.0
+            or not math.isfinite(benchmark_stdev)
+            or benchmark_stdev <= 0.0
+        ):
+            raise InputContractError("invalid bootstrap replicate fails inference closed")
+        statistic = math.sqrt(12.0) * (
+            statistics.fmean(strategy_sample) / strategy_stdev
+            - statistics.fmean(benchmark_sample) / benchmark_stdev
+        )
+        statistics_.append(_finite(statistic, "bootstrap Sharpe difference"))
+
+    ordered = sorted(statistics_)
+    return (
+        _linear_quantile(ordered, LOCAL_INFERENCE_ALPHA),
+        _linear_quantile(ordered, PROGRAM_ALPHA),
+    )
+
+
+def inference_decision(
+    strategy_boundary_navs: tuple[float, ...],
+    benchmark_boundary_navs: tuple[float, ...],
+    *,
+    screen_a_unlocked: bool,
+) -> InferenceDecision:
+    if screen_a_unlocked is not True:
+        raise InputContractError("inference B is locked until Screen A passes")
+    strategy_returns = cohort_returns(
+        strategy_boundary_navs, expected_cohorts=INFERENCE_COHORTS
+    )
+    benchmark_returns = cohort_returns(
+        benchmark_boundary_navs, expected_cohorts=INFERENCE_COHORTS
+    )
+    strategy = performance_metrics(strategy_returns, strategy_boundary_navs)
+    benchmark = performance_metrics(benchmark_returns, benchmark_boundary_navs)
+    observed = _finite(
+        strategy.sharpe - benchmark.sharpe, "observed Sharpe difference"
+    )
+    local_lower, program_lower = paired_stationary_bootstrap_lower_bounds(
+        strategy_returns, benchmark_returns
+    )
+    gates = (
+        ("local_lower_bound_positive", local_lower > 0.0),
+        ("program_lower_bound_positive", program_lower > 0.0),
+    )
+    return InferenceDecision(
+        INFERENCE_COHORTS,
+        strategy,
+        benchmark,
+        observed,
+        local_lower,
+        program_lower,
+        gates,
+    )
