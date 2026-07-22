@@ -28,11 +28,16 @@ from .common import (
 )
 
 StatusKind = Literal["listed", "delisted", "st", "suspended"]
-REQUIRED_STATUS_KINDS: tuple[StatusKind, ...] = (
+UniverseMarket = Literal["a_share", "us"]
+ALL_STATUS_KINDS: tuple[StatusKind, ...] = (
     "listed",
     "delisted",
     "st",
     "suspended",
+)
+US_REQUIRED_STATUS_KINDS: tuple[StatusKind, ...] = (
+    "listed",
+    "delisted",
 )
 
 
@@ -50,7 +55,7 @@ class StatusEvidence:
     def __post_init__(self) -> None:
         require_nonempty_text(self.status_id, "status_id")
         require_nonempty_text(self.symbol, "symbol")
-        if self.kind not in REQUIRED_STATUS_KINDS:
+        if self.kind not in ALL_STATUS_KINDS:
             raise MarketDataError(f"unsupported status kind: {self.kind!r}")
         if type(self.value) is not bool:
             raise MarketDataError("status value must be boolean")
@@ -84,7 +89,7 @@ class UniverseDecision:
 class UniverseSnapshotIdentity:
     """Immutable identity of the complete candidate set for one decision session."""
 
-    market: Literal["a_share", "us"]
+    market: UniverseMarket
     exchange_id: str
     effective_session: date
     member_count: int
@@ -137,11 +142,14 @@ def lifecycle_coverage_sha256(
     session: AcceptedSession,
     decision_at: datetime,
     records_by_symbol: Mapping[str, tuple[StatusEvidence, ...]],
+    *,
+    market: UniverseMarket,
 ) -> str:
     """Hash selected PIT lifecycle records for the accepted candidate members."""
 
     frozen = _members(members)
     cutoff = require_aware_datetime(decision_at, "decision_at")
+    required_kinds = _required_status_kinds(market)
     selected: list[dict[str, object]] = []
     for symbol in frozen:
         if symbol not in records_by_symbol:
@@ -152,8 +160,14 @@ def lifecycle_coverage_sha256(
             for record in records
         ):
             raise MarketDataError("lifecycle records must match their universe member")
-        chosen = _select_status_records(symbol, session, cutoff, records)
-        for kind in REQUIRED_STATUS_KINDS:
+        chosen = _select_status_records(
+            symbol,
+            session,
+            cutoff,
+            records,
+            required_kinds=required_kinds,
+        )
+        for kind in required_kinds:
             record = chosen[kind]
             selected.append(
                 {
@@ -169,14 +183,19 @@ def lifecycle_coverage_sha256(
                     "source": _source_payload(record.source),
                 }
             )
-    encoded = json.dumps(selected, sort_keys=True, separators=(",", ":")).encode()
+    payload = {
+        "market": market,
+        "required_status_kinds": required_kinds,
+        "selected_records": selected,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
     return hashlib.sha256(encoded).hexdigest()
 
 
 def validate_universe_snapshot(
     identity: UniverseSnapshotIdentity,
     *,
-    market: Literal["a_share", "us"],
+    market: UniverseMarket,
     calendar_identity: CalendarIdentity,
     session: AcceptedSession,
     decision_at: datetime,
@@ -207,6 +226,7 @@ def validate_universe_snapshot(
         session,
         cutoff,
         candidate_records,
+        market=market,
     )
     if identity.lifecycle_coverage_sha256 != lifecycle_hash:
         raise MarketDataError("universe snapshot lifecycle_coverage_sha256 mismatch")
@@ -217,6 +237,8 @@ def evaluate_universe(
     session: AcceptedSession,
     decision_at: datetime,
     records: tuple[StatusEvidence, ...] | list[StatusEvidence],
+    *,
+    market: UniverseMarket,
 ) -> UniverseDecision:
     """Evaluate a symbol from one complete, nonoverlapping PIT status set."""
 
@@ -229,20 +251,27 @@ def evaluate_universe(
     if session.source.available_at > cutoff:
         raise MarketDataError("accepted-session source was unavailable at decision_at")
     frozen = tuple(records)
-    selected = _select_status_records(symbol, session, cutoff, frozen)
+    required_kinds = _required_status_kinds(market)
+    selected = _select_status_records(
+        symbol,
+        session,
+        cutoff,
+        frozen,
+        required_kinds=required_kinds,
+    )
 
     reasons: list[str] = []
     if not selected["listed"].value:
         reasons.append("not_listed")
     if selected["delisted"].value:
         reasons.append("delisted")
-    if selected["st"].value:
+    if "st" in selected and selected["st"].value:
         reasons.append("st")
-    if selected["suspended"].value:
+    if "suspended" in selected and selected["suspended"].value:
         reasons.append("suspended")
     evidence = tuple(
         (kind, selected[kind].status_id, selected[kind].source)
-        for kind in REQUIRED_STATUS_KINDS
+        for kind in required_kinds
     )
     return UniverseDecision(not reasons, tuple(reasons), evidence)
 
@@ -252,9 +281,18 @@ def _select_status_records(
     session: AcceptedSession,
     cutoff: datetime,
     frozen: tuple[StatusEvidence, ...],
+    *,
+    required_kinds: tuple[StatusKind, ...],
 ) -> dict[StatusKind, StatusEvidence]:
     if any(not isinstance(record, StatusEvidence) for record in frozen):
         raise MarketDataError("records must contain only StatusEvidence values")
+    supplied_kinds = {
+        record.kind for record in frozen if record.symbol == symbol
+    }
+    if supplied_kinds - set(required_kinds):
+        raise MarketDataError(
+            "status records must contain exactly the market-required kinds"
+        )
     if any(record.source.available_at > cutoff for record in frozen):
         raise MarketDataError(
             "status records include future evidence unavailable at decision_at"
@@ -273,7 +311,7 @@ def _select_status_records(
             )
 
     selected: dict[StatusKind, StatusEvidence] = {}
-    for kind in REQUIRED_STATUS_KINDS:
+    for kind in required_kinds:
         candidates = tuple(
             record
             for record in frozen
@@ -311,6 +349,14 @@ def _select_status_records(
         selected[kind] = matches[0]
 
     return selected
+
+
+def _required_status_kinds(market: UniverseMarket) -> tuple[StatusKind, ...]:
+    if market == "a_share":
+        return ALL_STATUS_KINDS
+    if market == "us":
+        return US_REQUIRED_STATUS_KINDS
+    raise MarketDataError("universe market must be a_share or us")
 
 
 def _members(members: tuple[str, ...]) -> tuple[str, ...]:

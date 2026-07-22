@@ -13,7 +13,8 @@ from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
 from quant_system.data import (
-    AcceptedSession, AcceptedSessionCalendar, CorporateActionIdentity, SourceIdentity,
+    AcceptedSession, AcceptedSessionCalendar, CalendarIdentityError,
+    CorporateActionIdentity, SourceIdentity,
 )
 from quant_system.markets.a_share import AShareBar, decide_fill as a_share_fill
 from quant_system.markets.common import (
@@ -40,12 +41,22 @@ DecisionPriceBasis = Literal[
     "raw_pre_action_per_old_share",
     "raw_execution_units",
 ]
+ExecutionPriceBasis = Literal[
+    "timestamped_session_open",
+    "retrospective_daily_bar_open_fill",
+    "confirmed_no_open_event",
+]
 TargetWeightCallback = Callable[["DecisionContext"], Mapping[str, float]]
 _RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
 _DECISION_PRICE_BASES = {
     "raw_pre_action_per_old_share",
     "raw_execution_units",
 }
+_EXECUTION_PRICE_BASES = {
+    "timestamped_session_open",
+    "retrospective_daily_bar_open_fill",
+}
+_NO_OPEN_EVENT_BASIS = "confirmed_no_open_event"
 
 
 @dataclass(frozen=True)
@@ -71,7 +82,7 @@ class TerminalAction:
 
 @dataclass(frozen=True)
 class ExecutionInput:
-    """One execution row with an explicit causal decision-price unit basis."""
+    """One row separating causal sizing inputs from the realized execution event."""
 
     symbol: str
     market: Market
@@ -89,6 +100,8 @@ class ExecutionInput:
     decision_price: float | None = None
     decision_price_source: SourceIdentity | None = None
     decision_price_basis: DecisionPriceBasis | None = None
+    execution_price_effective_at: datetime | None = None
+    execution_price_basis: ExecutionPriceBasis | None = None
 
 
 @dataclass(frozen=True)
@@ -135,6 +148,7 @@ def run_static_rebalance(
     signal_session: date,
     decision_at: datetime,
     execution_inputs: tuple[ExecutionInput, ...],
+    execution_calendar_revision: AcceptedSessionCalendar | None = None,
     universe_members: tuple[str, ...],
     universe_snapshot: UniverseSnapshotIdentity,
     target_weights: TargetWeightCallback,
@@ -157,6 +171,17 @@ def run_static_rebalance(
         raise MarketDataError(
             "decision_at must be between signal close and strictly before next-session open"
         )
+    (
+        settlement_calendar,
+        settlement_as_of,
+        execution_calendar_revision_rows,
+    ) = _execution_calendar(
+        calendar,
+        execution_calendar_revision,
+        execution,
+        cutoff,
+        portfolio,
+    )
     if not is_finite_number(slippage_bps) or not 0 <= float(slippage_bps) < 10_000:
         raise ValueError("slippage_bps must be finite and in [0, 10000)")
     if max_positions is not None and (
@@ -192,7 +217,13 @@ def run_static_rebalance(
         records_by_symbol={symbol: row.status_records for symbol, row in rows.items()},
     )
     decisions = {
-        symbol: evaluate_universe(symbol, execution, cutoff, row.status_records)
+        symbol: evaluate_universe(
+            symbol,
+            execution,
+            cutoff,
+            row.status_records,
+            market=market,
+        )
         for symbol, row in rows.items()
     }
     _terminal_checks(rows, decisions, execution, cutoff)
@@ -242,8 +273,20 @@ def run_static_rebalance(
                         "max_positions_after_blocked_exit",
                     )
                     continue
-                _order(working, calendar, execution, cutoff, rows[symbol], side, requested,
-                       capacity_policy, slippage_bps, receipts)
+                _order(
+                    working,
+                    calendar,
+                    settlement_calendar,
+                    settlement_as_of,
+                    execution,
+                    cutoff,
+                    rows[symbol],
+                    side,
+                    requested,
+                    capacity_policy,
+                    slippage_bps,
+                    receipts,
+                )
     final_nav = working.nav(_marks(working, rows))
     identity = _identity(
         context,
@@ -259,11 +302,88 @@ def run_static_rebalance(
         universe_snapshot,
         definition_sha,
         adapter_sha,
+        execution_calendar_revision,
+        execution_calendar_revision_rows,
     )
     receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, prior_stage_hash)
     return StaticRebalanceResult(working, context, weights, tuple(receipts), identity,
                                  receipt_hashes, stage_hash, final_nav,
                                  definition_sha, adapter_sha)
+
+
+def _execution_calendar(
+    decision_calendar: AcceptedSessionCalendar,
+    revision: AcceptedSessionCalendar | None,
+    execution: AcceptedSession,
+    cutoff: datetime,
+    portfolio: Portfolio,
+) -> tuple[
+    AcceptedSessionCalendar,
+    datetime,
+    tuple[AcceptedSession, ...] | None,
+]:
+    if revision is None:
+        return decision_calendar, cutoff, None
+    if not portfolio.us_cash_settlement:
+        raise MarketDataError("execution calendar revisions are US-settlement-only")
+    if not isinstance(revision, AcceptedSessionCalendar):
+        raise TypeError("execution_calendar_revision must be an AcceptedSessionCalendar")
+    original_identity = decision_calendar.identity
+    revised_identity = revision.identity
+    if (
+        revised_identity.exchange_id != original_identity.exchange_id
+        or revised_identity.exchange_timezone != original_identity.exchange_timezone
+        or revised_identity.coverage_start != original_identity.coverage_start
+        or revised_identity.coverage_end != original_identity.coverage_end
+    ):
+        raise MarketDataError(
+            "execution calendar revision must preserve exchange, timezone, and coverage"
+        )
+    revised_source = revised_identity.source_identity
+    if revised_source.supersedes_revision_id != original_identity.source_identity.revision_id:
+        raise MarketDataError("execution calendar revision must supersede the decision calendar")
+    if not cutoff < revised_source.available_at <= execution.open_at:
+        raise MarketDataError(
+            "execution calendar revision must become available after decision and by execution open"
+        )
+    try:
+        revision_rows = tuple(
+            revision.session_on(day, as_of=execution.open_at)
+            for day in revision.session_dates
+        )
+    except CalendarIdentityError as exc:
+        raise MarketDataError(
+            "every execution calendar revision row must be available by execution open"
+        ) from exc
+    original_prefix = tuple(
+        _session_semantics(decision_calendar.session_on(day, as_of=cutoff))
+        for day in decision_calendar.session_dates
+        if day <= execution.session_date
+    )
+    revised_prefix = tuple(
+        _session_semantics(session)
+        for session in revision_rows
+        if session.session_date <= execution.session_date
+    )
+    if revised_prefix != original_prefix:
+        raise MarketDataError(
+            "execution calendar revision cannot change the execution session or earlier history"
+        )
+    after = execution.session_date
+    for _ in range(cash_settlement_lag_sessions(after)):
+        after = revision.next_session(after, as_of=execution.open_at).session_date
+    return revision, execution.open_at, revision_rows
+
+
+def _session_semantics(session: AcceptedSession) -> tuple[object, ...]:
+    return (
+        session.session_date,
+        session.open_at,
+        session.close_at,
+        session.exchange_timezone,
+        session.exchange_id,
+        session.is_early_close,
+    )
 
 
 def blocked_exit_from_receipt(
@@ -297,8 +417,44 @@ def _inputs(
     for row in values:
         if not isinstance(row.source, SourceIdentity):
             raise MarketDataError("execution source must be a SourceIdentity")
-        if row.market != market or row.source.available_at > execution.open_at:
-            raise MarketDataError("market mismatch or execution source unavailable at open")
+        if row.market != market:
+            raise MarketDataError("execution input market mismatch")
+        if row.execution_price_effective_at is None or row.execution_price_basis is None:
+            raise MarketDataError("execution price effective_at and basis are required")
+        effective_at = require_aware_datetime(
+            row.execution_price_effective_at,
+            "execution_price_effective_at",
+        )
+        if effective_at != execution.open_at:
+            raise MarketDataError(
+                "execution price effective_at must equal the accepted-session open"
+            )
+        confirmed_no_open = row.execution_price_basis == _NO_OPEN_EVENT_BASIS
+        if confirmed_no_open:
+            if row.market != "us":
+                raise MarketDataError("confirmed no-open events are US-only")
+            if row.open_price is not None:
+                raise MarketDataError(
+                    "confirmed no-open event basis requires open_price=None"
+                )
+        else:
+            if row.execution_price_basis not in _EXECUTION_PRICE_BASES:
+                raise MarketDataError("execution price basis is unsupported")
+            if row.market == "us" and not is_positive_price(row.open_price):
+                raise MarketDataError(
+                    "missing US execution open requires a confirmed no-open event"
+                )
+            if row.source.available_at < effective_at:
+                raise MarketDataError(
+                    "execution price source cannot be available before its market event"
+                )
+            if (
+                row.execution_price_basis == "timestamped_session_open"
+                and row.source.available_at != effective_at
+            ):
+                raise MarketDataError(
+                    "timestamped session-open source must be available at the market event"
+                )
         if not isinstance(row.currency, str) or len(row.currency) != 3 \
                 or not row.currency.isalpha() or not row.currency.isupper():
             raise MarketDataError("currency must be a three-letter uppercase code")
@@ -376,6 +532,13 @@ def _inputs(
             if row.terminal_action.action_type not in row.action_types:
                 raise MarketDataError("terminal action must appear in action_types")
             action_ids.append(row.terminal_action.event_id)
+        if confirmed_no_open and not (
+            "trading_halt" in row.action_types
+            or row.terminal_action is not None
+        ):
+            raise MarketDataError(
+                "confirmed no-open event requires a halt or terminal action identity"
+            )
     if len(action_ids) != len(set(action_ids)):
         raise MarketDataError("action IDs must be globally unique")
     return rows
@@ -450,8 +613,15 @@ def _actions(
 
 
 def _order(
-    portfolio: Portfolio, calendar: AcceptedSessionCalendar, execution: AcceptedSession,
-    cutoff: datetime, row: ExecutionInput, side: str, requested: float,
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    settlement_calendar: AcceptedSessionCalendar,
+    settlement_as_of: datetime,
+    execution: AcceptedSession,
+    cutoff: datetime,
+    row: ExecutionInput,
+    side: str,
+    requested: float,
     policy: CapacityPolicy | None, slippage_bps: float, receipts: list[ExecutionReceipt],
 ) -> None:
     decision = _fill(row, side, slippage_bps)
@@ -484,7 +654,15 @@ def _order(
         trade = portfolio.buy(row.symbol, filled, decision.price, execution.session_date)
         reason = "partial_cash" if filled < requested else "filled"
     else:
-        trade = _sell(portfolio, calendar, row.symbol, filled, decision.price, execution, cutoff)
+        trade = _sell(
+            portfolio,
+            settlement_calendar,
+            row.symbol,
+            filled,
+            decision.price,
+            execution,
+            settlement_as_of,
+        )
         reason = "filled"
     _receipt(receipts, trade.symbol, trade.side, requested, trade.shares, trade.price,
              trade.costs.commission, trade.costs.sell_tax, trade.cash_change,
@@ -646,6 +824,8 @@ def _identity(
     universe_snapshot: UniverseSnapshotIdentity,
     strategy_definition_sha256: str,
     strategy_adapter_sha256: str,
+    execution_calendar_revision: AcceptedSessionCalendar | None,
+    execution_calendar_revision_rows: tuple[AcceptedSession, ...] | None,
 ) -> str:
     payload = {
         "context": context,
@@ -661,6 +841,15 @@ def _identity(
         "capacity_policy": policy,
         "slippage_bps": slippage,
     }
+    if execution_calendar_revision is not None:
+        if execution_calendar_revision_rows is None:
+            raise RuntimeError("execution calendar revision rows were not prevalidated")
+        payload["execution_calendar_revision_identity"] = (
+            execution_calendar_revision.identity
+        )
+        payload["execution_calendar_revision"] = execution_calendar_revision_rows
+    elif execution_calendar_revision_rows is not None:
+        raise RuntimeError("execution calendar revision rows lack a revision identity")
     if max_positions is not None:
         payload["max_positions"] = max_positions
     encoded = json.dumps(_normal(payload), sort_keys=True, separators=(",", ":"))
