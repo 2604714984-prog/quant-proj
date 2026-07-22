@@ -822,13 +822,13 @@ def execute_stage(stage: str) -> dict[str, Any]:
     validation_result_sha = None
     if stage == "validation":
         if any(path.exists() for path in (VALIDATION_CLAIM, VALIDATION_RESULT, HOLDOUT_CLAIM, HOLDOUT_RESULT)):
-            raise InputBlockedError("Cycle 8 one-use state is not pristine")
+            raise InputBlockedError("Cycle 9 one-use state is not pristine")
         bundle_path, expected_bundle = VALIDATION_BUNDLE, VALIDATION_BUNDLE_SHA256
         claim_path, result_path = VALIDATION_CLAIM, VALIDATION_RESULT
         stage_signals = signals["validation"]
     else:
         if HOLDOUT_CLAIM.exists() or HOLDOUT_RESULT.exists():
-            raise InputBlockedError("Cycle 8 holdout one-use state is not pristine")
+            raise InputBlockedError("Cycle 9 holdout one-use state is not pristine")
         validation_result_sha = _accepted_validation_result()
         bundle_path, expected_bundle = HOLDOUT_BUNDLE, HOLDOUT_BUNDLE_SHA256
         claim_path, result_path = HOLDOUT_CLAIM, HOLDOUT_RESULT
