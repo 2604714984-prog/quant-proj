@@ -8,7 +8,6 @@ import json
 import math
 import os
 import stat
-import subprocess
 import sys
 from dataclasses import dataclass
 from datetime import date, datetime, timezone
@@ -55,6 +54,8 @@ EXPECTED_INCLUSION_RULE_SHA256 = (
 )
 CORE_COMMIT = "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc"
 CORE_TREE = "06a78207779775abd165768b10b9b343749752d4"
+CORE_SOURCE_FILE_COUNT = 23
+CORE_SOURCE_SHA256 = "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80"
 ACTION_RETRIEVED_AT = datetime.fromisoformat("2026-07-21T08:13:17.580138+00:00")
 DEFINITION = ROOT / "research" / "definitions" / "us_spy_h15_10y3m_state_v1.json"
 ADAPTER = ROOT / "research" / "adapters" / "us_spy_h15_10y3m_state.py"
@@ -91,26 +92,24 @@ def _file_sha256(path: Path) -> str:
     return _sha256_bytes(path.read_bytes())
 
 
-def _git(*args: str) -> str:
-    completed = subprocess.run(
-        ("git", "-C", str(ROOT), *args),
-        check=False,
-        capture_output=True,
-        text=True,
-        timeout=10,
-    )
-    if completed.returncode != 0:
-        raise InputBlockedError("shared-core Git identity check failed")
-    return completed.stdout.strip()
+def _core_source_identity() -> tuple[int, str]:
+    entries = []
+    for path in sorted((ROOT / "src" / "quant_system").rglob("*.py")):
+        if path.is_symlink() or not path.is_file():
+            raise InputBlockedError("shared-core source must use regular Python files")
+        entries.append(
+            {
+                "path": path.relative_to(ROOT).as_posix(),
+                "sha256": _file_sha256(path),
+            }
+        )
+    payload = json.dumps(entries, sort_keys=True, separators=(",", ":")).encode()
+    return len(entries), _sha256_bytes(payload)
 
 
 def _require_core_identity() -> None:
-    if _git("rev-parse", f"{CORE_COMMIT}^{{tree}}") != CORE_TREE:
-        raise InputBlockedError("frozen shared-core commit/tree identity mismatch")
-    if _git("diff", "--name-only", CORE_COMMIT, "--", "src/quant_system"):
-        raise InputBlockedError("tracked shared-core bytes differ from the frozen commit")
-    if _git("ls-files", "--others", "--exclude-standard", "--", "src/quant_system"):
-        raise InputBlockedError("untracked shared-core bytes are forbidden")
+    if _core_source_identity() != (CORE_SOURCE_FILE_COUNT, CORE_SOURCE_SHA256):
+        raise InputBlockedError("shared-core source bytes differ from the frozen identity")
 
 
 def _sha256(value: object, field: str) -> str:
@@ -699,6 +698,7 @@ def _run_once(
         "h15_input_sha256": H15_INPUT_SHA256,
         "core_commit": CORE_COMMIT,
         "core_tree": CORE_TREE,
+        "core_source_sha256": CORE_SOURCE_SHA256,
     }
     claim_sha256 = _publish(
         claim_path,

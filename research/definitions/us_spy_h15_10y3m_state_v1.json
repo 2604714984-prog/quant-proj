@@ -126,7 +126,8 @@
     "h15_source_table": "us_macro_research.alfred_h15_yield_observations_research",
     "h15_screen_rows": 45,
     "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
-    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4"
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80"
   },
   "terminal_rules": {
     "screen_a_fail": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",

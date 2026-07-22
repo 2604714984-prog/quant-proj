@@ -185,6 +185,9 @@ def test_definition_freezes_the_outcome_blind_data_amendment_and_inputs() -> Non
         "mismatch_count": 0,
         "later_eligible_common_count": 0,
     }
+    assert record["input_identities"]["shared_core_source_sha256"] == (
+        "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80"
+    )
     assert record["screen_a"]["required_complete_cohorts"] == 45
     assert record["inference_b_if_unlocked"]["locked_before_screen_a_pass"] is True
     assert record["boundaries"]["outcome_accessed"] is False
@@ -499,15 +502,12 @@ def test_runner_capture_and_json_fail_closed_on_identity_or_parser_drift(
 def test_runner_rejects_shared_core_drift_before_claim(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def git_result(*args: str) -> str:
-        if args[0] == "rev-parse":
-            return RUNNER.CORE_TREE
-        if args[0] == "diff":
-            return "src/quant_system/backtest/event_loop.py"
-        return ""
-
-    monkeypatch.setattr(RUNNER, "_git", git_result)
-    with pytest.raises(RUNNER.InputBlockedError, match="tracked shared-core bytes"):
+    monkeypatch.setattr(
+        RUNNER,
+        "_core_source_identity",
+        lambda: (RUNNER.CORE_SOURCE_FILE_COUNT, "0" * 64),
+    )
+    with pytest.raises(RUNNER.InputBlockedError, match="shared-core source bytes"):
         RUNNER._require_core_identity()
 
 
