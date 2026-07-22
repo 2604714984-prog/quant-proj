@@ -9,12 +9,15 @@ from .blocked_orders import (
 from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
 from .costs import CostBreakdown, TransactionCostModel
 from .event_loop import (
+    DecisionArtifact,
     DecisionContext,
     ExecutionInput,
     ExecutionReceipt,
     StaticRebalanceResult,
     TerminalAction,
     blocked_exit_from_receipt,
+    capture_decision_artifact,
+    run_candidate_rebalance,
     run_static_rebalance,
 )
 from .portfolio import Portfolio
@@ -24,6 +27,7 @@ __all__ = [
     "CapacityObservation",
     "CapacityPolicy",
     "CostBreakdown",
+    "DecisionArtifact",
     "DecisionContext",
     "ExecutionInput",
     "ExecutionReceipt",
@@ -35,6 +39,8 @@ __all__ = [
     "advance_blocked_exit",
     "assess_capacity",
     "blocked_exit_from_receipt",
+    "capture_decision_artifact",
     "execute_ready_blocked_exit",
+    "run_candidate_rebalance",
     "run_static_rebalance",
 ]

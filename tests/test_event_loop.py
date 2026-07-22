@@ -3,6 +3,7 @@ from dataclasses import replace
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 import hashlib
+from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -10,11 +11,14 @@ import pytest
 from quant_system.backtest import (
     CapacityObservation,
     CapacityPolicy,
+    DecisionArtifact,
     ExecutionInput,
     Portfolio,
     TerminalAction,
     TransactionCostModel,
     blocked_exit_from_receipt,
+    capture_decision_artifact,
+    run_candidate_rebalance,
     run_static_rebalance,
 )
 from quant_system.data import (
@@ -23,6 +27,7 @@ from quant_system.data import (
     CalendarIdentity,
     CorporateActionIdentity,
     SourceIdentity,
+    capture_source_bytes,
     calendar_identity_sha256,
     session_dates_sha256,
     session_rows_sha256,
@@ -2081,3 +2086,194 @@ def test_universe_snapshot_source_is_causal_and_changes_input_identity() -> None
             universe_snapshot=first_snapshot,
             **arguments,
         )
+
+
+def _captured_source(label: str, available_at: datetime) -> SourceIdentity:
+    return capture_source_bytes(
+        label.encode(),
+        publication_evidence=f"published:{label}".encode(),
+        source_url="https://example.test/captured-source",
+        available_at=available_at,
+        retrieved_at=available_at + timedelta(minutes=1),
+        revision_id=label,
+        source_family_id="captured-fixture-v1",
+        provider_id="fixture-provider",
+        subject_id="fixture-subject",
+    ).source
+
+
+def _controlled_calendar(days: tuple[date, ...]) -> AcceptedSessionCalendar:
+    timezone_name = "Asia/Shanghai"
+    zone = ZoneInfo(timezone_name)
+    rows = tuple(
+        AcceptedSession(
+            day,
+            datetime.combine(day, time(9, 30), zone),
+            datetime.combine(day, time(15), zone),
+            _captured_source(f"calendar-{index}", datetime(2000, 1, 1, tzinfo=UTC)),
+            timezone_name,
+            exchange_id="XSHG",
+        )
+        for index, day in enumerate(days)
+    )
+    dates = tuple(row.session_date for row in rows)
+    identity = CalendarIdentity(
+        "XSHG",
+        timezone_name,
+        dates[0],
+        dates[-1],
+        len(dates),
+        session_dates_sha256(dates),
+        session_rows_sha256(rows),
+        _captured_source("calendar-identity", datetime(2000, 1, 1, tzinfo=UTC)),
+    )
+    return AcceptedSessionCalendar(rows, identity=identity)
+
+
+def _controlled_input(symbol: str, execution: AcceptedSession) -> ExecutionInput:
+    statuses = tuple(
+        StatusEvidence(
+            f"{symbol}:{kind}",
+            symbol,
+            kind,  # type: ignore[arg-type]
+            value,
+            date(1990, 1, 1),
+            None,
+            execution.exchange_timezone,
+            _captured_source(f"status-{kind}", datetime(2000, 1, 1, tzinfo=UTC)),
+        )
+        for kind, value in (
+            ("listed", True),
+            ("delisted", False),
+            ("st", False),
+            ("suspended", False),
+        )
+    )
+    return ExecutionInput(
+        symbol=symbol,
+        market="a_share",
+        open_price=10.0,
+        currency="CNY",
+        source=_captured_source("execution-open", execution.open_at),
+        status_records=statuses,
+        decision_price=10.0,
+        decision_price_source=_captured_source(
+            "decision-close",
+            datetime(2000, 1, 1, tzinfo=UTC),
+        ),
+        decision_price_basis="raw_execution_units",
+        execution_price_effective_at=execution.open_at,
+        execution_price_basis="timestamped_session_open",
+    )
+
+
+def _captured_decision_artifact(tmp_path: Path, decision_at: datetime) -> DecisionArtifact:
+    feature = tmp_path / "feature.json"
+    definition = tmp_path / "definition.json"
+    adapter = tmp_path / "adapter.py"
+    feature.write_text('{"AAA": 1.0}\n', encoding="utf-8")
+    definition.write_text('{"identity": "fixture-v1"}\n', encoding="utf-8")
+    adapter.write_text("WEIGHT = 1.0\n", encoding="utf-8")
+    return capture_decision_artifact(
+        weights={"AAA": 1.0},
+        feature_snapshot_path=feature,
+        strategy_definition_path=definition,
+        strategy_adapter_path=adapter,
+        decision_at=decision_at,
+        dataset_identity_sha256="d" * 64,
+        split_identity_sha256="e" * 64,
+    )
+
+
+def test_callable_interface_is_permanently_experimental() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    execution = calendar.session_on(days[1], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    result = _run_static_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        signal_session=days[0],
+        decision_at=execution.open_at - timedelta(minutes=1),
+        execution_inputs=(_input("AAA", "a_share", execution),),
+        target_weights=lambda _: {"AAA": 1.0},
+    )
+    assert result.interface_grade == "UNTRUSTED_EXPERIMENT"
+    assert result.strategy_candidate_available is False
+
+
+def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    row = _controlled_input("AAA", execution)
+    artifact = _captured_decision_artifact(tmp_path, decision_at)
+    snapshot = _snapshot(calendar, execution, decision_at, (row,), ("AAA",))
+    snapshot = replace(
+        snapshot,
+        source_identity=_captured_source(
+            "universe-snapshot-controlled",
+            datetime(2000, 1, 1, tzinfo=UTC),
+        ),
+    )
+
+    result = run_candidate_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        signal_session=days[0],
+        decision_at=decision_at,
+        execution_inputs=(row,),
+        universe_members=("AAA",),
+        universe_snapshot=snapshot,
+        decision_artifact=artifact,
+    )
+
+    assert result.interface_grade == "CONTROLLED_CANDIDATE_INPUT"
+    assert result.decision_artifact_sha256 == artifact.artifact_sha256
+    assert result.strategy_candidate_available is False
+
+
+def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    row = _controlled_input("AAA", execution)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+
+    with pytest.raises(TypeError, match="DecisionArtifact"):
+        run_candidate_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=decision_at,
+            execution_inputs=(row,),
+            universe_members=("AAA",),
+            universe_snapshot=_snapshot(
+                calendar,
+                execution,
+                decision_at,
+                (row,),
+                ("AAA",),
+            ),
+            decision_artifact=lambda _: {"AAA": 1.0},  # type: ignore[arg-type]
+        )
+    assert portfolio.__dict__ == before
+
+
+def test_candidate_interface_detects_adapter_byte_change(tmp_path: Path) -> None:
+    decision_at = datetime(2026, 7, 13, 8, tzinfo=UTC)
+    artifact = _captured_decision_artifact(tmp_path, decision_at)
+    original_identity = artifact.artifact_sha256
+    artifact._strategy_adapter_path.write_text("WEIGHT = 0.5\n", encoding="utf-8")
+
+    with pytest.raises(MarketDataError, match="adapter_sha256"):
+        artifact.verify_current_bytes()
+    assert artifact.artifact_sha256 == original_identity

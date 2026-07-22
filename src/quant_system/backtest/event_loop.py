@@ -3,18 +3,20 @@ from __future__ import annotations
 
 from collections.abc import Callable, Mapping
 from copy import deepcopy
-from dataclasses import asdict, dataclass, fields, is_dataclass
+from dataclasses import asdict, dataclass, field, fields, is_dataclass, replace
 from datetime import date, datetime
 from decimal import Decimal
 import hashlib
 import json
 import math
+from pathlib import Path
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
 from quant_system.data import (
     AcceptedSession, AcceptedSessionCalendar, CalendarIdentityError,
-    CorporateActionIdentity, SourceIdentity,
+    CorporateActionIdentity, SourceIdentity, capture_file_digest,
+    require_trusted_source,
 )
 from quant_system.markets.a_share import AShareBar, decide_fill as a_share_fill
 from quant_system.markets.common import (
@@ -57,6 +59,7 @@ _EXECUTION_PRICE_BASES = {
     "retrospective_daily_bar_open_fill",
 }
 _NO_OPEN_EVENT_BASIS = "confirmed_no_open_event"
+_DECISION_ARTIFACT_TOKEN = object()
 
 
 @dataclass(frozen=True)
@@ -139,6 +142,123 @@ class StaticRebalanceResult:
     final_nav: float
     strategy_definition_sha256: str
     strategy_adapter_sha256: str
+    interface_grade: str = "UNTRUSTED_EXPERIMENT"
+    decision_artifact_sha256: str | None = None
+    dataset_identity_sha256: str | None = None
+    split_identity_sha256: str | None = None
+    strategy_candidate_available: bool = False
+
+
+@dataclass(frozen=True)
+class DecisionArtifact:
+    """Frozen weights and actual strategy/data bytes for the controlled interface."""
+
+    weights: tuple[tuple[str, float], ...]
+    feature_snapshot_sha256: str
+    strategy_definition_sha256: str
+    strategy_adapter_sha256: str
+    decision_at: datetime
+    dataset_identity_sha256: str
+    split_identity_sha256: str
+    artifact_sha256: str
+    _feature_snapshot_path: Path = field(repr=False, compare=False, hash=False)
+    _strategy_definition_path: Path = field(repr=False, compare=False, hash=False)
+    _strategy_adapter_path: Path = field(repr=False, compare=False, hash=False)
+    _artifact_token: object | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+
+    def __post_init__(self) -> None:
+        symbols = tuple(symbol for symbol, _ in self.weights)
+        frozen = _weights(dict(self.weights), symbols)
+        if frozen != self.weights or len(symbols) != len(set(symbols)):
+            raise MarketDataError("decision artifact weights must be sorted and unique")
+        for field_name in (
+            "feature_snapshot_sha256",
+            "strategy_definition_sha256",
+            "strategy_adapter_sha256",
+            "dataset_identity_sha256",
+            "split_identity_sha256",
+        ):
+            object.__setattr__(self, field_name, _sha256(getattr(self, field_name), field_name))
+        object.__setattr__(self, "decision_at", require_aware_datetime(self.decision_at, "decision_at"))
+        expected = hashlib.sha256(_decision_artifact_payload(self)).hexdigest()
+        if self._artifact_token is not _DECISION_ARTIFACT_TOKEN or self.artifact_sha256 != expected:
+            raise MarketDataError(
+                "DecisionArtifact must be created by capture_decision_artifact"
+            )
+
+    def verify_current_bytes(self) -> None:
+        observed = {
+            "feature_snapshot_sha256": capture_file_digest(self._feature_snapshot_path)[0],
+            "strategy_definition_sha256": capture_file_digest(
+                self._strategy_definition_path
+            )[0],
+            "strategy_adapter_sha256": capture_file_digest(self._strategy_adapter_path)[0],
+        }
+        for field_name, digest in observed.items():
+            if digest != getattr(self, field_name):
+                raise MarketDataError(f"{field_name} no longer matches captured bytes")
+
+
+def _decision_artifact_payload(artifact: DecisionArtifact) -> bytes:
+    payload = {
+        "dataset_identity_sha256": artifact.dataset_identity_sha256,
+        "decision_at": require_aware_datetime(
+            artifact.decision_at,
+            "decision_at",
+        ).isoformat(),
+        "feature_snapshot_sha256": artifact.feature_snapshot_sha256,
+        "split_identity_sha256": artifact.split_identity_sha256,
+        "strategy_adapter_sha256": artifact.strategy_adapter_sha256,
+        "strategy_definition_sha256": artifact.strategy_definition_sha256,
+        "version": 1,
+        "weights": artifact.weights,
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def capture_decision_artifact(
+    *,
+    weights: Mapping[str, float],
+    feature_snapshot_path: Path,
+    strategy_definition_path: Path,
+    strategy_adapter_path: Path,
+    decision_at: datetime,
+    dataset_identity_sha256: str,
+    split_identity_sha256: str,
+) -> DecisionArtifact:
+    """Capture actual feature, definition, and adapter bytes into one decision receipt."""
+
+    symbols = tuple(sorted(weights))
+    frozen = _weights(weights, symbols)
+    feature_sha = capture_file_digest(feature_snapshot_path)[0]
+    definition_sha = capture_file_digest(strategy_definition_path)[0]
+    adapter_sha = capture_file_digest(strategy_adapter_path)[0]
+    provisional = object.__new__(DecisionArtifact)
+    values = {
+        "weights": frozen,
+        "feature_snapshot_sha256": feature_sha,
+        "strategy_definition_sha256": definition_sha,
+        "strategy_adapter_sha256": adapter_sha,
+        "decision_at": require_aware_datetime(decision_at, "decision_at"),
+        "dataset_identity_sha256": _sha256(dataset_identity_sha256, "dataset_identity_sha256"),
+        "split_identity_sha256": _sha256(split_identity_sha256, "split_identity_sha256"),
+        "_feature_snapshot_path": feature_snapshot_path,
+        "_strategy_definition_path": strategy_definition_path,
+        "_strategy_adapter_path": strategy_adapter_path,
+    }
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    artifact_sha = hashlib.sha256(_decision_artifact_payload(provisional)).hexdigest()
+    return DecisionArtifact(
+        **values,
+        artifact_sha256=artifact_sha,
+        _artifact_token=_DECISION_ARTIFACT_TOKEN,
+    )
 
 
 def run_static_rebalance(
@@ -159,7 +279,11 @@ def run_static_rebalance(
     slippage_bps: float = 0.0,
     prior_stage_hash: str = "0" * 64,
 ) -> StaticRebalanceResult:
-    """Run one static rebalance on a copy; caller state stays unchanged."""
+    """Run an experimental callable-based rebalance on a copy.
+
+    The returned interface grade is always ``UNTRUSTED_EXPERIMENT``. Use
+    ``run_candidate_rebalance`` for a controlled, non-callable decision input.
+    """
     if not isinstance(portfolio, Portfolio) or not isinstance(calendar, AcceptedSessionCalendar):
         raise TypeError("portfolio and calendar have invalid types")
     definition_sha = _sha256(strategy_definition_sha256, "strategy_definition_sha256")
@@ -309,6 +433,89 @@ def run_static_rebalance(
     return StaticRebalanceResult(working, context, weights, tuple(receipts), identity,
                                  receipt_hashes, stage_hash, final_nav,
                                  definition_sha, adapter_sha)
+
+
+def run_candidate_rebalance(
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    *,
+    signal_session: date,
+    decision_at: datetime,
+    execution_inputs: tuple[ExecutionInput, ...],
+    universe_members: tuple[str, ...],
+    universe_snapshot: UniverseSnapshotIdentity,
+    decision_artifact: DecisionArtifact,
+    execution_calendar_revision: AcceptedSessionCalendar | None = None,
+    capacity_policy: CapacityPolicy | None = None,
+    max_positions: int | None = None,
+    slippage_bps: float = 0.0,
+    prior_stage_hash: str = "0" * 64,
+) -> StaticRebalanceResult:
+    """Run the controlled interface from frozen weights and captured bytes only."""
+
+    if not isinstance(decision_artifact, DecisionArtifact):
+        raise TypeError("decision_artifact must be a captured DecisionArtifact")
+    cutoff = require_aware_datetime(decision_at, "decision_at")
+    if decision_artifact.decision_at != cutoff:
+        raise MarketDataError("decision artifact decision_at mismatch")
+    decision_artifact.verify_current_bytes()
+    _require_candidate_sources(
+        calendar,
+        execution_inputs,
+        universe_snapshot,
+        cutoff,
+        execution_calendar_revision,
+    )
+    result = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=signal_session,
+        decision_at=cutoff,
+        execution_inputs=execution_inputs,
+        execution_calendar_revision=execution_calendar_revision,
+        universe_members=universe_members,
+        universe_snapshot=universe_snapshot,
+        target_weights=lambda _: dict(decision_artifact.weights),
+        strategy_definition_sha256=decision_artifact.strategy_definition_sha256,
+        strategy_adapter_sha256=decision_artifact.strategy_adapter_sha256,
+        capacity_policy=capacity_policy,
+        max_positions=max_positions,
+        slippage_bps=slippage_bps,
+        prior_stage_hash=prior_stage_hash,
+    )
+    return replace(
+        result,
+        interface_grade="CONTROLLED_CANDIDATE_INPUT",
+        decision_artifact_sha256=decision_artifact.artifact_sha256,
+        dataset_identity_sha256=decision_artifact.dataset_identity_sha256,
+        split_identity_sha256=decision_artifact.split_identity_sha256,
+        strategy_candidate_available=False,
+    )
+
+
+def _require_candidate_sources(
+    calendar: AcceptedSessionCalendar,
+    execution_inputs: tuple[ExecutionInput, ...],
+    universe_snapshot: UniverseSnapshotIdentity,
+    cutoff: datetime,
+    execution_calendar_revision: AcceptedSessionCalendar | None,
+) -> None:
+    require_trusted_source(calendar.identity.source_identity)
+    for day in calendar.session_dates:
+        require_trusted_source(calendar.session_on(day, as_of=cutoff).source)
+    require_trusted_source(universe_snapshot.source_identity)
+    if execution_calendar_revision is not None:
+        require_trusted_source(execution_calendar_revision.identity.source_identity)
+    for row in execution_inputs:
+        require_trusted_source(row.source)
+        if row.decision_price_source is not None:
+            require_trusted_source(row.decision_price_source)
+        for status in row.status_records:
+            require_trusted_source(status.source)
+        for action in row.corporate_actions:
+            require_trusted_source(action.source)
+        if row.terminal_action is not None:
+            require_trusted_source(row.terminal_action.source)
 
 
 def _execution_calendar(
@@ -858,7 +1065,11 @@ def _identity(
 
 def _normal(value: Any) -> Any:
     if is_dataclass(value) and not isinstance(value, type):
-        return {field.name: _normal(getattr(value, field.name)) for field in fields(value)}
+        return {
+            item.name: _normal(getattr(value, item.name))
+            for item in fields(value)
+            if not item.name.startswith("_")
+        }
     if isinstance(value, Mapping):
         return {str(key): _normal(item) for key, item in sorted(value.items())}
     if isinstance(value, (tuple, list)):

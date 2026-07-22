@@ -237,7 +237,7 @@ class SourceCaptureReceipt:
             raise SourceIdentityError("capture receipt hash mismatch")
 
 
-def _capture_digest(path: Path) -> tuple[str, int]:
+def capture_file_digest(path: Path) -> tuple[str, int]:
     candidate = path.expanduser()
     flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
     try:
@@ -346,8 +346,8 @@ def capture_source_file(
 ) -> SourceCaptureReceipt:
     """Capture exact local bytes without following links or trusting caller hashes."""
 
-    content_sha, byte_count = _capture_digest(path)
-    publication_sha, _ = _capture_digest(publication_evidence_path)
+    content_sha, byte_count = capture_file_digest(path)
+    publication_sha, _ = capture_file_digest(publication_evidence_path)
     return _build_capture_receipt(
         content_sha256=content_sha,
         byte_count=byte_count,
@@ -646,6 +646,7 @@ __all__ = [
     "SourceIdentityError",
     "capture_source_bytes",
     "capture_source_file",
+    "capture_file_digest",
     "require_trusted_source",
     "select_corporate_action_revision",
     "select_source_revision",
