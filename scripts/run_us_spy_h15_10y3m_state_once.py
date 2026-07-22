@@ -79,10 +79,19 @@ SCREEN_A_PUBLIC_REPORT_SHA256 = (
     "40af63646f096d8b472ffc94147e62636138796e56b5e3ebad012b7a89933fa4"
 )
 PRIOR_TERMINAL_REPORT_SHA256 = (
+    "d5ee84c3e7605db3d5221d09e228c557d6b9dc0073f9968813c136042dd21d51"
+)
+CONTINUATION_1_AUTHORIZATION_REPORT_SHA256 = (
     "594d031efb80e233ae653120045639310e9670e29c11902117cdad8fd64c85e3"
 )
+PRIOR_CONTINUATION_1_CLAIM_SHA256 = (
+    "f8aeb6c0b27a455c3e011d40ed3aaf80b0e069fbc65ec3802323e59b4704a713"
+)
+PRIOR_CONTINUATION_1_RESULT_SHA256 = (
+    "b51d47e41841957b58c7182d5f3e54e299043e7cce127437c239ade7fcd2633f"
+)
 INFERENCE_B_DEFINITION_SHA256 = (
-    "07f56bee7e6232706910dc654fc6d1565794f72bf208fd3040830f0c5c24243d"
+    "73d599bd2b01c9aacdf14d50836f489ad26e192db9d26c89db363f8a169d113f"
 )
 INFERENCE_B_BUNDLE_SHA256 = (
     "95217d01da3d11e6e1ee5d312d1c533210e45558a7421e5c2a8bb30058be2ed5"
@@ -114,7 +123,7 @@ INFERENCE_B_H15_RELATIVE = Path(
     "h15_inference_b_signal_input_v1.json"
 )
 INFERENCE_B_CLAIM_RELATIVE = Path(
-    "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_1/"
+    "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_2/"
     "claim.json"
 )
 SCREEN_A_PRIVATE_RESULT = DATA_ROOT / SCREEN_A_PRIVATE_RESULT_RELATIVE
@@ -357,9 +366,12 @@ def _snapshot(row: dict[str, Any]) -> UniverseSnapshotIdentity:
 
 
 def _execution(row: dict[str, Any], statuses: tuple[StatusEvidence, ...]) -> ExecutionInput:
+    external_market = row["market"]
+    if external_market != "US":
+        raise InputBlockedError("external market identity must be exact US")
     return ExecutionInput(
         row["symbol"],
-        row["market"],
+        "us",
         row["raw_open"],
         row["currency"],
         _source(row["source"]),
@@ -1019,7 +1031,7 @@ def _require_inference_contract(payload: bytes, adapter_sha256: str) -> None:
         "rerun_after_any_claim": False,
         "inference_attempt_consumed_at_claim": True,
         "inference_outcome_opened_at_runtime_bundle_capture_attempt": True,
-        "technical_continuation_limit": 1,
+        "technical_continuation_limit": 2,
     }:
         raise InputBlockedError("Inference-B terminal rules mismatch")
     if freeze.get("boundaries") != {
@@ -1047,7 +1059,7 @@ def _require_inference_contract(payload: bytes, adapter_sha256: str) -> None:
             "replace decision_price_basis with raw_execution_units in exactly 54 execution "
             "records and rebind the unchanged H15 rows to the repaired bundle"
         ),
-        "prior_terminal_report_sha256": PRIOR_TERMINAL_REPORT_SHA256,
+        "prior_terminal_report_sha256": CONTINUATION_1_AUTHORIZATION_REPORT_SHA256,
         "prior_claim_sha256": (
             "9573ded969d2c2284aa739fb78c02f6f319d62a6ab43cdfe75e0ac0dd6021f6c"
         ),
@@ -1058,6 +1070,32 @@ def _require_inference_contract(payload: bytes, adapter_sha256: str) -> None:
         "further_retry_allowed": False,
     }:
         raise InputBlockedError("Inference-B technical continuation contract mismatch")
+    if record.get("technical_continuation_2") != {
+        "owner_authorized": True,
+        "authorization_basis": (
+            "the owner directed completion of data-blocked strategies on 2026-07-23; "
+            "the prior continuation produced no Inference-B strategy statistic"
+        ),
+        "reason": (
+            "the prior continuation passed the exact external market label US directly "
+            "into the shared-core internal market enum us and stopped before the first "
+            "completed rebalance"
+        ),
+        "economic_contract_changed": False,
+        "signal_dates_costs_account_comparator_statistics_and_gates_changed": False,
+        "prior_inference_statistic_computed": False,
+        "prior_inference_result_metrics_present": False,
+        "repair": (
+            "require the exact external market label US and map only that value to the "
+            "shared-core internal market enum us before any callback"
+        ),
+        "prior_terminal_report_sha256": PRIOR_TERMINAL_REPORT_SHA256,
+        "prior_claim_sha256": PRIOR_CONTINUATION_1_CLAIM_SHA256,
+        "prior_result_sha256": PRIOR_CONTINUATION_1_RESULT_SHA256,
+        "attempt_limit": 1,
+        "further_retry_allowed": False,
+    }:
+        raise InputBlockedError("Inference-B continuation-2 contract mismatch")
 
 
 def _run_inference_once(expected_hashes: tuple[str, str]) -> None:
@@ -1109,6 +1147,7 @@ def _run_inference_once(expected_hashes: tuple[str, str]) -> None:
             "program_family_id": PROGRAM_FAMILY_ID,
             "program_alpha": PROGRAM_ALPHA,
             "stage": "RETROSPECTIVE_SECONDARY_INFERENCE_B",
+            "technical_continuation_id": "PREOUTCOME_TECHNICAL_CONTINUATION_2",
             "claimed_at": datetime.now(timezone.utc).isoformat(),
             **identity,
         },

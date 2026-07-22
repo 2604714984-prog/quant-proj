@@ -141,8 +141,8 @@
       "screen_a_private_result": "private_results/us_spy_h15_10y3m_state_v1_screen_a_44bcd9a1/result.json",
       "runtime_bundle": "staging/us_spy_h15_10y3m_state_v1_technical_continuation_1/us_spy_h15_inference_b_runtime_input_v1.json",
       "h15_input": "staging/us_spy_h15_10y3m_state_v1_technical_continuation_1/h15_inference_b_signal_input_v1.json",
-      "claim": "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_1/claim.json",
-      "result": "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_1/result.json"
+      "claim": "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_2/claim.json",
+      "result": "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_2/result.json"
     },
     "stage_contract": {
       "label": "RETROSPECTIVE_SECONDARY_INFERENCE_B",
@@ -205,7 +205,7 @@
       "rerun_after_any_claim": false,
       "inference_attempt_consumed_at_claim": true,
       "inference_outcome_opened_at_runtime_bundle_capture_attempt": true,
-      "technical_continuation_limit": 1
+      "technical_continuation_limit": 2
     },
     "boundaries": {
       "network_or_provider_call": false,
@@ -228,6 +228,21 @@
     "prior_terminal_report_sha256": "594d031efb80e233ae653120045639310e9670e29c11902117cdad8fd64c85e3",
     "prior_claim_sha256": "9573ded969d2c2284aa739fb78c02f6f319d62a6ab43cdfe75e0ac0dd6021f6c",
     "prior_result_sha256": "705ffbce5915c1eacb21316005263bb31e147b3a871acd005a886ed0296e40b0",
+    "attempt_limit": 1,
+    "further_retry_allowed": false
+  },
+  "technical_continuation_2": {
+    "owner_authorized": true,
+    "authorization_basis": "the owner directed completion of data-blocked strategies on 2026-07-23; the prior continuation produced no Inference-B strategy statistic",
+    "reason": "the prior continuation passed the exact external market label US directly into the shared-core internal market enum us and stopped before the first completed rebalance",
+    "economic_contract_changed": false,
+    "signal_dates_costs_account_comparator_statistics_and_gates_changed": false,
+    "prior_inference_statistic_computed": false,
+    "prior_inference_result_metrics_present": false,
+    "repair": "require the exact external market label US and map only that value to the shared-core internal market enum us before any callback",
+    "prior_terminal_report_sha256": "d5ee84c3e7605db3d5221d09e228c557d6b9dc0073f9968813c136042dd21d51",
+    "prior_claim_sha256": "f8aeb6c0b27a455c3e011d40ed3aaf80b0e069fbc65ec3802323e59b4704a713",
+    "prior_result_sha256": "b51d47e41841957b58c7182d5f3e54e299043e7cce127437c239ade7fcd2633f",
     "attempt_limit": 1,
     "further_retry_allowed": false
   },

@@ -314,6 +314,43 @@ def test_definition_freezes_the_outcome_blind_data_amendment_and_inputs() -> Non
     assert record["strategy_candidate_available"] is False
 
 
+def _external_execution_row(market: str = "US") -> dict[str, object]:
+    available_at = "2026-01-02T20:05:00-05:00"
+    source = {
+        "source_url": "https://example.invalid/spy",
+        "content_sha256": "1" * 64,
+        "available_at": available_at,
+        "retrieved_at": "2026-07-23T00:00:00+00:00",
+        "revision_id": "synthetic-spy-row-v1",
+        "supersedes_revision_id": None,
+    }
+    return {
+        "symbol": "SPY",
+        "market": market,
+        "raw_open": 100.0,
+        "currency": "USD",
+        "source": source,
+        "decision_price": 99.0,
+        "decision_price_source": source,
+        "decision_price_basis": "raw_execution_units",
+        "execution_price_effective_at": "2026-01-05T09:30:00-05:00",
+        "execution_price_basis": "retrospective_daily_bar_open_fill",
+    }
+
+
+def test_runner_maps_exact_external_us_to_shared_core_market_enum() -> None:
+    row = _external_execution_row()
+    execution = RUNNER._execution(row, ())
+    assert row["market"] == "US"
+    assert execution.market == "us"
+
+
+@pytest.mark.parametrize("market", ["us", "Us", "USA", ""])
+def test_runner_rejects_nonexact_external_market_identifiers(market: str) -> None:
+    with pytest.raises(RUNNER.InputBlockedError, match="exact US"):
+        RUNNER._execution(_external_execution_row(market), ())
+
+
 def test_inference_definition_freezes_exact_inputs_statistics_and_terminal_rules() -> None:
     path = ROOT / "research" / "definitions" / "us_spy_h15_10y3m_state_v1.json"
     payload = path.read_bytes()
@@ -328,7 +365,7 @@ def test_inference_definition_freezes_exact_inputs_statistics_and_terminal_rules
     assert freeze["stage_contract"]["terminal_exit_month"] == "2026-06"
     assert freeze["bootstrap_contract"]["program_alpha"] == 0.015
     assert freeze["terminal_rules"]["rerun_after_any_claim"] is False
-    assert freeze["terminal_rules"]["technical_continuation_limit"] == 1
+    assert freeze["terminal_rules"]["technical_continuation_limit"] == 2
     assert record["technical_continuation_1"] == {
         "owner_authorized": True,
         "reason": (
@@ -351,6 +388,37 @@ def test_inference_definition_freezes_exact_inputs_statistics_and_terminal_rules
         ),
         "prior_result_sha256": (
             "705ffbce5915c1eacb21316005263bb31e147b3a871acd005a886ed0296e40b0"
+        ),
+        "attempt_limit": 1,
+        "further_retry_allowed": False,
+    }
+    assert record["technical_continuation_2"] == {
+        "owner_authorized": True,
+        "authorization_basis": (
+            "the owner directed completion of data-blocked strategies on 2026-07-23; "
+            "the prior continuation produced no Inference-B strategy statistic"
+        ),
+        "reason": (
+            "the prior continuation passed the exact external market label US directly "
+            "into the shared-core internal market enum us and stopped before the first "
+            "completed rebalance"
+        ),
+        "economic_contract_changed": False,
+        "signal_dates_costs_account_comparator_statistics_and_gates_changed": False,
+        "prior_inference_statistic_computed": False,
+        "prior_inference_result_metrics_present": False,
+        "repair": (
+            "require the exact external market label US and map only that value to the "
+            "shared-core internal market enum us before any callback"
+        ),
+        "prior_terminal_report_sha256": (
+            "d5ee84c3e7605db3d5221d09e228c557d6b9dc0073f9968813c136042dd21d51"
+        ),
+        "prior_claim_sha256": (
+            "f8aeb6c0b27a455c3e011d40ed3aaf80b0e069fbc65ec3802323e59b4704a713"
+        ),
+        "prior_result_sha256": (
+            "b51d47e41841957b58c7182d5f3e54e299043e7cce127437c239ade7fcd2633f"
         ),
         "attempt_limit": 1,
         "further_retry_allowed": False,
