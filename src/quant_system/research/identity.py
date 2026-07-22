@@ -5,11 +5,33 @@ from __future__ import annotations
 import hashlib
 import json
 import re
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
+from dataclasses import dataclass
+from dataclasses import field
 from datetime import date, datetime, timezone
 
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
+_DATASET_MANIFEST_TOKEN = object()
+
+
+@dataclass(frozen=True)
+class DatasetManifest:
+    source_snapshot_sha256s: tuple[str, ...]
+    universe_snapshot_sha256: str
+    feature_code_sha256: str
+    label_code_sha256: str
+    split_manifest_sha256: str
+    calendar_policy_sha256: str
+    action_policy_sha256: str
+    cost_policy_sha256: str
+    partition_sha256s: tuple[str, ...]
+    identity_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False, hash=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _DATASET_MANIFEST_TOKEN:
+            raise ValueError("DatasetManifest must be created by build_dataset_manifest")
 
 
 def _canonical_timestamp(value: date | datetime) -> str:
@@ -28,10 +50,17 @@ def dataset_identity_sha256(
     dates: Sequence[date | datetime],
     frequency: str,
     schema: Sequence[tuple[str, str]],
-    config_ids: Mapping[str, str],
+    source_snapshot_sha256s: Sequence[str],
+    universe_snapshot_sha256: str,
+    feature_code_sha256: str,
+    label_code_sha256: str,
+    split_manifest_sha256: str,
+    calendar_policy_sha256: str,
+    action_policy_sha256: str,
+    cost_policy_sha256: str,
     partition_sha256s: Sequence[str],
 ) -> str:
-    """Hash exact date partitions, ordered schema, config, and partition contents."""
+    """Hash exact partitions and every dataset-semantic artifact."""
 
     frozen_dates = tuple(dates)
     if not frozen_dates:
@@ -66,17 +95,6 @@ def dataset_identity_sha256(
     if not canonical_schema:
         raise ValueError("schema must not be empty")
 
-    if not isinstance(config_ids, Mapping) or not config_ids:
-        raise ValueError("config_ids must not be empty")
-    canonical_config: dict[str, str] = {}
-    for name, value in config_ids.items():
-        if not isinstance(name, str) or not name.strip():
-            raise ValueError("config identity names must be nonempty strings")
-        if not isinstance(value, str) or not value.strip():
-            raise ValueError("config identity values must be nonempty strings")
-        canonical_config[name] = value
-    canonical_config = dict(sorted(canonical_config.items()))
-
     frozen_partitions = tuple(partition_sha256s)
     if len(frozen_partitions) != len(canonical_dates):
         raise ValueError("partition_sha256s must contain exactly one hash per date partition")
@@ -86,13 +104,54 @@ def dataset_identity_sha256(
     ):
         raise ValueError("partition_sha256s must contain lowercase SHA-256 values")
 
+    frozen_sources = tuple(source_snapshot_sha256s)
+    if not frozen_sources:
+        raise ValueError("source_snapshot_sha256s must not be empty")
+    semantic_hashes = {
+        "universe_snapshot_sha256": universe_snapshot_sha256,
+        "feature_code_sha256": feature_code_sha256,
+        "label_code_sha256": label_code_sha256,
+        "split_manifest_sha256": split_manifest_sha256,
+        "calendar_policy_sha256": calendar_policy_sha256,
+        "action_policy_sha256": action_policy_sha256,
+        "cost_policy_sha256": cost_policy_sha256,
+    }
+    for field_name, value in (
+        *(semantic_hashes.items()),
+        *(("source_snapshot_sha256s", value) for value in frozen_sources),
+    ):
+        if not isinstance(value, str) or _SHA256.fullmatch(value) is None:
+            raise ValueError(f"{field_name} must contain lowercase SHA-256 values")
+
     payload = {
-        "config_ids": canonical_config,
+        **semantic_hashes,
         "dates": canonical_dates,
         "frequency": frequency,
         "partition_sha256s": frozen_partitions,
         "schema": canonical_schema,
-        "version": 1,
+        "source_snapshot_sha256s": frozen_sources,
+        "version": 2,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
+
+
+def build_dataset_manifest(
+    **inputs: object,
+) -> DatasetManifest:
+    """Build an immutable dataset receipt from validated semantic identities."""
+
+    identity = dataset_identity_sha256(**inputs)  # type: ignore[arg-type]
+    return DatasetManifest(
+        source_snapshot_sha256s=tuple(inputs["source_snapshot_sha256s"]),  # type: ignore[arg-type]
+        universe_snapshot_sha256=str(inputs["universe_snapshot_sha256"]),
+        feature_code_sha256=str(inputs["feature_code_sha256"]),
+        label_code_sha256=str(inputs["label_code_sha256"]),
+        split_manifest_sha256=str(inputs["split_manifest_sha256"]),
+        calendar_policy_sha256=str(inputs["calendar_policy_sha256"]),
+        action_policy_sha256=str(inputs["action_policy_sha256"]),
+        cost_policy_sha256=str(inputs["cost_policy_sha256"]),
+        partition_sha256s=tuple(inputs["partition_sha256s"]),  # type: ignore[arg-type]
+        identity_sha256=identity,
+        _token=_DATASET_MANIFEST_TOKEN,
+    )

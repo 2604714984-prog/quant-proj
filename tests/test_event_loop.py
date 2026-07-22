@@ -17,10 +17,14 @@ from quant_system.backtest import (
     ExecutionInput,
     ExecutionCostAssumptions,
     Portfolio,
+    StageContext,
     TerminalAction,
     TransactionCostModel,
     blocked_exit_from_receipt,
     capture_decision_artifact,
+    create_stage_plan,
+    genesis_stage,
+    next_stage,
     run_candidate_rebalance,
     run_static_rebalance,
 )
@@ -49,6 +53,7 @@ from quant_system.markets.universe import (
     ordered_members_sha256,
 )
 from quant_system.markets.us import CorporateActionValuationError
+from quant_system.research.identity import build_dataset_manifest
 
 UTC = timezone.utc
 DEFINITION_SHA = hashlib.sha256(b"fixture-strategy-definition-v1").hexdigest()
@@ -368,6 +373,10 @@ def _run_static_rebalance(
     )
     kwargs.setdefault("strategy_definition_sha256", DEFINITION_SHA)
     kwargs.setdefault("strategy_adapter_sha256", ADAPTER_SHA)
+    kwargs.setdefault(
+        "stage_context",
+        genesis_stage(create_stage_plan((kwargs["signal_session"],))),
+    )
     return run_static_rebalance(portfolio, calendar, **kwargs)
 
 
@@ -417,6 +426,53 @@ def test_static_rebalance_uses_frozen_callback_and_is_deterministic() -> None:
     assert first.input_identity_hash == second.input_identity_hash
     assert portfolio.__dict__ == before
     assert len(seen) == 1
+
+
+def test_stage_plan_requires_genesis_then_exact_previous_result() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
+    calendar = _calendar(days, "Asia/Shanghai")
+    plan = create_stage_plan(days[:2])
+    first_execution = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    )
+    first = _run_static_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        signal_session=days[0],
+        decision_at=first_execution.open_at - timedelta(minutes=1),
+        execution_inputs=(_input("AAA", "a_share", first_execution),),
+        target_weights=lambda _: {},
+        stage_context=genesis_stage(plan),
+    )
+    second_execution = calendar.session_on(days[2], as_of=first.context.execution_session.close_at)
+    second = _run_static_rebalance(
+        first.portfolio,
+        calendar,
+        signal_session=days[1],
+        decision_at=second_execution.open_at - timedelta(minutes=1),
+        execution_inputs=(_input("AAA", "a_share", second_execution),),
+        target_weights=lambda _: {},
+        stage_context=next_stage(plan, first),
+    )
+
+    assert second.stage_index == 1
+    assert second.stage_session == days[1]
+    assert second.prior_stage_hash == first.stage_hash
+    with pytest.raises(ValueError, match="StageContext must be created"):
+        StageContext(plan.plan_sha256, 1, days[1], "0" * 64)
+    with pytest.raises(ValueError, match="session must match"):
+        _run_static_rebalance(
+            first.portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=first_execution.open_at - timedelta(minutes=1),
+            execution_inputs=(_input("AAA", "a_share", first_execution),),
+            target_weights=lambda _: {},
+            stage_context=next_stage(plan, first),
+        )
+    with pytest.raises(ValueError, match="chronological"):
+        create_stage_plan((days[1], days[0]))
 
 
 def test_timing_pit_and_target_weight_boundaries_fail_closed() -> None:
@@ -1496,7 +1552,6 @@ def test_missing_halt_mark_fails_and_identity_or_prior_stage_changes_hash() -> N
         decision_at=signal.close_at,
         execution_inputs=(changed,),
         target_weights=lambda _: {},
-        prior_stage_hash="1" * 64,
     )
     assert first.receipts == () and second.receipts == ()
     assert first.input_identity_hash != second.input_identity_hash
@@ -2448,6 +2503,23 @@ def _controlled_materialization(
     )
 
 
+def _dataset_manifest(materialization: UniverseMaterialization, session: date):
+    return build_dataset_manifest(
+        dates=(session,),
+        frequency="1d-open",
+        schema=(("symbol", "VARCHAR"), ("open", "DOUBLE")),
+        source_snapshot_sha256s=("1" * 64,),
+        universe_snapshot_sha256=materialization.materialization_sha256,
+        feature_code_sha256="2" * 64,
+        label_code_sha256="3" * 64,
+        split_manifest_sha256="e" * 64,
+        calendar_policy_sha256="4" * 64,
+        action_policy_sha256="5" * 64,
+        cost_policy_sha256="6" * 64,
+        partition_sha256s=("7" * 64,),
+    )
+
+
 def test_callable_interface_is_permanently_experimental() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14))
     calendar = _calendar(days, "Asia/Shanghai")
@@ -2661,10 +2733,11 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         decision_at,
         (row,),
     )
+    dataset_manifest = _dataset_manifest(materialization, days[1])
     artifact = _captured_decision_artifact(
         tmp_path,
         decision_at,
-        dataset_identity_sha256=materialization.materialization_sha256,
+        dataset_identity_sha256=dataset_manifest.identity_sha256,
     )
 
     result = run_candidate_rebalance(
@@ -2674,8 +2747,10 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         decision_at=decision_at,
         execution_inputs=(row,),
         universe_materialization=materialization,
+        dataset_manifest=dataset_manifest,
         decision_artifact=artifact,
         cost_assumptions=_cost_assumptions(),
+        stage_context=genesis_stage(create_stage_plan((days[0],))),
     )
 
     assert result.interface_grade == "CONTROLLED_CANDIDATE_INPUT"
@@ -2713,10 +2788,11 @@ def test_candidate_retrospective_execution_is_research_only(tmp_path: Path) -> N
         decision_at,
         (row,),
     )
+    dataset_manifest = _dataset_manifest(materialization, days[1])
     artifact = _captured_decision_artifact(
         tmp_path,
         decision_at,
-        dataset_identity_sha256=materialization.materialization_sha256,
+        dataset_identity_sha256=dataset_manifest.identity_sha256,
     )
     result = run_candidate_rebalance(
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
@@ -2725,8 +2801,10 @@ def test_candidate_retrospective_execution_is_research_only(tmp_path: Path) -> N
         decision_at=decision_at,
         execution_inputs=(row,),
         universe_materialization=materialization,
+        dataset_manifest=dataset_manifest,
         decision_artifact=artifact,
         cost_assumptions=_cost_assumptions(),
+        stage_context=genesis_stage(create_stage_plan((days[0],))),
     )
 
     assert result.execution_evidence_grade == "RETROSPECTIVE_EXECUTION"
@@ -2754,10 +2832,11 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
         decision_at,
         (row,),
     )
+    dataset_manifest = _dataset_manifest(materialization, days[1])
     artifact = _captured_decision_artifact(
         tmp_path,
         decision_at,
-        dataset_identity_sha256=materialization.materialization_sha256,
+        dataset_identity_sha256=dataset_manifest.identity_sha256,
     )
     portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
@@ -2770,8 +2849,10 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
             decision_at=decision_at,
             execution_inputs=(row,),
             universe_materialization=materialization,
+            dataset_manifest=dataset_manifest,
             decision_artifact=artifact,
             cost_assumptions=None,  # type: ignore[arg-type]
+            stage_context=genesis_stage(create_stage_plan((days[0],))),
         )
     with pytest.raises(MarketDataError, match="capacity evidence"):
         run_candidate_rebalance(
@@ -2781,8 +2862,10 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
             decision_at=decision_at,
             execution_inputs=(replace(row, capacity=None),),
             universe_materialization=materialization,
+            dataset_manifest=dataset_manifest,
             decision_artifact=artifact,
             cost_assumptions=_cost_assumptions(),
+            stage_context=genesis_stage(create_stage_plan((days[0],))),
         )
     assert portfolio.__dict__ == before
 
@@ -2807,17 +2890,20 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(tmp_path: Pa
         decision_at,
         (row,),
     )
+    dataset_manifest = _dataset_manifest(materialization, days[1])
     artifact = _captured_decision_artifact(
         tmp_path,
         decision_at,
-        dataset_identity_sha256=materialization.materialization_sha256,
+        dataset_identity_sha256=dataset_manifest.identity_sha256,
     )
     arguments = {
         "signal_session": days[0],
         "decision_at": decision_at,
         "execution_inputs": (row,),
         "universe_materialization": materialization,
+        "dataset_manifest": dataset_manifest,
         "decision_artifact": artifact,
+        "stage_context": genesis_stage(create_stage_plan((days[0],))),
     }
 
     base = run_candidate_rebalance(
@@ -2865,11 +2951,12 @@ def test_candidate_rejects_partition_manifest_drift_before_mutation(tmp_path: Pa
         decision_at,
         (row,),
     )
+    dataset_manifest = _dataset_manifest(materialization, days[1])
     artifact = _captured_decision_artifact(tmp_path, decision_at)
     portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
 
-    with pytest.raises(MarketDataError, match="frozen partition manifest"):
+    with pytest.raises(MarketDataError, match="dataset manifest"):
         run_candidate_rebalance(
             portfolio,
             calendar,
@@ -2877,8 +2964,10 @@ def test_candidate_rejects_partition_manifest_drift_before_mutation(tmp_path: Pa
             decision_at=decision_at,
             execution_inputs=(row,),
             universe_materialization=materialization,
+            dataset_manifest=dataset_manifest,
             decision_artifact=artifact,
             cost_assumptions=_cost_assumptions(),
+            stage_context=genesis_stage(create_stage_plan((days[0],))),
         )
     assert portfolio.__dict__ == before
 
@@ -2905,6 +2994,7 @@ def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) ->
         decision_at,
         (row,),
     )
+    dataset_manifest = _dataset_manifest(materialization, days[1])
 
     with pytest.raises(TypeError, match="DecisionArtifact"):
         run_candidate_rebalance(
@@ -2914,8 +3004,10 @@ def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) ->
             decision_at=decision_at,
             execution_inputs=(row,),
             universe_materialization=materialization,
+            dataset_manifest=dataset_manifest,
             decision_artifact=lambda _: {"AAA": 1.0},  # type: ignore[arg-type]
             cost_assumptions=_cost_assumptions(),
+            stage_context=genesis_stage(create_stage_plan((days[0],))),
         )
     assert portfolio.__dict__ == before
 
@@ -2947,6 +3039,14 @@ def test_candidate_interface_rejects_manual_universe_snapshot(tmp_path: Path) ->
     artifact = _captured_decision_artifact(tmp_path, decision_at)
     portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
+    )
+    dataset_manifest = _dataset_manifest(materialization, days[1])
 
     with pytest.raises(TypeError, match="materialize_universe_partition"):
         run_candidate_rebalance(
@@ -2962,8 +3062,10 @@ def test_candidate_interface_rejects_manual_universe_snapshot(tmp_path: Path) ->
                 (row,),
                 ("AAA",),
             ),
+            dataset_manifest=dataset_manifest,
             decision_artifact=artifact,
             cost_assumptions=_cost_assumptions(),
+            stage_context=genesis_stage(create_stage_plan((days[0],))),
         )
     assert portfolio.__dict__ == before
 

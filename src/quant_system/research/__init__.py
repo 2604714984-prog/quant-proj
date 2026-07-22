@@ -1,6 +1,10 @@
 """Outcome-blind research primitives live here."""
 
-from quant_system.research.identity import dataset_identity_sha256
+from quant_system.research.identity import (
+    DatasetManifest,
+    build_dataset_manifest,
+    dataset_identity_sha256,
+)
 from quant_system.research.experiments import (
     ExperimentEvent,
     ExperimentManifest,
@@ -23,6 +27,8 @@ from quant_system.research.splits import (
 
 __all__ = [
     "dataset_identity_sha256",
+    "build_dataset_manifest",
+    "DatasetManifest",
     "ExperimentEvent",
     "ExperimentManifest",
     "SplitEvaluation",

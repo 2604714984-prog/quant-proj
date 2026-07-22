@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from quant_system.research.identity import dataset_identity_sha256
+from quant_system.research.identity import build_dataset_manifest, dataset_identity_sha256
 from quant_system.research.splits import (
     build_split_manifest,
     evaluate_split,
@@ -158,7 +158,14 @@ def _identity(**overrides: object) -> str:
         "dates": (date(2026, 1, 2), date(2026, 1, 5)),
         "frequency": "1d-close",
         "schema": (("symbol", "VARCHAR"), ("close", "DOUBLE")),
-        "config_ids": {"universe": "abc123", "costs": "def456"},
+        "source_snapshot_sha256s": ("2" * 64, "3" * 64),
+        "universe_snapshot_sha256": "4" * 64,
+        "feature_code_sha256": "5" * 64,
+        "label_code_sha256": "6" * 64,
+        "split_manifest_sha256": "7" * 64,
+        "calendar_policy_sha256": "8" * 64,
+        "action_policy_sha256": "9" * 64,
+        "cost_policy_sha256": "a" * 64,
         "partition_sha256s": ("0" * 64, "1" * 64),
     }
     inputs.update(overrides)
@@ -166,8 +173,7 @@ def _identity(**overrides: object) -> str:
 
 
 def test_dataset_identity_has_a_fixed_canonical_golden_hash() -> None:
-    assert _identity() == "d578923bd9652ad59c8dcccdac463494e1504a062c15cb7e7c285102931b167a"
-    assert _identity(config_ids={"costs": "def456", "universe": "abc123"}) == _identity()
+    assert _identity() == "eafa8bc336bfe583c2c130b7dda3cb4f0447186cc5f25e90d98b8c7f9d41142b"
 
 
 @pytest.mark.parametrize(
@@ -176,7 +182,14 @@ def test_dataset_identity_has_a_fixed_canonical_golden_hash() -> None:
         {"dates": (date(2026, 1, 2), date(2026, 1, 6))},
         {"frequency": "1d-open"},
         {"schema": (("symbol", "VARCHAR"), ("close", "DECIMAL"))},
-        {"config_ids": {"universe": "changed", "costs": "def456"}},
+        {"source_snapshot_sha256s": ("b" * 64, "3" * 64)},
+        {"universe_snapshot_sha256": "b" * 64},
+        {"feature_code_sha256": "b" * 64},
+        {"label_code_sha256": "b" * 64},
+        {"split_manifest_sha256": "b" * 64},
+        {"calendar_policy_sha256": "b" * 64},
+        {"action_policy_sha256": "b" * 64},
+        {"cost_policy_sha256": "b" * 64},
         {"partition_sha256s": ("0" * 64, "2" * 64)},
     ],
 )
@@ -193,3 +206,25 @@ def test_dataset_identity_rejects_incomplete_or_ambiguous_inputs() -> None:
         _identity(partition_sha256s=("A" * 64, "1" * 64))
     with pytest.raises(ValueError, match="timezone-aware"):
         _identity(dates=(datetime(2026, 1, 2), datetime(2026, 1, 5)))
+    with pytest.raises(ValueError, match="must not be empty"):
+        _identity(source_snapshot_sha256s=())
+
+
+def test_dataset_manifest_exposes_bound_semantic_identities() -> None:
+    inputs = {
+        "dates": (date(2026, 1, 2), date(2026, 1, 5)),
+        "frequency": "1d-close",
+        "schema": (("symbol", "VARCHAR"), ("close", "DOUBLE")),
+        "source_snapshot_sha256s": ("2" * 64, "3" * 64),
+        "universe_snapshot_sha256": "4" * 64,
+        "feature_code_sha256": "5" * 64,
+        "label_code_sha256": "6" * 64,
+        "split_manifest_sha256": "7" * 64,
+        "calendar_policy_sha256": "8" * 64,
+        "action_policy_sha256": "9" * 64,
+        "cost_policy_sha256": "a" * 64,
+        "partition_sha256s": ("0" * 64, "1" * 64),
+    }
+    manifest = build_dataset_manifest(**inputs)
+    assert manifest.identity_sha256 == dataset_identity_sha256(**inputs)
+    assert manifest.split_manifest_sha256 == "7" * 64

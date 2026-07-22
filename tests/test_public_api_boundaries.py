@@ -44,6 +44,8 @@ def test_data_top_level_api_is_small_and_explicit() -> None:
 def test_research_top_level_api_is_small_and_explicit() -> None:
     assert research_api.__all__ == [
         "dataset_identity_sha256",
+        "build_dataset_manifest",
+        "DatasetManifest",
         "ExperimentEvent",
         "ExperimentManifest",
         "SplitEvaluation",

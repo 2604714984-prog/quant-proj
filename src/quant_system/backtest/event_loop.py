@@ -42,6 +42,7 @@ from quant_system.markets.us import (
     cash_settlement_lag_sessions,
     decide_fill as us_fill, resolve_mark,
 )
+from quant_system.research.identity import DatasetManifest
 from .blocked_orders import (
     BLOCKED_EXIT_REASONS,
     BlockedExitOrder,
@@ -81,6 +82,37 @@ _EXECUTION_PRICE_BASES = {
 }
 _NO_OPEN_EVENT_BASIS = "confirmed_no_open_event"
 _DECISION_ARTIFACT_TOKEN = object()
+_STAGE_CONTEXT_TOKEN = object()
+
+
+@dataclass(frozen=True)
+class StagePlan:
+    sessions: tuple[date, ...]
+    plan_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False, hash=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _STAGE_CONTEXT_TOKEN:
+            raise ValueError("StagePlan must be created by create_stage_plan")
+
+
+@dataclass(frozen=True)
+class StageContext:
+    plan_sha256: str
+    stage_index: int
+    stage_session: date
+    prior_stage_hash: str
+    _token: object | None = field(default=None, repr=False, compare=False, hash=False)
+
+    def __post_init__(self) -> None:
+        _sha256(self.plan_sha256, "plan_sha256")
+        _sha256(self.prior_stage_hash, "prior_stage_hash")
+        if type(self.stage_index) is not int or self.stage_index < 0:
+            raise ValueError("stage_index must be a nonnegative integer")
+        if type(self.stage_session) is not date:
+            raise TypeError("stage_session must be a date")
+        if self._token is not _STAGE_CONTEXT_TOKEN:
+            raise ValueError("StageContext must be created by genesis_stage or next_stage")
 
 
 @dataclass(frozen=True)
@@ -179,6 +211,10 @@ class StaticRebalanceResult:
     final_nav: float
     strategy_definition_sha256: str
     strategy_adapter_sha256: str
+    stage_plan_sha256: str
+    stage_index: int
+    stage_session: date
+    prior_stage_hash: str
     execution_evidence_grade: str = "UNCLASSIFIED"
     interface_grade: str = "UNTRUSTED_EXPERIMENT"
     decision_artifact_sha256: str | None = None
@@ -191,6 +227,54 @@ class StaticRebalanceResult:
     base_fx_adjusted_final_nav: float | None = None
     adverse_fx_adjusted_final_nav: float | None = None
     strategy_candidate_available: bool = False
+
+
+def create_stage_plan(sessions: tuple[date, ...]) -> StagePlan:
+    if not sessions or any(type(session) is not date for session in sessions):
+        raise ValueError("stage plan sessions must be a nonempty tuple of dates")
+    if sessions != tuple(sorted(sessions)) or len(sessions) != len(set(sessions)):
+        raise ValueError("stage plan sessions must be unique and chronological")
+    payload = json.dumps(
+        {"sessions": tuple(session.isoformat() for session in sessions), "version": 1},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return StagePlan(
+        sessions,
+        hashlib.sha256(payload.encode()).hexdigest(),
+        _STAGE_CONTEXT_TOKEN,
+    )
+
+
+def genesis_stage(plan: StagePlan) -> StageContext:
+    if not isinstance(plan, StagePlan):
+        raise TypeError("plan must be a StagePlan")
+    return StageContext(
+        plan.plan_sha256,
+        0,
+        plan.sessions[0],
+        "0" * 64,
+        _STAGE_CONTEXT_TOKEN,
+    )
+
+
+def next_stage(plan: StagePlan, previous: StaticRebalanceResult) -> StageContext:
+    if not isinstance(plan, StagePlan) or not isinstance(previous, StaticRebalanceResult):
+        raise TypeError("next_stage requires a StagePlan and previous result")
+    if previous.stage_plan_sha256 != plan.plan_sha256:
+        raise ValueError("previous result belongs to a different stage plan")
+    next_index = previous.stage_index + 1
+    if next_index >= len(plan.sessions):
+        raise ValueError("stage plan is already complete")
+    if previous.stage_session != plan.sessions[previous.stage_index]:
+        raise ValueError("previous result stage session is out of plan order")
+    return StageContext(
+        plan.plan_sha256,
+        next_index,
+        plan.sessions[next_index],
+        previous.stage_hash,
+        _STAGE_CONTEXT_TOKEN,
+    )
 
 
 @dataclass(frozen=True)
@@ -318,10 +402,10 @@ def run_static_rebalance(
     target_weights: TargetWeightCallback,
     strategy_definition_sha256: str,
     strategy_adapter_sha256: str,
+    stage_context: StageContext,
     capacity_policy: CapacityPolicy | None = None,
     max_positions: int | None = None,
     slippage_bps: float = 0.0,
-    prior_stage_hash: str = "0" * 64,
 ) -> StaticRebalanceResult:
     """Run an experimental callable-based rebalance on a copy.
 
@@ -330,6 +414,10 @@ def run_static_rebalance(
     """
     if not isinstance(portfolio, Portfolio) or not isinstance(calendar, AcceptedSessionCalendar):
         raise TypeError("portfolio and calendar have invalid types")
+    if not isinstance(stage_context, StageContext):
+        raise TypeError("stage_context must come from genesis_stage or next_stage")
+    if stage_context.stage_session != signal_session:
+        raise ValueError("stage_context session must match signal_session")
     definition_sha = _sha256(strategy_definition_sha256, "strategy_definition_sha256")
     adapter_sha = _sha256(strategy_adapter_sha256, "strategy_adapter_sha256")
     cutoff = require_aware_datetime(decision_at, "decision_at")
@@ -475,7 +563,7 @@ def run_static_rebalance(
         execution_calendar_revision,
         execution_calendar_revision_rows,
     )
-    receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, prior_stage_hash)
+    receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, stage_context)
     return StaticRebalanceResult(
         working,
         context,
@@ -487,6 +575,10 @@ def run_static_rebalance(
         final_nav,
         definition_sha,
         adapter_sha,
+        stage_context.plan_sha256,
+        stage_context.stage_index,
+        stage_context.stage_session,
+        stage_context.prior_stage_hash,
         execution_evidence_grade=_execution_evidence_grade(rows),
     )
 
@@ -499,11 +591,12 @@ def run_candidate_rebalance(
     decision_at: datetime,
     execution_inputs: tuple[ExecutionInput, ...],
     universe_materialization: UniverseMaterialization,
+    dataset_manifest: DatasetManifest,
     decision_artifact: DecisionArtifact,
     cost_assumptions: ExecutionCostAssumptions,
+    stage_context: StageContext,
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
     max_positions: int | None = None,
-    prior_stage_hash: str = "0" * 64,
 ) -> StaticRebalanceResult:
     """Run the controlled interface from frozen weights and captured bytes only."""
 
@@ -513,6 +606,8 @@ def run_candidate_rebalance(
         raise TypeError(
             "universe_materialization must come from materialize_universe_partition"
         )
+    if not isinstance(dataset_manifest, DatasetManifest):
+        raise TypeError("dataset_manifest must be a DatasetManifest")
     if not isinstance(cost_assumptions, ExecutionCostAssumptions):
         raise TypeError("cost_assumptions must be ExecutionCostAssumptions")
     if any(row.capacity is None for row in execution_inputs):
@@ -528,13 +623,14 @@ def run_candidate_rebalance(
     universe_materialization.verify_current_bytes()
     universe_members = universe_materialization.members
     universe_snapshot = universe_materialization.snapshot
-    if (
-        decision_artifact.dataset_identity_sha256
-        != universe_materialization.materialization_sha256
-    ):
+    if dataset_manifest.universe_snapshot_sha256 != universe_materialization.materialization_sha256:
+        raise MarketDataError("dataset manifest must bind the frozen universe partition")
+    if decision_artifact.dataset_identity_sha256 != dataset_manifest.identity_sha256:
         raise MarketDataError(
-            "decision artifact dataset identity must match the frozen partition manifest"
+            "decision artifact dataset identity must match the dataset manifest"
         )
+    if decision_artifact.split_identity_sha256 != dataset_manifest.split_manifest_sha256:
+        raise MarketDataError("decision artifact split identity must match the dataset manifest")
     _require_candidate_sources(
         calendar,
         execution_inputs,
@@ -554,7 +650,7 @@ def run_candidate_rebalance(
         "strategy_adapter_sha256": decision_artifact.strategy_adapter_sha256,
         "capacity_policy": cost_assumptions.capacity_policy,
         "max_positions": max_positions,
-        "prior_stage_hash": prior_stage_hash,
+        "stage_context": stage_context,
     }
     base_portfolio = portfolio
     if cost_assumptions.gross_only:
@@ -582,7 +678,7 @@ def run_candidate_rebalance(
     receipt_hashes, stage_hash = _hashes(
         result.receipts,
         candidate_identity,
-        prior_stage_hash,
+        stage_context,
     )
     adverse_identity = hashlib.sha256(
         f"{adverse.input_identity_hash}|{assumption_sha}|adverse".encode()
@@ -590,7 +686,7 @@ def run_candidate_rebalance(
     _, adverse_stage_hash = _hashes(
         adverse.receipts,
         adverse_identity,
-        prior_stage_hash,
+        stage_context,
     )
     return replace(
         result,
@@ -1355,11 +1451,15 @@ def _normal(value: Any) -> Any:
 
 
 def _hashes(
-    receipts: tuple[ExecutionReceipt, ...], identity: str, prior: str,
+    receipts: tuple[ExecutionReceipt, ...], identity: str, context: StageContext,
 ) -> tuple[tuple[str, ...], str]:
-    if len(prior) != 64 or any(char not in "0123456789abcdef" for char in prior):
-        raise ValueError("prior_stage_hash must be a lowercase SHA-256 digest")
-    current, hashes = hashlib.sha256(f"{prior}|{identity}".encode()).hexdigest(), []
+    if not isinstance(context, StageContext):
+        raise TypeError("hash chain requires a StageContext")
+    prefix = (
+        f"{context.plan_sha256}|{context.stage_index}|"
+        f"{context.stage_session.isoformat()}|{context.prior_stage_hash}|{identity}"
+    )
+    current, hashes = hashlib.sha256(prefix.encode()).hexdigest(), []
     for receipt in receipts:
         payload = json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
         current = hashlib.sha256(f"{current}|{payload}".encode()).hexdigest()
