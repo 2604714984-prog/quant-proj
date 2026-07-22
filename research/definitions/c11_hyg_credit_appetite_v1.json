@@ -1,0 +1,185 @@
+{
+  "schema_version": "c11-hyg-credit-appetite-prereg-v1",
+  "research_id": "C11_HYG_MONTHLY_CREDIT_RISK_APPETITE_SPY_CASH_V1",
+  "mechanism_id": "C11_HYG_MONTHLY_CREDIT_RISK_APPETITE",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE11",
+  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_READY",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "selection_without_outcomes": {
+    "economic_reason": "a positive completed-month total return for a diversified high-yield corporate-bond ETF is a market-priced risk-appetite state; a nonpositive month is a credit-risk deterioration state",
+    "price_return_nav_sharpe_or_drawdown_used_for_selection": false,
+    "parameter_grid": false,
+    "variant_count": 1,
+    "independent_mechanism_statement": "the signal comes from high-yield credit total return and is not an equity trend, cross-asset rank, official EBP series, Treasury-rate state, VIX state or volatility budget",
+    "closed_lines_remain_closed": [
+      "M119-01_US_SPY_REALIZED_VOL_SCALING",
+      "M119-03_US_SPY_YIELD_CURVE_STATE",
+      "M119-09_US_SPY_CREDIT_STRESS_STATE",
+      "C5_CBOE_VOL_TERM_STRUCTURE_INVERSION_SPY_CASH_V1",
+      "C6_VIX_WEEKLY_CHANGE_IMPULSE_SPY_CASH_V1",
+      "C7_SPY_VARIANCE_RISK_PREMIUM_V1",
+      "C8_NFCI_MONTHLY_TIGHTENING_IMPULSE_SPY_CASH_V1",
+      "C9_DGS10_MONTHLY_YIELD_IMPULSE_SPY_CASH_V1",
+      "C10_VIX_20_FEAR_REGIME_SPY_CASH_V1"
+    ]
+  },
+  "program_multiplicity": {
+    "cycle11_familywise_alpha": 0.000048828125,
+    "sole_primary_alpha": 0.000048828125,
+    "cycle1_to_cycle11_union_bound": 0.099951171875,
+    "alpha_recycling": false,
+    "formal_outcome_lanes": 1
+  },
+  "signal": {
+    "instrument": "HYG",
+    "frequency": "monthly",
+    "selection": "the completed calendar-month HYG total return reconstructed from raw daily closes and exact iShares sponsor cash distributions payable by the signal month-end",
+    "daily_factor": "(raw_close_t + official_cash_distribution_t) / raw_close_t_minus_1",
+    "comparison": "compare the compounded completed-month total return with exactly zero",
+    "target_rule": "HYG completed-month total return above zero means SPY weight 1.0; a return at or below zero means SPY weight 0.0 and inactive cash",
+    "split_baseline": "each traded interval is independently labeled by the immediately preceding completed HYG calendar-month return",
+    "missing_rule": "fail closed; no adjusted close, interpolation, carry-forward, alternate ETF, LQD ratio, threshold, lookback, moving average, persistence, smoothing, volatility filter, frequency variant or source blending"
+  },
+  "timing_and_account": {
+    "signal_freeze": "after the final accepted XNYS close of the signal month",
+    "target_submission": "09:00 America/New_York on the next accepted XNYS session",
+    "execution": "that accepted session official open",
+    "holding": "until the following monthly accepted execution open",
+    "decision_price": "raw SPY close on the preceding accepted signal session, available before target submission",
+    "initial_capital_usd": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "benchmark": "buy-and-hold SPY over identical selected split endpoints with identical whole-share, cost, calendar, lifecycle and corporate-action accounting"
+  },
+  "splits": {
+    "validation": {
+      "baseline_execution": "2021-01-04",
+      "first_holding_execution": "2021-02-01",
+      "terminal_execution": "2023-06-01",
+      "complete_intervals": 28,
+      "purpose": "one-use retrospective validation"
+    },
+    "retrospective_holdout": {
+      "baseline_execution": "2023-07-03",
+      "first_holding_execution": "2023-08-01",
+      "terminal_execution": "2026-06-01",
+      "complete_intervals": 34,
+      "sealed_until_validation_pass": true
+    },
+    "cross_boundary_rule": "no signal or portfolio state carries across splits"
+  },
+  "state_support_before_outcomes": {
+    "requirements_per_split": [
+      "at least 20 complete monthly intervals",
+      "at least four SPY intervals",
+      "at least four cash intervals",
+      "at least two SPY-to-cash transitions",
+      "at least two cash-to-SPY transitions"
+    ],
+    "accepted": {
+      "validation": {
+        "complete_intervals": 28,
+        "spy_intervals": 14,
+        "cash_intervals": 14,
+        "spy_to_cash": 6,
+        "cash_to_spy": 7
+      },
+      "retrospective_holdout": {
+        "complete_intervals": 34,
+        "spy_intervals": 25,
+        "cash_intervals": 9,
+        "spy_to_cash": 7,
+        "cash_to_spy": 7
+      }
+    },
+    "independent_local_read_only_recompute": true,
+    "strategy_outcomes_opened": false
+  },
+  "validation": {
+    "gates": [
+      "strategy terminal net wealth strictly above SPY",
+      "arithmetic mean paired monthly active return strictly positive",
+      "strategy maximum drawdown no worse than SPY"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout remains unopened and the lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "gates": [
+      "strategy terminal net wealth strictly above SPY",
+      "strategy maximum drawdown no worse than SPY",
+      "exactly 34 paired intervals",
+      "centered-null one-sided p-value at most 0.000048828125",
+      "uncentered type-7 0.000048828125 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap over monthly active returns",
+      "block_length_months": 3,
+      "resamples": 50000,
+      "rng": "Python random.Random",
+      "seed": 1300101,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(50000 + 1)",
+      "quantile": "linear type-7",
+      "limitation": "the frozen three-month block is an outcome-blind dependence assumption, not proof that all serial dependence is covered"
+    }
+  },
+  "source_identities": {
+    "hyg_signal_packet_path": "/home/rongyu/workspace/quant-data/staging/c11_hyg_monthly_credit_risk_appetite_spy_cash_v1/hyg_monthly_credit_appetite_signal_packet.json",
+    "hyg_signal_packet_sha256": "7831756f046b9d9c408c6efe594cb8ccac075b9693e5cea3c21785fd6f1023ab",
+    "hyg_materialization_receipt_path": "/home/rongyu/workspace/quant-data/staging/c11_hyg_monthly_credit_risk_appetite_spy_cash_v1/materialization_receipt.json",
+    "hyg_materialization_receipt_sha256": "d10c392b7fe1bb766277f0ff9ba50b8f5c8845be22df868500b9030cfda37ea5",
+    "hyg_yahoo_raw_path": "/home/rongyu/workspace/quant-data/staging/c11_hyg_monthly_credit_risk_appetite_spy_cash_v1/raw/yahoo_hyg_45752ea8382418cda7cf690663a14bd54df8856721f0827a45860aeaef36f77a.json",
+    "hyg_yahoo_raw_sha256": "45752ea8382418cda7cf690663a14bd54df8856721f0827a45860aeaef36f77a",
+    "hyg_ishares_raw_path": "/home/rongyu/workspace/quant-data/staging/c11_hyg_monthly_credit_risk_appetite_spy_cash_v1/raw/ishares_hyg_70625774a68c54f47f6049f654db7e691e86210a1582c7e6f47ded1f1ffe0c0d.html",
+    "hyg_ishares_raw_sha256": "70625774a68c54f47f6049f654db7e691e86210a1582c7e6f47ded1f1ffe0c0d",
+    "distribution_reconciliation": "103 of 103 ex-dates matched; exact sponsor six-decimal amounts control; Yahoo three-decimal amounts are coarse cross-check only with absolute tolerance 0.001",
+    "stooq_status": "OPTIONAL_RAW_CLOSE_CROSSCHECK_UNAVAILABLE_NOT_CONTROLLING",
+    "validation_spy_bundle_path": "/home/rongyu/workspace/quant-data/staging/us_fomc_policy_state_v2/spy_validation_runtime_bundle_v2.json",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "holdout_spy_bundle_path": "/home/rongyu/workspace/quant-data/staging/us_fomc_policy_state_v2/spy_holdout_runtime_bundle_v2.json",
+    "holdout_spy_bundle_sha256": "ff4b02932079ad013da05dbffcf2dd6e25af8592450e5b09e4a2f00d9f61f8d4",
+    "spy_bundle_reuse_boundary": "only execution, calendar, lifecycle, corporate-action and price identities are reused; all embedded C3 policy-state values are ignored and cannot affect this signal",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "adapter_sha256": "b4b402925adf6b909de0dce2de105dac0010fa3b1734b0c0effe92fa04684a84",
+    "runner_role": "branch-only removable one-use research adapter; not shared infrastructure"
+  },
+  "one_use": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c11_hyg_monthly_credit_risk_appetite_spy_cash_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c11_hyg_monthly_credit_risk_appetite_spy_cash_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c11_hyg_monthly_credit_risk_appetite_spy_cash_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c11_hyg_monthly_credit_risk_appetite_spy_cash_v1_holdout/result.json",
+    "claim_before_runtime_bundle_capture": true,
+    "claim_and_result_mode": "0600",
+    "rerun_after_any_claim": false
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "input_error_after_claim": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "strategy_candidate_available": false,
+    "parameter_repair": false,
+    "rerun": false
+  },
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_write": false,
+    "external_review_requested": false,
+    "prospective_forward_access": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
