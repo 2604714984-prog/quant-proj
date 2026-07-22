@@ -34,6 +34,10 @@ from quant_system.data import (
     session_rows_sha256,
 )
 from quant_system.markets.common import MarketDataError
+from quant_system.markets.a_share import (
+    AShareAdjustmentReceipt,
+    capture_a_share_adjustment_receipt,
+)
 from quant_system.markets.universe import (
     StatusEvidence,
     UniverseMaterialization,
@@ -48,6 +52,45 @@ UTC = timezone.utc
 DEFINITION_SHA = hashlib.sha256(b"fixture-strategy-definition-v1").hexdigest()
 ADAPTER_SHA = hashlib.sha256(b"fixture-strategy-adapter-v1").hexdigest()
 INCLUSION_RULE_SHA = hashlib.sha256(b"fixture-universe-inclusion-rule-v1").hexdigest()
+
+
+def _adjustment_receipt(
+    symbol: str,
+    session: date,
+    *,
+    price_basis: str = "raw",
+    adjustment_factor: str = "1",
+    action_types: tuple[str, ...] = (),
+) -> AShareAdjustmentReceipt:
+    factor_bytes = json.dumps(
+        {
+            "adjustment_factor": adjustment_factor,
+            "price_basis": price_basis,
+            "session": session.isoformat(),
+            "symbol": symbol,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    action_bytes = json.dumps(
+        {
+            "action_types": action_types,
+            "session": session.isoformat(),
+            "symbol": symbol,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return capture_a_share_adjustment_receipt(
+        factor_bytes=factor_bytes,
+        action_completeness_bytes=action_bytes,
+        publication_evidence=b"fixture publication receipt",
+        factor_source_url="https://example.test/a-share-adjustment-factor",
+        action_completeness_source_url="https://example.test/a-share-actions",
+        available_at=datetime(2000, 1, 1, tzinfo=UTC),
+        retrieved_at=datetime(2000, 1, 1, 0, 1, tzinfo=UTC),
+        provider_id="fixture-provider",
+    )
 
 
 def _source(
@@ -210,6 +253,9 @@ def _input(
     execution_price_effective_at: datetime | None = None,
     execution_price_basis: str | None = "timestamped_session_open",
     limit_regime: str = "no_limit",
+    adjustment_basis: str = "raw",
+    adjustment_factor: str = "1",
+    a_share_action_types: tuple[str, ...] = (),
 ) -> ExecutionInput:
     timezone_name = execution.exchange_timezone
     decision_reference = (
@@ -251,6 +297,15 @@ def _input(
         else execution_price_effective_at,
         execution_price_basis,  # type: ignore[arg-type]
         limit_regime if market == "a_share" else None,  # type: ignore[arg-type]
+        _adjustment_receipt(
+            symbol,
+            execution.session_date,
+            price_basis=adjustment_basis,
+            adjustment_factor=adjustment_factor,
+            action_types=a_share_action_types,
+        )
+        if market == "a_share"
+        else None,
     )
 
 
@@ -1921,8 +1976,15 @@ def test_control_character_universe_fails_before_lifecycle_or_callback() -> None
     execution = calendar.session_on(days[1], as_of=signal.close_at)
     portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
+    invalid = _input("AB", "a_share", execution)
     inputs = (
-        _input("A\nB", "a_share", execution),
+        replace(
+            invalid,
+            symbol="A\nB",
+            status_records=tuple(
+                replace(record, symbol="A\nB") for record in invalid.status_records
+            ),
+        ),
         _input("C", "a_share", execution),
     )
     snapshot = UniverseSnapshotIdentity(
@@ -2170,6 +2232,7 @@ def _controlled_input(symbol: str, execution: AcceptedSession) -> ExecutionInput
         execution_price_effective_at=execution.open_at,
         execution_price_basis="timestamped_session_open",
         limit_regime="no_limit",
+        adjustment_receipt=_adjustment_receipt(symbol, execution.session_date),
     )
 
 
@@ -2300,6 +2363,97 @@ def test_applicable_limit_regime_missing_limits_fails_before_callback() -> None:
             target_weights=lambda context: callback_calls.append(context) or {},
         )
     assert callback_calls == []
+
+
+def test_a_share_missing_adjustment_receipt_fails_before_callback() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.next_session(days[0], as_of=signal.close_at)
+    row = replace(
+        _input("AAA", "a_share", execution),
+        adjustment_receipt=None,
+    )
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+    callback_calls: list[object] = []
+
+    with pytest.raises(MarketDataError, match="captured adjustment receipt"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(row,),
+            target_weights=lambda context: callback_calls.append(context) or {},
+        )
+    assert callback_calls == []
+    assert portfolio.__dict__ == before
+
+
+def test_a_share_raw_and_adjusted_price_bases_cannot_mix() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.next_session(days[0], as_of=signal.close_at)
+    mixed = _input(
+        "AAA",
+        "a_share",
+        execution,
+        adjustment_basis="qfq",
+        adjustment_factor="0.9",
+    )
+
+    with pytest.raises(MarketDataError, match="raw and adjusted"):
+        _run_static_rebalance(
+            Portfolio.a_share(10_000, costs=TransactionCostModel()),
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(mixed,),
+            target_weights=lambda _: {},
+        )
+
+    adjusted = replace(mixed, decision_price_basis="adjusted_qfq")
+    result = _run_static_rebalance(
+        Portfolio.a_share(10_000, costs=TransactionCostModel()),
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(adjusted,),
+        target_weights=lambda _: {},
+    )
+    assert result.strategy_candidate_available is False
+
+
+def test_a_share_action_completeness_rejects_raw_duplicate_and_delisting() -> None:
+    session = date(2026, 7, 14)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+
+    with pytest.raises(MarketDataError, match="raw basis cannot omit"):
+        _adjustment_receipt(
+            "AAA",
+            session,
+            action_types=("cash_dividend",),
+        )
+    with pytest.raises(MarketDataError, match="sorted, unique"):
+        _adjustment_receipt(
+            "AAA",
+            session,
+            price_basis="qfq",
+            adjustment_factor="0.9",
+            action_types=("split", "split"),
+        )
+    with pytest.raises(MarketDataError, match="explicit terminal evidence"):
+        _adjustment_receipt(
+            "AAA",
+            session,
+            price_basis="qfq",
+            adjustment_factor="0.9",
+            action_types=("delisting",),
+        )
+    assert portfolio.__dict__ == before
 
 
 def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Path) -> None:

@@ -18,7 +18,11 @@ from quant_system.data import (
     CorporateActionIdentity, SourceIdentity, capture_file_digest,
     require_trusted_source,
 )
-from quant_system.markets.a_share import AShareBar, decide_fill as a_share_fill
+from quant_system.markets.a_share import (
+    AShareAdjustmentReceipt,
+    AShareBar,
+    decide_fill as a_share_fill,
+)
 from quant_system.markets.common import (
     FillDecision, MarketDataError, is_finite_number, is_positive_price,
     require_aware_datetime, require_nonempty_text,
@@ -29,6 +33,7 @@ from quant_system.markets.universe import (
     UniverseMaterialization,
     UniverseSnapshotIdentity,
     evaluate_universe,
+    ordered_members_sha256,
     validate_universe_snapshot,
 )
 from quant_system.markets.us import (
@@ -49,6 +54,9 @@ Market = Literal["a_share", "us"]
 DecisionPriceBasis = Literal[
     "raw_pre_action_per_old_share",
     "raw_execution_units",
+    "adjusted_qfq",
+    "adjusted_hfq",
+    "adjusted_total_return",
 ]
 ExecutionPriceBasis = Literal[
     "timestamped_session_open",
@@ -61,6 +69,9 @@ _RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
 _DECISION_PRICE_BASES = {
     "raw_pre_action_per_old_share",
     "raw_execution_units",
+    "adjusted_qfq",
+    "adjusted_hfq",
+    "adjusted_total_return",
 }
 _EXECUTION_PRICE_BASES = {
     "timestamped_session_open",
@@ -114,6 +125,7 @@ class ExecutionInput:
     execution_price_effective_at: datetime | None = None
     execution_price_basis: ExecutionPriceBasis | None = None
     limit_regime: LimitRegime | None = None
+    adjustment_receipt: AShareAdjustmentReceipt | None = None
 
 
 @dataclass(frozen=True)
@@ -321,6 +333,7 @@ def run_static_rebalance(
         type(max_positions) is not int or max_positions < 1
     ):
         raise ValueError("max_positions must be a positive integer or None")
+    ordered_members_sha256(universe_members)
     rows = _inputs(execution_inputs, portfolio, execution, cutoff)
     working = deepcopy(portfolio)
     working.start_session(execution.session_date)
@@ -530,6 +543,9 @@ def _require_candidate_sources(
             require_trusted_source(status.source)
         for action in row.corporate_actions:
             require_trusted_source(action.source)
+        if row.adjustment_receipt is not None:
+            require_trusted_source(row.adjustment_receipt.factor_source)
+            require_trusted_source(row.adjustment_receipt.action_completeness_source)
         if row.terminal_action is not None:
             require_trusted_source(row.terminal_action.source)
 
@@ -733,6 +749,8 @@ def _inputs(
             row.up_limit is not None or row.down_limit is not None
         ):
             raise MarketDataError("no-limit regime cannot carry limit fields")
+        if row.market == "a_share":
+            _require_a_share_adjustment_receipt(row, execution, cutoff)
         if row.market == "a_share" and (row.action_types or row.corporate_actions
                                         or row.terminal_action is not None):
             raise MarketDataError("US action fields cannot be used for A-share inputs")
@@ -741,6 +759,7 @@ def _inputs(
             or row.up_limit is not None
             or row.down_limit is not None
             or row.limit_regime is not None
+            or row.adjustment_receipt is not None
         ):
             raise MarketDataError("A-share fields cannot be used for US inputs")
         if type(row.corporate_actions) is not tuple or any(
@@ -783,6 +802,38 @@ def _inputs(
     if len(action_ids) != len(set(action_ids)):
         raise MarketDataError("action IDs must be globally unique")
     return rows
+
+
+def _require_a_share_adjustment_receipt(
+    row: ExecutionInput,
+    execution: AcceptedSession,
+    cutoff: datetime,
+) -> None:
+    receipt = row.adjustment_receipt
+    if not isinstance(receipt, AShareAdjustmentReceipt):
+        raise MarketDataError("A-share input requires a captured adjustment receipt")
+    if receipt.subject_id != row.symbol or receipt.effective_session != execution.session_date:
+        raise MarketDataError("adjustment receipt symbol or session mismatch")
+    if (
+        receipt.factor_source.available_at > cutoff
+        or receipt.action_completeness_source.available_at > cutoff
+    ):
+        raise MarketDataError("adjustment evidence was unavailable at decision_at")
+    expected_basis = {
+        "qfq": "adjusted_qfq",
+        "hfq": "adjusted_hfq",
+        "total_return": "adjusted_total_return",
+    }.get(receipt.price_basis)
+    if row.decision_price_basis is None:
+        return
+    if expected_basis is None:
+        if row.decision_price_basis not in {
+            "raw_pre_action_per_old_share",
+            "raw_execution_units",
+        }:
+            raise MarketDataError("raw and adjusted price bases cannot be mixed")
+    elif row.decision_price_basis != expected_basis:
+        raise MarketDataError("raw and adjusted price bases cannot be mixed")
 
 
 def _require_matching_suspension(
