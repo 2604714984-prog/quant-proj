@@ -1,0 +1,76 @@
+{
+  "schema_version": "us-spy-h15-10y3m-state-terminal-screen-a-v1",
+  "research_id": "US_SPY_H15_10Y3M_STATE_V1",
+  "mechanism_id": "M119-03_US_SPY_YIELD_CURVE_STATE",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE1",
+  "program_alpha": 0.015,
+  "status": "RETROSPECTIVE_SECONDARY_SCREEN_A_PASS_PENDING_EXTERNAL_REVIEW",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "screen": {
+    "entry_months": "2018-03 through 2021-11 inclusive",
+    "terminal_exit_month": "2021-12",
+    "observed_cohorts": 45,
+    "gate_pass_count": 4,
+    "gate_count": 4,
+    "gates": {
+      "sharpe_difference_positive": true,
+      "strategy_compounded_net_return_positive": true,
+      "strategy_annualized_volatility_lower": true,
+      "strategy_maximum_drawdown_better": true
+    }
+  },
+  "strategy_metrics": {
+    "monthly_arithmetic_mean": 0.014806176205692047,
+    "monthly_sample_stdev": 0.04755322500234827,
+    "sharpe": 1.0785829753001863,
+    "annualized_volatility": 0.1647292035356437,
+    "compounded_net_return": 0.8453578723249995,
+    "maximum_drawdown": -0.15243956884189624
+  },
+  "benchmark_metrics": {
+    "monthly_arithmetic_mean": 0.014259619797591213,
+    "monthly_sample_stdev": 0.05430500671010847,
+    "sharpe": 0.9096172703886469,
+    "annualized_volatility": 0.18811806145455334,
+    "compounded_net_return": 0.7717077668999999,
+    "maximum_drawdown": -0.2215640919249895
+  },
+  "sharpe_difference": 0.1689657049115394,
+  "identity": {
+    "source_commit": "44bcd9a1ffcd78db030d1bbf5de21b4f72c5c532",
+    "source_tree": "67ded150deae7ab492c6ebb373547e2701ae1f89",
+    "definition_sha256": "d33d7143c982f178308f165de5f42c99ce773642e2e36897490de0504bf58d20",
+    "adapter_sha256": "084f7ce73884786ea7d7dbb9cfcd702b735883b671ce59a3678a569110cd6999",
+    "runner_sha256": "f7200cd0d9aafa2f20fac353845746802e3f2592940f29b31d96222d9be1f2ad",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "spy_input_sha256": "fcf4b487b1b798c6afcfc774339d2066a45238431253e27b14ed5d1a4cc369c9",
+    "h15_input_sha256": "998e25841870582b56592ba03fb61ca278b51a9f8141e06e4601c6fde886d1c2",
+    "h15_latest_common_query_sha256": "a80b052fd13e688e90937d5fedac9b70d363e01cd6a3a057e42807bf522b65ab",
+    "database_sha256": "4e7bd0792241087c7c4da05de32b75a7450baa1dda0342a326ef4c02aa42a92e",
+    "claim_sha256": "962d97a029a1f0c1c0416fcdee1a71d8ccca75be998d62345c3c55a2da475053",
+    "private_result_sha256": "bb9ec3c4dffda8d02ed401f1f91f03e6ff9987d6ca4259ccf4b4d59cfc8f4ae6",
+    "pre_outcome_ci_run": 29898190775
+  },
+  "validation": {
+    "strict_json": true,
+    "independent_metric_recompute": true,
+    "claim_precedes_result": true,
+    "one_use_execution_consumed": true,
+    "rerun_authorized": false,
+    "database_unchanged_after_execution": true,
+    "raw_price_or_rate_values_published": false
+  },
+  "boundary": {
+    "inference_b_opened": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "automatic_execution": false,
+    "next_action": "STOP_NO_INFERENCE_B_OR_PROMOTION_UNTIL_USER_DECISION_AND_REQUIRED_REVIEW"
+  },
+  "strategy_candidate_available": false
+}
