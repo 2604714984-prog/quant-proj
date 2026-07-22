@@ -1001,7 +1001,7 @@ def test_capacity_and_suspension_leave_blocked_exit_held_and_convertible() -> No
     assert result.receipts[0].reason == "suspended"
     assert result.portfolio.positions["AAA"].shares == 100
     blocked = blocked_exit_from_receipt(result.receipts[0], result.context, calendar)
-    assert blocked.pending and len(blocked.attempts) == 1
+    assert blocked.pending and len(blocked.retry_decisions) == 1
 
     observation = CapacityObservation(
         "AAA",

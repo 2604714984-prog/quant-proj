@@ -6,7 +6,8 @@ import pytest
 
 from quant_system.backtest.blocked_orders import (
     BlockedExitOrder,
-    ExitAttempt,
+    FillEvent,
+    RetryDecision,
     advance_blocked_exit,
     execute_ready_blocked_exit,
 )
@@ -21,6 +22,7 @@ from quant_system.data import (
     AcceptedSessionCalendar,
     CalendarIdentity,
     SourceIdentity,
+    capture_source_bytes,
     session_dates_sha256,
     session_rows_sha256,
 )
@@ -414,7 +416,8 @@ def _order_snapshot(order: BlockedExitOrder) -> object:
             order.shares,
             order.requested_session,
             order.calendar.session_dates,
-            order.attempts,
+            order.retry_decisions,
+            order.fill_event,
             order.executed_session,
             order.execution_price,
             order.delay_sessions,
@@ -446,23 +449,59 @@ def _decision_time(order: BlockedExitOrder, session: date) -> datetime:
     return accepted.open_at - timedelta(microseconds=1)
 
 
-def test_blocked_exit_attempts_require_an_immutable_typed_tuple() -> None:
+def _fill_event(
+    order: BlockedExitOrder,
+    session: date,
+    price: object,
+    *,
+    basis: str = "timestamped_session_open",
+) -> FillEvent:
+    accepted = order.calendar.session_on(
+        session,
+        as_of=datetime(2026, 7, 16, tzinfo=UTC),
+    )
+    available_at = (
+        accepted.open_at
+        if basis == "timestamped_session_open"
+        else accepted.close_at + timedelta(hours=1)
+    )
+    source = capture_source_bytes(
+        f"{session}:{price}:{basis}".encode(),
+        publication_evidence=b"fixture publication receipt",
+        source_url="https://example.test/fill-event",
+        available_at=available_at,
+        retrieved_at=available_at + timedelta(microseconds=1),
+        revision_id=f"fill-{session}-{basis}",
+        source_family_id="fill-event",
+        provider_id="fixture-provider",
+        subject_id=order.symbol,
+    ).source
+    return FillEvent(
+        execution_at=available_at,
+        price=price,  # type: ignore[arg-type]
+        source=source,
+        effective_at=accepted.open_at,
+        basis=basis,  # type: ignore[arg-type]
+    )
+
+
+def test_blocked_exit_retries_require_an_immutable_typed_tuple() -> None:
     with pytest.raises(MarketDataError, match="immutable tuple"):
         BlockedExitOrder(
             "000001.SZ",
             100,
             date(2026, 7, 13),
             _calendar(),
-            attempts=[],  # type: ignore[arg-type]
+            retry_decisions=[],  # type: ignore[arg-type]
         )
 
-    with pytest.raises(MarketDataError, match="only ExitAttempt"):
+    with pytest.raises(MarketDataError, match="only RetryDecision"):
         BlockedExitOrder(
             "000001.SZ",
             100,
             date(2026, 7, 13),
             _calendar(),
-            attempts=(object(),),  # type: ignore[arg-type]
+            retry_decisions=(object(),),  # type: ignore[arg-type]
         )
 
     calendar = _calendar()
@@ -470,11 +509,9 @@ def test_blocked_exit_attempts_require_an_immutable_typed_tuple() -> None:
         date(2026, 7, 13),
         as_of=datetime(2026, 7, 13, tzinfo=UTC),
     )
-    valid = ExitAttempt(
-        session,
+    valid = RetryDecision(
         session.open_at - timedelta(microseconds=1),
-        False,
-        None,
+        session.session_date,
         "suspended",
     )
     assert BlockedExitOrder(
@@ -482,21 +519,19 @@ def test_blocked_exit_attempts_require_an_immutable_typed_tuple() -> None:
         100,
         date(2026, 7, 13),
         calendar,
-        attempts=(valid,),
-    ).attempts == (valid,)
+        retry_decisions=(valid,),
+    ).retry_decisions == (valid,)
 
 
-def test_exit_attempt_requires_decision_strictly_before_session_open() -> None:
+def test_retry_decision_requires_decision_strictly_before_session_open() -> None:
     calendar = _calendar()
     session = calendar.session_on(
         date(2026, 7, 13),
         as_of=datetime(2026, 7, 13, tzinfo=UTC),
     )
-    accepted = ExitAttempt(
-        session,
+    accepted = RetryDecision(
         session.open_at - timedelta(microseconds=1),
-        False,
-        None,
+        session.session_date,
         "suspended",
     )
     assert accepted.decision_at == session.open_at - timedelta(microseconds=1)
@@ -505,8 +540,11 @@ def test_exit_attempt_requires_decision_strictly_before_session_open() -> None:
         session.open_at,
         session.open_at + timedelta(microseconds=1),
     ):
-        with pytest.raises(MarketDataError, match="cannot follow"):
-            ExitAttempt(session, decision_at, False, None, "suspended")
+        with pytest.raises(MarketDataError, match="strictly before"):
+            advance_blocked_exit(
+                _blocked_order(),
+                decision=RetryDecision(decision_at, session.session_date, "suspended"),
+            )
 
 
 def test_blocked_exit_normalizes_stateful_numbers_once_before_sale() -> None:
@@ -529,9 +567,7 @@ def test_blocked_exit_normalizes_stateful_numbers_once_before_sale() -> None:
     completed, trade = execute_ready_blocked_exit(
         order,
         portfolio=portfolio,
-        session=date(2026, 7, 13),
-        decision_at=_decision_time(order, date(2026, 7, 13)),
-        decision=FillDecision(True, price, "filled"),
+        fill_event=_fill_event(order, date(2026, 7, 13), price),
     )
 
     assert price.calls == 1
@@ -553,12 +589,10 @@ def test_price_normalization_failure_leaves_deep_state_unchanged() -> None:
         execute_ready_blocked_exit(
             order,
             portfolio=portfolio,
-            session=date(2026, 7, 13),
-            decision_at=_decision_time(order, date(2026, 7, 13)),
-            decision=FillDecision(
-                True,
+            fill_event=_fill_event(
+                order,
+                date(2026, 7, 13),
                 _StatefulFloat(10, fail_on_call=1),
-                "filled",
             ),
         )
 
@@ -606,15 +640,19 @@ def test_blocked_exit_records_consecutive_sessions_and_sells_before_completion()
     order = _blocked_order()
     order = advance_blocked_exit(
         order,
-        session=date(2026, 7, 13),
-        decision_at=_decision_time(order, date(2026, 7, 13)),
-        decision=FillDecision(False, None, "suspended"),
+        decision=RetryDecision(
+            _decision_time(order, date(2026, 7, 13)),
+            date(2026, 7, 13),
+            "suspended",
+        ),
     )
     order = advance_blocked_exit(
         order,
-        session=date(2026, 7, 14),
-        decision_at=_decision_time(order, date(2026, 7, 14)),
-        decision=FillDecision(False, None, "limit_down_sell_rejected"),
+        decision=RetryDecision(
+            _decision_time(order, date(2026, 7, 14)),
+            date(2026, 7, 14),
+            "limit_down_sell_rejected",
+        ),
     )
     portfolio = Portfolio.a_share(100_000)
     portfolio.start_session(date(2026, 7, 10))
@@ -624,58 +662,57 @@ def test_blocked_exit_records_consecutive_sessions_and_sells_before_completion()
     order, trade = execute_ready_blocked_exit(
         order,
         portfolio=portfolio,
-        session=date(2026, 7, 15),
-        decision_at=_decision_time(order, date(2026, 7, 15)),
-        decision=FillDecision(True, 9.8, "filled"),
+        fill_event=_fill_event(order, date(2026, 7, 15), 9.8),
     )
 
     assert order.pending is False
     assert order.delay_sessions == 2
     assert order.executed_session == date(2026, 7, 15)
-    assert tuple(attempt.session.session_date for attempt in order.attempts) == (
+    assert tuple(item.requested_session for item in order.retry_decisions) == (
         date(2026, 7, 13),
         date(2026, 7, 14),
-        date(2026, 7, 15),
     )
-    assert tuple(attempt.session.source.revision_id for attempt in order.attempts) == (
-        "cal-13",
-        "cal-14",
-        "cal-15",
-    )
+    assert order.fill_event is not None
+    assert order.fill_event.effective_at.date() == date(2026, 7, 15)
+    assert order.evidence_grade == "TIMESTAMPED_MARKET_EVENT"
     assert trade.side == "sell"
     assert "000001.SZ" not in portfolio.positions
 
 
 def test_blocked_exit_rejects_skipped_sessions_and_completion_without_sale() -> None:
     terminal = _blocked_order()
-    with pytest.raises(MarketDataError, match="recognized reason"):
+    with pytest.raises(MarketDataError, match="recognized.*reason"):
         advance_blocked_exit(
             terminal,
-            session=date(2026, 7, 13),
-            decision_at=_decision_time(terminal, date(2026, 7, 13)),
-            decision=FillDecision(False, None, "confirmed_terminal_action"),
+            decision=RetryDecision(
+                _decision_time(terminal, date(2026, 7, 13)),
+                date(2026, 7, 13),
+                "confirmed_terminal_action",
+            ),
         )
 
     order = _blocked_order()
     order = advance_blocked_exit(
         order,
-        session=date(2026, 7, 13),
-        decision_at=_decision_time(order, date(2026, 7, 13)),
-        decision=FillDecision(False, None, "suspended"),
+        decision=RetryDecision(
+            _decision_time(order, date(2026, 7, 13)),
+            date(2026, 7, 13),
+            "suspended",
+        ),
     )
     with pytest.raises(ValueError, match="consecutive"):
         advance_blocked_exit(
             order,
-            session=date(2026, 7, 15),
-            decision_at=_decision_time(order, date(2026, 7, 15)),
-            decision=FillDecision(False, None, "confirmed_halt"),
+            decision=RetryDecision(
+                _decision_time(order, date(2026, 7, 15)),
+                date(2026, 7, 15),
+                "confirmed_halt",
+            ),
         )
-    with pytest.raises(MarketDataError, match="execute through"):
+    with pytest.raises(TypeError, match="RetryDecision"):
         advance_blocked_exit(
             order,
-            session=date(2026, 7, 14),
-            decision_at=_decision_time(order, date(2026, 7, 14)),
-            decision=FillDecision(True, 9.9, "filled"),
+            decision=FillDecision(True, 9.9, "filled"),  # type: ignore[arg-type]
         )
 
 
@@ -690,16 +727,14 @@ def test_failed_portfolio_sale_leaves_order_and_portfolio_unchanged() -> None:
         execute_ready_blocked_exit(
             order,
             portfolio=portfolio,
-            session=date(2026, 7, 13),
-            decision_at=_decision_time(order, date(2026, 7, 13)),
-            decision=FillDecision(True, 10, "filled"),
+            fill_event=_fill_event(order, date(2026, 7, 13), 10),
         )
 
     assert _order_snapshot(order) == order_before
     assert _portfolio_snapshot(portfolio) == portfolio_before
 
 
-def test_ready_exit_precondition_failure_leaves_deep_state_unchanged() -> None:
+def test_ready_exit_source_timing_failure_leaves_deep_state_unchanged() -> None:
     order = _blocked_order()
     portfolio = Portfolio.a_share(10_000)
     portfolio.start_session(date(2026, 7, 10))
@@ -708,17 +743,76 @@ def test_ready_exit_precondition_failure_leaves_deep_state_unchanged() -> None:
     order_before = _order_snapshot(order)
     portfolio_before = _portfolio_snapshot(portfolio)
 
-    with pytest.raises(MarketDataError, match="requires a filled decision"):
-        execute_ready_blocked_exit(
-            order,
-            portfolio=portfolio,
-            session=date(2026, 7, 13),
-            decision_at=_decision_time(order, date(2026, 7, 13)),
-            decision=FillDecision(False, None, "suspended"),
+    session = order.calendar.session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 15, tzinfo=UTC),
+    )
+    late_source = capture_source_bytes(
+        b"late fill",
+        publication_evidence=b"fixture publication receipt",
+        source_url="https://example.test/fill-event",
+        available_at=session.open_at + timedelta(hours=1),
+        retrieved_at=session.open_at + timedelta(hours=1, microseconds=1),
+        revision_id="late-fill",
+        source_family_id="fill-event",
+        provider_id="fixture-provider",
+        subject_id="000001.SZ",
+    ).source
+    with pytest.raises(MarketDataError, match="unavailable at execution_at"):
+        FillEvent(
+            execution_at=session.open_at,
+            price=10,
+            source=late_source,
+            effective_at=session.open_at,
+            basis="timestamped_session_open",
         )
 
     assert _order_snapshot(order) == order_before
     assert _portfolio_snapshot(portfolio) == portfolio_before
+
+
+def test_fill_event_cannot_be_submitted_before_open() -> None:
+    order = _blocked_order()
+    session = order.calendar.session_on(
+        date(2026, 7, 13),
+        as_of=datetime(2026, 7, 15, tzinfo=UTC),
+    )
+    available_at = session.open_at - timedelta(microseconds=1)
+    source = capture_source_bytes(
+        b"impossible pre-open fill",
+        publication_evidence=b"fixture publication receipt",
+        source_url="https://example.test/fill-event",
+        available_at=available_at,
+        retrieved_at=available_at,
+        revision_id="pre-open-fill",
+        source_family_id="fill-event",
+        provider_id="fixture-provider",
+        subject_id=order.symbol,
+    ).source
+
+    with pytest.raises(MarketDataError, match="cannot precede"):
+        FillEvent(
+            execution_at=available_at,
+            price=10,
+            source=source,
+            effective_at=session.open_at,
+            basis="timestamped_session_open",
+        )
+
+
+def test_fill_event_basis_produces_explicit_evidence_grade() -> None:
+    order = _blocked_order()
+    timestamped = _fill_event(order, date(2026, 7, 13), 10)
+    retrospective = _fill_event(
+        order,
+        date(2026, 7, 13),
+        10,
+        basis="retrospective_daily_bar_open_fill",
+    )
+
+    assert timestamped.evidence_grade == "TIMESTAMPED_MARKET_EVENT"
+    assert retrospective.evidence_grade == "RETROSPECTIVE_DAILY_BAR"
+    assert retrospective.execution_at > retrospective.effective_at
 
 
 def test_us_ready_exit_derives_settlement_from_the_same_accepted_calendar() -> None:
@@ -732,9 +826,7 @@ def test_us_ready_exit_derives_settlement_from_the_same_accepted_calendar() -> N
     order, trade = execute_ready_blocked_exit(
         order,
         portfolio=portfolio,
-        session=date(2026, 7, 13),
-        decision_at=_decision_time(order, date(2026, 7, 13)),
-        decision=FillDecision(True, 101, "filled"),
+        fill_event=_fill_event(order, date(2026, 7, 13), 101),
     )
 
     assert order.executed_session == date(2026, 7, 13)

@@ -36,7 +36,12 @@ from quant_system.markets.us import (
     cash_settlement_lag_sessions,
     decide_fill as us_fill, resolve_mark,
 )
-from .blocked_orders import BLOCKED_EXIT_REASONS, BlockedExitOrder, advance_blocked_exit
+from .blocked_orders import (
+    BLOCKED_EXIT_REASONS,
+    BlockedExitOrder,
+    RetryDecision,
+    advance_blocked_exit,
+)
 from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
 from .portfolio import Portfolio, Position, Trade
 
@@ -615,8 +620,12 @@ def blocked_exit_from_receipt(
     order = BlockedExitOrder(receipt.symbol, receipt.requested_shares,
                              context.execution_session.session_date, calendar)
     return advance_blocked_exit(
-        order, session=context.execution_session.session_date,
-        decision_at=context.decision_at, decision=FillDecision(False, None, receipt.reason),
+        order,
+        decision=RetryDecision(
+            decision_at=context.decision_at,
+            requested_session=context.execution_session.session_date,
+            reason=receipt.reason,
+        ),
     )
 
 

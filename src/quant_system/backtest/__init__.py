@@ -2,7 +2,8 @@
 
 from .blocked_orders import (
     BlockedExitOrder,
-    ExitAttempt,
+    FillEvent,
+    RetryDecision,
     advance_blocked_exit,
     execute_ready_blocked_exit,
 )
@@ -31,8 +32,9 @@ __all__ = [
     "DecisionContext",
     "ExecutionInput",
     "ExecutionReceipt",
-    "ExitAttempt",
+    "FillEvent",
     "Portfolio",
+    "RetryDecision",
     "StaticRebalanceResult",
     "TerminalAction",
     "TransactionCostModel",
