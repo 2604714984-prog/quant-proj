@@ -78,14 +78,17 @@ SCREEN_A_CLAIM_SHA256 = (
 SCREEN_A_PUBLIC_REPORT_SHA256 = (
     "40af63646f096d8b472ffc94147e62636138796e56b5e3ebad012b7a89933fa4"
 )
+PRIOR_TERMINAL_REPORT_SHA256 = (
+    "594d031efb80e233ae653120045639310e9670e29c11902117cdad8fd64c85e3"
+)
 INFERENCE_B_DEFINITION_SHA256 = (
-    "733824603bad1dcbd449b5dbfb51292af63d92ab06f74d2e638c75d29e78d4e7"
+    "07f56bee7e6232706910dc654fc6d1565794f72bf208fd3040830f0c5c24243d"
 )
 INFERENCE_B_BUNDLE_SHA256 = (
-    "de12312c73b37d5caed957fad71327e457232a4c6004bb616261a060ae56b574"
+    "95217d01da3d11e6e1ee5d312d1c533210e45558a7421e5c2a8bb30058be2ed5"
 )
 INFERENCE_B_H15_SHA256 = (
-    "8e3f8e30bb016ee94fe120fb82bc3586f0728753207327cf9bf440e5ad1ae05c"
+    "f3aaa554282a4f011db6f8f656c2cd01dcc11675ce75c2736c13efd880e3b375"
 )
 INFERENCE_B_H15_SELECTION_QUERY_SHA256 = (
     "82a385452e36159e2fe96b7b725ce8078481f185fad6a7bf8474f7dbf9ccb12a"
@@ -103,13 +106,16 @@ SCREEN_A_PRIVATE_RESULT_RELATIVE = Path(
     "private_results/us_spy_h15_10y3m_state_v1_screen_a_44bcd9a1/result.json"
 )
 INFERENCE_B_BUNDLE_RELATIVE = Path(
-    "staging/us_spy_h15_10y3m_state_v1/us_spy_h15_inference_b_runtime_input_v1.json"
+    "staging/us_spy_h15_10y3m_state_v1_technical_continuation_1/"
+    "us_spy_h15_inference_b_runtime_input_v1.json"
 )
 INFERENCE_B_H15_RELATIVE = Path(
-    "staging/us_spy_h15_10y3m_state_v1/h15_inference_b_signal_input_v1.json"
+    "staging/us_spy_h15_10y3m_state_v1_technical_continuation_1/"
+    "h15_inference_b_signal_input_v1.json"
 )
 INFERENCE_B_CLAIM_RELATIVE = Path(
-    "private_results/us_spy_h15_10y3m_state_v1_inference_b_v1/claim.json"
+    "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_1/"
+    "claim.json"
 )
 SCREEN_A_PRIVATE_RESULT = DATA_ROOT / SCREEN_A_PRIVATE_RESULT_RELATIVE
 INFERENCE_B_BUNDLE = DATA_ROOT / INFERENCE_B_BUNDLE_RELATIVE
@@ -890,8 +896,8 @@ def _require_screen_a_unlocked(payload: bytes) -> None:
         raise InputBlockedError("Screen-A metrics do not recompute exactly")
     if record.get("sharpe_difference_hex") != float(decision.sharpe_difference).hex():
         raise InputBlockedError("Screen-A Sharpe difference does not recompute exactly")
-    if _file_sha256(SCREEN_A_PUBLIC_REPORT) != SCREEN_A_PUBLIC_REPORT_SHA256:
-        raise InputBlockedError("Screen-A public report identity mismatch")
+    if _file_sha256(SCREEN_A_PUBLIC_REPORT) != PRIOR_TERMINAL_REPORT_SHA256:
+        raise InputBlockedError("prior terminal report identity mismatch")
 
 
 def _require_inference_contract(payload: bytes, adapter_sha256: str) -> None:
@@ -1013,6 +1019,7 @@ def _require_inference_contract(payload: bytes, adapter_sha256: str) -> None:
         "rerun_after_any_claim": False,
         "inference_attempt_consumed_at_claim": True,
         "inference_outcome_opened_at_runtime_bundle_capture_attempt": True,
+        "technical_continuation_limit": 1,
     }:
         raise InputBlockedError("Inference-B terminal rules mismatch")
     if freeze.get("boundaries") != {
@@ -1026,6 +1033,31 @@ def _require_inference_contract(payload: bytes, adapter_sha256: str) -> None:
         "live": False,
     }:
         raise InputBlockedError("Inference-B boundaries mismatch")
+    if record.get("technical_continuation_1") != {
+        "owner_authorized": True,
+        "reason": (
+            "the prior claim stopped before the first completed rebalance because the "
+            "runtime bundle used the unsupported label raw_signal_session_close for an "
+            "otherwise raw execution-unit decision close"
+        ),
+        "economic_contract_changed": False,
+        "signal_dates_costs_account_comparator_statistics_and_gates_changed": False,
+        "prior_inference_outcome_computed": False,
+        "repair": (
+            "replace decision_price_basis with raw_execution_units in exactly 54 execution "
+            "records and rebind the unchanged H15 rows to the repaired bundle"
+        ),
+        "prior_terminal_report_sha256": PRIOR_TERMINAL_REPORT_SHA256,
+        "prior_claim_sha256": (
+            "9573ded969d2c2284aa739fb78c02f6f319d62a6ab43cdfe75e0ac0dd6021f6c"
+        ),
+        "prior_result_sha256": (
+            "705ffbce5915c1eacb21316005263bb31e147b3a871acd005a886ed0296e40b0"
+        ),
+        "attempt_limit": 1,
+        "further_retry_allowed": False,
+    }:
+        raise InputBlockedError("Inference-B technical continuation contract mismatch")
 
 
 def _run_inference_once(expected_hashes: tuple[str, str]) -> None:

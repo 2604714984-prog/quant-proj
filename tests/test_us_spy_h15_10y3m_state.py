@@ -328,6 +328,33 @@ def test_inference_definition_freezes_exact_inputs_statistics_and_terminal_rules
     assert freeze["stage_contract"]["terminal_exit_month"] == "2026-06"
     assert freeze["bootstrap_contract"]["program_alpha"] == 0.015
     assert freeze["terminal_rules"]["rerun_after_any_claim"] is False
+    assert freeze["terminal_rules"]["technical_continuation_limit"] == 1
+    assert record["technical_continuation_1"] == {
+        "owner_authorized": True,
+        "reason": (
+            "the prior claim stopped before the first completed rebalance because the "
+            "runtime bundle used the unsupported label raw_signal_session_close for an "
+            "otherwise raw execution-unit decision close"
+        ),
+        "economic_contract_changed": False,
+        "signal_dates_costs_account_comparator_statistics_and_gates_changed": False,
+        "prior_inference_outcome_computed": False,
+        "repair": (
+            "replace decision_price_basis with raw_execution_units in exactly 54 execution "
+            "records and rebind the unchanged H15 rows to the repaired bundle"
+        ),
+        "prior_terminal_report_sha256": (
+            "594d031efb80e233ae653120045639310e9670e29c11902117cdad8fd64c85e3"
+        ),
+        "prior_claim_sha256": (
+            "9573ded969d2c2284aa739fb78c02f6f319d62a6ab43cdfe75e0ac0dd6021f6c"
+        ),
+        "prior_result_sha256": (
+            "705ffbce5915c1eacb21316005263bb31e147b3a871acd005a886ed0296e40b0"
+        ),
+        "attempt_limit": 1,
+        "further_retry_allowed": False,
+    }
     assert record["strategy_candidate_available"] is False
 
 
@@ -667,7 +694,7 @@ def test_inference_unlock_recomputes_screen_a_before_any_new_outcome(
     public.write_bytes(b'{"screen_a":"pass"}')
     monkeypatch.setattr(RUNNER, "SCREEN_A_PUBLIC_REPORT", public)
     monkeypatch.setattr(
-        RUNNER, "SCREEN_A_PUBLIC_REPORT_SHA256", hashlib.sha256(public.read_bytes()).hexdigest()
+        RUNNER, "PRIOR_TERMINAL_REPORT_SHA256", hashlib.sha256(public.read_bytes()).hexdigest()
     )
     record = {
         "schema_version": "us-spy-h15-10y3m-state-screen-a-private-result-v1",

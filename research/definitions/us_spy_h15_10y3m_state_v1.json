@@ -139,10 +139,10 @@
     },
     "paths": {
       "screen_a_private_result": "private_results/us_spy_h15_10y3m_state_v1_screen_a_44bcd9a1/result.json",
-      "runtime_bundle": "staging/us_spy_h15_10y3m_state_v1/us_spy_h15_inference_b_runtime_input_v1.json",
-      "h15_input": "staging/us_spy_h15_10y3m_state_v1/h15_inference_b_signal_input_v1.json",
-      "claim": "private_results/us_spy_h15_10y3m_state_v1_inference_b_v1/claim.json",
-      "result": "private_results/us_spy_h15_10y3m_state_v1_inference_b_v1/result.json"
+      "runtime_bundle": "staging/us_spy_h15_10y3m_state_v1_technical_continuation_1/us_spy_h15_inference_b_runtime_input_v1.json",
+      "h15_input": "staging/us_spy_h15_10y3m_state_v1_technical_continuation_1/h15_inference_b_signal_input_v1.json",
+      "claim": "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_1/claim.json",
+      "result": "private_results/us_spy_h15_10y3m_state_v1_inference_b_technical_continuation_1/result.json"
     },
     "stage_contract": {
       "label": "RETROSPECTIVE_SECONDARY_INFERENCE_B",
@@ -182,9 +182,9 @@
     },
     "input_identities": {
       "runtime_bundle_schema": "us-spy-h15-10y3m-state-inference-b-runtime-input-v1",
-      "runtime_bundle_sha256": "de12312c73b37d5caed957fad71327e457232a4c6004bb616261a060ae56b574",
+      "runtime_bundle_sha256": "95217d01da3d11e6e1ee5d312d1c533210e45558a7421e5c2a8bb30058be2ed5",
       "h15_schema": "us-spy-h15-10y3m-state-inference-b-v1",
-      "h15_sha256": "8e3f8e30bb016ee94fe120fb82bc3586f0728753207327cf9bf440e5ad1ae05c",
+      "h15_sha256": "f3aaa554282a4f011db6f8f656c2cd01dcc11675ce75c2736c13efd880e3b375",
       "h15_selection_query_sha256": "82a385452e36159e2fe96b7b725ce8078481f185fad6a7bf8474f7dbf9ccb12a",
       "h15_database_sha256": "4e7bd0792241087c7c4da05de32b75a7450baa1dda0342a326ef4c02aa42a92e",
       "h15_response_set_sha256": "338a8da0720f16045cd3325a5dc07241292c149e836bce1149af3de8bb97cc14",
@@ -204,7 +204,8 @@
       "claim_and_result_paths_are_single_use": true,
       "rerun_after_any_claim": false,
       "inference_attempt_consumed_at_claim": true,
-      "inference_outcome_opened_at_runtime_bundle_capture_attempt": true
+      "inference_outcome_opened_at_runtime_bundle_capture_attempt": true,
+      "technical_continuation_limit": 1
     },
     "boundaries": {
       "network_or_provider_call": false,
@@ -216,6 +217,19 @@
       "broker": false,
       "live": false
     }
+  },
+  "technical_continuation_1": {
+    "owner_authorized": true,
+    "reason": "the prior claim stopped before the first completed rebalance because the runtime bundle used the unsupported label raw_signal_session_close for an otherwise raw execution-unit decision close",
+    "economic_contract_changed": false,
+    "signal_dates_costs_account_comparator_statistics_and_gates_changed": false,
+    "prior_inference_outcome_computed": false,
+    "repair": "replace decision_price_basis with raw_execution_units in exactly 54 execution records and rebind the unchanged H15 rows to the repaired bundle",
+    "prior_terminal_report_sha256": "594d031efb80e233ae653120045639310e9670e29c11902117cdad8fd64c85e3",
+    "prior_claim_sha256": "9573ded969d2c2284aa739fb78c02f6f319d62a6ab43cdfe75e0ac0dd6021f6c",
+    "prior_result_sha256": "705ffbce5915c1eacb21316005263bb31e147b3a871acd005a886ed0296e40b0",
+    "attempt_limit": 1,
+    "further_retry_allowed": false
   },
   "terminal_rules": {
     "screen_a_fail": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",

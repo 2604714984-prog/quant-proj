@@ -1,5 +1,5 @@
 {
-  "schema_version": "us-spy-h15-10y3m-state-terminal-v2",
+  "schema_version": "us-spy-h15-10y3m-state-terminal-v3",
   "research_id": "US_SPY_H15_10Y3M_STATE_V1",
   "mechanism_id": "M119-03_US_SPY_YIELD_CURVE_STATE",
   "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE1",
@@ -22,27 +22,32 @@
   "inference_b": {
     "stage": "RETROSPECTIVE_SECONDARY_INFERENCE_B",
     "classification": "INPUT_BLOCKED",
+    "technical_continuation_id": "PREOUTCOME_TECHNICAL_CONTINUATION_1",
+    "technical_continuation_attempts": 1,
     "execution_attempt_consumed": true,
     "inference_inputs_opened": true,
     "strategy_outcome_computed": false,
     "failure_point": "shared execution validation before the first completed rebalance",
-    "failure_reason": "decision_price_basis_contract_mismatch",
+    "failure_reason": "runner_market_identifier_contract_mismatch",
+    "observed_market_identifier": "US",
+    "required_market_identifier": "us",
+    "pre_attempt_repair": "changed exactly 54 decision_price_basis labels from raw_signal_session_close to raw_execution_units without changing prices, dates, signals, costs, corporate actions or gates",
     "error_type": "InputBlockedError",
     "rerun_authorized": false,
     "external_review_requested": false,
     "identity": {
-      "source_commit": "235a2c46ba9cb7a3e45a3d8987a06af9e057e8b7",
-      "source_tree": "f945924e88501050ab0749422c7041e0c04ad3f7",
-      "definition_sha256": "733824603bad1dcbd449b5dbfb51292af63d92ab06f74d2e638c75d29e78d4e7",
+      "definition_sha256": "07f56bee7e6232706910dc654fc6d1565794f72bf208fd3040830f0c5c24243d",
       "adapter_sha256": "e408371fa8e5c86bba41eca41c0d507b1fd34c48f8c17de396e71b15cb3db447",
-      "runner_sha256": "166c25719fa7683dd5dc3c9cde41931b5d1b1ea71fbf70d933990e3f46dedea5",
-      "runtime_bundle_sha256": "de12312c73b37d5caed957fad71327e457232a4c6004bb616261a060ae56b574",
-      "h15_input_sha256": "8e3f8e30bb016ee94fe120fb82bc3586f0728753207327cf9bf440e5ad1ae05c",
+      "runner_sha256": "ae945e6a264b796d5098813be020665f3dab5a5ff56e88c50bce1cee5fab47b5",
+      "runtime_bundle_sha256": "95217d01da3d11e6e1ee5d312d1c533210e45558a7421e5c2a8bb30058be2ed5",
+      "h15_input_sha256": "f3aaa554282a4f011db6f8f656c2cd01dcc11675ce75c2736c13efd880e3b375",
       "h15_selection_query_sha256": "82a385452e36159e2fe96b7b725ce8078481f185fad6a7bf8474f7dbf9ccb12a",
-      "database_sha256": "4e7bd0792241087c7c4da05de32b75a7450baa1dda0342a326ef4c02aa42a92e",
-      "claim_sha256": "9573ded969d2c2284aa739fb78c02f6f319d62a6ab43cdfe75e0ac0dd6021f6c",
-      "private_result_sha256": "705ffbce5915c1eacb21316005263bb31e147b3a871acd005a886ed0296e40b0",
-      "pre_outcome_ci_run": 29903048218
+      "h15_source_database_sha256": "4e7bd0792241087c7c4da05de32b75a7450baa1dda0342a326ef4c02aa42a92e",
+      "central_database_before_and_after_sha256": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+      "claim_sha256": "f8aeb6c0b27a455c3e011d40ed3aaf80b0e069fbc65ec3802323e59b4704a713",
+      "private_result_sha256": "b51d47e41841957b58c7182d5f3e54e299043e7cce127437c239ade7fcd2633f",
+      "focused_tests_passed": 33,
+      "full_tests_passed": 228
     }
   },
   "strategy_metrics": {
@@ -86,6 +91,9 @@
     "one_use_execution_consumed": true,
     "rerun_authorized": false,
     "database_unchanged_after_execution": true,
+    "mechanical_input_delta_verified": true,
+    "preflight_execution_points": 54,
+    "preflight_signal_rows": 53,
     "raw_price_or_rate_values_published": false,
     "inference_b_nav_or_return_values_computed": false,
     "inference_b_nav_or_return_values_published": false
@@ -99,7 +107,7 @@
     "broker": false,
     "live": false,
     "automatic_execution": false,
-    "next_action": "PERMANENTLY_CLOSE_M119_03_AND_CONTINUE_THE_NEXT_INDEPENDENT_MECHANISM"
+    "next_action": "PERMANENTLY_CLOSE_M119_03_AND_BEGIN_ONE_NEW_OUTCOME_BLIND_SPY_OR_QQQ_MECHANISM"
   },
   "strategy_candidate_available": false
 }
