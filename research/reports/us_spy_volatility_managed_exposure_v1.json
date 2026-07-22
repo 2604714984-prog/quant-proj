@@ -1,12 +1,12 @@
 {
-  "schema_version": "us-spy-volatility-managed-exposure-preregistration-v8",
-  "supersedes_report_sha256": "5a2ccf702e8e46d3e6210cb0e82107aa1a72a4e8c5e8dc03ee90c03d1ed5cda4",
+  "schema_version": "us-spy-volatility-managed-exposure-preregistration-v9",
+  "supersedes_report_sha256": "120f2f6a7d85adca0778f644add220ccc53505c4f6b6d3c9bfe70302ec14b053",
   "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1",
   "date": "2026-07-22",
   "market": "US",
   "phase": "OUTCOME_BLIND_PREREGISTRATION",
   "status": "PREREGISTERED_NOT_EXECUTED",
-  "current_status": "ISSUE119_PROGRAM_ALPHA_AMENDMENT_FROZEN_RETROSPECTIVE_SCREEN_A_NOT_EXECUTED",
+  "current_status": "ISSUE119_B01_B04_OUTCOME_BLIND_FREEZE_COMPLETE_RETROSPECTIVE_SCREEN_A_NOT_EXECUTED",
   "evidence_class": "RETROSPECTIVE_SECONDARY_NOT_PAPER_OR_LIVE",
   "family_number": null,
   "program_multiplicity": {
@@ -52,6 +52,32 @@
   "outcome_blind_frozen_specification": {
     "research_question": "Does unlevered monthly SPY exposure scaled down when trailing realized volatility is high improve risk-adjusted performance relative to fully invested SPY?",
     "null_hypothesis": "The strategy does not have a higher monthly Sharpe ratio than the matched SPY buy-and-hold benchmark.",
+    "mechanism_distinctness": {
+      "economic_mechanism": "Scale absolute SPY exposure down as its own lagged realized volatility rises; the rule forecasts conditional risk, not return direction, relative asset leadership, or a session-specific premium.",
+      "strongest_duplicate_arguments": [
+        {
+          "closed_lineage": "SPY_200_DAY_TREND_CASH",
+          "strongest_argument": "Both rules can reduce SPY exposure and leave residual cash during adverse market states.",
+          "why_not_duplicate": "The closed rule is a binary directional price-level versus 200-day-average rule. M119-01 never reads a moving-average sign and instead applies a continuous weight using only the dispersion of the prior complete month's total returns."
+        },
+        {
+          "closed_lineage": "THREE_ETF_INVERSE_VOLATILITY_ALLOCATION",
+          "strongest_argument": "Both rules place realized volatility in the denominator of a portfolio weight.",
+          "why_not_duplicate": "The closed rule is relative risk budgeting across three risky assets with cross-asset normalization. M119-01 targets one asset's absolute exposure versus cash, depends only on SPY's own volatility, and performs no cross-sectional normalization or ranking."
+        },
+        {
+          "closed_lineage": "SPY_QQQ_GLD_DUAL_MOMENTUM",
+          "strongest_argument": "Both rules make monthly allocation decisions and may leave capital outside the selected risky exposure.",
+          "why_not_duplicate": "The closed rule selects from directional absolute and relative return signals. M119-01 does not compare assets or use a return-sign threshold; the same return direction can produce different exposure only through realized dispersion."
+        },
+        {
+          "closed_lineage": "SESSION_DECOMPOSITION_V1",
+          "strongest_argument": "Both rules can be computed from daily market observations and implemented at a later accepted open.",
+          "why_not_duplicate": "The closed rule attributes returns to overnight or intraday sessions. M119-01 uses consecutive close-to-close total returns only to estimate monthly volatility and contains no overnight, intraday, gap, or session-premium component."
+        }
+      ],
+      "selection_without_outcomes": "Distinctness is frozen from economic inputs and decision rules only; no price-derived behavior, return, NAV, or performance comparison was used."
+    },
     "instrument": "SPY",
     "instrument_selection": "fixed before outcome access; not a dynamic stock pool",
     "expected_inclusion_rule": "fixed-spy-universe",
@@ -75,8 +101,18 @@
       "later_execution_session": "INPUT_BLOCKED",
       "return_formula": "g_t=(split_ratio_t*raw_close_t+cash_distribution_t)/raw_close_t_minus_1; r_t=log(g_t)",
       "annualized_volatility": "sample standard deviation of exactly 21 log total returns with ddof=1 multiplied by sqrt(252)",
+      "parameter_provenance": {
+        "primary_economic_source": "Moreira and Muir, Volatility-Managed Portfolios, Journal of Finance 72(4), 2017, DOI 10.1111/jofi.12513",
+        "mechanism_taken_from_source": "Use lagged realized volatility to reduce exposure when conditional risk is high, with decisions formed at a monthly frequency.",
+        "observation_window_source": "The source-motivated prior complete month is operationalized once as exactly 21 consecutive log total returns from 22 accepted-session closes; 21 was not selected from a tested grid.",
+        "target_source": "The 10 percent annualized target is inherited unchanged from superseded outcome-blind preregistration SHA256 120f2f6a7d85adca0778f644add220ccc53505c4f6b6d3c9bfe70302ec14b053 as a fixed unlevered account risk budget; it is not estimated, optimized, or selected from outcomes."
+      },
       "target_annualized_volatility": 0.1,
       "target_weight": "min(1.0, 0.10 / annualized_volatility)",
+      "exposure_floor": 0.0,
+      "exposure_floor_semantics": "No positive minimum exposure is imposed; whole-share rounding may produce zero executed shares, and no rescue or redistribution is allowed.",
+      "exposure_cap": 1.0,
+      "robustness_variant": "NONE",
       "adjusted_price_substitution_allowed": false,
       "missing_nonfinite_or_nonpositive_value": "INPUT_BLOCKED"
     },
@@ -168,6 +204,16 @@
       "purged_entry_cohort": "2021-12",
       "validation_query_rule": "the query interval must equal 2018-01-02 through 2021-12-01 exactly",
       "holdout_query_rule": "the separate query interval must equal 2021-12-01 through 2026-06-01 exactly",
+      "holding_interval_assignment_rule": "A candidate monthly holding interval is labelled by its entry month and is accepted only when both its first-accepted-open entry boundary and the next month's first-accepted-open exit boundary belong to the same retrospective stage; every crossing interval is purged rather than reassigned.",
+      "cross_boundary_holding_intervals": [
+        {
+          "entry_boundary": "first accepted open of 2021-12",
+          "exit_boundary": "first accepted open of 2022-01",
+          "assignment": "PURGED_FROM_BOTH_STAGES",
+          "reason": "The interval crosses from RETROSPECTIVE_SECONDARY_SCREEN_A into RETROSPECTIVE_SECONDARY_INFERENCE_B and therefore cannot supply a return to either stage."
+        }
+      ],
+      "cross_boundary_holding_interval_count": 1,
       "retrospective_holdout_entry_cohorts": {
         "start_month": "2022-01",
         "end_month": "2026-05",
