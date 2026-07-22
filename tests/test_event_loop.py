@@ -13,7 +13,9 @@ from quant_system.backtest import (
     CapacityObservation,
     CapacityPolicy,
     DecisionArtifact,
+    CostStressCase,
     ExecutionInput,
+    ExecutionCostAssumptions,
     Portfolio,
     TerminalAction,
     TransactionCostModel,
@@ -2197,7 +2199,22 @@ def _controlled_calendar(days: tuple[date, ...]) -> AcceptedSessionCalendar:
     return AcceptedSessionCalendar(rows, identity=identity)
 
 
-def _controlled_input(symbol: str, execution: AcceptedSession) -> ExecutionInput:
+def _controlled_input(
+    symbol: str,
+    execution: AcceptedSession,
+    *,
+    observed_session: AcceptedSession | None = None,
+) -> ExecutionInput:
+    zone = ZoneInfo(execution.exchange_timezone)
+    observed_day = execution.session_date - timedelta(days=1)
+    observed = observed_session or AcceptedSession(
+            observed_day,
+            datetime.combine(observed_day, time(9, 30), zone),
+            datetime.combine(observed_day, time(15), zone),
+            _captured_source("capacity-calendar", datetime(2000, 1, 1, tzinfo=UTC)),
+            execution.exchange_timezone,
+            exchange_id=execution.exchange_id,
+        )
     statuses = tuple(
         StatusEvidence(
             f"{symbol}:{kind}",
@@ -2233,6 +2250,47 @@ def _controlled_input(symbol: str, execution: AcceptedSession) -> ExecutionInput
         execution_price_basis="timestamped_session_open",
         limit_regime="no_limit",
         adjustment_receipt=_adjustment_receipt(symbol, execution.session_date),
+        capacity=CapacityObservation(
+            symbol,
+            observed,
+            1_000_000,
+            10_000_000,
+            "CNY",
+            _captured_source("capacity-observation", observed.close_at),
+        ),
+    )
+
+
+def _cost_assumptions(
+    *,
+    spread_bps: float = 2.0,
+    gross_only: bool = False,
+) -> ExecutionCostAssumptions:
+    policy = CapacityPolicy(0.1, 0.1, "CNY")
+    regulatory_fee = 0.0 if gross_only else 0.0005
+    base = CostStressCase(
+        0.0,
+        0.0,
+        spread_bps,
+        1.0 if spread_bps else 0.0,
+        regulatory_fee,
+        1.0,
+    )
+    adverse = CostStressCase(
+        0.0,
+        0.0,
+        spread_bps * 2,
+        3.0 if spread_bps else 0.0,
+        regulatory_fee,
+        1.0,
+    )
+    return ExecutionCostAssumptions(
+        "fixture-costs-v1",
+        "CNY",
+        policy,
+        base,
+        adverse,
+        gross_only=gross_only,
     )
 
 
@@ -2464,7 +2522,11 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
     ).open_at - timedelta(minutes=1)
     execution = calendar.next_session(days[0], as_of=decision_at)
-    row = _controlled_input("AAA", execution)
+    row = _controlled_input(
+        "AAA",
+        execution,
+        observed_session=calendar.session_on(days[0], as_of=decision_at),
+    )
     artifact = _captured_decision_artifact(tmp_path, decision_at)
     materialization = _controlled_materialization(
         tmp_path,
@@ -2482,11 +2544,121 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         execution_inputs=(row,),
         universe_materialization=materialization,
         decision_artifact=artifact,
+        cost_assumptions=_cost_assumptions(),
     )
 
     assert result.interface_grade == "CONTROLLED_CANDIDATE_INPUT"
     assert result.decision_artifact_sha256 == artifact.artifact_sha256
+    assert result.cost_assumptions_sha256 == _cost_assumptions().identity_sha256
+    assert result.adverse_final_nav is not None
+    assert result.adverse_input_identity_hash is not None
+    assert result.adverse_stage_hash is not None
+    assert result.base_fx_adjusted_final_nav is not None
+    assert result.adverse_fx_adjusted_final_nav is not None
     assert result.strategy_candidate_available is False
+
+
+def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    row = _controlled_input(
+        "AAA",
+        execution,
+        observed_session=calendar.session_on(days[0], as_of=decision_at),
+    )
+    artifact = _captured_decision_artifact(tmp_path, decision_at)
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
+    )
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+
+    with pytest.raises(TypeError, match="ExecutionCostAssumptions"):
+        run_candidate_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=decision_at,
+            execution_inputs=(row,),
+            universe_materialization=materialization,
+            decision_artifact=artifact,
+            cost_assumptions=None,  # type: ignore[arg-type]
+        )
+    with pytest.raises(MarketDataError, match="capacity evidence"):
+        run_candidate_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=decision_at,
+            execution_inputs=(replace(row, capacity=None),),
+            universe_materialization=materialization,
+            decision_artifact=artifact,
+            cost_assumptions=_cost_assumptions(),
+        )
+    assert portfolio.__dict__ == before
+
+
+def test_cost_assumptions_change_candidate_identity_and_gross_grade(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    row = _controlled_input(
+        "AAA",
+        execution,
+        observed_session=calendar.session_on(days[0], as_of=decision_at),
+    )
+    artifact = _captured_decision_artifact(tmp_path, decision_at)
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
+    )
+    arguments = {
+        "signal_session": days[0],
+        "decision_at": decision_at,
+        "execution_inputs": (row,),
+        "universe_materialization": materialization,
+        "decision_artifact": artifact,
+    }
+
+    base = run_candidate_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        cost_assumptions=_cost_assumptions(spread_bps=2),
+        **arguments,
+    )
+    stressed = run_candidate_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        cost_assumptions=_cost_assumptions(spread_bps=4),
+        **arguments,
+    )
+    gross = run_candidate_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        cost_assumptions=_cost_assumptions(spread_bps=0, gross_only=True),
+        **arguments,
+    )
+
+    assert base.input_identity_hash != stressed.input_identity_hash
+    assert base.cost_assumptions_sha256 != stressed.cost_assumptions_sha256
+    assert gross.interface_grade == "GROSS_ONLY_EXPERIMENT"
+    assert gross.strategy_candidate_available is False
 
 
 def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) -> None:
@@ -2497,7 +2669,11 @@ def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) ->
         as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
     ).open_at - timedelta(minutes=1)
     execution = calendar.next_session(days[0], as_of=decision_at)
-    row = _controlled_input("AAA", execution)
+    row = _controlled_input(
+        "AAA",
+        execution,
+        observed_session=calendar.session_on(days[0], as_of=decision_at),
+    )
     portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
     materialization = _controlled_materialization(
@@ -2517,6 +2693,7 @@ def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) ->
             execution_inputs=(row,),
             universe_materialization=materialization,
             decision_artifact=lambda _: {"AAA": 1.0},  # type: ignore[arg-type]
+            cost_assumptions=_cost_assumptions(),
         )
     assert portfolio.__dict__ == before
 
@@ -2540,7 +2717,11 @@ def test_candidate_interface_rejects_manual_universe_snapshot(tmp_path: Path) ->
         as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
     ).open_at - timedelta(minutes=1)
     execution = calendar.next_session(days[0], as_of=decision_at)
-    row = _controlled_input("AAA", execution)
+    row = _controlled_input(
+        "AAA",
+        execution,
+        observed_session=calendar.session_on(days[0], as_of=decision_at),
+    )
     artifact = _captured_decision_artifact(tmp_path, decision_at)
     portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
@@ -2560,6 +2741,7 @@ def test_candidate_interface_rejects_manual_universe_snapshot(tmp_path: Path) ->
                 ("AAA",),
             ),
             decision_artifact=artifact,
+            cost_assumptions=_cost_assumptions(),
         )
     assert portfolio.__dict__ == before
 
@@ -2572,8 +2754,9 @@ def test_universe_materialization_requires_complete_source_partition(tmp_path: P
         as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
     ).open_at - timedelta(minutes=1)
     execution = calendar.next_session(days[0], as_of=decision_at)
-    active = _controlled_input("AAA", execution)
-    delisted = _controlled_input("DEAD", execution)
+    observed = calendar.session_on(days[0], as_of=decision_at)
+    active = _controlled_input("AAA", execution, observed_session=observed)
+    delisted = _controlled_input("DEAD", execution, observed_session=observed)
     delisted = replace(
         delisted,
         status_records=tuple(
@@ -2621,7 +2804,11 @@ def test_universe_materialization_detects_rule_byte_change(tmp_path: Path) -> No
         as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
     ).open_at - timedelta(minutes=1)
     execution = calendar.next_session(days[0], as_of=decision_at)
-    row = _controlled_input("AAA", execution)
+    row = _controlled_input(
+        "AAA",
+        execution,
+        observed_session=calendar.session_on(days[0], as_of=decision_at),
+    )
     materialization = _controlled_materialization(
         tmp_path,
         calendar,

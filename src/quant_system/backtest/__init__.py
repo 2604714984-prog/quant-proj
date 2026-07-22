@@ -8,7 +8,12 @@ from .blocked_orders import (
     execute_ready_blocked_exit,
 )
 from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
-from .costs import CostBreakdown, TransactionCostModel
+from .costs import (
+    CostBreakdown,
+    CostStressCase,
+    ExecutionCostAssumptions,
+    TransactionCostModel,
+)
 from .event_loop import (
     DecisionArtifact,
     DecisionContext,
@@ -28,9 +33,11 @@ __all__ = [
     "CapacityObservation",
     "CapacityPolicy",
     "CostBreakdown",
+    "CostStressCase",
     "DecisionArtifact",
     "DecisionContext",
     "ExecutionInput",
+    "ExecutionCostAssumptions",
     "ExecutionReceipt",
     "FillEvent",
     "Portfolio",

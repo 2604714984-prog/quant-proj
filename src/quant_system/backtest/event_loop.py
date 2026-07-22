@@ -22,6 +22,7 @@ from quant_system.markets.a_share import (
     AShareAdjustmentReceipt,
     AShareBar,
     decide_fill as a_share_fill,
+    stamp_tax_rate,
 )
 from quant_system.markets.common import (
     FillDecision, MarketDataError, is_finite_number, is_positive_price,
@@ -48,6 +49,7 @@ from .blocked_orders import (
     advance_blocked_exit,
 )
 from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
+from .costs import ExecutionCostAssumptions
 from .portfolio import Portfolio, Position, Trade
 
 Market = Literal["a_share", "us"]
@@ -167,6 +169,12 @@ class StaticRebalanceResult:
     decision_artifact_sha256: str | None = None
     dataset_identity_sha256: str | None = None
     split_identity_sha256: str | None = None
+    cost_assumptions_sha256: str | None = None
+    adverse_input_identity_hash: str | None = None
+    adverse_stage_hash: str | None = None
+    adverse_final_nav: float | None = None
+    base_fx_adjusted_final_nav: float | None = None
+    adverse_fx_adjusted_final_nav: float | None = None
     strategy_candidate_available: bool = False
 
 
@@ -467,10 +475,9 @@ def run_candidate_rebalance(
     execution_inputs: tuple[ExecutionInput, ...],
     universe_materialization: UniverseMaterialization,
     decision_artifact: DecisionArtifact,
+    cost_assumptions: ExecutionCostAssumptions,
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
-    capacity_policy: CapacityPolicy | None = None,
     max_positions: int | None = None,
-    slippage_bps: float = 0.0,
     prior_stage_hash: str = "0" * 64,
 ) -> StaticRebalanceResult:
     """Run the controlled interface from frozen weights and captured bytes only."""
@@ -481,7 +488,15 @@ def run_candidate_rebalance(
         raise TypeError(
             "universe_materialization must come from materialize_universe_partition"
         )
+    if not isinstance(cost_assumptions, ExecutionCostAssumptions):
+        raise TypeError("cost_assumptions must be ExecutionCostAssumptions")
+    if any(row.capacity is None for row in execution_inputs):
+        raise MarketDataError("candidate execution requires capacity evidence for every input")
+    if any(row.currency != cost_assumptions.currency for row in execution_inputs):
+        raise MarketDataError("execution and cost assumption currencies must match")
     cutoff = require_aware_datetime(decision_at, "decision_at")
+    execution_for_costs = calendar.next_session(signal_session, as_of=cutoff)
+    _require_cost_model(portfolio, cost_assumptions, execution_for_costs.session_date)
     if decision_artifact.decision_at != cutoff:
         raise MarketDataError("decision artifact decision_at mismatch")
     decision_artifact.verify_current_bytes()
@@ -495,31 +510,100 @@ def run_candidate_rebalance(
         cutoff,
         execution_calendar_revision,
     )
+    common = {
+        "signal_session": signal_session,
+        "decision_at": cutoff,
+        "execution_inputs": execution_inputs,
+        "execution_calendar_revision": execution_calendar_revision,
+        "universe_members": universe_members,
+        "universe_snapshot": universe_snapshot,
+        "target_weights": lambda _: dict(decision_artifact.weights),
+        "strategy_definition_sha256": decision_artifact.strategy_definition_sha256,
+        "strategy_adapter_sha256": decision_artifact.strategy_adapter_sha256,
+        "capacity_policy": cost_assumptions.capacity_policy,
+        "max_positions": max_positions,
+        "prior_stage_hash": prior_stage_hash,
+    }
+    base_portfolio = portfolio
+    if cost_assumptions.gross_only:
+        base_portfolio = deepcopy(portfolio)
+        base_portfolio.costs = cost_assumptions.base.transaction_cost_model()
+        base_portfolio.a_share_stamp_tax_schedule = False
     result = run_static_rebalance(
-        portfolio,
+        base_portfolio,
         calendar,
-        signal_session=signal_session,
-        decision_at=cutoff,
-        execution_inputs=execution_inputs,
-        execution_calendar_revision=execution_calendar_revision,
-        universe_members=universe_members,
-        universe_snapshot=universe_snapshot,
-        target_weights=lambda _: dict(decision_artifact.weights),
-        strategy_definition_sha256=decision_artifact.strategy_definition_sha256,
-        strategy_adapter_sha256=decision_artifact.strategy_adapter_sha256,
-        capacity_policy=capacity_policy,
-        max_positions=max_positions,
-        slippage_bps=slippage_bps,
-        prior_stage_hash=prior_stage_hash,
+        slippage_bps=cost_assumptions.base.slippage_bps,
+        **common,
+    )
+    adverse_portfolio = deepcopy(base_portfolio)
+    adverse_portfolio.costs = cost_assumptions.adverse.transaction_cost_model()
+    adverse = run_static_rebalance(
+        adverse_portfolio,
+        calendar,
+        slippage_bps=cost_assumptions.adverse.slippage_bps,
+        **common,
+    )
+    assumption_sha = cost_assumptions.identity_sha256
+    candidate_identity = hashlib.sha256(
+        f"{result.input_identity_hash}|{assumption_sha}|base".encode()
+    ).hexdigest()
+    receipt_hashes, stage_hash = _hashes(
+        result.receipts,
+        candidate_identity,
+        prior_stage_hash,
+    )
+    adverse_identity = hashlib.sha256(
+        f"{adverse.input_identity_hash}|{assumption_sha}|adverse".encode()
+    ).hexdigest()
+    _, adverse_stage_hash = _hashes(
+        adverse.receipts,
+        adverse_identity,
+        prior_stage_hash,
     )
     return replace(
         result,
-        interface_grade="CONTROLLED_CANDIDATE_INPUT",
+        input_identity_hash=candidate_identity,
+        receipt_hashes=receipt_hashes,
+        stage_hash=stage_hash,
+        interface_grade=(
+            "GROSS_ONLY_EXPERIMENT"
+            if cost_assumptions.gross_only
+            else "CONTROLLED_CANDIDATE_INPUT"
+        ),
         decision_artifact_sha256=decision_artifact.artifact_sha256,
         dataset_identity_sha256=decision_artifact.dataset_identity_sha256,
         split_identity_sha256=decision_artifact.split_identity_sha256,
+        cost_assumptions_sha256=assumption_sha,
+        adverse_input_identity_hash=adverse_identity,
+        adverse_stage_hash=adverse_stage_hash,
+        adverse_final_nav=adverse.final_nav,
+        base_fx_adjusted_final_nav=result.final_nav * cost_assumptions.base.fx_to_base,
+        adverse_fx_adjusted_final_nav=(
+            adverse.final_nav * cost_assumptions.adverse.fx_to_base
+        ),
         strategy_candidate_available=False,
     )
+
+
+def _require_cost_model(
+    portfolio: Portfolio,
+    assumptions: ExecutionCostAssumptions,
+    execution_session: date,
+) -> None:
+    base = assumptions.base
+    if (
+        portfolio.costs.commission_rate != base.commission_rate
+        or portfolio.costs.minimum_commission != base.minimum_commission
+    ):
+        raise MarketDataError("portfolio cost model must match base cost assumptions")
+    if assumptions.gross_only:
+        if portfolio.costs.sell_tax_rate != 0:
+            raise MarketDataError("gross-only portfolio must have zero configured costs")
+    elif portfolio.a_share_stamp_tax_schedule:
+        if base.regulatory_fee_rate != stamp_tax_rate(execution_session):
+            raise MarketDataError("A-share regulatory fee assumption must match its schedule")
+    elif portfolio.costs.sell_tax_rate != base.regulatory_fee_rate:
+        raise MarketDataError("portfolio regulatory fees must match base cost assumptions")
 
 
 def _require_candidate_sources(
@@ -543,6 +627,8 @@ def _require_candidate_sources(
             require_trusted_source(status.source)
         for action in row.corporate_actions:
             require_trusted_source(action.source)
+        if row.capacity is not None:
+            require_trusted_source(row.capacity.source)
         if row.adjustment_receipt is not None:
             require_trusted_source(row.adjustment_receipt.factor_source)
             require_trusted_source(row.adjustment_receipt.action_completeness_source)
