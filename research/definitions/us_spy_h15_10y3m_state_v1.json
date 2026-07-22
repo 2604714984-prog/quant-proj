@@ -1,0 +1,154 @@
+{
+  "schema_version": "us-spy-h15-10y3m-state-prereg-v1",
+  "research_id": "US_SPY_H15_10Y3M_STATE_V1",
+  "mechanism_id": "M119-03_US_SPY_YIELD_CURVE_STATE",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE1",
+  "date": "2026-07-22",
+  "market": "US",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "data_boundary_amendment": {
+    "original_contemplated_start": "2010-01-01",
+    "amended_qualified_start": "2018-01-02",
+    "reason": "the exact qualified shared SPY execution input begins in 2018",
+    "m119_03_outcomes_read_before_amendment": false,
+    "m119_01_aggregate_outcomes_used_for_date_choice": false,
+    "amendment_interpretation": "outcome-blind data-feasibility amendment, not preservation of an unchanged 2010 design"
+  },
+  "program_multiplicity": {
+    "method": "fixed weighted Bonferroni",
+    "familywise_alpha": 0.05,
+    "frozen_order": [
+      "M119-01_US_SPY_REALIZED_VOL_SCALING",
+      "M119-03_US_SPY_YIELD_CURVE_STATE",
+      "M119-09_US_SPY_CREDIT_STRESS_STATE"
+    ],
+    "allocations": [
+      0.025,
+      0.015,
+      0.01
+    ],
+    "current_program_alpha": 0.015,
+    "alpha_recycling": false,
+    "m119_01_outcome_does_not_change_m119_03_definition": true
+  },
+  "economic_hypothesis": {
+    "mechanism": "a positive 10-year minus 3-month Treasury slope indicates a more supportive growth and funding state for broad US equity exposure; a nonpositive slope moves the sleeve to cash",
+    "primary_source": "Federal Reserve H.15 observations preserved through official ALFRED real-time-period history",
+    "null_hypothesis": "the frozen binary term-spread state does not improve net monthly Sharpe relative to buy-and-hold SPY",
+    "closed_lineage_distinction": {
+      "spy_200_day_trend_cash": "exogenous Treasury curve state rather than SPY price trend",
+      "m119_01_realized_volatility": "binary macro state rather than continuous lagged realized-volatility scaling",
+      "dual_momentum_and_inverse_volatility": "one fixed SPY/cash sleeve with no cross-asset ranking or allocation"
+    }
+  },
+  "frozen_specification": {
+    "instrument": "SPY",
+    "account_currency": "USD",
+    "initial_capital": 40000.0,
+    "cash_yield": 0.0,
+    "leverage": false,
+    "shorting": false,
+    "whole_shares": true,
+    "signal_series": [
+      "DGS10",
+      "DGS3MO"
+    ],
+    "series_unit": "percent",
+    "availability_rule": "available_at_conservative equals 23:59:59.999999 America/New_York on ALFRED realtime_start date and must be no later than the bound SPY decision_at",
+    "observation_selection": "latest common nonmissing observation_date for DGS10 and DGS3MO available by decision_at",
+    "maximum_staleness_calendar_days": 7,
+    "revision_policy": "use only the official ALFRED real-time-period rows in the exact input file; current revised FRED history, realtime_end, interpolation, mixed observation dates, T10Y3M substitution and later repair are forbidden",
+    "spread_formula": "DGS10 value_percent minus DGS3MO value_percent",
+    "target_rule": "SPY weight is 1.0 if spread is strictly positive and 0.0 if spread is zero or negative",
+    "rebalance_rule": "monthly static target rebalance; transaction costs apply only to actually executed turnover",
+    "decision_time": "20:05 America/New_York on the final accepted XNYS session of the signal month",
+    "sizing_price": "final accepted raw SPY close available by decision_at",
+    "execution_time": "next accepted XNYS session open",
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "residual_cash": "allowed and non-interest-bearing",
+    "corporate_actions": "official bound cash distributions and splits applied once under shared portfolio accounting",
+    "benchmark": "buy SPY at the first Screen-A entry, hold with identical corporate-action accounting, then sell at the terminal exit; no dividend reinvestment",
+    "variant_count": 1,
+    "parameter_grid": false,
+    "robustness_variant": null
+  },
+  "screen_a": {
+    "label": "RETROSPECTIVE_SECONDARY_SCREEN_A",
+    "entry_months": "2018-03 through 2021-11 inclusive",
+    "signal_months": "2018-02 through 2021-10 inclusive",
+    "terminal_exit_month": "2021-12",
+    "required_complete_cohorts": 45,
+    "zero_volatility_rule": "an all-zero monthly return path has Sharpe 0.0 and is mechanically tested against all four gates; any nonzero monthly-return path with max minus min no greater than 1e-12 fails closed as undefined",
+    "gates": [
+      "strategy Sharpe minus SPY Sharpe is strictly positive",
+      "strategy compounded net return is strictly positive",
+      "strategy annualized volatility is strictly lower than SPY",
+      "strategy maximum drawdown is strictly better than SPY"
+    ],
+    "decision_rule": "all four gates must pass",
+    "failure_rule": "any failed gate permanently closes M119-03 and inference B remains unopened"
+  },
+  "inference_b_if_unlocked": {
+    "label": "RETROSPECTIVE_SECONDARY_INFERENCE_B",
+    "locked_before_screen_a_pass": true,
+    "entry_months": "2022-01 through 2026-05 inclusive",
+    "purged_interval": "2021-12 open through 2022-01 open",
+    "required_complete_cohorts": 53,
+    "primary_statistic": "monthly Sharpe(strategy) minus monthly Sharpe(SPY)",
+    "method": "paired stationary bootstrap",
+    "resamples": 10000,
+    "expected_block_months": 6,
+    "restart_probability": "1/6",
+    "seed": 11903,
+    "local_alpha": 0.05,
+    "program_alpha": 0.015,
+    "quantile_interpolation": "linear",
+    "invalid_replicate_rule": "any nonfinite statistic or zero standard deviation fails closed",
+    "primary_gate": "both local and program one-sided lower confidence bounds must be strictly positive",
+    "additional_input_requirement": "a separately frozen 2022-2026 SPY/calendar/action bundle is required only after Screen A passes"
+  },
+  "input_identities": {
+    "shared_spy_bundle_sha256": "fcf4b487b1b798c6afcfc774339d2066a45238431253e27b14ed5d1a4cc369c9",
+    "h15_signal_input_sha256": "998e25841870582b56592ba03fb61ca278b51a9f8141e06e4601c6fde886d1c2",
+    "h15_selection_query_sha256": "a80b052fd13e688e90937d5fedac9b70d363e01cd6a3a057e42807bf522b65ab",
+    "h15_selection_proof": {
+      "algorithm_id": "ALFRED_H15_LATEST_COMMON_ELIGIBLE_OBSERVATION_V1",
+      "decisions_verified": 45,
+      "mismatch_count": 0,
+      "later_eligible_common_count": 0
+    },
+    "h15_response_set_sha256": "338a8da0720f16045cd3325a5dc07241292c149e836bce1149af3de8bb97cc14",
+    "dgs10_raw_response_sha256": "b59608fa97f00d945292ea77472079d419eee582b0a5ee5af4a2dfa3f5a2f55c",
+    "dgs3mo_raw_response_sha256": "6ec27c0460be9365e3648d3f1ed10e4af685aaf232065c1ae19d67cd70766fcf",
+    "h15_database_postwrite_sha256": "4e7bd0792241087c7c4da05de32b75a7450baa1dda0342a326ef4c02aa42a92e",
+    "h15_source_table": "us_macro_research.alfred_h15_yield_observations_research",
+    "h15_screen_rows": 45,
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4"
+  },
+  "terminal_rules": {
+    "screen_a_fail": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",
+    "input_blocked": "INPUT_BLOCKED",
+    "screen_a_pass": "RETROSPECTIVE_SECONDARY_SCREEN_A_PASS_INFERENCE_B_UNLOCKED",
+    "historical_success_ceiling": "RETROSPECTIVE_SECONDARY_PASS_PENDING_EXTERNAL_REVIEW",
+    "rerun_after_fail": false,
+    "parameter_repair_after_outcome": false,
+    "candidate_promotion_from_screen_a": false
+  },
+  "boundaries": {
+    "outcome_accessed": false,
+    "strategy_executed": false,
+    "inference_b_opened": false,
+    "provider_or_network_authorized_by_this_definition": false,
+    "database_write_authorized_by_this_definition": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "automatic_execution": false
+  },
+  "strategy_candidate_available": false
+}
