@@ -3,10 +3,9 @@ from __future__ import annotations
 from datetime import date, timedelta
 import hashlib
 import json
+import math
 from pathlib import Path
 import sys
-
-import numpy as np
 
 
 ROOT = Path(__file__).parents[1]
@@ -15,34 +14,47 @@ import us_top50_market_residual_momentum_v1 as research  # noqa: E402
 
 
 def test_residual_score_uses_frozen_out_of_sample_beta() -> None:
-    market_estimate = np.linspace(-0.02, 0.02, 504)
-    stock_estimate = 0.0003 + 1.25 * market_estimate
-    market_signal = np.linspace(-0.015, 0.015, 232)
-    residual = np.tile(np.array([-0.001, 0.003]), 116)
-    stock_signal = 0.0003 + 1.25 * market_signal + residual
+    market_estimate = [
+        -0.02 + index * 0.04 / 503
+        for index in range(504)
+    ]
+    stock_estimate = [0.0003 + 1.25 * value for value in market_estimate]
+    market_signal = [
+        -0.015 + index * 0.03 / 231
+        for index in range(232)
+    ]
+    residual = [-0.001, 0.003] * 116
+    stock_signal = [
+        0.0003 + 1.25 * market + noise
+        for market, noise in zip(market_signal, residual)
+    ]
     observed = research.residual_score(
         stock_estimate,
         market_estimate,
         stock_signal,
         market_signal,
     )
-    expected = float(np.mean(residual) / np.std(residual, ddof=1) * np.sqrt(252))
+    residual_mean = sum(residual) / len(residual)
+    residual_variance = sum(
+        (value - residual_mean) ** 2 for value in residual
+    ) / (len(residual) - 1)
+    expected = residual_mean / math.sqrt(residual_variance) * math.sqrt(252)
     assert observed is not None
-    assert np.isclose(observed, expected)
+    assert math.isclose(observed, expected, rel_tol=1e-12)
 
 
 def test_residual_score_fails_closed_on_short_windows() -> None:
     assert research.residual_score(
-        np.ones(449),
-        np.ones(449),
-        np.ones(232),
-        np.ones(232),
+        [1.0] * 449,
+        [1.0] * 449,
+        [1.0] * 232,
+        [1.0] * 232,
     ) is None
     assert research.residual_score(
-        np.ones(504),
-        np.ones(504),
-        np.ones(219),
-        np.ones(219),
+        [1.0] * 504,
+        [1.0] * 504,
+        [1.0] * 219,
+        [1.0] * 219,
     ) is None
 
 
@@ -75,7 +87,7 @@ def test_preserved_contract_and_terminal_result_are_exact_and_closed() -> None:
     result = ROOT / "research/reports/us_top50_market_residual_momentum_v1_discovery_fail.json"
     assert hashlib.sha256(contract.read_bytes()).hexdigest() == research.CONTRACT_SHA256
     assert hashlib.sha256(result.read_bytes()).hexdigest() == (
-        "76a3ba2c59c452da232f8eed6c7d1e6da17767999ae1c3771fc3bae2d05e5f04"
+        "ef37e668d377e2cd424607b014197638ac7f560517e3948fb218fd8aa4807340"
     )
     payload = json.loads(result.read_text(encoding="utf-8"))
     assert payload["result"] == "DISCOVERY_FAIL"
