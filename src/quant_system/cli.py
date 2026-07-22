@@ -189,6 +189,10 @@ def _database(args: argparse.Namespace, settings: AppSettings) -> Path:
     return candidate
 
 
+def _binding_status(settings: AppSettings) -> str:
+    return "EXPLICIT_DATA_ROOT" if settings.paths.data_root_bound else "UNBOUND_DATA_ROOT"
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="quant")
     parser.add_argument("--config", type=Path)
@@ -242,6 +246,7 @@ def main(argv: list[str] | None = None) -> int:
                 "version": __version__,
                 "project_root": str(settings.paths.project_root),
                 "data_root": str(settings.paths.data_root),
+                "data_root_binding": _binding_status(settings),
                 "database": str(settings.paths.database),
                 "database_exists": settings.paths.database.exists(),
                 "config": str(settings.config_path),
@@ -250,11 +255,21 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     db_path = _database(args, settings)
     if args.data_command == "inspect":
-        _print(database_info(db_path, include_hash=args.hash).to_dict())
+        _print(
+            database_info(db_path, include_hash=args.hash).to_dict()
+            | {"data_root_binding": _binding_status(settings)}
+        )
         return 0
     if args.data_command == "query":
-        _print(query(db_path, args.sql, max_rows=args.max_rows).to_dict())
+        _print(
+            query(db_path, args.sql, max_rows=args.max_rows).to_dict()
+            | {"data_root_binding": _binding_status(settings)}
+        )
         return 0
+    if args.execute and not settings.paths.data_root_bound:
+        raise ValueError(
+            "append --execute requires QUANT_DATA_ROOT or configured paths.data_root"
+        )
     rows, input_sha256 = _rows(
         args.input,
         max_bytes=settings.writer.max_input_bytes,
@@ -268,6 +283,7 @@ def main(argv: list[str] | None = None) -> int:
             {
                 "status": "DRY_RUN",
                 "writes": False,
+                "data_root_binding": _binding_status(settings),
                 "database": str(db_path),
                 "target": f"{args.schema}.{args.table}",
                 "row_count": len(rows),

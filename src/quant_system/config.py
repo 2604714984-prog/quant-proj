@@ -87,6 +87,12 @@ def load_settings(
 
     database_raw = _table(raw, "database")
     writer_raw = _table(raw, "writer")
+    paths_raw = raw.get("paths", {})
+    if not isinstance(paths_raw, dict):
+        raise ConfigurationError("[paths] must be a table")
+    configured_data_root = paths_raw.get("data_root")
+    if configured_data_root is not None and not isinstance(configured_data_root, str):
+        raise ConfigurationError("paths.data_root must be a string")
     filename = database_raw.get("filename")
     max_rows = writer_raw.get("max_rows_per_batch")
     max_input_bytes = writer_raw.get("max_input_bytes")
@@ -106,6 +112,7 @@ def load_settings(
 
     paths = AppPaths.discover(
         project_root=initial_paths.project_root,
+        data_root=(Path(configured_data_root) if configured_data_root else None),
         database_filename=filename,
         environ=env,
     )

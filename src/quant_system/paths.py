@@ -28,18 +28,18 @@ def _inside(path: Path, root: Path) -> bool:
 
 
 def _default_project_root() -> Path:
-    """Use the source checkout when present, otherwise the caller's directory.
+    """Use the source checkout when present, otherwise the installed package.
 
     A wheel installs ``quant_system`` below ``site-packages`` and intentionally
-    does not bundle repository-level configuration. Falling back to the
-    current directory keeps the installed CLI usable while
-    ``QUANT_PROJECT_ROOT`` remains the explicit override.
+    does not bundle repository-level configuration. The package location is a
+    stable read-only discovery anchor; the caller's current directory is never
+    inferred as a project or mutable-data root.
     """
 
     source_root = Path(__file__).resolve().parents[2]
     if (source_root / "pyproject.toml").is_file():
         return source_root
-    return Path.cwd().resolve()
+    return Path(__file__).resolve().parent
 
 
 @dataclass(frozen=True)
@@ -49,12 +49,14 @@ class AppPaths:
     project_root: Path
     data_root: Path
     database: Path
+    data_root_bound: bool
 
     @classmethod
     def discover(
         cls,
         *,
         project_root: Path | None = None,
+        data_root: Path | None = None,
         database_filename: str = "quant_research.duckdb",
         environ: Mapping[str, str] | None = None,
     ) -> AppPaths:
@@ -63,7 +65,8 @@ class AppPaths:
         root_value = env.get("QUANT_PROJECT_ROOT") or project_root or detected_root
         root = _absolute(root_value, "project root")
 
-        data_value = env.get("QUANT_DATA_ROOT") or root.parent / "quant-data"
+        explicit_data_root = env.get("QUANT_DATA_ROOT") or data_root
+        data_value = explicit_data_root or root.parent / "quant-data"
         data_root = _absolute(data_value, "data root")
 
         db_override = env.get("QUANT_DB_PATH")
@@ -86,4 +89,9 @@ class AppPaths:
             raise PathConfigurationError("database path must be inside QUANT_DATA_ROOT")
         if database.suffix != ".duckdb":
             raise PathConfigurationError("database path must end in .duckdb")
-        return cls(project_root=root, data_root=data_root, database=database)
+        return cls(
+            project_root=root,
+            data_root=data_root,
+            database=database,
+            data_root_bound=explicit_data_root is not None,
+        )

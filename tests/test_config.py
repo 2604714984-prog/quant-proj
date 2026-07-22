@@ -35,6 +35,22 @@ def test_load_settings_resolves_external_database(tmp_path: Path) -> None:
     assert settings.writer.lock_timeout_seconds == 2.5
 
 
+def test_load_settings_binds_data_root_from_config(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    data = tmp_path / "configured-data"
+    config = project / "settings.toml"
+    config.write_text(
+        VALID + f'\n[paths]\ndata_root = "{data}"\n',
+        encoding="utf-8",
+    )
+
+    settings = load_settings(config, project_root=project, environ={})
+
+    assert settings.paths.data_root == data
+    assert settings.paths.data_root_bound is True
+
+
 @pytest.mark.parametrize(
     "replacement, message",
     [

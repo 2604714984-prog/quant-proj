@@ -116,6 +116,7 @@ def test_append_cli_is_dry_run_by_default(
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "DRY_RUN"
     assert payload["writes"] is False
+    assert payload["data_root_binding"] == "EXPLICIT_DATA_ROOT"
     with duckdb.connect(str(db), read_only=True) as connection:
         assert connection.execute("SELECT count(*) FROM market.daily").fetchone() == (0,)
         assert connection.execute(
@@ -166,6 +167,43 @@ def test_append_cli_requires_execute_and_then_writes(
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "COMPLETED"
     assert payload["inserted_rows"] == 1
+
+
+def test_unbound_data_root_is_visible_and_execute_fails_before_write(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+) -> None:
+    project = tmp_path / "installed-package-anchor"
+    project.mkdir()
+    rows = tmp_path / "rows.jsonl"
+    rows.write_text('{"symbol":"AAA","trade_date":"2026-07-14","close":10}\n')
+    monkeypatch.setenv("QUANT_PROJECT_ROOT", str(project))
+    monkeypatch.delenv("QUANT_DATA_ROOT", raising=False)
+    common = [
+        "data",
+        "append",
+        "--schema",
+        "market",
+        "--table",
+        "daily",
+        "--keys",
+        "symbol,trade_date",
+        "--input",
+        str(rows),
+        "--batch-id",
+        "batch-unbound",
+        "--source-sha256",
+        _sha256(rows),
+    ]
+
+    assert main(common) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "DRY_RUN"
+    assert payload["data_root_binding"] == "UNBOUND_DATA_ROOT"
+    with pytest.raises(ValueError, match="requires QUANT_DATA_ROOT"):
+        main([*common, "--execute"])
+    assert not (tmp_path / "quant-data" / "quant_research.duckdb").exists()
 
 
 def test_append_cli_rejects_source_hash_mismatch(

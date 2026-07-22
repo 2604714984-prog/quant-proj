@@ -13,6 +13,7 @@ def test_paths_default_to_external_sibling(tmp_path: Path) -> None:
     assert paths.project_root == project
     assert paths.data_root == tmp_path / "quant-data"
     assert paths.database == tmp_path / "quant-data" / "quant_research.duckdb"
+    assert paths.data_root_bound is False
 
 
 def test_paths_accept_explicit_external_store(tmp_path: Path) -> None:
@@ -29,6 +30,18 @@ def test_paths_accept_explicit_external_store(tmp_path: Path) -> None:
 
     assert paths.data_root == data
     assert paths.database == data / "research.duckdb"
+    assert paths.data_root_bound is True
+
+
+def test_paths_accept_configured_data_root(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    data = tmp_path / "configured-data"
+
+    paths = AppPaths.discover(project_root=project, data_root=data, environ={})
+
+    assert paths.data_root == data
+    assert paths.data_root_bound is True
 
 
 @pytest.mark.parametrize("relative", ["data", "runtime/db"])
