@@ -3,7 +3,7 @@
   "research_id": "C7_SPY_VARIANCE_RISK_PREMIUM_V1",
   "mechanism_id": "M119_02_SPY_VARIANCE_RISK_PREMIUM_STATE",
   "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE7",
-  "status": "PREREGISTERED_INPUT_MATERIALIZATION_PENDING",
+  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_PENDING",
   "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
   "selection_without_outcomes": {
     "source": "Issue 119 outcome-free mechanism card M119-02",
@@ -119,10 +119,31 @@
     "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4"
   },
   "runtime_materialization": {
-    "signal_packet_sha256": null,
-    "validation_bundle_sha256": null,
-    "holdout_bundle_sha256": null,
-    "status": "PENDING_OUTCOME_FREE_STATE_SUPPORT"
+    "parent_preregistration_sha256": "5d49f6be8e3ceb331357650f1b6b34d10b6fc604b571c6bd546a953752f025bf",
+    "signal_packet_sha256": "12ff1ceed8432670e4327cd0dc115a4bb5a021b43216bf528bd28d195456eaff",
+    "state_support_receipt_sha256": "2faa47dd5e705d87711bc99488a3a55458a5b96121f8148fd291d4ec1778ddac",
+    "validation_bundle_sha256": "51c402ef95ab93a235dd38c862be517f9f0ed06fa47c3bb91becc33e914aa2d6",
+    "holdout_bundle_sha256": "120eeeacd724af31125c7209985621d90d1edd1c95cfe068098fc3bf903a8db1",
+    "accepted_support": {
+      "validation": {
+        "boundaries": 29,
+        "complete_intervals": 28,
+        "spy_state_intervals": 22,
+        "cash_state_intervals": 6,
+        "spy_to_cash": 5,
+        "cash_to_spy": 5
+      },
+      "holdout": {
+        "boundaries": 37,
+        "complete_intervals": 36,
+        "spy_state_intervals": 28,
+        "cash_state_intervals": 8,
+        "spy_to_cash": 6,
+        "cash_to_spy": 6
+      }
+    },
+    "independent_outcome_free_recompute": true,
+    "status": "PASS_STATE_SUPPORT"
   },
   "terminal_rules": {
     "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
