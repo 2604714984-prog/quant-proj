@@ -1,0 +1,146 @@
+{
+  "schema_version": "c7-spy-variance-risk-premium-prereg-v1",
+  "research_id": "C7_SPY_VARIANCE_RISK_PREMIUM_V1",
+  "mechanism_id": "M119_02_SPY_VARIANCE_RISK_PREMIUM_STATE",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE7",
+  "status": "PREREGISTERED_INPUT_MATERIALIZATION_PENDING",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "selection_without_outcomes": {
+    "source": "Issue 119 outcome-free mechanism card M119-02",
+    "reason_for_activation": "the previously missing official Cboe VIX and fixed-SPY execution inputs are now locally content-addressed",
+    "price_or_return_outcomes_used_for_selection": false,
+    "not_a_retry_of": [
+      "M119-01 realized-volatility exposure scaling",
+      "C5 VIX-VIX3M term-structure state",
+      "C6 weekly VIX-change impulse"
+    ]
+  },
+  "program_multiplicity": {
+    "cycle7_familywise_alpha": 0.00078125,
+    "sole_primary_alpha": 0.00078125,
+    "cycle1_to_cycle7_union_bound": 0.09921875,
+    "alpha_recycling": false,
+    "formal_outcome_lanes": 1
+  },
+  "economic_hypothesis": {
+    "mechanism": "a positive option-implied variance premium compensates equity risk bearing; nonpositive premium maps to inactive cash",
+    "primary_reference": "Bollerslev, Tauchen and Zhou, Expected Stock Returns and Variance Risk Premia",
+    "variant_count": 1,
+    "parameter_grid": false
+  },
+  "signal": {
+    "frequency": "one decision per calendar month",
+    "anchor": "final qualified Cboe/SPY weekly anchor whose signal session lies in the calendar month",
+    "vix_variance": "square(Cboe VIX close / 100)",
+    "realized_variance": "(52 / 4) times the sum of squared log total-return factors across the four consecutive weekly anchor intervals ending at the current anchor",
+    "weekly_total_return_factor": "(current raw SPY close plus official cash distribution with current anchor ex-date) / prior raw SPY close; split identity must be complete",
+    "state_rule": "vix_variance minus realized_variance strictly greater than zero means 100% SPY; zero or negative means 100% inactive cash",
+    "missing_rule": "fail closed; no interpolation, carry, alternate VIX series, alternate realized-variance window, threshold, smoothing or source fusion"
+  },
+  "timing_and_account": {
+    "decision": "09:00 America/New_York on the next accepted XNYS session after the selected weekly anchor",
+    "execution": "that session official open",
+    "holding": "until the next selected monthly execution open",
+    "decision_price": "raw SPY close on the selected weekly anchor available before decision",
+    "initial_capital_usd": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "benchmark": "buy-and-hold SPY over identical split endpoints with identical whole-share, cost, calendar, lifecycle and corporate-action accounting"
+  },
+  "splits": {
+    "validation": {
+      "execution_start": "2021-01-01",
+      "execution_end": "2023-06-30",
+      "purpose": "one-use retrospective validation"
+    },
+    "retrospective_holdout": {
+      "execution_start": "2023-07-01",
+      "execution_end": "2026-06-30",
+      "sealed_until_validation_pass": true
+    },
+    "cross_boundary_rule": "an interval is retained only when both execution endpoints lie in the same split; no state or portfolio carries across splits"
+  },
+  "state_support_before_outcomes": {
+    "validation_and_holdout_each_require": [
+      "at least 20 complete monthly intervals",
+      "at least four SPY-state intervals",
+      "at least four cash-state intervals",
+      "at least two SPY-to-cash transitions",
+      "at least two cash-to-SPY transitions"
+    ],
+    "failure_rule": "INPUT_BLOCKED_STATE_SUPPORT_INSUFFICIENT; alpha consumed; no strategy outcome access"
+  },
+  "validation": {
+    "gates": [
+      "strategy terminal net wealth strictly above SPY",
+      "arithmetic mean paired monthly active return strictly positive",
+      "strategy maximum drawdown no worse than SPY"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout remains unopened and lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "gates": [
+      "strategy terminal net wealth strictly above SPY",
+      "strategy maximum drawdown no worse than SPY",
+      "exact pre-outcome-frozen finite interval count",
+      "centered-null one-sided p-value at most 0.00078125",
+      "uncentered type-7 0.00078125 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap over monthly active returns",
+      "block_length_months": 3,
+      "resamples": 10000,
+      "rng": "Python random.Random",
+      "seed": 119702,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(10000 + 1)",
+      "quantile": "linear type-7",
+      "limitation": "the frozen block length is a dependence assumption, not proof of complete dependence coverage"
+    }
+  },
+  "source_identities": {
+    "cboe_vix_url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+    "cboe_vix_raw_path": "/home/rongyu/workspace/quant-data/staging/c5_cboe_vol_term_structure_inversion_spy_cash_v1/raw/source_00_6bb2b56b85dd581c7dddacbc282f1e48d0d6d3b41824c45bcc5f7eb4803faf33.csv",
+    "cboe_vix_raw_sha256": "6bb2b56b85dd581c7dddacbc282f1e48d0d6d3b41824c45bcc5f7eb4803faf33",
+    "cboe_methodology_sha256": "5e0e8dd278a5e4c2e0315ff573b60a314d31946841e6fc67eac784dfba729622",
+    "weekly_vix_input_path": "/home/rongyu/workspace/quant-data/staging/c6_vix_weekly_change_impulse_spy_cash_v1/vix_weekly_change_input.json",
+    "weekly_vix_input_sha256": "3a221b43b625634f456a4e29a010b7eb8746508933aaeba1b29e3540911a4491",
+    "validation_spy_bundle_path": "/home/rongyu/workspace/quant-data/staging/c6_vix_weekly_change_impulse_spy_cash_v1/spy_validation_runtime_bundle.json",
+    "validation_spy_bundle_sha256": "51c402ef95ab93a235dd38c862be517f9f0ed06fa47c3bb91becc33e914aa2d6",
+    "holdout_spy_bundle_path": "/home/rongyu/workspace/quant-data/staging/c6_vix_weekly_change_impulse_spy_cash_v1/spy_holdout_runtime_bundle.json",
+    "holdout_spy_bundle_sha256": "120eeeacd724af31125c7209985621d90d1edd1c95cfe068098fc3bf903a8db1",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4"
+  },
+  "runtime_materialization": {
+    "signal_packet_sha256": null,
+    "validation_bundle_sha256": null,
+    "holdout_bundle_sha256": null,
+    "status": "PENDING_OUTCOME_FREE_STATE_SUPPORT"
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "input_blocked": "INPUT_BLOCKED",
+    "rerun": false,
+    "parameter_repair": false,
+    "strategy_candidate_available": false
+  },
+  "boundaries": {
+    "outcome_access": false,
+    "database_write": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
