@@ -1,0 +1,65 @@
+{
+  "schema_version": "us-spy-volatility-managed-screen-a-terminal-v1",
+  "research_id": "US_SPY_VOLATILITY_MANAGED_EXPOSURE_V1",
+  "mechanism_id": "M119-01_US_SPY_REALIZED_VOL_SCALING",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE1",
+  "research_stage": "RETROSPECTIVE_SECONDARY_SCREEN_A",
+  "classification": "RETROSPECTIVE_SECONDARY_SCREEN_A_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY",
+  "claimed_at": "2026-07-22T05:27:30.795046+00:00",
+  "one_use_execution_consumed": true,
+  "rerun_authorized": false,
+  "observed_cohorts": 45,
+  "program_alpha": 0.025,
+  "gates": {
+    "sharpe_difference_positive": false,
+    "strategy_annualized_volatility_lower": true,
+    "strategy_compounded_net_return_positive": true,
+    "strategy_maximum_drawdown_better": true
+  },
+  "strategy_metrics_hex": {
+    "annualized_volatility": "0x1.d646cbb3327a5p-4",
+    "compounded_net_return": "0x1.46f3077e61764p-2",
+    "maximum_drawdown": "-0x1.01a979a994c80p-3",
+    "monthly_arithmetic_mean": "0x1.b88e8f40fc5bfp-8",
+    "monthly_sample_stdev": "0x1.0f83a886d0dfdp-5",
+    "sharpe": "0x1.67bb9088659c7p-1"
+  },
+  "benchmark_metrics_hex": {
+    "annualized_volatility": "0x1.81440acddfb14p-3",
+    "compounded_net_return": "0x1.8b1d47c9cf33ap-1",
+    "maximum_drawdown": "-0x1.c5c3650649408p-3",
+    "monthly_arithmetic_mean": "0x1.d3425c578ee5ep-7",
+    "monthly_sample_stdev": "0x1.bcddda7a86f99p-5",
+    "sharpe": "0x1.d1b95ad8645dcp-1"
+  },
+  "identity": {
+    "claim_sha256": "c5754eb1a78183f2373bfda8747be2cd7cd8fbcbe31deeddbab74a81643aa0bc",
+    "private_result_sha256": "5363b22b8afc78d657bb6863aeae20710edf64154d3032cfc2eb60913ca1985b",
+    "screen_a_receipt_sha256": "d06c046f8651d68bfcc42dbf4c3f1ce8c058b1096f16add46ec8118c075d7407",
+    "bundle_file_sha256": "fcf4b487b1b798c6afcfc774339d2066a45238431253e27b14ed5d1a4cc369c9",
+    "runtime_bundle_sha256": "db865aaaa169f926064a31cd608955557ffef1261e252281f2352d8a45d34cd8",
+    "definition_sha256": "73c5fcd7bd706b3af949b4350e1f18823583392bc9765aac228e761800343464",
+    "adapter_sha256": "1afe0fe776a606c2df1d85bdb9b6f1b0769059b32dc052a0405bfd5663317bf1",
+    "runner_sha256": "b11988eaf805f486822a9d4d0914476f7d91d3e4184ead743163ea40a54fb705",
+    "merged_shared_core": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "reviewed_execution_core": "547a647dc0f4cbbf4b0b4f89351e77874d2dfaa6"
+  },
+  "adjudication": {
+    "screen_a_passed": false,
+    "inference_b_opened": false,
+    "failure_reason": "The strategy Sharpe ratio was not greater than the matched fully invested SPY benchmark Sharpe ratio.",
+    "parameter_repair_allowed": false,
+    "lineage_closed": true,
+    "strategy_candidate_available": false
+  },
+  "boundaries": {
+    "database_write": false,
+    "provider_or_network_call": false,
+    "prospective_outcome_access": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
