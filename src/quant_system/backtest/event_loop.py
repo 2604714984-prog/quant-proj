@@ -25,6 +25,7 @@ from quant_system.markets.common import (
 )
 from quant_system.markets.universe import (
     StatusEvidence,
+    UniverseMaterialization,
     UniverseSnapshotIdentity,
     evaluate_universe,
     validate_universe_snapshot,
@@ -442,8 +443,7 @@ def run_candidate_rebalance(
     signal_session: date,
     decision_at: datetime,
     execution_inputs: tuple[ExecutionInput, ...],
-    universe_members: tuple[str, ...],
-    universe_snapshot: UniverseSnapshotIdentity,
+    universe_materialization: UniverseMaterialization,
     decision_artifact: DecisionArtifact,
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
     capacity_policy: CapacityPolicy | None = None,
@@ -455,10 +455,17 @@ def run_candidate_rebalance(
 
     if not isinstance(decision_artifact, DecisionArtifact):
         raise TypeError("decision_artifact must be a captured DecisionArtifact")
+    if not isinstance(universe_materialization, UniverseMaterialization):
+        raise TypeError(
+            "universe_materialization must come from materialize_universe_partition"
+        )
     cutoff = require_aware_datetime(decision_at, "decision_at")
     if decision_artifact.decision_at != cutoff:
         raise MarketDataError("decision artifact decision_at mismatch")
     decision_artifact.verify_current_bytes()
+    universe_materialization.verify_current_bytes()
+    universe_members = universe_materialization.members
+    universe_snapshot = universe_materialization.snapshot
     _require_candidate_sources(
         calendar,
         execution_inputs,

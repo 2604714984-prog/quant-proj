@@ -281,6 +281,55 @@ def capture_file_digest(path: Path) -> tuple[str, int]:
         os.close(descriptor)
 
 
+def capture_file_bytes(path: Path, *, max_bytes: int = 16 * 1024 * 1024) -> bytes:
+    """Read one small immutable file through the same pinned-file boundary."""
+
+    if type(max_bytes) is not int or max_bytes < 1:
+        raise ValueError("max_bytes must be a positive integer")
+    candidate = path.expanduser()
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(candidate, flags)
+    except OSError as exc:
+        raise SourceIdentityError(f"capture path is not a regular file: {candidate}") from exc
+    try:
+        before = os.fstat(descriptor)
+        linked = os.stat(candidate, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or not stat.S_ISREG(linked.st_mode)
+            or before.st_nlink != 1
+            or linked.st_nlink != 1
+            or (before.st_dev, before.st_ino) != (linked.st_dev, linked.st_ino)
+        ):
+            raise SourceIdentityError("capture path must be a single-link regular file")
+        chunks: list[bytes] = []
+        size = 0
+        while chunk := os.read(descriptor, min(1024 * 1024, max_bytes + 1 - size)):
+            chunks.append(chunk)
+            size += len(chunk)
+            if size > max_bytes:
+                raise SourceIdentityError("capture path exceeds max_bytes")
+        after = os.fstat(descriptor)
+        linked_after = os.stat(candidate, follow_symlinks=False)
+        def signature(item: os.stat_result) -> tuple[int, int, int, int, int, int]:
+            return (
+                item.st_dev,
+                item.st_ino,
+                item.st_size,
+                item.st_mtime_ns,
+                item.st_ctime_ns,
+                item.st_nlink,
+            )
+        if signature(before) != signature(after) or signature(before) != signature(linked_after):
+            raise SourceIdentityError("capture path changed while bytes were being read")
+        return b"".join(chunks)
+    except OSError as exc:
+        raise SourceIdentityError("capture path changed while bytes were being read") from exc
+    finally:
+        os.close(descriptor)
+
+
 def _build_capture_receipt(
     *,
     content_sha256: str,
@@ -646,6 +695,7 @@ __all__ = [
     "SourceIdentityError",
     "capture_source_bytes",
     "capture_source_file",
+    "capture_file_bytes",
     "capture_file_digest",
     "require_trusted_source",
     "select_corporate_action_revision",

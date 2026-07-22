@@ -3,6 +3,7 @@ from dataclasses import replace
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 import hashlib
+import json
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -35,8 +36,10 @@ from quant_system.data import (
 from quant_system.markets.common import MarketDataError
 from quant_system.markets.universe import (
     StatusEvidence,
+    UniverseMaterialization,
     UniverseSnapshotIdentity,
     lifecycle_coverage_sha256,
+    materialize_universe_partition,
     ordered_members_sha256,
 )
 from quant_system.markets.us import CorporateActionValuationError
@@ -2185,6 +2188,53 @@ def _captured_decision_artifact(tmp_path: Path, decision_at: datetime) -> Decisi
     )
 
 
+def _controlled_materialization(
+    tmp_path: Path,
+    calendar: AcceptedSessionCalendar,
+    execution: AcceptedSession,
+    decision_at: datetime,
+    rows: tuple[ExecutionInput, ...],
+    *,
+    inclusion_decisions: dict[str, str | None] | None = None,
+) -> UniverseMaterialization:
+    partition_path = tmp_path / "universe.json"
+    partition_bytes = json.dumps(
+        [{"symbol": row.symbol} for row in rows],
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    partition_path.write_bytes(partition_bytes)
+    rule_path = tmp_path / "universe_rule.py"
+    rule_path.write_text("INCLUDE = 'lifecycle-eligible'\n", encoding="utf-8")
+    partition_source = capture_source_bytes(
+        partition_bytes,
+        publication_evidence=b"fixture publication receipt",
+        source_url="https://example.test/complete-universe-partition",
+        available_at=datetime(2000, 1, 1, tzinfo=UTC),
+        retrieved_at=datetime(2000, 1, 1, 0, 1, tzinfo=UTC),
+        revision_id="complete-universe-v1",
+        source_family_id="complete-universe",
+        provider_id="fixture-provider",
+        subject_id="XSHG",
+    ).source
+    return materialize_universe_partition(
+        partition_path,
+        source_identity=partition_source,
+        symbol_field="symbol",
+        inclusion_decisions=(
+            {row.symbol: None for row in rows}
+            if inclusion_decisions is None
+            else inclusion_decisions
+        ),
+        records_by_symbol={row.symbol: row.status_records for row in rows},
+        inclusion_rule_path=rule_path,
+        market="a_share",
+        calendar_identity=calendar.identity,
+        session=execution,
+        decision_at=decision_at,
+    )
+
+
 def test_callable_interface_is_permanently_experimental() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14))
     calendar = _calendar(days, "Asia/Shanghai")
@@ -2211,13 +2261,12 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     execution = calendar.next_session(days[0], as_of=decision_at)
     row = _controlled_input("AAA", execution)
     artifact = _captured_decision_artifact(tmp_path, decision_at)
-    snapshot = _snapshot(calendar, execution, decision_at, (row,), ("AAA",))
-    snapshot = replace(
-        snapshot,
-        source_identity=_captured_source(
-            "universe-snapshot-controlled",
-            datetime(2000, 1, 1, tzinfo=UTC),
-        ),
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
     )
 
     result = run_candidate_rebalance(
@@ -2226,8 +2275,7 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         signal_session=days[0],
         decision_at=decision_at,
         execution_inputs=(row,),
-        universe_members=("AAA",),
-        universe_snapshot=snapshot,
+        universe_materialization=materialization,
         decision_artifact=artifact,
     )
 
@@ -2247,6 +2295,13 @@ def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) ->
     row = _controlled_input("AAA", execution)
     portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
+    )
 
     with pytest.raises(TypeError, match="DecisionArtifact"):
         run_candidate_rebalance(
@@ -2255,14 +2310,7 @@ def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) ->
             signal_session=days[0],
             decision_at=decision_at,
             execution_inputs=(row,),
-            universe_members=("AAA",),
-            universe_snapshot=_snapshot(
-                calendar,
-                execution,
-                decision_at,
-                (row,),
-                ("AAA",),
-            ),
+            universe_materialization=materialization,
             decision_artifact=lambda _: {"AAA": 1.0},  # type: ignore[arg-type]
         )
     assert portfolio.__dict__ == before
@@ -2277,3 +2325,106 @@ def test_candidate_interface_detects_adapter_byte_change(tmp_path: Path) -> None
     with pytest.raises(MarketDataError, match="adapter_sha256"):
         artifact.verify_current_bytes()
     assert artifact.artifact_sha256 == original_identity
+
+
+def test_candidate_interface_rejects_manual_universe_snapshot(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    row = _controlled_input("AAA", execution)
+    artifact = _captured_decision_artifact(tmp_path, decision_at)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+
+    with pytest.raises(TypeError, match="materialize_universe_partition"):
+        run_candidate_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=decision_at,
+            execution_inputs=(row,),
+            universe_materialization=_snapshot(  # type: ignore[arg-type]
+                calendar,
+                execution,
+                decision_at,
+                (row,),
+                ("AAA",),
+            ),
+            decision_artifact=artifact,
+        )
+    assert portfolio.__dict__ == before
+
+
+def test_universe_materialization_requires_complete_source_partition(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    active = _controlled_input("AAA", execution)
+    delisted = _controlled_input("DEAD", execution)
+    delisted = replace(
+        delisted,
+        status_records=tuple(
+            replace(record, value=True) if record.kind == "delisted" else record
+            for record in delisted.status_records
+        ),
+    )
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (active, delisted),
+        inclusion_decisions={"AAA": None, "DEAD": "delisted"},
+    )
+
+    assert materialization.members == ("AAA",)
+    assert tuple((entry.symbol, entry.exclusion_reason) for entry in materialization.entries) == (
+        ("AAA", None),
+        ("DEAD", "delisted"),
+    )
+    with pytest.raises(MarketDataError, match="cover every source partition symbol"):
+        materialize_universe_partition(
+            materialization._source_partition_path,
+            source_identity=materialization.snapshot.source_identity,
+            symbol_field="symbol",
+            inclusion_decisions={"AAA": None},
+            records_by_symbol={
+                active.symbol: active.status_records,
+                delisted.symbol: delisted.status_records,
+            },
+            inclusion_rule_path=materialization._inclusion_rule_path,
+            market="a_share",
+            calendar_identity=calendar.identity,
+            session=execution,
+            decision_at=decision_at,
+        )
+
+
+def test_universe_materialization_detects_rule_byte_change(tmp_path: Path) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    decision_at = calendar.session_on(
+        days[1],
+        as_of=datetime(2026, 7, 13, 12, tzinfo=UTC),
+    ).open_at - timedelta(minutes=1)
+    execution = calendar.next_session(days[0], as_of=decision_at)
+    row = _controlled_input("AAA", execution)
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
+    )
+    materialization._inclusion_rule_path.write_text("INCLUDE = 'all'\n", encoding="utf-8")
+
+    with pytest.raises(MarketDataError, match="inclusion rule"):
+        materialization.verify_current_bytes()
