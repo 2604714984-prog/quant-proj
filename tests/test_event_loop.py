@@ -1296,6 +1296,8 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
         execution.open_at,
         2.5,
         _source("dead-delisting-source", signal.close_at),
+        execution.session_date,
+        (),
     )
     row = _input(
         "DEAD",
@@ -1356,6 +1358,8 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
         signal.open_at,
         terminal.recovery_per_share,
         terminal.source,
+        terminal.payment_date,
+        terminal.accepted_settlement_sessions,
     )
     with pytest.raises(MarketDataError, match="effective date"):
         _run_static_rebalance(
@@ -1373,6 +1377,8 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
         execution.close_at,
         terminal.recovery_per_share,
         terminal.source,
+        terminal.payment_date,
+        terminal.accepted_settlement_sessions,
     )
     before = deepcopy(portfolio.__dict__)
     with pytest.raises(MarketDataError, match="follows execution open"):
@@ -1387,6 +1393,84 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
             target_weights=lambda _: {},
         )
     assert portfolio.__dict__ == before
+
+
+def test_terminal_recovery_payment_evidence_is_pending_and_identity_bound() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
+    calendar = _calendar(days, "America/New_York")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
+    execution = calendar.next_session(days[0], as_of=signal.close_at)
+    payment_session = calendar.next_session(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.us(100.0, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("DEAD", 10, 10, days[0])
+    source = _source("terminal-payment-source", signal.close_at)
+    pending_action = TerminalAction(
+        "dead-delisting-payment-v1",
+        "delisting",
+        execution.open_at,
+        2.5,
+        source,
+        payment_session.session_date,
+        (payment_session,),
+    )
+    pending_row = _input(
+        "DEAD",
+        "us",
+        execution,
+        price=None,
+        delisted=True,
+        action_types=("delisting",),
+        terminal=pending_action,
+        execution_price_basis="confirmed_no_open_event",
+    )
+    pending = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(pending_row,),
+        target_weights=lambda _: {},
+    )
+
+    assert pending.portfolio.available_cash == 0.0
+    assert pending.portfolio.pending_cash_total == pytest.approx(25.0)
+    assert pending.receipts[0].cash_change == 0.0
+    assert "pending_until_2026-07-15" in pending.receipts[0].reason
+    pending.portfolio.start_session(payment_session.session_date)
+    assert pending.portfolio.available_cash == pytest.approx(25.0)
+
+    same_day_action = replace(
+        pending_action,
+        payment_date=execution.session_date,
+        accepted_settlement_sessions=(),
+    )
+    same_day = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(replace(pending_row, terminal_action=same_day_action),),
+        target_weights=lambda _: {},
+    )
+    changed_source = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            replace(
+                pending_row,
+                terminal_action=replace(
+                    pending_action,
+                    source=_source("terminal-payment-source-v2", signal.close_at),
+                ),
+            ),
+        ),
+        target_weights=lambda _: {},
+    )
+    assert pending.input_identity_hash != same_day.input_identity_hash
+    assert pending.input_identity_hash != changed_source.input_identity_hash
 
 
 def test_missing_halt_mark_fails_and_identity_or_prior_stage_changes_hash() -> None:

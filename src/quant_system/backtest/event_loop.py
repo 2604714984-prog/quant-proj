@@ -4,7 +4,7 @@ from __future__ import annotations
 from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field, fields, is_dataclass, replace
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 import hashlib
 import json
@@ -90,6 +90,8 @@ class TerminalAction:
     effective_at: datetime
     recovery_per_share: float
     source: SourceIdentity
+    payment_date: date
+    accepted_settlement_sessions: tuple[AcceptedSession, ...]
     successor_symbol: str | None = None
     successor_shares_per_share: float | None = None
 
@@ -102,6 +104,18 @@ class TerminalAction:
             raise MarketDataError("recovery_per_share must be finite and nonnegative")
         if not isinstance(self.source, SourceIdentity):
             raise MarketDataError("terminal action requires a SourceIdentity")
+        if type(self.payment_date) is not date:
+            raise MarketDataError("terminal action payment_date must be a date")
+        if type(self.accepted_settlement_sessions) is not tuple or any(
+            not isinstance(item, AcceptedSession)
+            for item in self.accepted_settlement_sessions
+        ):
+            raise MarketDataError(
+                "terminal action settlement sessions must be an immutable accepted tuple"
+            )
+        effective_date = self.effective_at.astimezone(timezone.utc).date()
+        if self.payment_date < effective_date:
+            raise MarketDataError("terminal action payment_date cannot precede effective date")
 
 
 @dataclass(frozen=True)
@@ -381,7 +395,7 @@ def run_static_rebalance(
         for symbol, row in rows.items()
     }
     _require_matching_suspension(rows, decisions)
-    _terminal_checks(rows, decisions, execution, cutoff)
+    _terminal_checks(rows, decisions, calendar, execution, cutoff)
     receipts: list[ExecutionReceipt] = []
     _actions(working, rows, execution, cutoff, receipts)
     eligible = tuple(symbol for symbol in universe_members if decisions[symbol].eligible)
@@ -946,7 +960,7 @@ def _require_matching_suspension(
 
 def _terminal_checks(
     rows: Mapping[str, ExecutionInput], decisions: Mapping[str, Any],
-    execution: AcceptedSession, cutoff: datetime,
+    calendar: AcceptedSessionCalendar, execution: AcceptedSession, cutoff: datetime,
 ) -> None:
     zone = ZoneInfo(execution.exchange_timezone)
     for symbol, row in rows.items():
@@ -959,6 +973,23 @@ def _terminal_checks(
             raise MarketDataError("terminal action effective_at follows execution open")
         if action.effective_at.astimezone(zone).date() != execution.session_date:
             raise MarketDataError("terminal action effective date is not the execution session")
+        settlement_sessions = action.accepted_settlement_sessions
+        if action.payment_date == execution.session_date:
+            if settlement_sessions:
+                raise MarketDataError("same-day terminal payment cannot carry settlement sessions")
+        else:
+            if not settlement_sessions or settlement_sessions[-1].session_date != action.payment_date:
+                raise MarketDataError(
+                    "terminal payment requires accepted sessions ending on payment_date"
+                )
+            previous = execution
+            for settlement in settlement_sessions:
+                accepted = calendar.next_session(previous.session_date, as_of=cutoff)
+                if settlement != accepted:
+                    raise MarketDataError(
+                        "terminal settlement sessions must be consecutive accepted sessions"
+                    )
+                previous = settlement
         if decisions[symbol].eligible:
             raise MarketDataError("terminal-action symbol must be PIT ineligible")
         successor = action.successor_symbol
@@ -1002,14 +1033,23 @@ def _actions(
         if terminal is None or symbol not in portfolio.positions:
             continue
         before = portfolio.positions[symbol].shares
+        cash_before = portfolio.available_cash
         recovery = portfolio.apply_terminal_action(
             symbol, event_id=terminal.event_id, action_type=terminal.action_type,
             recovery_per_share=terminal.recovery_per_share,
+            payment_date=terminal.payment_date,
+            accepted_settlement_sessions=tuple(
+                item.session_date for item in terminal.accepted_settlement_sessions
+            ),
             successor_symbol=terminal.successor_symbol,
             successor_shares_per_share=terminal.successor_shares_per_share,
         )
+        cash_change = portfolio.available_cash - cash_before
+        reason = f"terminal_{terminal.action_type}"
+        if recovery and terminal.payment_date > execution.session_date:
+            reason += f"_pending_until_{terminal.payment_date.isoformat()}"
         _receipt(receipts, symbol, "terminal", before, before, terminal.recovery_per_share,
-                 0, 0, recovery, portfolio.available_cash, f"terminal_{terminal.action_type}")
+                 0, 0, cash_change, portfolio.available_cash, reason)
 
 
 def _order(
