@@ -1,0 +1,69 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C28_CFNAIMA3_ACTIVITY_BREADTH_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE28",
+  "created_at": "2026-07-23T03:53:41.379933Z",
+  "classification": "INPUT_BLOCKED_STATE_SUPPORT",
+  "evidence_class": "OUTCOME_BLIND_INPUT_QUALIFICATION",
+  "outcome_blind_freeze": {
+    "issue": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5054011581",
+    "source_route_amendment": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5054052011",
+    "database_identity_amendment": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5054112231",
+    "sole_signal": "latest PIT-qualified official CFNAI-MA3 release above zero selects QQQ; equal to or below zero selects SPY",
+    "validation_support_minimum": "28 complete intervals, at least four SPY and four QQQ intervals, and at least two transitions in each direction",
+    "cycle28_familywise_alpha": 0.00000000037252902984619140625,
+    "cycle1_to_cycle28_union_bound": 0.09999999962747097015380859375,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "materialization_attempt": {
+    "staging_root": "/home/rongyu/workspace/quant-data/staging/c28_cfnaima3_activity_breadth_rotation_spy_qqq_v1",
+    "official_manifest_sha256": "3d1f16f788c813dfc56aaf4c816e42f41b18e090a21514cfe286173e615326fc",
+    "official_workbook_sha256": [
+      "7d28b325ea0820e8d88f78886f7f0619c482e76ece8f99a84ca7e8d5c4662ffc",
+      "909f5ad8b96a0b2f6d2d0749299d3cd9935df7e4c6d4b5837cfe61a66cb48deb",
+      "005e0bac1c52f2200b74136e49c3c79b1ac4bbcbd1c3f419e771379a1532f349"
+    ],
+    "acquisition_receipt_sha256": "cb0bc7ee61ef4c75323b1ef9c355c618a3f97786e461c4655a255aa1ebe4727d",
+    "materializer_sha256": "e37b1cd76d13f49e71d3dac9eefe8b5d30a34b05f1803a95874dcda7ed978487",
+    "network_requests": 4,
+    "retries": 0,
+    "redirects": 0,
+    "input_packet_created": false,
+    "materialization_receipt_created": false
+  },
+  "mechanical_blocker": {
+    "stage": "validation",
+    "complete_intervals": 28,
+    "spy_intervals": 7,
+    "qqq_intervals": 21,
+    "spy_to_qqq_transitions": 1,
+    "qqq_to_spy_transitions": 2,
+    "failed_requirements": [
+      "spy_to_qqq_transitions_at_least_2"
+    ],
+    "interpretation": "the frozen rule lacks sufficient two-direction state switching in validation; this is an input-support block, not a return-based strategy failure"
+  },
+  "warehouse_integrity": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "sha256_after": "e3c70ae5215d011bfc2fcb2ae13c16289c28165902654cc5ecdec8c34541b00a",
+    "wal_absent": true,
+    "database_opened": false,
+    "database_write": false
+  },
+  "terminal_state": {
+    "strategy_outcomes_opened": false,
+    "validation_run": false,
+    "retrospective_holdout_opened": false,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "source_switch_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by relaxing transition support, changing the zero threshold, using the monthly level or acceleration, adding persistence, changing timing, adding price or volatility filters, changing target mapping, or substituting another CFNAI source."
+}
