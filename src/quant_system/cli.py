@@ -15,7 +15,13 @@ from typing import Any, Iterator
 
 from . import __version__
 from .config import AppSettings, load_settings
-from .data import append_rows, capture_source_file, database_info, query
+from .data import (
+    append_rows,
+    capture_file_digest,
+    capture_source_file,
+    database_info,
+    query,
+)
 
 
 def _json_default(value: Any) -> Any:
@@ -193,6 +199,42 @@ def _binding_status(settings: AppSettings) -> str:
     return "EXPLICIT_DATA_ROOT" if settings.paths.data_root_bound else "UNBOUND_DATA_ROOT"
 
 
+def _package_code_sha256() -> str:
+    package_root = Path(__file__).resolve().parent
+    files = tuple(sorted(package_root.rglob("*.py")))
+    if not files:
+        raise ValueError("installed package contains no Python code artifacts")
+    entries = []
+    for path in files:
+        digest, byte_count = capture_file_digest(path)
+        entries.append((path.relative_to(package_root).as_posix(), digest, byte_count))
+    encoded = json.dumps(
+        {"files": entries, "version": 1},
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def _settings_sha256(settings: AppSettings) -> str:
+    config_file_sha256 = None
+    if settings.config_path.is_file():
+        config_file_sha256 = capture_file_digest(settings.config_path)[0]
+    payload = {
+        "config_file_sha256": config_file_sha256,
+        "data_root": str(settings.paths.data_root),
+        "data_root_bound": settings.paths.data_root_bound,
+        "database": str(settings.paths.database),
+        "database_filename": settings.database.filename,
+        "lock_timeout_seconds": settings.writer.lock_timeout_seconds,
+        "max_input_bytes": settings.writer.max_input_bytes,
+        "max_rows_per_batch": settings.writer.max_rows_per_batch,
+        "version": 1,
+    }
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="quant")
     parser.add_argument("--config", type=Path)
@@ -227,8 +269,6 @@ def _parser() -> argparse.ArgumentParser:
     append.add_argument("--source-family-id")
     append.add_argument("--provider-id")
     append.add_argument("--subject-id")
-    append.add_argument("--code-sha256")
-    append.add_argument("--config-sha256")
     append.add_argument("--canonical-owner")
     append.add_argument("--contract-version")
     append.add_argument("--execute", action="store_true")
@@ -301,8 +341,6 @@ def main(argv: list[str] | None = None) -> int:
         "source_family_id",
         "provider_id",
         "subject_id",
-        "code_sha256",
-        "config_sha256",
         "canonical_owner",
         "contract_version",
     )
@@ -330,8 +368,8 @@ def main(argv: list[str] | None = None) -> int:
         rows=rows,
         batch_id=args.batch_id,
         source_identity=source_receipt.source,
-        code_sha256=args.code_sha256,
-        config_sha256=args.config_sha256,
+        code_sha256=_package_code_sha256(),
+        config_sha256=_settings_sha256(settings),
         canonical_owner=args.canonical_owner,
         contract_version=args.contract_version,
         max_rows=settings.writer.max_rows_per_batch,

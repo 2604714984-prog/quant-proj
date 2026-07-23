@@ -45,10 +45,6 @@ def _controlled_args(tmp_path: Path) -> list[str]:
         "fixture-provider",
         "--subject-id",
         "market.daily",
-        "--code-sha256",
-        "c" * 64,
-        "--config-sha256",
-        "d" * 64,
         "--canonical-owner",
         "quant-system",
         "--contract-version",
@@ -167,6 +163,14 @@ def test_append_cli_requires_execute_and_then_writes(
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "COMPLETED"
     assert payload["inserted_rows"] == 1
+    with duckdb.connect(str(db), read_only=True) as connection:
+        code_sha, config_sha = connection.execute(
+            "SELECT code_sha256, config_sha256 FROM _quant_meta.ingest_runs"
+        ).fetchone()
+    assert code_sha == cli_module._package_code_sha256()
+    assert config_sha == cli_module._settings_sha256(
+        cli_module.load_settings(None)
+    )
 
 
 def test_unbound_data_root_is_visible_and_execute_fails_before_write(
