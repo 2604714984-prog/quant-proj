@@ -1,6 +1,7 @@
 """One deterministic, point-in-time next-session rebalance."""
 from __future__ import annotations
 
+import base64
 from collections.abc import Callable, Mapping
 from copy import deepcopy
 from dataclasses import asdict, dataclass, field, fields, is_dataclass, replace
@@ -14,7 +15,7 @@ from typing import Any, Literal
 from zoneinfo import ZoneInfo
 
 from quant_system.data import (
-    AcceptedSession, AcceptedSessionCalendar, CalendarIdentityError,
+    AcceptedSession, AcceptedSessionCalendar, CalendarIdentity, CalendarIdentityError,
     CorporateActionIdentity, SourceIdentity, TypedObservationReceipt, capture_file_bytes,
     capture_file_digest, require_trusted_source, require_typed_observation,
 )
@@ -64,8 +65,8 @@ from .blocked_orders import (
     advance_blocked_exit,
 )
 from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
-from .costs import ExecutionCostAssumptions
-from .portfolio import Portfolio, Position, Trade
+from .costs import ExecutionCostAssumptions, TransactionCostModel
+from .portfolio import PendingCash, Portfolio, Position, Trade
 
 Market = Literal["a_share", "us"]
 DecisionPriceBasis = Literal[
@@ -348,12 +349,14 @@ class CandidateRunBundle:
     cost_assumptions_sha256: str
     universe_materialization_sha256: str
     source_receipt_sha256s: tuple[str, ...]
+    artifact_payloads: tuple[str, ...]
     stage_plan_sha256: str
     stage_index: int
     stage_session: date
     prior_stage_hash: str
     base_underlying_input_identity_hash: str
     base_input_artifact_json: str
+    base_replay_artifact_json: str
     base_input_identity_hash: str
     base_receipt_payloads: tuple[str, ...]
     base_receipt_hashes: tuple[str, ...]
@@ -362,6 +365,7 @@ class CandidateRunBundle:
     base_final_nav: float
     adverse_underlying_input_identity_hash: str
     adverse_input_artifact_json: str
+    adverse_replay_artifact_json: str
     adverse_input_identity_hash: str
     adverse_receipt_payloads: tuple[str, ...]
     adverse_stage_hash: str
@@ -398,6 +402,34 @@ class CandidateRunBundle:
             raise ValueError("run bundle source receipts must be sorted and unique")
         for digest in self.source_receipt_sha256s:
             _sha256(digest, "source_receipt_sha256")
+        if (
+            not self.artifact_payloads
+            or self.artifact_payloads != tuple(sorted(set(self.artifact_payloads)))
+        ):
+            raise ValueError("run bundle artifacts must be sorted and unique")
+        for payload in self.artifact_payloads:
+            try:
+                artifact = json.loads(payload)
+                content = base64.b64decode(
+                    artifact["content_base64"],
+                    validate=True,
+                )
+            except (
+                KeyError,
+                TypeError,
+                ValueError,
+                json.JSONDecodeError,
+            ) as exc:
+                raise ValueError("run bundle immutable artifact is invalid") from exc
+            if (
+                type(artifact) is not dict
+                or set(artifact) != {"content_base64", "sha256"}
+                or json.dumps(artifact, sort_keys=True, separators=(",", ":"))
+                != payload
+                or hashlib.sha256(content).hexdigest()
+                != _sha256(artifact["sha256"], "artifact_sha256")
+            ):
+                raise ValueError("run bundle immutable artifact hash mismatch")
         for case, artifact_json, underlying_identity in (
             (
                 "base",
@@ -468,6 +500,8 @@ class CandidateRunBundle:
             self.bundle_sha256
         ):
             raise ValueError("run bundle envelope hash mismatch")
+        _replay_bundle_case(self, "base")
+        _replay_bundle_case(self, "adverse")
 
 
 def _bundle_hashes(
@@ -516,7 +550,7 @@ def serialize_candidate_run_bundle(bundle: CandidateRunBundle) -> bytes:
         {
             **json.loads(_candidate_run_bundle_payload(bundle)),
             "bundle_sha256": bundle.bundle_sha256,
-            "version": 2,
+            "version": 3,
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -528,10 +562,11 @@ def load_candidate_run_bundle(payload: bytes) -> CandidateRunBundle:
         values = json.loads(payload)
     except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("candidate run bundle must be valid UTF-8 JSON") from exc
-    if type(values) is not dict or values.pop("version", None) != 2:
+    if type(values) is not dict or values.pop("version", None) != 3:
         raise ValueError("candidate run bundle version is invalid")
     tuple_fields = (
         "source_receipt_sha256s",
+        "artifact_payloads",
         "base_receipt_payloads",
         "base_receipt_hashes",
             "adverse_receipt_payloads",
@@ -547,6 +582,139 @@ def load_candidate_run_bundle(payload: bytes) -> CandidateRunBundle:
         raise ValueError("candidate run bundle fields are invalid") from exc
     bundle.verify()
     return bundle
+
+
+def _replay_bundle_case(
+    bundle: CandidateRunBundle,
+    case: Literal["base", "adverse"],
+) -> StaticRebalanceResult:
+    artifact_json = getattr(bundle, f"{case}_replay_artifact_json")
+    try:
+        artifact = json.loads(artifact_json)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"run bundle {case} replay artifact is invalid") from exc
+    required = {
+        "calendar_identity",
+        "calendar_sessions",
+        "capacity_policy",
+        "decision_at",
+        "execution_calendar_revision_identity",
+        "execution_calendar_revision_sessions",
+        "execution_inputs",
+        "max_positions",
+        "portfolio",
+        "signal_session",
+        "slippage_bps",
+        "strategy_adapter_sha256",
+        "strategy_definition_sha256",
+        "universe_members",
+        "universe_snapshot",
+        "version",
+        "weights",
+    }
+    if (
+        type(artifact) is not dict
+        or set(artifact) != required
+        or artifact["version"] != 1
+        or json.dumps(artifact, sort_keys=True, separators=(",", ":"))
+        != artifact_json
+    ):
+        raise ValueError(f"run bundle {case} replay artifact schema is invalid")
+    decoded = {
+        name: _replay_decode(value)
+        for name, value in artifact.items()
+        if name != "version"
+    }
+    calendar_identity = decoded["calendar_identity"]
+    calendar_sessions = decoded["calendar_sessions"]
+    if not isinstance(calendar_identity, CalendarIdentity) or (
+        type(calendar_sessions) is not tuple
+        or any(not isinstance(item, AcceptedSession) for item in calendar_sessions)
+    ):
+        raise ValueError("run bundle replay calendar is invalid")
+    calendar = AcceptedSessionCalendar(
+        calendar_sessions,
+        identity=calendar_identity,
+    )
+    revision_identity = decoded["execution_calendar_revision_identity"]
+    revision_sessions = decoded["execution_calendar_revision_sessions"]
+    if revision_identity is None and revision_sessions is None:
+        revision = None
+    elif isinstance(revision_identity, CalendarIdentity) and (
+        type(revision_sessions) is tuple
+        and all(isinstance(item, AcceptedSession) for item in revision_sessions)
+    ):
+        revision = AcceptedSessionCalendar(
+            revision_sessions,
+            identity=revision_identity,
+        )
+    else:
+        raise ValueError("run bundle replay calendar revision is incomplete")
+    execution_inputs = decoded["execution_inputs"]
+    weights = decoded["weights"]
+    if (
+        type(execution_inputs) is not tuple
+        or any(not isinstance(item, ExecutionInput) for item in execution_inputs)
+        or type(weights) is not tuple
+    ):
+        raise ValueError("run bundle replay inputs are invalid")
+    stage_context = StageContext(
+        bundle.stage_plan_sha256,
+        bundle.stage_index,
+        bundle.stage_session,
+        bundle.prior_stage_hash,
+        _STAGE_CONTEXT_TOKEN,
+    )
+    result = run_static_rebalance(
+        decoded["portfolio"],
+        calendar,
+        signal_session=decoded["signal_session"],
+        decision_at=decoded["decision_at"],
+        execution_inputs=execution_inputs,
+        execution_calendar_revision=revision,
+        universe_members=decoded["universe_members"],
+        universe_snapshot=decoded["universe_snapshot"],
+        target_weights=lambda _: dict(weights),
+        strategy_definition_sha256=decoded["strategy_definition_sha256"],
+        strategy_adapter_sha256=decoded["strategy_adapter_sha256"],
+        stage_context=stage_context,
+        capacity_policy=decoded["capacity_policy"],
+        max_positions=decoded["max_positions"],
+        slippage_bps=decoded["slippage_bps"],
+    )
+    receipt_payloads = tuple(
+        json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
+        for receipt in result.receipts
+    )
+    if (
+        result.input_artifact_json
+        != getattr(bundle, f"{case}_input_artifact_json")
+        or result.input_identity_hash
+        != getattr(bundle, f"{case}_underlying_input_identity_hash")
+        or result.replay_artifact_json != artifact_json
+        or receipt_payloads != getattr(bundle, f"{case}_receipt_payloads")
+        or result.final_portfolio_json
+        != getattr(bundle, f"{case}_final_portfolio_json")
+        or abs(result.final_nav - getattr(bundle, f"{case}_final_nav")) > 1e-9
+    ):
+        raise ValueError(
+            f"run bundle {case} execution, portfolio, or NAV replay differs"
+        )
+    return result
+
+
+def replay_candidate_run_bundle(
+    bundle: CandidateRunBundle,
+) -> tuple[StaticRebalanceResult, StaticRebalanceResult]:
+    """Re-execute both cost cases from the immutable bundle inputs."""
+
+    if not isinstance(bundle, CandidateRunBundle):
+        raise TypeError("bundle must be a CandidateRunBundle")
+    bundle.verify()
+    return (
+        _replay_bundle_case(bundle, "base"),
+        _replay_bundle_case(bundle, "adverse"),
+    )
 
 
 def _portfolio_nav_from_artifact(payload: str) -> float:
@@ -574,6 +742,7 @@ class StaticRebalanceResult:
     receipts: tuple[ExecutionReceipt, ...]
     input_identity_hash: str
     input_artifact_json: str
+    replay_artifact_json: str
     receipt_hashes: tuple[str, ...]
     stage_hash: str
     final_nav: float
@@ -1099,6 +1268,22 @@ def run_static_rebalance(
         execution_calendar_revision,
         execution_calendar_revision_rows,
     )
+    replay_artifact_json = _replay_artifact(
+        portfolio=portfolio,
+        calendar=calendar,
+        signal_session=signal_session,
+        decision_at=cutoff,
+        execution_inputs=tuple(rows[symbol] for symbol in sorted(rows)),
+        execution_calendar_revision=execution_calendar_revision,
+        universe_members=universe_members,
+        universe_snapshot=universe_snapshot,
+        weights=weights,
+        strategy_definition_sha256=definition_sha,
+        strategy_adapter_sha256=adapter_sha,
+        capacity_policy=capacity_policy,
+        max_positions=max_positions,
+        slippage_bps=float(slippage_bps),
+    )
     identity = hashlib.sha256(input_artifact_json.encode()).hexdigest()
     receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, stage_context)
     return StaticRebalanceResult(
@@ -1108,6 +1293,7 @@ def run_static_rebalance(
         tuple(receipts),
         identity,
         input_artifact_json,
+        replay_artifact_json,
         receipt_hashes,
         stage_hash,
         final_nav,
@@ -2458,6 +2644,200 @@ def _identity_artifact(
     return json.dumps(_normal(payload), sort_keys=True, separators=(",", ":"))
 
 
+def _replay_encode(value: object) -> object:
+    """Encode only the small, fixed execution object graph used by this module."""
+
+    if isinstance(value, Portfolio):
+        return {
+            "__type__": "Portfolio",
+            "state": _replay_encode(value.__dict__),
+        }
+    if is_dataclass(value) and not isinstance(value, type):
+        return {
+            "__type__": type(value).__name__,
+            "fields": {
+                item.name: _replay_encode(getattr(value, item.name))
+                for item in fields(value)
+                if not item.name.startswith("_")
+            },
+        }
+    if type(value) is dict:
+        return {
+            "__mapping__": [
+                [_replay_encode(key), _replay_encode(item)]
+                for key, item in sorted(value.items(), key=lambda pair: str(pair[0]))
+            ]
+        }
+    if type(value) is tuple:
+        return {"__tuple__": [_replay_encode(item) for item in value]}
+    if type(value) is list:
+        return {"__list__": [_replay_encode(item) for item in value]}
+    if type(value) in {set, frozenset}:
+        encoded = [_replay_encode(item) for item in value]
+        return {
+            "__set__": sorted(
+                encoded,
+                key=lambda item: json.dumps(
+                    item,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                ),
+            )
+        }
+    if type(value) is datetime:
+        return {"__datetime__": require_aware_datetime(value, "replay datetime").isoformat()}
+    if type(value) is date:
+        return {"__date__": value.isoformat()}
+    if isinstance(value, Decimal):
+        if not value.is_finite():
+            raise ValueError("replay artifact cannot contain nonfinite decimals")
+        return {"__decimal__": format(value, "f")}
+    if value is None or type(value) in {bool, int, str}:
+        return value
+    if type(value) is float and math.isfinite(value):
+        return value
+    raise TypeError(f"unsupported replay artifact value: {type(value).__name__}")
+
+
+def _replay_types() -> dict[str, type]:
+    return {
+        item.__name__: item
+        for item in (
+            AShareAdjustmentReceipt,
+            AcceptedSession,
+            CalendarIdentity,
+            CapacityObservation,
+            CapacityPolicy,
+            CorporateActionIdentity,
+            ExecutionInput,
+            PendingCash,
+            Position,
+            SourceIdentity,
+            StatusEvidence,
+            TerminalAction,
+            TransactionCostModel,
+            TypedObservationReceipt,
+            UniverseSnapshotIdentity,
+        )
+    }
+
+
+def _replay_decode(value: object) -> object:
+    if value is None or type(value) in {bool, int, float, str}:
+        return value
+    if type(value) is not dict:
+        raise ValueError("replay artifact value has an invalid JSON type")
+    if set(value) == {"__datetime__"}:
+        parsed = datetime.fromisoformat(str(value["__datetime__"]))
+        return require_aware_datetime(parsed, "replay datetime")
+    if set(value) == {"__date__"}:
+        return date.fromisoformat(str(value["__date__"]))
+    if set(value) == {"__decimal__"}:
+        parsed_decimal = Decimal(str(value["__decimal__"]))
+        if not parsed_decimal.is_finite():
+            raise ValueError("replay artifact decimal must be finite")
+        return parsed_decimal
+    if set(value) == {"__tuple__"} and type(value["__tuple__"]) is list:
+        return tuple(_replay_decode(item) for item in value["__tuple__"])
+    if set(value) == {"__list__"} and type(value["__list__"]) is list:
+        return [_replay_decode(item) for item in value["__list__"]]
+    if set(value) == {"__set__"} and type(value["__set__"]) is list:
+        return set(_replay_decode(item) for item in value["__set__"])
+    if set(value) == {"__mapping__"} and type(value["__mapping__"]) is list:
+        decoded: dict[object, object] = {}
+        for pair in value["__mapping__"]:
+            if type(pair) is not list or len(pair) != 2:
+                raise ValueError("replay artifact mapping entry is invalid")
+            key, item = (_replay_decode(part) for part in pair)
+            if key in decoded:
+                raise ValueError("replay artifact mapping contains duplicate keys")
+            decoded[key] = item
+        return decoded
+    if set(value) == {"__type__", "state"} and value["__type__"] == "Portfolio":
+        state = _replay_decode(value["state"])
+        if type(state) is not dict:
+            raise ValueError("replay portfolio state is invalid")
+        portfolio = object.__new__(Portfolio)
+        portfolio.__dict__.update(state)
+        return portfolio
+    if set(value) == {"__type__", "fields"}:
+        type_name = value["__type__"]
+        encoded_fields = value["fields"]
+        if type(type_name) is not str or type(encoded_fields) is not dict:
+            raise ValueError("replay dataclass envelope is invalid")
+        cls = _replay_types().get(type_name)
+        if cls is None:
+            raise ValueError("replay artifact contains an unsupported type")
+        kwargs = {
+            name: _replay_decode(item)
+            for name, item in encoded_fields.items()
+        }
+        if cls is SourceIdentity and kwargs.get("capture_level") != "UNCAPTURED":
+            from quant_system.data import source_identity as source_module
+
+            kwargs["_capture_token"] = source_module._CAPTURE_TOKEN
+        elif cls is TypedObservationReceipt:
+            from quant_system.data import source_identity as source_module
+
+            kwargs["_token"] = source_module._TYPED_OBSERVATION_TOKEN
+        elif cls is AShareAdjustmentReceipt:
+            from quant_system.markets import a_share as a_share_module
+
+            kwargs["_token"] = a_share_module._ADJUSTMENT_TOKEN
+        try:
+            return cls(**kwargs)
+        except (TypeError, ValueError) as exc:
+            raise ValueError(f"replay {type_name} fields are invalid") from exc
+    raise ValueError("replay artifact envelope is invalid")
+
+
+def _replay_artifact(
+    *,
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    signal_session: date,
+    decision_at: datetime,
+    execution_inputs: tuple[ExecutionInput, ...],
+    execution_calendar_revision: AcceptedSessionCalendar | None,
+    universe_members: tuple[str, ...],
+    universe_snapshot: UniverseSnapshotIdentity,
+    weights: tuple[tuple[str, float], ...],
+    strategy_definition_sha256: str,
+    strategy_adapter_sha256: str,
+    capacity_policy: CapacityPolicy | None,
+    max_positions: int | None,
+    slippage_bps: float,
+) -> str:
+    payload = {
+        "calendar_identity": _replay_encode(calendar.identity),
+        "calendar_sessions": _replay_encode(calendar.sessions),
+        "capacity_policy": _replay_encode(capacity_policy),
+        "decision_at": _replay_encode(decision_at),
+        "execution_calendar_revision_identity": _replay_encode(
+            None
+            if execution_calendar_revision is None
+            else execution_calendar_revision.identity
+        ),
+        "execution_calendar_revision_sessions": _replay_encode(
+            None
+            if execution_calendar_revision is None
+            else execution_calendar_revision.sessions
+        ),
+        "execution_inputs": _replay_encode(execution_inputs),
+        "max_positions": max_positions,
+        "portfolio": _replay_encode(portfolio),
+        "signal_session": _replay_encode(signal_session),
+        "slippage_bps": slippage_bps,
+        "strategy_adapter_sha256": strategy_adapter_sha256,
+        "strategy_definition_sha256": strategy_definition_sha256,
+        "universe_members": _replay_encode(universe_members),
+        "universe_snapshot": _replay_encode(universe_snapshot),
+        "version": 1,
+        "weights": _replay_encode(weights),
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+
 def _normal(value: Any) -> Any:
     if is_dataclass(value) and not isinstance(value, type):
         return {
@@ -2529,6 +2909,46 @@ def _source_receipt_hashes(*values: object) -> tuple[str, ...]:
     return tuple(sorted(receipts))
 
 
+def _bundle_artifact_payloads(
+    decision_artifact: DecisionArtifact,
+    dataset_manifest: DatasetManifest,
+) -> tuple[str, ...]:
+    paths = {
+        decision_artifact._feature_snapshot_path,
+        decision_artifact._strategy_definition_path,
+        decision_artifact._strategy_adapter_path,
+        *(path for _, path in dataset_manifest._semantic_paths),
+        *dataset_manifest._partition_paths,
+        *dataset_manifest._partition_parser_paths,
+    }
+    if dataset_manifest._split_manifest_path is not None:
+        paths.add(dataset_manifest._split_manifest_path)
+    for receipt in dataset_manifest.transformation_receipts:
+        paths.update(
+            {
+                receipt._program_path,
+                receipt._feature_program_path,
+                receipt._label_program_path,
+                receipt._config_path,
+                receipt._output_path,
+                *receipt._raw_paths,
+            }
+        )
+    payload_by_sha: dict[str, str] = {}
+    for path in paths:
+        content = capture_file_bytes(path, max_bytes=64 * 1024 * 1024)
+        digest = hashlib.sha256(content).hexdigest()
+        payload_by_sha[digest] = json.dumps(
+            {
+                "content_base64": base64.b64encode(content).decode("ascii"),
+                "sha256": digest,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+    return tuple(sorted(payload_by_sha.values()))
+
+
 def _build_candidate_run_bundle(
     *,
     result: StaticRebalanceResult,
@@ -2560,12 +2980,17 @@ def _build_candidate_run_bundle(
             universe_materialization.materialization_sha256
         ),
         "source_receipt_sha256s": source_receipt_sha256s,
+        "artifact_payloads": _bundle_artifact_payloads(
+            decision_artifact,
+            dataset_manifest,
+        ),
         "stage_plan_sha256": stage_context.plan_sha256,
         "stage_index": stage_context.stage_index,
         "stage_session": stage_context.stage_session,
         "prior_stage_hash": stage_context.prior_stage_hash,
         "base_underlying_input_identity_hash": result.input_identity_hash,
         "base_input_artifact_json": result.input_artifact_json,
+        "base_replay_artifact_json": result.replay_artifact_json,
         "base_input_identity_hash": base_input_identity_hash,
         "base_receipt_payloads": tuple(
             json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
@@ -2577,6 +3002,7 @@ def _build_candidate_run_bundle(
         "base_final_nav": result.final_nav,
         "adverse_underlying_input_identity_hash": adverse.input_identity_hash,
         "adverse_input_artifact_json": adverse.input_artifact_json,
+        "adverse_replay_artifact_json": adverse.replay_artifact_json,
         "adverse_input_identity_hash": adverse_input_identity_hash,
         "adverse_receipt_payloads": tuple(
             json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))

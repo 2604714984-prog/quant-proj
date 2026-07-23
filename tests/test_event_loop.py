@@ -32,6 +32,7 @@ from quant_system.backtest import (
     genesis_stage,
     load_candidate_run_bundle,
     next_stage,
+    replay_candidate_run_bundle,
     run_candidate_rebalance,
     run_static_rebalance,
     serialize_candidate_run_bundle,
@@ -3286,7 +3287,11 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     assert result.strategy_candidate_available is False
     assert result.run_bundle is not None
     payload = serialize_candidate_run_bundle(result.run_bundle)
-    assert load_candidate_run_bundle(payload).base_stage_hash == result.stage_hash
+    loaded_bundle = load_candidate_run_bundle(payload)
+    assert loaded_bundle.base_stage_hash == result.stage_hash
+    replayed_base, replayed_adverse = replay_candidate_run_bundle(loaded_bundle)
+    assert replayed_base.final_nav == result.final_nav
+    assert replayed_adverse.final_nav == result.adverse_final_nav
     bundle_path = tmp_path / "candidate-run-bundle.json"
     bundle_path.write_bytes(payload)
     environment = os.environ.copy()
@@ -3329,6 +3334,28 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
                 separators=(",", ":"),
             ),
         ).verify()
+    replay_input = json.loads(result.run_bundle.base_replay_artifact_json)
+    portfolio_mapping = replay_input["portfolio"]["state"]["__mapping__"]
+    settled_cash = next(
+        pair for pair in portfolio_mapping if pair[0] == "settled_cash"
+    )
+    settled_cash[1] += 1
+    forged = replace(
+        result.run_bundle,
+        base_replay_artifact_json=json.dumps(
+            replay_input,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    )
+    forged = replace(
+        forged,
+        bundle_sha256=hashlib.sha256(
+            event_loop_module._candidate_run_bundle_payload(forged)
+        ).hexdigest(),
+    )
+    with pytest.raises(ValueError, match="execution, portfolio, or NAV replay differs"):
+        forged.verify()
 
     same_weights_different_definition = _captured_decision_artifact(
         tmp_path,
@@ -3542,6 +3569,8 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
     assert base.interface_grade == "GENERIC_CAPTURE_EXPERIMENT"
     assert base.strategy_candidate_available is False
     assert observed_cost_models == [
+        (False, 0.0005),
+        (False, 0.001),
         (False, 0.0005),
         (False, 0.001),
     ]
