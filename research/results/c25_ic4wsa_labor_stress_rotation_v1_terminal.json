@@ -1,0 +1,59 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C25_IC4WSA_LABOR_STRESS_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE25",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053639189",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053683246",
+    "preoutcome_commit": "9ee25142e3472740899c06cc308ee5479a73e0b1",
+    "definition_sha256": "0ac2ac961730d504bc74521b6a11cf2664db72337d8872b9fd651531eb8f78f6",
+    "adapter_sha256": "6deee040f80e21ccce0a3056910e761fd2d9891e56a613152c954b4bd284207b",
+    "runner_sha256": "ae7e6583b882cc8ae67623f63247b325991ad0d4396f254e217d17bbca55d995",
+    "input_packet_sha256": "e4fe5304be0bdac433544559d0328e6fd1e1ea4275ca161529be4cb9fc0da78f"
+  },
+  "one_use_validation": {
+    "claim_sha256": "158e513bb7d99e3e777dd4933338629c05bd044a36ac1a9199a42affa3dbeed3",
+    "result_sha256": "1762d7b7407138c6c4563e137e66ba6e1d3e63e07eaa1019e1c05358c9261787",
+    "observed_intervals": 28,
+    "gates_passed": 0,
+    "gates_total": 3,
+    "passed_gates": [],
+    "failed_gates": [
+      "arithmetic_mean_paired_active_return_strictly_positive",
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator",
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator"
+    ],
+    "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false
+  },
+  "program_multiplicity": {
+    "cycle25_familywise_alpha": 0.00000000298023223876953125,
+    "cycle1_to_cycle25_union_bound": 0.09999999701976776123046875,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "method_limitation": "IC4WSA is a revisable four-week average of initial claims rather than a complete labor-market or earnings measure; no holdout inference was opened.",
+  "terminal_state": {
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the IC4WSA direction, vintage rule, 28-day lag, threshold, transform, smoothing, target mapping, comparator, cost, split, source or signal combination."
+}
