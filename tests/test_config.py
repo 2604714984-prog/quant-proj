@@ -13,6 +13,9 @@ filename = "research.duckdb"
 max_rows_per_batch = 5000
 max_input_bytes = 1048576
 lock_timeout_seconds = 2.5
+
+[writer.target_data_grades]
+"market.daily" = "GENERIC_CAPTURE"
 """
 
 
@@ -33,6 +36,9 @@ def test_load_settings_resolves_external_database(tmp_path: Path) -> None:
     assert settings.writer.max_rows_per_batch == 5000
     assert settings.writer.max_input_bytes == 1_048_576
     assert settings.writer.lock_timeout_seconds == 2.5
+    assert settings.writer.target_data_grades == (
+        ("market.daily", "GENERIC_CAPTURE"),
+    )
 
 
 def test_load_settings_binds_data_root_from_config(tmp_path: Path) -> None:

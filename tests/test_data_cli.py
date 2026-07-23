@@ -61,6 +61,8 @@ def _limited_config(tmp_path: Path, *, max_rows: int, max_bytes: int) -> Path:
                 f"max_rows_per_batch = {max_rows}",
                 f"max_input_bytes = {max_bytes}",
                 "lock_timeout_seconds = 0",
+                "[writer.target_data_grades]",
+                '"market.daily" = "GENERIC_CAPTURE"',
             )
         ),
         encoding="utf-8",

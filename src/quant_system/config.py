@@ -25,6 +25,7 @@ class WriterSettings:
     max_rows_per_batch: int
     max_input_bytes: int
     lock_timeout_seconds: float
+    target_data_grades: tuple[tuple[str, str], ...]
 
 
 @dataclass(frozen=True)
@@ -48,6 +49,7 @@ def _built_in_settings() -> dict[str, Any]:
             "max_rows_per_batch": DEFAULT_MAX_ROWS_PER_BATCH,
             "max_input_bytes": DEFAULT_MAX_INPUT_BYTES,
             "lock_timeout_seconds": DEFAULT_LOCK_TIMEOUT_SECONDS,
+            "target_data_grades": {"market.daily": "GENERIC_CAPTURE"},
         },
     }
 
@@ -97,6 +99,7 @@ def load_settings(
     max_rows = writer_raw.get("max_rows_per_batch")
     max_input_bytes = writer_raw.get("max_input_bytes")
     lock_timeout = writer_raw.get("lock_timeout_seconds")
+    target_data_grades = writer_raw.get("target_data_grades", {})
 
     if not isinstance(filename, str):
         raise ConfigurationError("database.filename must be a string")
@@ -109,6 +112,15 @@ def load_settings(
         or not 0 <= float(lock_timeout) <= 300
     ):
         raise ConfigurationError("writer.lock_timeout_seconds must be 0..300")
+    if not isinstance(target_data_grades, dict) or any(
+        not isinstance(target, str)
+        or target.count(".") != 1
+        or grade not in {"GENERIC_CAPTURE", "PROVIDER_QUALIFIED_CAPTURE"}
+        for target, grade in target_data_grades.items()
+    ):
+        raise ConfigurationError(
+            "writer.target_data_grades must map schema.table to a supported grade"
+        )
 
     paths = AppPaths.discover(
         project_root=initial_paths.project_root,
@@ -123,6 +135,7 @@ def load_settings(
             max_rows_per_batch=max_rows,
             max_input_bytes=max_input_bytes,
             lock_timeout_seconds=float(lock_timeout),
+            target_data_grades=tuple(sorted(target_data_grades.items())),
         ),
         config_path=config_path,
     )

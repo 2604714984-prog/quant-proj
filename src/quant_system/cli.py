@@ -229,6 +229,7 @@ def _settings_sha256(settings: AppSettings) -> str:
         "lock_timeout_seconds": settings.writer.lock_timeout_seconds,
         "max_input_bytes": settings.writer.max_input_bytes,
         "max_rows_per_batch": settings.writer.max_rows_per_batch,
+        "target_data_grades": settings.writer.target_data_grades,
         "version": 1,
     }
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
@@ -309,6 +310,12 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError(
             "append --execute requires QUANT_DATA_ROOT or configured paths.data_root"
         )
+    target = f"{args.schema}.{args.table}"
+    minimum_capture_level = dict(settings.writer.target_data_grades).get(target)
+    if args.execute and minimum_capture_level is None:
+        raise ValueError(
+            f"append --execute requires writer.target_data_grades for {target}"
+        )
     rows, input_sha256 = _rows(
         args.input,
         max_bytes=settings.writer.max_input_bytes,
@@ -325,6 +332,7 @@ def main(argv: list[str] | None = None) -> int:
                 "data_root_binding": _binding_status(settings),
                 "database": str(db_path),
                 "target": f"{args.schema}.{args.table}",
+                "minimum_capture_level": minimum_capture_level,
                 "row_count": len(rows),
                 "batch_id": args.batch_id,
                 "natural_keys": list(keys),
@@ -369,6 +377,7 @@ def main(argv: list[str] | None = None) -> int:
         code_sha256=_package_code_sha256(),
         config_sha256=_settings_sha256(settings),
         contract_version=args.contract_version,
+        minimum_capture_level=minimum_capture_level,
         max_rows=settings.writer.max_rows_per_batch,
         lock_timeout_seconds=settings.writer.lock_timeout_seconds,
     )

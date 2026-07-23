@@ -45,13 +45,18 @@ METADATA_COLUMNS = (
     ("completed_at", "TIMESTAMP WITH TIME ZONE", "NO"),
 )
 CANONICAL_WRITER_OWNER = "quant-system"
-MINIMUM_WRITE_CAPTURE_LEVEL = "GENERIC_CAPTURE"
+CAPTURE_LEVEL_RANK = {
+    "GENERIC_CAPTURE": 1,
+    "TRANSPORT_CAPTURE": 1,
+    "PROVIDER_QUALIFIED_CAPTURE": 2,
+}
 TARGET_CONTRACT_COLUMNS = (
     ("target", "VARCHAR", "NO"),
     ("ordered_natural_keys", "VARCHAR", "NO"),
     ("schema_sha256", "VARCHAR", "NO"),
     ("canonical_owner", "VARCHAR", "NO"),
     ("contract_version", "VARCHAR", "NO"),
+    ("minimum_capture_level", "VARCHAR", "NO"),
 )
 
 
@@ -368,7 +373,7 @@ def _ensure_metadata(connection: duckdb.DuckDBPyConnection) -> None:
         "CREATE TABLE IF NOT EXISTS _quant_meta.target_contracts ("
         "target VARCHAR PRIMARY KEY, ordered_natural_keys VARCHAR NOT NULL, "
         "schema_sha256 VARCHAR NOT NULL, canonical_owner VARCHAR NOT NULL, "
-        "contract_version VARCHAR NOT NULL)"
+        "contract_version VARCHAR NOT NULL, minimum_capture_level VARCHAR NOT NULL)"
     )
     for table, expected_columns, expected_primary_key in (
         ("ingest_runs", METADATA_COLUMNS, ("batch_id",)),
@@ -405,21 +410,31 @@ def _bind_target_contract(
     schema_sha256: str,
     canonical_owner: str,
     contract_version: str,
+    minimum_capture_level: str,
 ) -> None:
     key_json = json.dumps(keys, separators=(",", ":"))
-    expected = (key_json, schema_sha256, canonical_owner, contract_version)
+    expected = (
+        key_json,
+        schema_sha256,
+        canonical_owner,
+        contract_version,
+        minimum_capture_level,
+    )
     previous = connection.execute(
-        "SELECT ordered_natural_keys, schema_sha256, canonical_owner, contract_version "
+        "SELECT ordered_natural_keys, schema_sha256, canonical_owner, contract_version, "
+        "minimum_capture_level "
         "FROM _quant_meta.target_contracts WHERE target=?",
         [target],
     ).fetchone()
     if previous is None:
         connection.execute(
-            "INSERT INTO _quant_meta.target_contracts VALUES (?, ?, ?, ?, ?)",
+            "INSERT INTO _quant_meta.target_contracts VALUES (?, ?, ?, ?, ?, ?)",
             [target, *expected],
         )
     elif tuple(previous) != expected:
-        raise DataWriteError("target contract keys, schema, owner, or version changed")
+        raise DataWriteError(
+            "target contract keys, schema, owner, version, or data grade changed"
+        )
 
 
 def _validate_previous(
@@ -471,6 +486,7 @@ def append_rows(
     code_sha256: str,
     config_sha256: str,
     contract_version: str,
+    minimum_capture_level: str,
     max_rows: int = 100_000,
     lock_timeout_seconds: float = 5.0,
 ) -> AppendResult:
@@ -497,12 +513,17 @@ def append_rows(
         max_rows=max_rows,
     )
     contract_version = _stable_text(contract_version, "contract_version")
-    if source_identity.capture_level not in {
-        MINIMUM_WRITE_CAPTURE_LEVEL,
+    if minimum_capture_level not in {
+        "GENERIC_CAPTURE",
         "PROVIDER_QUALIFIED_CAPTURE",
     }:
+        raise DataWriteError("minimum_capture_level is unsupported")
+    if (
+        CAPTURE_LEVEL_RANK.get(source_identity.capture_level, 0)
+        < CAPTURE_LEVEL_RANK[minimum_capture_level]
+    ):
         raise DataWriteError(
-            f"writer requires at least {MINIMUM_WRITE_CAPTURE_LEVEL}"
+            f"target requires at least {minimum_capture_level}"
         )
     source_sha256 = source_identity.content_sha256
     source_json = _source_identity_json(source_identity)
@@ -529,6 +550,7 @@ def append_rows(
                     schema_sha256=schema_sha256,
                     canonical_owner=CANONICAL_WRITER_OWNER,
                     contract_version=contract_version,
+                    minimum_capture_level=minimum_capture_level,
                 )
                 previous = connection.execute(
                     "SELECT target, source_sha256, source_identity_json, capture_level, "
