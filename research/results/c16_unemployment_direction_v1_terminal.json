@@ -1,0 +1,57 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C16_UNEMPLOYMENT_DIRECTION_SPY_QQQ_ROTATION_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE16",
+  "classification": "INPUT_BLOCKED_OFFICIAL_OBSERVATION_MISSING",
+  "evidence_class": "OUTCOME_BLIND_INPUT_QUALIFICATION",
+  "outcome_blind_freeze": {
+    "issue": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5052904113",
+    "sole_signal": "monthly UNRATE above prior month selects QQQ, otherwise SPY",
+    "missing_rule": "fail closed without interpolation, carry-forward or substitute series",
+    "cycle16_familywise_alpha": 0.00000152587890625,
+    "cycle1_to_cycle16_union_bound": 0.09999847412109375,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "materialization_attempt": {
+    "staging_root": "/home/rongyu/workspace/quant-data/staging/c16_unemployment_direction_spy_qqq_rotation_v1",
+    "fred_route": "https://fred.stlouisfed.org/graph/fredgraph.csv?id=UNRATE&cosd=2019-01-01&coed=2026-04-01",
+    "fred_response_sha256": "57b71af09959474dbe3f01c493234bedd6389bf629fba212c7dfdf5e40bff0dc",
+    "bls_definition_route": "https://www.bls.gov/cps/definitions.htm",
+    "bls_definition_response_sha256": "1d41ac771ea591ede5a9d36b5ed488d6123677b52e671e0f05a3165ef0a4c8c3",
+    "network_requests": 2,
+    "retries": 0,
+    "redirects": 0,
+    "input_packet_created": false,
+    "materialization_receipt_created": false
+  },
+  "mechanical_blocker": {
+    "missing_observation_month": "2025-10",
+    "series_id": "UNRATE",
+    "observed_value": null,
+    "official_context": "the October 2025 Employment Situation was not published during the lapse in appropriations",
+    "interpretation": "the frozen holdout signal cannot be constructed; this is an input block, not a return-based strategy failure"
+  },
+  "warehouse_integrity": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_opened": false,
+    "database_write": false
+  },
+  "terminal_state": {
+    "strategy_outcomes_opened": false,
+    "validation_run": false,
+    "retrospective_holdout_opened": false,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "source_switch_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by filling October 2025, substituting payrolls or claims, changing the sign, lag, threshold, persistence, smoothing, comparator, cost, split, or source."
+}
