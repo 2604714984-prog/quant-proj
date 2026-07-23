@@ -11,7 +11,7 @@ import json
 import math
 import random
 import statistics
-from typing import Literal, Mapping, Sequence, TypeAlias
+from typing import Literal, Sequence, TypeAlias
 
 
 DateLike: TypeAlias = date | datetime
@@ -20,6 +20,7 @@ EvaluationUnit = Literal["daily_portfolio"]
 _EVALUATION_TOKEN = object()
 _MANIFEST_TOKEN = object()
 _PLAN_TOKEN = object()
+_RETURN_ARTIFACT_TOKEN = object()
 
 
 def _time_text(value: DateLike) -> str:
@@ -82,6 +83,187 @@ class SplitEvaluationPlan:
 
 
 @dataclass(frozen=True)
+class ReturnObservation:
+    session: date
+    initial_nav: float
+    final_nav: float
+    net_external_cashflow: float
+    net_return: float
+    input_identity_sha256: str
+    initial_portfolio_sha256: str
+    final_portfolio_sha256: str
+    execution_receipt_sha256s: tuple[str, ...]
+    transaction_costs: float
+
+
+@dataclass(frozen=True)
+class ReturnArtifact:
+    stage_plan_sha256: str
+    final_run_receipt_sha256: str
+    observations: tuple[ReturnObservation, ...]
+    returns_sha256: str
+    artifact_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    def verify(self) -> None:
+        if self._token is not _RETURN_ARTIFACT_TOKEN:
+            raise ValueError("ReturnArtifact must come from capture_return_artifact")
+        if not self.observations:
+            raise ValueError("return artifact must contain observations")
+        if tuple(item.session for item in self.observations) != tuple(
+            sorted({item.session for item in self.observations})
+        ):
+            raise ValueError("return artifact sessions must be unique and chronological")
+        for observation in self.observations:
+            for digest in (
+                observation.input_identity_sha256,
+                observation.initial_portfolio_sha256,
+                observation.final_portfolio_sha256,
+                *observation.execution_receipt_sha256s,
+            ):
+                if not isinstance(digest, str) or len(digest) != 64:
+                    raise ValueError("return artifact contains an invalid SHA-256")
+            if any(
+                not math.isfinite(value)
+                for value in (
+                    observation.initial_nav,
+                    observation.final_nav,
+                    observation.net_external_cashflow,
+                    observation.net_return,
+                    observation.transaction_costs,
+                )
+            ):
+                raise ValueError("return artifact contains nonfinite economics")
+            denominator = observation.initial_nav + observation.net_external_cashflow
+            if denominator <= 0:
+                raise ValueError("return artifact NAV denominator must be positive")
+            expected_return = observation.final_nav / denominator - 1
+            if abs(observation.net_return - expected_return) > 1e-12:
+                raise ValueError("return artifact net return is not derived from NAV")
+        expected_returns_sha = hashlib.sha256(
+            json.dumps(
+                tuple(
+                    (item.session.isoformat(), item.net_return)
+                    for item in self.observations
+                ),
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        if self.returns_sha256 != expected_returns_sha:
+            raise ValueError("return artifact returns hash mismatch")
+        if hashlib.sha256(_return_artifact_payload(self)).hexdigest() != self.artifact_sha256:
+            raise ValueError("return artifact receipt hash mismatch")
+
+
+def _return_artifact_payload(artifact: ReturnArtifact) -> bytes:
+    return json.dumps(
+        {
+            "final_run_receipt_sha256": artifact.final_run_receipt_sha256,
+            "observations": tuple(
+                {
+                    **observation.__dict__,
+                    "session": observation.session.isoformat(),
+                }
+                for observation in artifact.observations
+            ),
+            "returns_sha256": artifact.returns_sha256,
+            "stage_plan_sha256": artifact.stage_plan_sha256,
+            "version": 1,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def capture_return_artifact(
+    stage_plan: object,
+    results: tuple[object, ...],
+    final_run_receipt: object,
+) -> ReturnArtifact:
+    """Derive immutable daily net returns from a complete controlled result chain."""
+
+    from quant_system.backtest.event_loop import (
+        ControlledStageResult,
+        StagePlan,
+        _portfolio_nav_from_artifact,
+    )
+    from quant_system.research.experiments import (
+        FinalRunReceipt,
+        capture_final_run_receipt,
+    )
+
+    if not isinstance(stage_plan, StagePlan):
+        raise TypeError("return artifact stage_plan must be controlled")
+    if (
+        type(results) is not tuple
+        or len(results) != len(stage_plan.sessions)
+        or any(not isinstance(result, ControlledStageResult) for result in results)
+    ):
+        raise ValueError("return artifact requires every controlled stage result")
+    if not isinstance(final_run_receipt, FinalRunReceipt):
+        raise TypeError("return artifact requires a FinalRunReceipt")
+    final_run_receipt.__post_init__()
+    replayed_final = capture_final_run_receipt(stage_plan, results)
+    if replayed_final.receipt_sha256 != final_run_receipt.receipt_sha256:
+        raise ValueError("return artifact results do not match FinalRunReceipt")
+    observations: list[ReturnObservation] = []
+    for result in results:
+        result.verify_controlled_result()
+        if result.context.execution_session.session_date != result.stage_session:
+            raise ValueError("return artifact stage and execution sessions differ")
+        initial_nav = _portfolio_nav_from_artifact(result.initial_portfolio_json)
+        final_nav = _portfolio_nav_from_artifact(result.final_portfolio_json)
+        if abs(final_nav - float(result.final_nav)) > 1e-12:
+            raise ValueError("return artifact final NAV differs from portfolio state")
+        net_external_cashflow = 0.0
+        denominator = initial_nav + net_external_cashflow
+        if denominator <= 0:
+            raise ValueError("return artifact initial NAV must be positive")
+        observations.append(
+            ReturnObservation(
+                session=result.context.execution_session.session_date,
+                initial_nav=initial_nav,
+                final_nav=final_nav,
+                net_external_cashflow=net_external_cashflow,
+                net_return=final_nav / denominator - 1,
+                input_identity_sha256=result.input_identity_hash,
+                initial_portfolio_sha256=result.initial_portfolio_sha256,
+                final_portfolio_sha256=result.final_portfolio_sha256,
+                execution_receipt_sha256s=result.receipt_hashes,
+                transaction_costs=math.fsum(
+                    receipt.commission + receipt.sell_tax
+                    for receipt in result.receipts
+                ),
+            )
+        )
+    frozen = tuple(observations)
+    returns_sha = hashlib.sha256(
+        json.dumps(
+            tuple((item.session.isoformat(), item.net_return) for item in frozen),
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    values = {
+        "stage_plan_sha256": stage_plan.plan_sha256,
+        "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
+        "observations": frozen,
+        "returns_sha256": returns_sha,
+    }
+    provisional = object.__new__(ReturnArtifact)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    artifact = ReturnArtifact(
+        **values,
+        artifact_sha256=hashlib.sha256(
+            _return_artifact_payload(provisional)
+        ).hexdigest(),
+        _token=_RETURN_ARTIFACT_TOKEN,
+    )
+    artifact.verify()
+    return artifact
+
+
+@dataclass(frozen=True)
 class SplitEvaluation:
     plan_sha256: str
     method: EvaluationMethod
@@ -91,6 +273,8 @@ class SplitEvaluation:
     effective_n: float
     overlap_corrected: bool
     manifest_sha256: str
+    return_artifact_sha256: str
+    final_run_receipt_sha256: str
     returns_sha256: str
     estimator_sha256: str
     statistic: float
@@ -376,7 +560,7 @@ def evaluate_split(
     manifest: SplitManifest,
     *,
     plan: SplitEvaluationPlan,
-    returns_by_sample: Mapping[str, float],
+    return_artifact: ReturnArtifact,
 ) -> SplitEvaluation:
     if not isinstance(manifest, SplitManifest):
         raise TypeError("manifest must be a SplitManifest")
@@ -384,6 +568,9 @@ def evaluate_split(
     if not isinstance(plan, SplitEvaluationPlan):
         raise TypeError("plan must be a SplitEvaluationPlan")
     plan.__post_init__()
+    if not isinstance(return_artifact, ReturnArtifact):
+        raise TypeError("evaluate_split requires a controlled ReturnArtifact")
+    return_artifact.verify()
     if plan.manifest_sha256 != manifest.manifest_sha256:
         raise ValueError("split evaluation plan does not bind this manifest")
     selected = plan.selected_sample_ids
@@ -408,22 +595,25 @@ def evaluate_split(
     )
     if method == "non_overlapping" and overlapping:
         raise ValueError("non-overlapping evaluation selected overlapping labels")
-    if set(returns_by_sample) != set(selected):
-        raise ValueError("returns_by_sample must exactly cover preregistered samples")
-    frozen_returns = tuple(returns_by_sample[sample_id] for sample_id in selected)
-    if any(
-        not isinstance(value, (int, float))
-        or isinstance(value, bool)
-        or not math.isfinite(float(value))
-        for value in frozen_returns
-    ):
-        raise ValueError("returns must provide finite values")
-    by_time: dict[str, list[float]] = defaultdict(list)
-    for sample_id, value in zip(selected, frozen_returns, strict=True):
-        by_time[_time_text(by_id[sample_id].observed_at)].append(float(value))
+    selected_dates = {
+        (
+            sample.observed_at.date()
+            if isinstance(sample.observed_at, datetime)
+            else sample.observed_at
+        )
+        for sample in selected_samples
+    }
+    artifact_by_date = {
+        observation.session: observation.net_return
+        for observation in return_artifact.observations
+    }
+    if selected_dates != set(artifact_by_date):
+        raise ValueError(
+            "ReturnArtifact sessions must exactly cover preregistered sample dates"
+        )
     temporal_returns = tuple(
-        (observed_at, statistics.fmean(by_time[observed_at]))
-        for observed_at in sorted(by_time)
+        (session.isoformat(), artifact_by_date[session])
+        for session in sorted(selected_dates)
     )
     values = tuple(value for _, value in temporal_returns)
     minimum_n = {"non_overlapping": 5, "hac": 30, "block_bootstrap": 20}[method]
@@ -520,12 +710,7 @@ def evaluate_split(
         inference_distribution = "centered_moving_block_empirical"
     if standard_error <= 0 or not math.isfinite(standard_error):
         raise ValueError("evaluation standard error must be positive and finite")
-    returns_sha = hashlib.sha256(
-        json.dumps(
-            temporal_returns,
-            separators=(",", ":"),
-        ).encode()
-    ).hexdigest()
+    returns_sha = return_artifact.returns_sha256
     estimator_sha = hashlib.sha256(
         json.dumps(estimator, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
@@ -538,6 +723,8 @@ def evaluate_split(
         "effective_n": float(effective_n),
         "overlap_corrected": method in {"hac", "block_bootstrap"} or not overlapping,
         "manifest_sha256": manifest.manifest_sha256,
+        "return_artifact_sha256": return_artifact.artifact_sha256,
+        "final_run_receipt_sha256": return_artifact.final_run_receipt_sha256,
         "returns_sha256": returns_sha,
         "estimator_sha256": estimator_sha,
         "statistic": statistic,

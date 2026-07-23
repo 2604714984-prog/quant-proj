@@ -30,6 +30,7 @@ from quant_system.research.splits import (
     build_split_manifest,
     evaluate_split,
 )
+from tests.controlled_result_fixtures import controlled_return_fixture
 
 UTC = timezone.utc
 PREREGISTERED_AT = datetime(2026, 7, 22, tzinfo=UTC)
@@ -122,15 +123,15 @@ def _evaluation(
         method="non_overlapping",
         preregistered_at=PREREGISTERED_AT,
     )
+    return_artifact, final_run_receipt = controlled_return_fixture(
+        dict(zip(observed, returns, strict=True))
+    )
     evaluation = evaluate_split(
         manifest,
         plan=plan,
-        returns_by_sample={
-            sample.sample_id: value
-            for sample, value in zip(manifest.samples, returns, strict=True)
-        },
+        return_artifact=return_artifact,
     )
-    return plan, evaluation
+    return plan, evaluation, final_run_receipt
 
 
 def _preregister(
@@ -142,14 +143,14 @@ def _preregister(
     family_size: int = 1,
     definition_sha256: str = "a" * 64,
 ):
-    plan, _ = _evaluation(holdout_id=holdout_id)
+    plan, _, final_run_receipt = _evaluation(holdout_id=holdout_id)
     return preregister_trial(
         events,
         trial_id=trial_id,
         definition_sha256=definition_sha256,
         dataset_sha256="b" * 64,
         split_sha256=plan.manifest_sha256,
-        stage_plan_sha256="9" * 64,
+        stage_plan_sha256=final_run_receipt.stage_plan_sha256,
         split_evaluation_plan=plan,
         candidate_run_config_sha256="8" * 64,
         parameters={"holding_days": 5, "threshold": 0.2},
@@ -167,33 +168,10 @@ def _receipt(
     holdout_id: str = "holdout-001",
     returns=(0.10, 0.11, 0.09, 0.12, 0.08),
 ):
-    _, evaluation = _evaluation(holdout_id=holdout_id, returns=returns)
-    stage_plan = create_stage_plan((date(2026, 7, 1),))
-    executed = object.__new__(ControlledStageResult)
-    final_portfolio = Portfolio.us(100.0)
-    initial_json = event_loop_module._portfolio_state_json(final_portfolio)
-    final_json = event_loop_module._portfolio_state_json(final_portfolio)
-    for name, value in {
-        "stage_plan_sha256": stage_plan.plan_sha256,
-        "stage_index": 0,
-        "stage_session": stage_plan.sessions[0],
-        "prior_stage_hash": "0" * 64,
-        "stage_hash": "d" * 64,
-        "final_nav": 100.0,
-        "portfolio": final_portfolio,
-        "initial_portfolio_json": initial_json,
-        "initial_portfolio_sha256": event_loop_module.hashlib.sha256(
-            initial_json.encode()
-        ).hexdigest(),
-        "final_portfolio_json": final_json,
-        "final_portfolio_sha256": event_loop_module.hashlib.sha256(
-            final_json.encode()
-        ).hexdigest(),
-        "interface_grade": "CONTROLLED_STAGE",
-        "_token": event_loop_module._CONTROLLED_STAGE_TOKEN,
-    }.items():
-        object.__setattr__(executed, name, value)
-    final_run_receipt = capture_final_run_receipt(stage_plan, (executed,))
+    _, evaluation, final_run_receipt = _evaluation(
+        holdout_id=holdout_id,
+        returns=returns,
+    )
     return capture_holdout_result(
         trial_id=trial_id,
         holdout_id=holdout_id,
@@ -201,6 +179,22 @@ def _receipt(
         split_evaluation=evaluation,
         holdout_access_at=datetime(2026, 7, 23, tzinfo=UTC),
     )
+
+
+def test_holdout_receipt_rejects_returns_from_another_final_run() -> None:
+    _, evaluation, _ = _evaluation()
+    _, _, other_final_run = _evaluation(
+        returns=(0.02, 0.03, 0.01, 0.04, 0.02),
+    )
+
+    with pytest.raises(ValueError, match="derive from this FinalRunReceipt"):
+        capture_holdout_result(
+            trial_id="trial-001",
+            holdout_id="holdout-001",
+            final_run_receipt=other_final_run,
+            split_evaluation=evaluation,
+            holdout_access_at=datetime(2026, 7, 23, tzinfo=UTC),
+        )
 
 
 def test_holdout_family_cannot_extend_after_access(tmp_path) -> None:

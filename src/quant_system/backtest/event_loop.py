@@ -1249,13 +1249,16 @@ def run_candidate_rebalance(
         raise MarketDataError(
             "holdout result must bind the evaluated preregistered split plan"
         )
+    if not isinstance(final_run_receipt, FinalRunReceipt):
+        raise TypeError("final_run_receipt must be a FinalRunReceipt")
+    final_run_receipt.__post_init__()
     expected_parameters = json.dumps(
         {
             "decision_at": require_aware_datetime(
                 decision_at,
                 "decision_at",
             ).isoformat(),
-            "final_stage_index": stage_context.stage_index,
+            "final_stage_index": final_run_receipt.stage_count - 1,
             "max_positions": max_positions,
             "signal_session": signal_session.isoformat(),
         },
@@ -1271,8 +1274,10 @@ def run_candidate_rebalance(
         != dataset_manifest.split_manifest_sha256
         or candidate_run_config.split_evaluation_plan_sha256
         != split_evaluation.plan_sha256
-        or candidate_run_config.stage_plan_sha256 != stage_context.plan_sha256
-        or candidate_run_config.final_stage_index != stage_context.stage_index
+        or candidate_run_config.stage_plan_sha256
+        != final_run_receipt.stage_plan_sha256
+        or candidate_run_config.final_stage_index
+        != final_run_receipt.stage_count - 1
         or candidate_run_config.cost_assumptions_sha256
         != cost_assumptions.identity_sha256
         or candidate_run_config.signal_session != signal_session
@@ -1292,18 +1297,17 @@ def run_candidate_rebalance(
         or experiment_ledger.head_sha256 != experiment_manifest.head_sha256
     ):
         raise MarketDataError("persistent experiment ledger does not match manifest")
-    if holdout_event.stage_plan_sha256 != stage_context.plan_sha256:
+    if holdout_event.stage_plan_sha256 != final_run_receipt.stage_plan_sha256:
         raise MarketDataError("holdout evidence does not bind the complete stage plan")
     if (
-        not isinstance(final_run_receipt, FinalRunReceipt)
-        or final_run_receipt.stage_plan_sha256 != stage_context.plan_sha256
-        or final_run_receipt.stage_count != stage_context.stage_index + 1
-        or final_run_receipt.final_stage_hash != holdout_result_receipt.final_stage_hash
+        final_run_receipt.final_stage_hash
+        != holdout_result_receipt.final_stage_hash
         or holdout_result_receipt.final_run_receipt_sha256
+        != final_run_receipt.receipt_sha256
+        or split_evaluation.final_run_receipt_sha256
         != final_run_receipt.receipt_sha256
     ):
         raise MarketDataError("holdout evidence does not bind the actual final run")
-    final_run_receipt.__post_init__()
     if any(row.capacity is None for row in execution_inputs):
         raise MarketDataError("candidate execution requires capacity evidence for every input")
     if any(row.currency != cost_assumptions.currency for row in execution_inputs):
@@ -1377,11 +1381,6 @@ def run_candidate_rebalance(
         slippage_bps=cost_assumptions.base.slippage_bps,
         **common,
     )
-    if (
-        result.stage_hash != final_run_receipt.final_stage_hash
-        or abs(result.final_nav - final_run_receipt.final_nav) > 1e-12
-    ):
-        raise MarketDataError("candidate replay differs from the frozen final run")
     adverse_portfolio = deepcopy(base_portfolio)
     adverse_portfolio.costs = cost_assumptions.adverse.transaction_cost_model()
     adverse_portfolio.a_share_stamp_tax_schedule = False

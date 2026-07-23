@@ -33,7 +33,6 @@ from quant_system.backtest import (
     load_candidate_run_bundle,
     next_stage,
     run_candidate_rebalance,
-    run_controlled_stage,
     run_static_rebalance,
     serialize_candidate_run_bundle,
 )
@@ -66,7 +65,6 @@ from quant_system.markets.us import CorporateActionValuationError
 from quant_system.research.identity import build_dataset_manifest
 from quant_system.research.experiments import (
     capture_family_anchor,
-    capture_final_run_receipt,
     capture_holdout_result,
     freeze_experiment_manifest,
     persist_experiment_ledger,
@@ -78,6 +76,7 @@ from quant_system.research.splits import (
     build_split_manifest,
     evaluate_split,
 )
+from tests.controlled_result_fixtures import controlled_return_fixture
 
 UTC = timezone.utc
 DEFINITION_SHA = hashlib.sha256(b"fixture-strategy-definition-v1").hexdigest()
@@ -2870,10 +2869,6 @@ def _run_candidate_rebalance(
             **kwargs,
         )
     decision_at = kwargs["decision_at"]
-    evidence_stage_plan_sha256 = kwargs.pop(
-        "evidence_stage_plan_sha256",
-        kwargs["stage_context"].plan_sha256,
-    )
     split_manifest = _candidate_split_manifest(
         kwargs["dataset_manifest"].dates[0],
     )
@@ -2886,52 +2881,41 @@ def _run_candidate_rebalance(
         method="non_overlapping",
         preregistered_at=decision_at - timedelta(days=1),
     )
-    split_evaluation = evaluate_split(
-        split_manifest,
-        plan=split_plan,
-        returns_by_sample={
-            sample.sample_id: value
-            for sample, value in zip(
-                split_manifest.samples,
+    split_dates = tuple(
+        sorted(
+            {
+                sample.observed_at
+                for sample in split_manifest.samples
+                if type(sample.observed_at) is date
+            }
+        )
+    )
+    return_artifact, final_run_receipt = controlled_return_fixture(
+        dict(
+            zip(
+                split_dates,
                 (0.01, 0.02, 0.015, 0.025, 0.018),
                 strict=True,
             )
-        },
+        )
+    )
+    split_evaluation = evaluate_split(
+        split_manifest,
+        plan=split_plan,
+        return_artifact=return_artifact,
+    )
+    evidence_stage_plan_sha256 = kwargs.pop(
+        "evidence_stage_plan_sha256",
+        final_run_receipt.stage_plan_sha256,
     )
     trial_id = f"trial-{artifact.artifact_sha256[:12]}"
-    fixture_stage_plan = create_stage_plan((kwargs["stage_context"].stage_session,))
-    if fixture_stage_plan.plan_sha256 != kwargs["stage_context"].plan_sha256:
-        raise ValueError("candidate fixture only supports a complete single-stage plan")
-    executed_portfolio = deepcopy(portfolio)
-    executed_portfolio.costs = kwargs[
-        "cost_assumptions"
-    ].base.transaction_cost_model()
-    executed_portfolio.a_share_stamp_tax_schedule = False
-    executed_result = run_controlled_stage(
-        executed_portfolio,
-        calendar,
-        signal_session=kwargs["signal_session"],
-        decision_at=decision_at,
-        execution_inputs=kwargs["execution_inputs"],
-        execution_calendar_revision=kwargs.get("execution_calendar_revision"),
-        universe_materialization=kwargs["universe_materialization"],
-        decision_artifact=artifact,
-        capacity_policy=kwargs["cost_assumptions"].capacity_policy,
-        max_positions=kwargs.get("max_positions"),
-        stage_context=kwargs["stage_context"],
-        slippage_bps=kwargs["cost_assumptions"].base.slippage_bps,
-    )
-    final_run_receipt = capture_final_run_receipt(
-        fixture_stage_plan,
-        (executed_result,),
-    )
     candidate_run_config = capture_candidate_run_config(
         decision_artifact_sha256=artifact.artifact_sha256,
         dataset_identity_sha256=kwargs["dataset_manifest"].identity_sha256,
         split_identity_sha256=kwargs["dataset_manifest"].split_manifest_sha256,
         split_evaluation_plan_sha256=split_plan.plan_sha256,
         stage_plan_sha256=evidence_stage_plan_sha256,
-        final_stage_index=kwargs["stage_context"].stage_index,
+        final_stage_index=final_run_receipt.stage_count - 1,
         cost_assumptions_sha256=kwargs["cost_assumptions"].identity_sha256,
         signal_session=kwargs["signal_session"],
         decision_at=decision_at,
@@ -3558,7 +3542,6 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
     assert base.interface_grade == "GENERIC_CAPTURE_EXPERIMENT"
     assert base.strategy_candidate_available is False
     assert observed_cost_models == [
-        (False, 0.0005),
         (False, 0.0005),
         (False, 0.001),
     ]

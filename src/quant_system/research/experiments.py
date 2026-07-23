@@ -198,6 +198,7 @@ class HoldoutResultReceipt:
     final_run_receipt_sha256: str
     split_evaluation_sha256: str
     split_evaluation_plan_sha256: str
+    return_artifact_sha256: str
     returns_sha256: str
     raw_pvalue: float
     holdout_access_at: datetime
@@ -217,6 +218,7 @@ class HoldoutResultReceipt:
             "final_run_receipt_sha256",
             "split_evaluation_sha256",
             "split_evaluation_plan_sha256",
+            "return_artifact_sha256",
             "returns_sha256",
             "result_sha256",
         ):
@@ -227,6 +229,7 @@ class HoldoutResultReceipt:
                 {
                     "final_stage_hash": self.final_stage_hash,
                     "final_run_receipt_sha256": self.final_run_receipt_sha256,
+                    "return_artifact_sha256": self.return_artifact_sha256,
                     "returns_sha256": self.returns_sha256,
                     "split_evaluation_sha256": self.split_evaluation_sha256,
                     "trial_id": self.trial_id,
@@ -447,6 +450,13 @@ def capture_holdout_result(
     if not isinstance(final_run_receipt, FinalRunReceipt):
         raise TypeError("final_run_receipt must be a FinalRunReceipt")
     final_run_receipt.__post_init__()
+    if (
+        split_evaluation.final_run_receipt_sha256
+        != final_run_receipt.receipt_sha256
+    ):
+        raise ValueError(
+            "split evaluation returns must derive from this FinalRunReceipt"
+        )
     final_stage_hash = final_run_receipt.final_stage_hash
     raw_pvalue = split_evaluation.raw_pvalue
     result_sha = hashlib.sha256(
@@ -454,6 +464,7 @@ def capture_holdout_result(
             {
                 "final_stage_hash": _sha(final_stage_hash, "final_stage_hash"),
                 "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
+                "return_artifact_sha256": split_evaluation.return_artifact_sha256,
                 "returns_sha256": split_evaluation.returns_sha256,
                 "split_evaluation_sha256": split_evaluation.evaluation_sha256,
                 "trial_id": _text(trial_id, "trial_id"),
@@ -469,6 +480,7 @@ def capture_holdout_result(
         "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
         "split_evaluation_sha256": split_evaluation.evaluation_sha256,
         "split_evaluation_plan_sha256": split_evaluation.plan_sha256,
+        "return_artifact_sha256": split_evaluation.return_artifact_sha256,
         "returns_sha256": split_evaluation.returns_sha256,
         "raw_pvalue": raw_pvalue,
         "holdout_access_at": _timestamp(holdout_access_at, "holdout_access_at"),

@@ -23,6 +23,7 @@ from quant_system.research.splits import (
     walk_forward_masks,
     serialize_split_manifest,
 )
+from tests.controlled_result_fixtures import controlled_return_fixture
 
 
 def test_purge_removes_cross_boundary_labels_and_post_test_embargo() -> None:
@@ -133,8 +134,12 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
     )
 
     selected = tuple(sample.sample_id for sample in manifest.samples)
-    returns = tuple((day % 7 - 2) / 100 for day in range(35))
-    returns_by_sample = dict(zip(selected, returns, strict=True))
+    return_artifact, _ = controlled_return_fixture(
+        {
+            observation: (day % 7 - 2) / 100
+            for day, observation in enumerate(observations)
+        }
+    )
     assert len(manifest.samples) == 35
     assert len({sample.sample_id for sample in manifest.samples}) == 35
     assert len({sample.overlap_group for sample in manifest.samples}) < 35
@@ -148,7 +153,7 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
                 method="non_overlapping",
                 preregistered_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
             ),
-            returns_by_sample=returns_by_sample,
+            return_artifact=return_artifact,
         )
     hac_plan = build_split_evaluation_plan(
         manifest,
@@ -161,7 +166,7 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
     corrected = evaluate_split(
         manifest,
         plan=hac_plan,
-        returns_by_sample=returns_by_sample,
+        return_artifact=return_artifact,
     )
     require_split_evaluation_for_candidate(corrected)
     assert corrected.nominal_n == 35
@@ -171,6 +176,20 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
     assert len(corrected.returns_sha256) == 64
     assert len(corrected.estimator_sha256) == 64
     assert corrected.inference_distribution == "hac_asymptotic_normal_min_n_30"
+    tampered_observation = replace(
+        return_artifact.observations[0],
+        net_return=return_artifact.observations[0].net_return + 0.5,
+    )
+    tampered_artifact = replace(
+        return_artifact,
+        observations=(tampered_observation, *return_artifact.observations[1:]),
+    )
+    with pytest.raises(ValueError, match="not derived from NAV"):
+        evaluate_split(
+            manifest,
+            plan=hac_plan,
+            return_artifact=tampered_artifact,
+        )
 
     bootstrapped = evaluate_split(
         manifest,
@@ -183,7 +202,7 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
             bootstrap_replicates=250,
             preregistered_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
         ),
-        returns_by_sample=returns_by_sample,
+        return_artifact=return_artifact,
     )
     require_split_evaluation_for_candidate(bootstrapped)
     assert bootstrapped.block_length == 3
@@ -211,7 +230,7 @@ def test_same_day_multi_security_panel_has_distinct_stable_sample_ids() -> None:
     assert len({sample.overlap_group for sample in manifest.samples}) == 1
 
 
-def test_daily_portfolio_unit_aggregates_panel_and_rejects_cross_fold_or_small_n() -> None:
+def test_daily_portfolio_unit_binds_nav_returns_and_rejects_cross_fold_or_small_n() -> None:
     days = tuple(date(2026, 2, 1) + timedelta(days=index) for index in range(5))
     entities = tuple(entity for day in days for entity in ("AAA", "BBB"))
     observed = tuple(day for day in days for _ in range(2))
@@ -228,14 +247,14 @@ def test_daily_portfolio_unit_aggregates_panel_and_rejects_cross_fold_or_small_n
         method="non_overlapping",
         preregistered_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
     )
-    returns = {
-        sample.sample_id: (
-            0.01 * (days.index(sample.observed_at) + 1)
-            + (0.0 if sample.entity_id == "AAA" else 0.01)
-        )
-        for sample in manifest.samples
-    }
-    evaluation = evaluate_split(manifest, plan=plan, returns_by_sample=returns)
+    return_artifact, _ = controlled_return_fixture(
+        {day: 0.01 * (index + 1) for index, day in enumerate(days)}
+    )
+    evaluation = evaluate_split(
+        manifest,
+        plan=plan,
+        return_artifact=return_artifact,
+    )
     assert evaluation.evaluation_unit == "daily_portfolio"
     assert evaluation.nominal_n == 5
     assert evaluation.inference_distribution == "student_t_df_4"
@@ -259,7 +278,9 @@ def test_daily_portfolio_unit_aggregates_panel_and_rejects_cross_fold_or_small_n
                 method="non_overlapping",
                 preregistered_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
             ),
-            returns_by_sample={sample.sample_id: 0.1 for sample in too_small.samples},
+            return_artifact=controlled_return_fixture(
+                {day: 0.1 for day in days[:2]}
+            )[0],
         )
 
     mixed = build_split_manifest(
@@ -278,7 +299,9 @@ def test_daily_portfolio_unit_aggregates_panel_and_rejects_cross_fold_or_small_n
                 method="non_overlapping",
                 preregistered_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
             ),
-            returns_by_sample={sample.sample_id: 0.1 for sample in mixed.samples},
+            return_artifact=controlled_return_fixture(
+                {day: 0.1 for day in days}
+            )[0],
         )
 
 
