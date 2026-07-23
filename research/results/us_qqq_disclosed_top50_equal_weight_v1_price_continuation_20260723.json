@@ -1,0 +1,56 @@
+{
+  "central_database": {
+    "attempted": false,
+    "transaction_committed": false
+  },
+  "contract": {
+    "path": "/home/rongyu/workspace/.wt-us-qqq-disclosed-top50-equal-weight-v1/research/definitions/us_qqq_disclosed_top50_equal_weight_v1_price_continuation.json",
+    "sha256": "ddd787e5f61bc44c02b7c028ac2896edee81b94ce60599e0c64d7d69895df77b"
+  },
+  "counts": {
+    "combined_price_row_count": 0,
+    "combined_symbol_count_including_qqq": 90
+  },
+  "current_status": "blocked-on-data",
+  "date": "2026-07-23",
+  "entry_coverage": {},
+  "execution_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1_PRICE_CONTINUATION",
+  "failure": "PriceContinuationError: invalid Stooq schema: ATVI",
+  "limitations": [
+    "Stooq gap rows use close without inferred dividend adjustment.",
+    "A security unavailable at formation is excluded from that formation."
+  ],
+  "market": "US",
+  "next_action": "Stop this research identity.",
+  "normalized_artifact": {
+    "path": "/home/rongyu/workspace/quant-data/staging/us_qqq_disclosed_top50_equal_weight_v1/price_continuation/normalized/daily_rows.jsonl",
+    "sha256": null
+  },
+  "phase": "PRICE_INPUT_CONTINUATION",
+  "preserved_failed_route": {
+    "path": "/home/rongyu/workspace/.wt-us-qqq-disclosed-top50-equal-weight-v1/research/results/us_qqq_disclosed_top50_equal_weight_v1_prices_20260723.json",
+    "sha256": "5f3c7e2a593bd57f201426b221c3a998f37acd398e2b9381d331a75bce4a61a1"
+  },
+  "quality_gates": {
+    "at_least_49_positions_each": false,
+    "central_write_committed": false,
+    "entry_coverage_at_least_98_percent": false,
+    "failed_route_preserved": true,
+    "strategy_returns_accessed": false
+  },
+  "research_boundaries": {
+    "broker_order_paper_live_auto_enabled": false,
+    "portfolio_constructed": false,
+    "strategy_candidate_available": false
+  },
+  "research_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1",
+  "result": "INPUT_BLOCKED",
+  "stooq_gap_receipts_without_symbols": [
+    {
+      "byte_count": 796,
+      "sha256": "780483f1a6b490b1a0e367145d5b0dac10a08c9f9c9c4c08516e3ee4529cc2a9",
+      "success": true,
+      "symbol_hash": "2ad1610924ee19399c631c2451da806dc30941b84a9cf062e3eab764fc66db29"
+    }
+  ]
+}

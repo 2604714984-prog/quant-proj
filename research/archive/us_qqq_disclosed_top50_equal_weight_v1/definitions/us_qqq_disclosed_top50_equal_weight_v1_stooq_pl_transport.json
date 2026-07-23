@@ -1,0 +1,19 @@
+{
+  "research_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1",
+  "execution_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1_STOOQ_PL_TRANSPORT",
+  "frozen_at": "2026-07-23",
+  "phase": "PRICE_INPUT_TRANSPORT_CORRECTION",
+  "outcome_access": false,
+  "strategy_candidate_available": false,
+  "preserved_failed_route": {
+    "path": "research/results/us_qqq_disclosed_top50_equal_weight_v1_price_continuation_20260723.json",
+    "sha256": "c7a4c240e5f016b423ae9d77ed9bc8316350fba69b09c338e9c61c1b5274659a"
+  },
+  "only_change": "Replace https://stooq.com/q/d/l/ with https://stooq.pl/q/d/l/ for ATVI, CELG, and WBA.",
+  "automatic_retries": 0,
+  "terminal_outcomes": [
+    "PRICE_INPUTS_QUALIFIED_PREREGISTRATION_AUTHORIZED",
+    "INPUT_BLOCKED"
+  ],
+  "stop_rule": "Any non-CSV response or formation below 49 priced positions closes the research identity."
+}

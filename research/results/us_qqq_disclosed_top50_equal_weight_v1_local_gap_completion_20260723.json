@@ -1,0 +1,246 @@
+{
+  "central_database": {
+    "database_path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "duplicate_symbol_date_count": 0,
+    "inserted": true,
+    "row_count": 170317,
+    "snapshot_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1_YAHOO_SINA_CACHE_20260723",
+    "symbol_count": 92,
+    "table": "us_equity_research.us_daily_total_return_research",
+    "transaction_committed": true
+  },
+  "contract": {
+    "path": "/home/rongyu/workspace/.wt-us-qqq-disclosed-top50-equal-weight-v1/research/definitions/us_qqq_disclosed_top50_equal_weight_v1_local_gap_completion.json",
+    "sha256": "bf2c41cfbf1cd7baa1baad918a7cb93ecc4a410166d8623d1385167d889040b7"
+  },
+  "counts": {
+    "combined_price_row_count": 170317,
+    "combined_symbol_count_including_qqq": 92
+  },
+  "current_status": "current",
+  "date": "2026-07-23",
+  "entry_coverage": {
+    "coverage": 0.9992592592592593,
+    "formation_count": 27,
+    "minimum_priced_positions": 49,
+    "per_formation_without_security_names": [
+      {
+        "accepted_at": "2019-11-29T22:32:05+08:00",
+        "execution_date": "2019-11-29",
+        "position_count": 50,
+        "priced_position_count": 49,
+        "report_date": "2019-09-30"
+      },
+      {
+        "accepted_at": "2020-02-29T05:45:44+08:00",
+        "execution_date": "2020-03-02",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2019-12-31"
+      },
+      {
+        "accepted_at": "2020-06-02T00:19:59+08:00",
+        "execution_date": "2020-06-01",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2020-03-31"
+      },
+      {
+        "accepted_at": "2020-08-27T05:24:53+08:00",
+        "execution_date": "2020-08-27",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2020-06-30"
+      },
+      {
+        "accepted_at": "2020-11-30T21:50:44+08:00",
+        "execution_date": "2020-11-30",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2020-09-30"
+      },
+      {
+        "accepted_at": "2021-02-27T05:07:28+08:00",
+        "execution_date": "2021-03-01",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2020-12-31"
+      },
+      {
+        "accepted_at": "2021-05-27T08:14:01+08:00",
+        "execution_date": "2021-05-27",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2021-03-31"
+      },
+      {
+        "accepted_at": "2021-08-28T04:50:52+08:00",
+        "execution_date": "2021-08-30",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2021-06-30"
+      },
+      {
+        "accepted_at": "2021-11-23T09:10:39+08:00",
+        "execution_date": "2021-11-23",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2021-09-30"
+      },
+      {
+        "accepted_at": "2022-02-26T01:04:48+08:00",
+        "execution_date": "2022-02-25",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2021-12-31"
+      },
+      {
+        "accepted_at": "2022-05-24T23:51:16+08:00",
+        "execution_date": "2022-05-24",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2022-03-31"
+      },
+      {
+        "accepted_at": "2022-08-22T20:54:54+08:00",
+        "execution_date": "2022-08-22",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2022-06-30"
+      },
+      {
+        "accepted_at": "2022-11-26T03:16:57+08:00",
+        "execution_date": "2022-11-25",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2022-09-30"
+      },
+      {
+        "accepted_at": "2023-03-01T05:46:36+08:00",
+        "execution_date": "2023-03-01",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2022-12-31"
+      },
+      {
+        "accepted_at": "2023-05-30T21:54:34+08:00",
+        "execution_date": "2023-05-30",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2023-03-31"
+      },
+      {
+        "accepted_at": "2023-08-29T23:44:15+08:00",
+        "execution_date": "2023-08-29",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2023-06-30"
+      },
+      {
+        "accepted_at": "2023-11-29T01:53:52+08:00",
+        "execution_date": "2023-11-28",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2023-09-30"
+      },
+      {
+        "accepted_at": "2024-03-01T05:58:50+08:00",
+        "execution_date": "2024-03-01",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2023-12-31"
+      },
+      {
+        "accepted_at": "2024-05-30T05:18:05+08:00",
+        "execution_date": "2024-05-30",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2024-03-31"
+      },
+      {
+        "accepted_at": "2024-08-28T21:40:10+08:00",
+        "execution_date": "2024-08-28",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2024-06-30"
+      },
+      {
+        "accepted_at": "2024-11-28T04:19:19+08:00",
+        "execution_date": "2024-11-27",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2024-09-30"
+      },
+      {
+        "accepted_at": "2025-02-27T00:07:57+08:00",
+        "execution_date": "2025-02-26",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2024-12-31"
+      },
+      {
+        "accepted_at": "2025-05-30T00:37:05+08:00",
+        "execution_date": "2025-05-29",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2025-03-31"
+      },
+      {
+        "accepted_at": "2025-08-29T00:27:24+08:00",
+        "execution_date": "2025-08-28",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2025-06-30"
+      },
+      {
+        "accepted_at": "2025-11-19T20:39:47+08:00",
+        "execution_date": "2025-11-19",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2025-09-30"
+      },
+      {
+        "accepted_at": "2026-02-28T01:04:18+08:00",
+        "execution_date": "2026-02-27",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2025-12-31"
+      },
+      {
+        "accepted_at": "2026-05-28T18:53:06+08:00",
+        "execution_date": "2026-05-28",
+        "position_count": 50,
+        "priced_position_count": 50,
+        "report_date": "2026-03-31"
+      }
+    ],
+    "position_total": 1350,
+    "priced_position_total": 1349
+  },
+  "execution_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1_LOCAL_PRICE_GAP_COMPLETION",
+  "failure": null,
+  "limitations": [
+    "ATVI and WBA local Sina cache rows have no inferred dividend adjustment.",
+    "CELG is unavailable at the first post-disclosure formation and excluded."
+  ],
+  "market": "US",
+  "next_action": "Freeze and execute the one-use equal-weight-vs-QQQ validation.",
+  "normalized_artifact": {
+    "path": "/home/rongyu/workspace/quant-data/staging/us_qqq_disclosed_top50_equal_weight_v1/local_gap_completion/normalized/daily_rows.jsonl",
+    "sha256": "4fe069ba74ab5bb9236625a7924a65cac164348f708d657b8deaf2c91468c1b2"
+  },
+  "phase": "LOCAL_PRICE_GAP_COMPLETION",
+  "quality_gates": {
+    "at_least_49_positions_each": true,
+    "central_write_committed": true,
+    "entry_coverage_at_least_98_percent": true,
+    "strategy_returns_accessed": false
+  },
+  "research_boundaries": {
+    "broker_order_paper_live_auto_enabled": false,
+    "portfolio_constructed": false,
+    "strategy_candidate_available": false
+  },
+  "research_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1",
+  "result": "PRICE_INPUTS_QUALIFIED_PREREGISTRATION_AUTHORIZED"
+}

@@ -1,0 +1,36 @@
+{
+  "research_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1",
+  "execution_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1_PRICE_CONTINUATION",
+  "frozen_at": "2026-07-23",
+  "phase": "PRICE_INPUT_CONTINUATION",
+  "outcome_access": false,
+  "strategy_candidate_available": false,
+  "preserved_failed_route": {
+    "path": "research/results/us_qqq_disclosed_top50_equal_weight_v1_prices_20260723.json",
+    "sha256": "5f3c7e2a593bd57f201426b221c3a998f37acd398e2b9381d331a75bce4a61a1",
+    "failed_symbols": [
+      "ATVI",
+      "CELG",
+      "WBA"
+    ]
+  },
+  "continuation": {
+    "source": "Stooq Poland daily CSV",
+    "fixed_symbols": [
+      "ATVI",
+      "CELG",
+      "WBA"
+    ],
+    "automatic_retries": 0,
+    "adjustment": "Use Stooq close as adjusted close; no dividend adjustment is inferred.",
+    "quality_label": "RESEARCH_SECONDARY_STOOQ_CLOSE_NO_DIVIDEND_ADJUSTMENT",
+    "minimum_total_entry_coverage": 0.98,
+    "minimum_priced_positions_per_formation": 49
+  },
+  "central_snapshot_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1_YAHOO_STOOQ_20260723",
+  "terminal_outcomes": [
+    "PRICE_INPUTS_QUALIFIED_PREREGISTRATION_AUTHORIZED",
+    "INPUT_BLOCKED"
+  ],
+  "stop_rule": "If the combined frozen sources still leave any formation below 49 priced positions, stop without strategy outcomes."
+}
