@@ -1,0 +1,148 @@
+{
+  "schema_version": "c3-policy-last-fomc-move-prereg-v1",
+  "research_id": "C3_POLICY_LAST_FOMC_MOVE_DIRECTION_V1",
+  "mechanism_id": "C3_POLICY_LAST_FOMC_MOVE_DIRECTION",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE3",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "program_multiplicity": {
+    "cycle3_familywise_alpha": 0.0125,
+    "frozen_order": [
+      "C3_POLICY_LAST_FOMC_MOVE_DIRECTION",
+      "C3_REAL_YIELD_IMPULSE",
+      "M119-10_US_TREASURY_AUCTION_INVENTORY"
+    ],
+    "allocations": [
+      0.00625,
+      0.00375,
+      0.0025
+    ],
+    "current_program_alpha": 0.00625,
+    "alpha_recycling": false,
+    "cycle1_cycle2_cycle3_union_bound": 0.0875
+  },
+  "economic_hypothesis": {
+    "signal": "direction of the most recent nonzero Federal Reserve target upper-bound change known before the monthly decision",
+    "easing_action": "hold SPY",
+    "tightening_action": "hold non-interest-bearing cash",
+    "variant_count": 1,
+    "parameter_grid": false
+  },
+  "portfolio": {
+    "instrument": "SPY",
+    "account_currency": "USD",
+    "initial_capital": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "benchmark": "buy-and-hold SPY under identical execution and corporate-action accounting"
+  },
+  "timing": {
+    "decision": "09:00 America/New_York on the first accepted XNYS session of each month",
+    "execution": "the same accepted session open",
+    "decision_price_session": "the preceding accepted signal session",
+    "decision_price_effective_at": "the exact accepted XNYS close_at for decision_price_session",
+    "decision_price_source_cutoff": "decision_price_source.available_at must be no later than decision_at",
+    "state_cutoff": "strictly before execution open",
+    "terminal_exit": "the final frozen boundary"
+  },
+  "runtime_bundle_contract": {
+    "execution_fields": [
+      "decision_price",
+      "decision_price_session",
+      "decision_price_effective_at",
+      "decision_price_source",
+      "decision_price_basis"
+    ],
+    "decision_price_rule": "finite positive raw close for the exact preceding accepted signal session",
+    "decision_price_basis_rule": "raw_pre_action_per_old_share exactly when an ordinary execution-day corporate action exists; otherwise raw_execution_units",
+    "calendar_rule": "every reconstruction and epoch identity and row is XNYS in America/New_York; duplicate epoch calendar bytes are rejected",
+    "official_session_cross_binding": "each selected runtime execution-session row must equal its accepted official policy-state session row identity"
+  },
+  "state_support": {
+    "development_boundaries": 34,
+    "validation_boundaries": 30,
+    "holdout_boundaries": 36,
+    "gates_per_split": [
+      "easing count at least 4",
+      "tightening count at least 4",
+      "at least one adjacent direction change"
+    ]
+  },
+  "validation": {
+    "boundaries": 30,
+    "intervals": 29,
+    "gates": [
+      "strategy terminal net wealth strictly above SPY",
+      "arithmetic mean paired active return strictly positive",
+      "strategy maximum drawdown no worse than SPY"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout path remains unopened and the lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "boundaries": 36,
+    "intervals": 35,
+    "gates": [
+      "strategy terminal net wealth strictly above SPY",
+      "strategy maximum drawdown no worse than SPY",
+      "exactly 35 paired intervals",
+      "centered-null one-sided p-value at most 0.00625",
+      "uncentered type-7 0.00625 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap",
+      "block_length_months": 3,
+      "resamples": 10000,
+      "rng": "Python random.Random",
+      "seed": 1193101,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(10000 + 1)",
+      "quantile": "linear type-7"
+    }
+  },
+  "input_identities": {
+    "official_policy_state_input_path": "/home/rongyu/workspace/quant-data/staging/us_fomc_policy_state_v2/fomc_policy_direction_input_v2.json",
+    "official_policy_state_input_sha256": "153b114ee2df45a232ef7986cc70802f3b8169eb698aa2761d1ade29c06cbbc3",
+    "accepted_xnys_calendar_sha256": "08b1722c675012d89e0b4f92ed51f51160adbd1d54961c093c52101c067fc553",
+    "validation_bundle_path": "/home/rongyu/workspace/quant-data/staging/us_fomc_policy_state_v2/spy_validation_runtime_bundle_v2.json",
+    "validation_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "holdout_bundle_path": "/home/rongyu/workspace/quant-data/staging/us_fomc_policy_state_v2/spy_holdout_runtime_bundle_v2.json",
+    "holdout_bundle_sha256": "ff4b02932079ad013da05dbffcf2dd6e25af8592450e5b09e4a2f00d9f61f8d4",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "adapter_sha256": "54f8adf6f36a82ae34c615b1b63435ef763be8b3fb4c191e68406749072af2fa",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
+  },
+  "one_use": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c3_policy_last_fomc_move_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c3_policy_last_fomc_move_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c3_policy_last_fomc_move_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c3_policy_last_fomc_move_v1_holdout/result.json",
+    "claim_before_runtime_bundle_capture": true,
+    "claim_and_result_mode": "0600",
+    "rerun_after_any_claim": false
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_EXTERNAL_REVIEW",
+    "input_error_after_claim": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "strategy_candidate_available": false
+  },
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_read_or_write": false,
+    "prospective_forward_access": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
