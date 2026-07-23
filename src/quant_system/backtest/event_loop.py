@@ -335,6 +335,164 @@ class ExecutionReceipt:
 
 
 @dataclass(frozen=True)
+class CandidateRunBundle:
+    decision_artifact_sha256: str
+    dataset_identity_sha256: str
+    split_evaluation_sha256: str
+    experiment_manifest_sha256: str
+    candidate_run_config_sha256: str
+    cost_assumptions_sha256: str
+    universe_materialization_sha256: str
+    source_receipt_sha256s: tuple[str, ...]
+    stage_plan_sha256: str
+    stage_index: int
+    stage_session: date
+    prior_stage_hash: str
+    base_input_identity_hash: str
+    base_receipt_payloads: tuple[str, ...]
+    base_receipt_hashes: tuple[str, ...]
+    base_stage_hash: str
+    adverse_input_identity_hash: str
+    adverse_receipt_payloads: tuple[str, ...]
+    adverse_stage_hash: str
+    bundle_sha256: str
+
+    def verify(self) -> None:
+        for name in (
+            "decision_artifact_sha256",
+            "dataset_identity_sha256",
+            "split_evaluation_sha256",
+            "experiment_manifest_sha256",
+            "candidate_run_config_sha256",
+            "cost_assumptions_sha256",
+            "universe_materialization_sha256",
+            "stage_plan_sha256",
+            "prior_stage_hash",
+            "base_input_identity_hash",
+            "base_stage_hash",
+            "adverse_input_identity_hash",
+            "adverse_stage_hash",
+            "bundle_sha256",
+        ):
+            _sha256(getattr(self, name), name)
+        if (
+            not self.source_receipt_sha256s
+            or self.source_receipt_sha256s
+            != tuple(sorted(set(self.source_receipt_sha256s)))
+        ):
+            raise ValueError("run bundle source receipts must be sorted and unique")
+        for digest in self.source_receipt_sha256s:
+            _sha256(digest, "source_receipt_sha256")
+        if type(self.stage_index) is not int or self.stage_index < 0:
+            raise ValueError("run bundle stage_index must be nonnegative")
+        if type(self.stage_session) is not date:
+            raise TypeError("run bundle stage_session must be a date")
+        base_hashes, base_stage = _bundle_hashes(
+            self.base_receipt_payloads,
+            identity=self.base_input_identity_hash,
+            plan_sha256=self.stage_plan_sha256,
+            stage_index=self.stage_index,
+            stage_session=self.stage_session,
+            prior_stage_hash=self.prior_stage_hash,
+        )
+        if base_hashes != self.base_receipt_hashes or base_stage != self.base_stage_hash:
+            raise ValueError("run bundle base stage hash cannot be replayed")
+        _, adverse_stage = _bundle_hashes(
+            self.adverse_receipt_payloads,
+            identity=self.adverse_input_identity_hash,
+            plan_sha256=self.stage_plan_sha256,
+            stage_index=self.stage_index,
+            stage_session=self.stage_session,
+            prior_stage_hash=self.prior_stage_hash,
+        )
+        if adverse_stage != self.adverse_stage_hash:
+            raise ValueError("run bundle adverse stage hash cannot be replayed")
+        if hashlib.sha256(_candidate_run_bundle_payload(self)).hexdigest() != (
+            self.bundle_sha256
+        ):
+            raise ValueError("run bundle envelope hash mismatch")
+
+
+def _bundle_hashes(
+    receipt_payloads: tuple[str, ...],
+    *,
+    identity: str,
+    plan_sha256: str,
+    stage_index: int,
+    stage_session: date,
+    prior_stage_hash: str,
+) -> tuple[tuple[str, ...], str]:
+    for payload in receipt_payloads:
+        try:
+            decoded = json.loads(payload)
+        except json.JSONDecodeError as exc:
+            raise ValueError("run bundle receipt payload is invalid JSON") from exc
+        if json.dumps(decoded, sort_keys=True, separators=(",", ":")) != payload:
+            raise ValueError("run bundle receipt payload is not canonical")
+    prefix = (
+        f"{plan_sha256}|{stage_index}|{stage_session.isoformat()}|"
+        f"{prior_stage_hash}|{identity}"
+    )
+    current = hashlib.sha256(prefix.encode()).hexdigest()
+    hashes: list[str] = []
+    for payload in receipt_payloads:
+        current = hashlib.sha256(f"{current}|{payload}".encode()).hexdigest()
+        hashes.append(current)
+    return tuple(hashes), current
+
+
+def _candidate_run_bundle_payload(bundle: CandidateRunBundle) -> bytes:
+    return json.dumps(
+        {
+            name: value.isoformat() if isinstance(value, date) else value
+            for name, value in bundle.__dict__.items()
+            if name != "bundle_sha256"
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def serialize_candidate_run_bundle(bundle: CandidateRunBundle) -> bytes:
+    bundle.verify()
+    return json.dumps(
+        {
+            **json.loads(_candidate_run_bundle_payload(bundle)),
+            "bundle_sha256": bundle.bundle_sha256,
+            "version": 1,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def load_candidate_run_bundle(payload: bytes) -> CandidateRunBundle:
+    try:
+        values = json.loads(payload)
+    except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("candidate run bundle must be valid UTF-8 JSON") from exc
+    if type(values) is not dict or values.pop("version", None) != 1:
+        raise ValueError("candidate run bundle version is invalid")
+    tuple_fields = (
+        "source_receipt_sha256s",
+        "base_receipt_payloads",
+        "base_receipt_hashes",
+        "adverse_receipt_payloads",
+    )
+    for name in tuple_fields:
+        if type(values.get(name)) is not list:
+            raise ValueError(f"candidate run bundle {name} must be an array")
+        values[name] = tuple(values[name])
+    try:
+        values["stage_session"] = date.fromisoformat(values["stage_session"])
+        bundle = CandidateRunBundle(**values)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("candidate run bundle fields are invalid") from exc
+    bundle.verify()
+    return bundle
+
+
+@dataclass(frozen=True)
 class StaticRebalanceResult:
     portfolio: Portfolio
     context: DecisionContext
@@ -358,6 +516,12 @@ class StaticRebalanceResult:
     experiment_manifest_sha256: str | None = None
     split_evaluation_sha256: str | None = None
     candidate_run_config_sha256: str | None = None
+    run_bundle_sha256: str | None = None
+    run_bundle: CandidateRunBundle | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+    )
     cost_assumptions_sha256: str | None = None
     adverse_input_identity_hash: str | None = None
     adverse_stage_hash: str | None = None
@@ -1038,6 +1202,39 @@ def run_candidate_rebalance(
         adverse_identity,
         stage_context,
     )
+    source_receipts = tuple(
+        sorted(
+            {
+                *_source_receipt_hashes(
+                    calendar,
+                    execution_calendar_revision,
+                    execution_inputs,
+                    universe_snapshot,
+                    decision_artifact,
+                    dataset_manifest.partition_sources,
+                ),
+                holdout_event.external_anchor_sha256,
+            }
+        )
+    )
+    run_bundle = _build_candidate_run_bundle(
+        result=result,
+        adverse=adverse,
+        decision_artifact=decision_artifact,
+        dataset_manifest=dataset_manifest,
+        split_evaluation=split_evaluation,
+        experiment_manifest=experiment_manifest,
+        candidate_run_config=candidate_run_config,
+        cost_assumptions=cost_assumptions,
+        universe_materialization=universe_materialization,
+        source_receipt_sha256s=source_receipts,
+        base_input_identity_hash=candidate_identity,
+        base_receipt_hashes=receipt_hashes,
+        base_stage_hash=stage_hash,
+        adverse_input_identity_hash=adverse_identity,
+        adverse_stage_hash=adverse_stage_hash,
+        stage_context=stage_context,
+    )
     return replace(
         result,
         input_identity_hash=candidate_identity,
@@ -1058,6 +1255,8 @@ def run_candidate_rebalance(
         experiment_manifest_sha256=experiment_manifest.head_sha256,
         split_evaluation_sha256=split_evaluation.evaluation_sha256,
         candidate_run_config_sha256=candidate_run_config.config_sha256,
+        run_bundle_sha256=run_bundle.bundle_sha256,
+        run_bundle=run_bundle,
         cost_assumptions_sha256=assumption_sha,
         adverse_input_identity_hash=adverse_identity,
         adverse_stage_hash=adverse_stage_hash,
@@ -2017,6 +2216,93 @@ def _normal(value: Any) -> Any:
     if isinstance(value, float) and not math.isfinite(value):
         raise ValueError("input identity cannot contain nonfinite values")
     return value
+
+
+def _source_receipt_hashes(*values: object) -> tuple[str, ...]:
+    receipts: set[str] = set()
+
+    def visit(value: object) -> None:
+        if isinstance(value, SourceIdentity):
+            if value.capture_receipt_sha256 is not None:
+                receipts.add(value.capture_receipt_sha256)
+            return
+        if is_dataclass(value) and not isinstance(value, type):
+            for item in fields(value):
+                if not item.name.startswith("_"):
+                    visit(getattr(value, item.name))
+            return
+        if isinstance(value, Mapping):
+            for item in value.values():
+                visit(item)
+            return
+        if isinstance(value, (tuple, list, set, frozenset)):
+            for item in value:
+                visit(item)
+
+    for value in values:
+        visit(value)
+    return tuple(sorted(receipts))
+
+
+def _build_candidate_run_bundle(
+    *,
+    result: StaticRebalanceResult,
+    adverse: StaticRebalanceResult,
+    decision_artifact: DecisionArtifact,
+    dataset_manifest: DatasetManifest,
+    split_evaluation: SplitEvaluation,
+    experiment_manifest: ExperimentManifest,
+    candidate_run_config: CandidateRunConfig,
+    cost_assumptions: ExecutionCostAssumptions,
+    universe_materialization: UniverseMaterialization,
+    source_receipt_sha256s: tuple[str, ...],
+    base_input_identity_hash: str,
+    base_receipt_hashes: tuple[str, ...],
+    base_stage_hash: str,
+    adverse_input_identity_hash: str,
+    adverse_stage_hash: str,
+    stage_context: StageContext,
+) -> CandidateRunBundle:
+    values = {
+        "decision_artifact_sha256": decision_artifact.artifact_sha256,
+        "dataset_identity_sha256": dataset_manifest.identity_sha256,
+        "split_evaluation_sha256": split_evaluation.evaluation_sha256,
+        "experiment_manifest_sha256": experiment_manifest.head_sha256,
+        "candidate_run_config_sha256": candidate_run_config.config_sha256,
+        "cost_assumptions_sha256": cost_assumptions.identity_sha256,
+        "universe_materialization_sha256": (
+            universe_materialization.materialization_sha256
+        ),
+        "source_receipt_sha256s": source_receipt_sha256s,
+        "stage_plan_sha256": stage_context.plan_sha256,
+        "stage_index": stage_context.stage_index,
+        "stage_session": stage_context.stage_session,
+        "prior_stage_hash": stage_context.prior_stage_hash,
+        "base_input_identity_hash": base_input_identity_hash,
+        "base_receipt_payloads": tuple(
+            json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
+            for receipt in result.receipts
+        ),
+        "base_receipt_hashes": base_receipt_hashes,
+        "base_stage_hash": base_stage_hash,
+        "adverse_input_identity_hash": adverse_input_identity_hash,
+        "adverse_receipt_payloads": tuple(
+            json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
+            for receipt in adverse.receipts
+        ),
+        "adverse_stage_hash": adverse_stage_hash,
+    }
+    provisional = object.__new__(CandidateRunBundle)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    bundle = CandidateRunBundle(
+        **values,
+        bundle_sha256=hashlib.sha256(
+            _candidate_run_bundle_payload(provisional)
+        ).hexdigest(),
+    )
+    bundle.verify()
+    return bundle
 
 
 def _hashes(

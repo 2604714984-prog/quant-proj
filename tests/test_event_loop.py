@@ -4,7 +4,10 @@ from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
 import hashlib
 import json
+import os
 from pathlib import Path
+import subprocess
+import sys
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -27,9 +30,11 @@ from quant_system.backtest import (
     capture_decision_artifact,
     create_stage_plan,
     genesis_stage,
+    load_candidate_run_bundle,
     next_stage,
     run_candidate_rebalance,
     run_static_rebalance,
+    serialize_candidate_run_bundle,
 )
 from quant_system.data import (
     AcceptedSession,
@@ -3171,6 +3176,29 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     assert result.base_fx_adjusted_final_nav is not None
     assert result.adverse_fx_adjusted_final_nav is not None
     assert result.strategy_candidate_available is False
+    assert result.run_bundle is not None
+    payload = serialize_candidate_run_bundle(result.run_bundle)
+    assert load_candidate_run_bundle(payload).base_stage_hash == result.stage_hash
+    bundle_path = tmp_path / "candidate-run-bundle.json"
+    bundle_path.write_bytes(payload)
+    environment = os.environ.copy()
+    environment["PYTHONPATH"] = str(Path(__file__).resolve().parents[1] / "src")
+    replayed = subprocess.check_output(
+        [
+            sys.executable,
+            "-c",
+            (
+                "from pathlib import Path;"
+                "from quant_system.backtest import load_candidate_run_bundle;"
+                "print(load_candidate_run_bundle(Path(__import__('sys').argv[1])"
+                ".read_bytes()).base_stage_hash)"
+            ),
+            str(bundle_path),
+        ],
+        env=environment,
+        text=True,
+    ).strip()
+    assert replayed == result.stage_hash
 
     same_weights_different_definition = _captured_decision_artifact(
         tmp_path,
