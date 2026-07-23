@@ -1,0 +1,137 @@
+{
+  "schema_version": "c141-finra-relative-short-sale-flow-prereg-v1",
+  "research_id": "C141_FINRA_RELATIVE_OFF_EXCHANGE_SHORT_SALE_FLOW_ROTATION_SPY_QQQ_V1",
+  "mechanism_id": "C141_FINRA_RELATIVE_OFF_EXCHANGE_SHORT_SALE_FLOW_ROTATION_SPY_QQQ",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_EPOCH85_C141",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "market": "US",
+  "economic_hypothesis": {
+    "null": "the frozen relative FINRA off-exchange short-sale transaction-flow state does not improve net weekly SPY/QQQ rotation over the frozen comparators",
+    "alternative": "relatively greater QQQ short-sale transaction flow identifies relatively greater technology-ETF dealer facilitation and hedging associated with customer risk demand; otherwise SPY is preferred",
+    "independent_mechanism_statement": "the signal is formed only from official FINRA Consolidated NMS Daily Short Sale Volume rows for SPY and QQQ and is distinct from closed price-volume, CFTC positioning, margin-debit, option-sentiment and implied-volatility lineages",
+    "proxy_limitation": "FINRA states the files contain publicly disseminated off-exchange transaction volume, are not short interest, are not consolidated with exchange data and may include temporary market-making shorts; this noisy relative intermediation-flow interpretation is frozen and cannot be repaired after outcomes"
+  },
+  "universe": {
+    "symbols": [
+      "SPY",
+      "QQQ"
+    ],
+    "currency": "USD",
+    "initial_capital": 40000.0,
+    "whole_shares": true,
+    "residual_cash_return": 0.0,
+    "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
+  },
+  "signal": {
+    "source": "FINRA official Consolidated NMS Daily Short Sale Volume files for SPY and QQQ",
+    "frequency": "weekly",
+    "decision_time": "09:00 America/New_York on the first accepted XNYS session of each week",
+    "latest_allowed_observation": "the latest five accepted XNYS sessions strictly before the decision; each daily file is stated by FINRA to be posted no later than 18:00 ET on its trade date",
+    "current_measure": "for each ETF, sum(ShortVolume+ShortExemptVolume)/sum(TotalVolume) over exactly those five sessions",
+    "threshold": "the contemporaneous SPY five-session ratio",
+    "target_rule": "QQQ ratio strictly above SPY ratio selects QQQ at weight 1.0; otherwise selects SPY at weight 1.0",
+    "missing_rule": "missing file/session/symbol row, duplicate symbol row, nonfinite or negative field, nonpositive aggregate TotalVolume or date mismatch invalidates the interval; no interpolation, alternate source, exchange-volume supplementation, source blend, confirmation, threshold grid or parameter repair"
+  },
+  "execution": {
+    "entry": "next accepted XNYS open after the preceding accepted signal session; the frozen 09:00 decision must precede that open",
+    "holding": "until the following weekly accepted execution open",
+    "one_way_cost_bps": 10.0,
+    "decision_price_basis": "previous accepted-session raw close, known before the 09:00 decision",
+    "fill_price_basis": "retrospective raw daily-bar open",
+    "corporate_actions": "accepted SPY and QQQ cash distributions and split identities are processed by the shared portfolio core"
+  },
+  "comparator": {
+    "primary": "weekly rebalanced 50/50 SPY/QQQ target notional under identical cost, whole-share, cash, calendar, lifecycle and corporate-action rules",
+    "secondary": "weekly rebalanced SPY-only under identical rules"
+  },
+  "splits": {
+    "validation": {
+      "execution_start": "2021-01-04",
+      "execution_end": "2023-06-30",
+      "paired_intervals": 129
+    },
+    "retrospective_holdout": {
+      "execution_start": "2023-07-03",
+      "execution_end": "2026-06-30",
+      "paired_intervals": 156,
+      "sealed_until_validation_pass": true
+    },
+    "prospective_forward": "not opened or authorized"
+  },
+  "state_support": {
+    "minimum_intervals_each_split": 100,
+    "minimum_spy_states_each_split": 24,
+    "minimum_qqq_states_each_split": 24,
+    "accepted_observed_support": {
+      "validation": {
+        "intervals": 129,
+        "qqq_states": 95,
+        "spy_states": 34
+      },
+      "retrospective_holdout": {
+        "intervals": 156,
+        "qqq_states": 120,
+        "spy_states": 36
+      }
+    }
+  },
+  "validation_gates": [
+    "strategy terminal net wealth strictly above the 50/50 comparator",
+    "strategy terminal net wealth strictly above SPY-only",
+    "arithmetic mean paired active return versus the 50/50 comparator strictly positive",
+    "strategy maximum drawdown no worse than the 50/50 comparator"
+  ],
+  "holdout_gates": [
+    "all four validation-form gates evaluated on the holdout",
+    "exactly 156 paired weekly intervals",
+    "centered-null one-sided paired bootstrap p-value at most 0.05",
+    "uncentered type-7 5% bootstrap lower bound on mean active return strictly positive"
+  ],
+  "inference": {
+    "method": "paired circular moving-block bootstrap over weekly active returns versus the 50/50 comparator",
+    "block_length_weeks": 4,
+    "resamples": 100000,
+    "seed": 14100101,
+    "quantile": "type-7 linearly interpolated fifth percentile",
+    "limitation": "the prospectively frozen four-week block is an outcome-blind dependence assumption, not proof of statistical sufficiency"
+  },
+  "program_multiplicity": {
+    "sole_primary_alpha": 0.05,
+    "non_recycled": true,
+    "no_outcome_dependent_reordering": true
+  },
+  "source_identities": {
+    "adapter_sha256": "dd5743f37007f2f7f0565dd2b1fb16d27606677b519e96f7c5cd1fc20b043723",
+    "signal_input_path": "/home/rongyu/workspace/quant-data/staging/c141_finra_relative_off_exchange_short_sale_flow_rotation_spy_qqq_v1/signal_input_packet.json",
+    "signal_input_sha256": "02ffa0f232c315fa479ef71241b9bd338a55a8ac7984d404b3ef8159ee941b2f",
+    "signal_source_rows_sha256": "4895c04c7e104a6ff27f52c8bc9dc325e6010de419b70fb6b1711ba9af18a299",
+    "signal_receipt_sha256": "d8aa7c7f8ba1c2be5241bb47702e3d8a1964fc76ee37cabccedf9f9a3fcfbd4a",
+    "runtime_receipt_sha256": "51340bba76f25908b17b936c71953cb6d75631339512bfad05a774bf3c26e1a8",
+    "validation_runtime_bundle_sha256": "1598285df8483f082f730443cc7fd9cb8b82731e17cf63792804890a8ff49403",
+    "holdout_runtime_bundle_sha256": "9f054ee40f5814029a5ce7546779040235f8ef5d6e4008546d88b12b9ed87743",
+    "central_database_sha256": "f87722ecf19f9813bb161e365b0e5aa5069ef3d4a16471ad712abb131d7e9fdd",
+    "shared_core_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "shared_core_file_count": 23
+  },
+  "one_use_paths": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c141_finra_relative_off_exchange_short_sale_flow_rotation_spy_qqq_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c141_finra_relative_off_exchange_short_sale_flow_rotation_spy_qqq_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c141_finra_relative_off_exchange_short_sale_flow_rotation_spy_qqq_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c141_finra_relative_off_exchange_short_sale_flow_rotation_spy_qqq_v1_holdout/result.json"
+  },
+  "stop_rules": {
+    "validation_failure": "permanently close the lineage without holdout access",
+    "validation_pass": "unlock exactly one retrospective holdout execution",
+    "holdout_failure": "permanently close the lineage",
+    "holdout_pass": "stop at RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "forbidden": "no tuning, rerun, threshold or window change, alternate source, source blending, new comparator, changed holding period or post-outcome repair"
+  },
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "rerun_authorized": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
