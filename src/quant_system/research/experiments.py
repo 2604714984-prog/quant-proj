@@ -21,6 +21,7 @@ from quant_system.data import (
     require_trusted_source,
     require_typed_observation,
 )
+from quant_system.paths import AppPaths
 from quant_system.research.splits import SplitEvaluation, SplitEvaluationPlan
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
@@ -896,6 +897,7 @@ def require_adjusted_holdout_for_candidate(
 @dataclass(frozen=True)
 class ExperimentLedgerReceipt:
     path: Path
+    data_root_sha256: str
     event_count: int
     head_sha256: str
     bytes_sha256: str
@@ -904,6 +906,16 @@ class ExperimentLedgerReceipt:
     def verify_current_bytes(self) -> None:
         if self._token is not _LEDGER_TOKEN:
             raise ValueError("experiment ledger receipt must come from persist entrypoint")
+        paths = AppPaths.discover()
+        if not paths.data_root_bound:
+            raise ValueError("experiment ledger requires an explicit QUANT_DATA_ROOT")
+        expected_path = paths.data_root / "research" / "experiment_ledger.ndjson"
+        if (
+            self.path != expected_path
+            or self.data_root_sha256
+            != hashlib.sha256(str(paths.data_root).encode()).hexdigest()
+        ):
+            raise ValueError("experiment ledger is not bound to the configured AppPaths")
         payload = self.path.read_bytes()
         if hashlib.sha256(payload).hexdigest() != self.bytes_sha256:
             raise ValueError("persistent experiment ledger bytes changed")
@@ -929,7 +941,6 @@ def _canonical_ledger_lock(path: Path) -> Iterator[None]:
 
 
 def persist_experiment_ledger(
-    data_root: Path,
     events: tuple[ExperimentEvent, ...],
 ) -> ExperimentLedgerReceipt:
     """Append to the one canonical ledger beneath the configured data root."""
@@ -937,8 +948,10 @@ def persist_experiment_ledger(
     _validate_chain(events)
     if not events:
         raise ValueError("persistent experiment ledger requires at least one event")
-    root = data_root.expanduser().resolve()
-    candidate = root / "research" / "experiment_ledger.ndjson"
+    paths = AppPaths.discover()
+    if not paths.data_root_bound:
+        raise ValueError("experiment ledger requires an explicit QUANT_DATA_ROOT")
+    candidate = paths.data_root / "research" / "experiment_ledger.ndjson"
     candidate.parent.mkdir(parents=True, exist_ok=True)
     expected_lines = tuple(
         json.dumps(
@@ -967,6 +980,7 @@ def persist_experiment_ledger(
         payload = candidate.read_bytes()
     return ExperimentLedgerReceipt(
         candidate,
+        hashlib.sha256(str(paths.data_root).encode()).hexdigest(),
         len(events),
         events[-1].event_sha256,
         hashlib.sha256(payload).hexdigest(),

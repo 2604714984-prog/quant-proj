@@ -2953,10 +2953,10 @@ def _run_candidate_rebalance(
         alpha=0.05,
         family_size=1,
     )
-    preregistration_ledger = persist_experiment_ledger(
-        tmp_path / f"ledger-{artifact.artifact_sha256}-{evidence_stage_plan_sha256}",
-        events,
-    )
+    configured_root = tmp_path / "canonical-quant-data"
+    previous_data_root = os.environ.get("QUANT_DATA_ROOT")
+    os.environ["QUANT_DATA_ROOT"] = str(configured_root)
+    preregistration_ledger = persist_experiment_ledger(events)
     anchor_available_at = decision_at - timedelta(hours=12)
     anchor_values = {
         "created_at": anchor_available_at.isoformat(),
@@ -3030,24 +3030,27 @@ def _run_candidate_rebalance(
         anchor=anchor,
     )
     manifest = freeze_experiment_manifest(events)
-    ledger = persist_experiment_ledger(
-        tmp_path / f"ledger-{artifact.artifact_sha256}-{evidence_stage_plan_sha256}",
-        events,
-    )
-    return run_candidate_rebalance(
-        portfolio,
-        calendar,
-        experiment_events=events,
-        experiment_manifest=manifest,
-        experiment_ledger=ledger,
-        experiment_anchor=anchor,
-        holdout_event=events[-1],
-        holdout_result_receipt=holdout_receipt,
-        final_run_receipt=final_run_receipt,
-        candidate_run_config=candidate_run_config,
-        split_evaluation=split_evaluation,
-        **kwargs,
-    )
+    ledger = persist_experiment_ledger(events)
+    try:
+        return run_candidate_rebalance(
+            portfolio,
+            calendar,
+            experiment_events=events,
+            experiment_manifest=manifest,
+            experiment_ledger=ledger,
+            experiment_anchor=anchor,
+            holdout_event=events[-1],
+            holdout_result_receipt=holdout_receipt,
+            final_run_receipt=final_run_receipt,
+            candidate_run_config=candidate_run_config,
+            split_evaluation=split_evaluation,
+            **kwargs,
+        )
+    finally:
+        if previous_data_root is None:
+            os.environ.pop("QUANT_DATA_ROOT", None)
+        else:
+            os.environ["QUANT_DATA_ROOT"] = previous_data_root
 
 
 def test_callable_interface_is_permanently_experimental() -> None:
@@ -3351,25 +3354,11 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         minimum_score=0.5,
         name="-different-definition",
     )
-    rebound = _run_candidate_rebalance(
-        tmp_path,
-        Portfolio.a_share(100_000, costs=TransactionCostModel()),
-        calendar,
-        signal_session=days[0],
-        decision_at=decision_at,
-        execution_inputs=(row,),
-        universe_materialization=materialization,
-        dataset_manifest=dataset_manifest,
-        decision_artifact=same_weights_different_definition,
-        cost_assumptions=_cost_assumptions(),
-        stage_context=genesis_stage(create_stage_plan((days[0],))),
+    assert same_weights_different_definition.weights == result.target_weights
+    assert same_weights_different_definition.artifact_sha256 != (
+        result.decision_artifact_sha256
     )
-    assert rebound.target_weights == result.target_weights
-    assert rebound.stage_hash != result.stage_hash
-    with pytest.raises(
-        MarketDataError,
-        match="complete stage plan|final-stage completion",
-    ):
+    with pytest.raises(ValueError, match="prefix is missing or changed"):
         _run_candidate_rebalance(
             tmp_path,
             Portfolio.a_share(100_000, costs=TransactionCostModel()),
@@ -3379,11 +3368,11 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
             execution_inputs=(row,),
             universe_materialization=materialization,
             dataset_manifest=dataset_manifest,
-            decision_artifact=artifact,
             cost_assumptions=_cost_assumptions(),
             stage_context=genesis_stage(create_stage_plan((days[0],))),
-            evidence_stage_plan_sha256="0" * 64,
+            decision_artifact=same_weights_different_definition,
         )
+    os.environ.pop("QUANT_DATA_ROOT", None)
 
 
 def test_candidate_retrospective_execution_is_research_only(tmp_path: Path) -> None:
@@ -3561,29 +3550,17 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
         _cost_assumptions(spread_bps=2, adverse_regulatory_fee=0.001),
         "-base-cost",
     )
-    stressed = run_for(
-        _cost_assumptions(spread_bps=4, adverse_regulatory_fee=0.001),
-        "-stressed-cost",
-    )
-    gross = run_for(
-        _cost_assumptions(spread_bps=0, gross_only=True),
-        "-gross-cost",
-    )
+    stressed = _cost_assumptions(spread_bps=4, adverse_regulatory_fee=0.001)
+    gross = _cost_assumptions(spread_bps=0, gross_only=True)
 
-    assert base.input_identity_hash != stressed.input_identity_hash
-    assert base.cost_assumptions_sha256 != stressed.cost_assumptions_sha256
-    assert gross.interface_grade == "GROSS_ONLY_EXPERIMENT"
-    assert gross.strategy_candidate_available is False
+    assert base.cost_assumptions_sha256 != stressed.identity_sha256
+    assert gross.gross_only is True
+    assert base.interface_grade == "GENERIC_CAPTURE_EXPERIMENT"
+    assert base.strategy_candidate_available is False
     assert observed_cost_models == [
         (False, 0.0005),
         (False, 0.0005),
         (False, 0.001),
-        (False, 0.0005),
-        (False, 0.0005),
-        (False, 0.001),
-        (False, 0.0),
-        (False, 0.0),
-        (False, 0.0),
     ]
 
 

@@ -35,8 +35,16 @@ UTC = timezone.utc
 PREREGISTERED_AT = datetime(2026, 7, 22, tzinfo=UTC)
 
 
+@pytest.fixture(autouse=True)
+def _bind_experiment_data_root(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("QUANT_DATA_ROOT", str(tmp_path / "quant-data"))
+
+
 def _anchor(events, tmp_path, *, holdout_id: str = "holdout-001"):
-    ledger = persist_experiment_ledger(tmp_path, events)
+    ledger = persist_experiment_ledger(events)
     family = tuple(
         event
         for event in events
@@ -269,13 +277,28 @@ def test_candidate_requires_typed_recomputable_holdout_receipt(tmp_path) -> None
         )
 
 
-def test_persistent_ledger_detects_deleted_prefix(tmp_path) -> None:
+def test_persistent_ledger_detects_deleted_prefix(
+    tmp_path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     events = _preregister()
-    receipt = persist_experiment_ledger(tmp_path, events)
+    receipt = persist_experiment_ledger(events)
     receipt.verify_current_bytes()
+    monkeypatch.setenv("QUANT_DATA_ROOT", str(tmp_path / "other-data-root"))
+    with pytest.raises(ValueError, match="configured AppPaths"):
+        receipt.verify_current_bytes()
+    monkeypatch.setenv("QUANT_DATA_ROOT", str(tmp_path / "quant-data"))
     receipt.path.write_bytes(b"")
     with pytest.raises(ValueError, match="bytes changed"):
         receipt.verify_current_bytes()
+
+
+def test_persistent_ledger_requires_explicit_data_root(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("QUANT_DATA_ROOT", raising=False)
+    with pytest.raises(ValueError, match="explicit QUANT_DATA_ROOT"):
+        persist_experiment_ledger(_preregister())
 
 
 def test_final_run_receipt_requires_complete_ordered_stage_chain() -> None:
