@@ -1,0 +1,66 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C30_TOTBKCR_BANK_CREDIT_PULSE_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE30",
+  "created_at": "2026-07-23T04:57:25.770930Z",
+  "classification": "INPUT_BLOCKED_STATE_SUPPORT",
+  "evidence_class": "OUTCOME_BLIND_INPUT_QUALIFICATION",
+  "outcome_blind_freeze": {
+    "issue": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5054564592",
+    "sole_signal": "latest PIT-qualified official TOTBKCR weekly level strictly above the exact observation 28 calendar days earlier selects QQQ; equal or lower selects SPY",
+    "validation_support_minimum": "28 complete intervals, at least four SPY and four QQQ intervals, and at least two transitions in each direction",
+    "cycle30_familywise_alpha": 0.0000000000931322574615478515625,
+    "cycle1_to_cycle30_union_bound": 0.0999999999068677425384521484375,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "official_source_acquisition": {
+    "series_id": "TOTBKCR",
+    "source": "Federal Reserve H.8 Assets and Liabilities of Commercial Banks in the United States via official ALFRED real-time-period history",
+    "staging_root": "/home/rongyu/workspace/quant-data/staging/c30_totbkcr_bank_credit_pulse_rotation_spy_qqq_v1",
+    "official_form_page_sha256": "4430de28faf093742dd95e076d1b2dbdc7aebe289849ab7a3b96fbe819877032",
+    "raw_archive_sha256": "f0653493f603ecf0d86699a0aea198b7a142df232ea0813c9b58404a215d383d",
+    "acquisition_receipt_sha256": "0cbbae4d51cb039dc47d71f795a775f17784955410339d4bb558f7a9bb988815",
+    "retained_official_vintage_dates": 382,
+    "raw_csv_rows": 9936,
+    "network_requests": 5,
+    "request_accounting": "three bounded GET diagnostics/corrections followed by the retained one GET plus one POST acquisition; zero transport retries and zero redirects",
+    "input_packet_created": false,
+    "signal_materialization_receipt_created": false
+  },
+  "mechanical_blocker": {
+    "stage": "validation",
+    "complete_intervals": 28,
+    "spy_intervals": 3,
+    "qqq_intervals": 25,
+    "spy_to_qqq_transitions": 1,
+    "qqq_to_spy_transitions": 2,
+    "failed_requirements": [
+      "spy_intervals_at_least_4",
+      "spy_to_qqq_transitions_at_least_2"
+    ],
+    "interpretation": "the frozen bank-credit pulse behaves almost like persistent QQQ exposure in validation and lacks the preregistered two-state switching support; this is an input-support block, not a return-based strategy failure"
+  },
+  "warehouse_integrity": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "sha256_after": "e086835cfeddc615a879db2923718339b3fbc65acb352c8a9863bb7e8f396ef5",
+    "wal_absent": true,
+    "database_opened": false,
+    "database_write": false
+  },
+  "terminal_state": {
+    "strategy_outcomes_opened": false,
+    "validation_run": false,
+    "retrospective_holdout_opened": false,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "source_switch_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the 28-day lag, converting the level change to a percentage or annualized rate, smoothing, adding persistence or thresholds, relaxing state support, changing timing or target mapping, or adding price, volatility, credit-spread or financial-stress filters."
+}
