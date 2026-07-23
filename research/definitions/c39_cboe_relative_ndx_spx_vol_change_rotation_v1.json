@@ -1,0 +1,173 @@
+{
+  "schema_version": "c39-cboe-relative-ndx-spx-vol-change-prereg-v1",
+  "research_id": "C39_CBOE_RELATIVE_NDX_SPX_VOL_CHANGE_ROTATION_SPY_QQQ_V1",
+  "mechanism_id": "C39_CBOE_RELATIVE_NDX_SPX_VOL_CHANGE_ROTATION_SPY_QQQ",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_EPOCH4_C37_C39",
+  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_READY",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+  "selection_without_outcomes": {
+    "economic_reason": "a rising VXN/VIX ratio indicates that Nasdaq-100 implied volatility is increasing relative to broad-market implied volatility, so the frozen defensive interpretation selects SPY; an equal or falling ratio selects QQQ",
+    "price_return_nav_sharpe_or_drawdown_used_for_selection": false,
+    "parameter_grid": false,
+    "variant_count": 1,
+    "independent_mechanism_statement": "the relative Nasdaq-100 versus SPX implied-volatility mechanism is distinct from C37 implied correlation, C38 volatility-of-volatility, and closed price, volatility-term-structure, volatility-level, macro, positioning, credit, rates, liquidity, commodity and seasonal lineages",
+    "closed_cycles_1_through_38_remain_closed": true
+  },
+  "program_multiplicity": {
+    "epoch4_familywise_alpha": 0.05,
+    "epoch4_mechanism_count": 3,
+    "fixed_order": [
+      "C37_CBOE_COR1M_CHANGE_ROTATION_SPY_QQQ_V1",
+      "C38_CBOE_VVIX_CHANGE_ROTATION_SPY_QQQ_V1",
+      "C39_CBOE_RELATIVE_NDX_SPX_VOL_CHANGE_ROTATION_SPY_QQQ_V1"
+    ],
+    "sole_primary_alpha": 0.016666666666666666,
+    "method": "Bonferroni across exactly the three frozen Epoch 4 mechanisms",
+    "alpha_recycling": false,
+    "lifetime_fwer_claim": false,
+    "formal_outcome_lanes": 1
+  },
+  "signal": {
+    "source": "official Cboe VXN and VIX static daily history CSV files",
+    "frequency": "monthly decisions",
+    "formula": "on the newest common VXN and VIX observation date on or before cutoff, compute VXN close divided by VIX close; subtract the ratio from the newest common observation on or before 28 calendar days earlier",
+    "target_rule": "strictly positive change means SPY weight 1.0; equal or negative change means QQQ weight 1.0",
+    "availability_rule": "retrospective-only static history; observation conservatively treated as available at 20:00 America/New_York on its observation date, before the 20:05 signal freeze",
+    "missing_rule": "fail closed; no interpolation, alternate lag, threshold, source blend, persistence, smoothing, price filter or volatility filter",
+    "ancestry_limitation": "static-history retrieval does not prove a historical vintage chain; the 28-day horizon is an outcome-blind monthly economic proxy and not a causal sufficiency claim"
+  },
+  "timing_and_account": {
+    "signal_freeze": "20:05 America/New_York after the final accepted XNYS close preceding the next monthly execution session",
+    "target_submission": "09:00 America/New_York on the next accepted XNYS session",
+    "execution": "that accepted session official open",
+    "holding": "until the following monthly accepted execution open",
+    "decision_price": "raw preceding-session close for each asset, available before target submission",
+    "initial_capital_usd": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "comparator": "50/50 SPY/QQQ rebalanced at identical monthly opens under identical whole-share, cost, calendar, lifecycle and corporate-action accounting"
+  },
+  "splits": {
+    "validation": {
+      "baseline_execution": "2021-01-04",
+      "first_holding_execution": "2021-02-01",
+      "terminal_execution": "2023-06-01",
+      "complete_intervals": 28
+    },
+    "retrospective_holdout": {
+      "baseline_execution": "2023-07-03",
+      "first_holding_execution": "2023-08-01",
+      "terminal_execution": "2026-06-01",
+      "complete_intervals": 34,
+      "sealed_until_validation_pass": true
+    },
+    "cross_boundary_rule": "no signal or portfolio state carries across splits"
+  },
+  "state_support_before_outcomes": {
+    "accepted": {
+      "validation": {
+        "complete_intervals": 28,
+        "spy_intervals": 13,
+        "qqq_intervals": 15,
+        "spy_to_qqq": 9,
+        "qqq_to_spy": 10
+      },
+      "retrospective_holdout": {
+        "complete_intervals": 34,
+        "spy_intervals": 19,
+        "qqq_intervals": 15,
+        "spy_to_qqq": 8,
+        "qqq_to_spy": 9
+      }
+    },
+    "minimums": "20 intervals, four of each state, and two transitions in each direction per split",
+    "independent_local_read_only_recompute": true,
+    "strategy_outcomes_opened": false
+  },
+  "validation": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "arithmetic mean paired monthly active return strictly positive",
+      "strategy maximum drawdown no worse than the 50/50 comparator"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout remains unopened and the lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "strategy maximum drawdown no worse than the 50/50 comparator",
+      "exactly 34 paired intervals",
+      "centered-null one-sided p-value at most 0.016666666666666666",
+      "uncentered type-7 0.016666666666666666 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap over monthly active returns",
+      "block_length_months": 3,
+      "resamples": 100000,
+      "rng": "Python random.Random",
+      "seed": 3900101,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(100000 + 1)",
+      "quantile": "linear type-7",
+      "limitation": "the three-month block is an outcome-blind dependence assumption, not proof of complete serial-dependence coverage"
+    }
+  },
+  "source_identities": {
+    "input_packet_path": "/home/rongyu/workspace/quant-data/staging/c39_cboe_relative_ndx_spx_vol_change_rotation_spy_qqq_v1/c39_full_input_packet.json",
+    "input_packet_sha256": "342dc1f8a6b502474b2000d3c80e62352658f1247f7a589d0013d2a85ebbe1c9",
+    "materialization_receipt_path": "/home/rongyu/workspace/quant-data/staging/c39_cboe_relative_ndx_spx_vol_change_rotation_spy_qqq_v1/full_materialization_receipt.json",
+    "materialization_receipt_sha256": "c6a60c5fac1696523a5887640d07c42e50f0b350ef72f78754d4bbf9ddcc3f30",
+    "cboe_vix_url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+    "cboe_vix_raw_sha256": "26ab75dc0cf0d2f375e0f615e466de890f1e60d3b63a25aa2989f18c26670851",
+    "cboe_vix_response_headers_sha256": "be10831f51cbe37094d750d3cf676d54645463610feeaeeeeced3b38b8a1617b",
+    "cboe_vxn_url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VXN_History.csv",
+    "cboe_vxn_raw_sha256": "af4b0496843ba796bfc4570b277c08d2862ab40b5993f83682e8254a83c96fdd",
+    "cboe_vxn_response_headers_sha256": "bb5715491f8804bd2358d07eb71581c8a3d436410b4fe5b5e06f602489140ef3",
+    "reused_market_scaffold_sha256": "fa42bea9f2421a725c416c8588842341b9439c9796527f2021bb6b2312e2a242",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "holdout_spy_bundle_sha256": "ff4b02932079ad013da05dbffcf2dd6e25af8592450e5b09e4a2f00d9f61f8d4",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "adapter_sha256": "4bbc8a1f2329b5bcf9d70735f4a0d9a22ef208a5e5e6b71a38cd0b8d0e1ebaae",
+    "runner_role": "branch-only removable one-use research adapter; not shared infrastructure"
+  },
+  "one_use": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c39_cboe_relative_ndx_spx_vol_change_rotation_spy_qqq_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c39_cboe_relative_ndx_spx_vol_change_rotation_spy_qqq_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c39_cboe_relative_ndx_spx_vol_change_rotation_spy_qqq_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c39_cboe_relative_ndx_spx_vol_change_rotation_spy_qqq_v1_holdout/result.json",
+    "claim_before_runtime_bundle_capture": true,
+    "claim_and_result_mode": "0600",
+    "rerun_after_any_claim": false
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "input_error_after_claim": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "strategy_candidate_available": false,
+    "parameter_repair": false,
+    "rerun": false
+  },
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_write": false,
+    "external_review_requested": false,
+    "prospective_forward_access": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
