@@ -35,7 +35,12 @@ _SPLIT_ACTION_TYPES = frozenset({"split", "reverse_split"})
 _CAPTURE_TOKEN = object()
 _PROVIDER_CAPTURE_TOKEN = object()
 _TYPED_OBSERVATION_TOKEN = object()
-CaptureLevel = Literal["UNCAPTURED", "GENERIC_CAPTURE", "PROVIDER_QUALIFIED_CAPTURE"]
+CaptureLevel = Literal[
+    "UNCAPTURED",
+    "GENERIC_CAPTURE",
+    "TRANSPORT_CAPTURE",
+    "PROVIDER_QUALIFIED_CAPTURE",
+]
 
 
 class SourceIdentityError(ValueError):
@@ -186,6 +191,7 @@ class SourceIdentity:
         if self.capture_level not in {
             "UNCAPTURED",
             "GENERIC_CAPTURE",
+            "TRANSPORT_CAPTURE",
             "PROVIDER_QUALIFIED_CAPTURE",
         }:
             raise SourceIdentityError("unsupported capture_level")
@@ -727,7 +733,7 @@ def capture_github_release_asset(
     tag: str,
     asset_name: str,
 ) -> tuple[SourceCaptureReceipt, bytes]:
-    """Fetch one GitHub Release asset and derive provenance from GitHub metadata."""
+    """Fetch an immutable transport artifact without granting market authority."""
 
     repository = require_stable_id(repository, "repository")
     tag = require_stable_id(tag, "tag")
@@ -779,7 +785,7 @@ def capture_github_release_asset(
             subject_id=f"{repository}:{asset_name}",
             supersedes_revision_id=None,
             url_migration_receipt_sha256=None,
-            capture_level="PROVIDER_QUALIFIED_CAPTURE",
+            capture_level="TRANSPORT_CAPTURE",
         )
     except (
         KeyError,

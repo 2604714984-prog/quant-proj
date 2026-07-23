@@ -15,7 +15,6 @@ from quant_system.data import (
     capture_source_file,
     parse_provider_observation,
     require_provider_qualified_source,
-    require_typed_observation,
     require_trusted_source,
     select_source_revision,
 )
@@ -141,40 +140,15 @@ def test_github_release_adapter_derives_provider_metadata(
     assert receipt.source.provider_id == "github-releases"
     assert receipt.source.subject_id == "o/r:data.bin"
     assert receipt.source.available_at == AVAILABLE
-    assert receipt.source.capture_level == "PROVIDER_QUALIFIED_CAPTURE"
-    assert require_provider_qualified_source(receipt.source) is receipt.source
-    typed = parse_provider_observation(
-        receipt,
-        content,
-        observation_kind="execution_price",
-        subject_id="AAA",
-    )
-    require_typed_observation(
-        typed,
-        source=receipt.source,
-        observation_kind="execution_price",
-        subject_id="AAA",
-        expected_values={
-            "basis": "timestamped_session_open",
-            "currency": "USD",
-            "effective_at": AVAILABLE,
-            "open_price": 10.0,
-            "symbol": "AAA",
-        },
-    )
-    with pytest.raises(SourceIdentityError, match="do not match provider bytes"):
-        require_typed_observation(
-            typed,
-            source=receipt.source,
+    assert receipt.source.capture_level == "TRANSPORT_CAPTURE"
+    with pytest.raises(SourceIdentityError, match="provider-qualified adapter"):
+        require_provider_qualified_source(receipt.source)
+    with pytest.raises(SourceIdentityError, match="provider-qualified adapter"):
+        parse_provider_observation(
+            receipt,
+            content,
             observation_kind="execution_price",
             subject_id="AAA",
-            expected_values={
-                "basis": "timestamped_session_open",
-                "currency": "USD",
-                "effective_at": AVAILABLE,
-                "open_price": 20.0,
-                "symbol": "AAA",
-            },
         )
 
 
