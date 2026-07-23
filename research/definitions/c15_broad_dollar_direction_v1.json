@@ -1,0 +1,181 @@
+{
+  "schema_version": "c15-broad-dollar-direction-prereg-v1",
+  "research_id": "C15_BROAD_DOLLAR_DIRECTION_SPY_QQQ_ROTATION_V1",
+  "mechanism_id": "C15_BROAD_DOLLAR_DIRECTION_SPY_QQQ_ROTATION",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE15",
+  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_READY",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "selection_without_outcomes": {
+    "economic_reason": "broad-dollar appreciation is a foreign-revenue translation headwind for the more internationally exposed growth-heavy QQQ and selects broad-market SPY; depreciation or equality selects QQQ",
+    "price_return_nav_sharpe_or_drawdown_used_for_selection": false,
+    "parameter_grid": false,
+    "variant_count": 1,
+    "independent_mechanism_statement": "the state comes only from the official nominal broad dollar index and is not an equity trend, inflation, monetary-aggregate, oil, rate, yield-curve, credit, volatility, FOMC or H.4.1 rule",
+    "closed_lines_remain_closed": [
+      "M119-01_US_SPY_REALIZED_VOL_SCALING",
+      "M119-03_US_SPY_YIELD_CURVE_STATE",
+      "M119-09_US_SPY_CREDIT_STRESS_STATE",
+      "C3_POLICY_LAST_FOMC_MOVE_DIRECTION_V1",
+      "C4_FED_H41_TREASURY_HOLDINGS_SPY_CASH_V1",
+      "C5_CBOE_VOL_TERM_STRUCTURE_INVERSION_SPY_CASH_V1",
+      "C6_VIX_WEEKLY_CHANGE_IMPULSE_SPY_CASH_V1",
+      "C7_SPY_VARIANCE_RISK_PREMIUM_V1",
+      "C8_NFCI_MONTHLY_TIGHTENING_IMPULSE_SPY_CASH_V1",
+      "C9_DGS10_MONTHLY_YIELD_IMPULSE_SPY_CASH_V1",
+      "C10_VIX_20_FEAR_REGIME_SPY_CASH_V1",
+      "C11_HYG_MONTHLY_CREDIT_RISK_APPETITE_SPY_CASH_V1",
+      "C12_CPI_DISINFLATION_SPY_QQQ_ROTATION_V1",
+      "C13_M2_GROWTH_ACCELERATION_SPY_QQQ_ROTATION_V1",
+      "C14_WTI_YOY_SPY_QQQ_ROTATION_V1"
+    ]
+  },
+  "program_multiplicity": {
+    "cycle15_familywise_alpha": 0.0000030517578125,
+    "sole_primary_alpha": 0.0000030517578125,
+    "cycle1_to_cycle15_union_bound": 0.0999969482421875,
+    "alpha_recycling": false,
+    "formal_outcome_lanes": 1
+  },
+  "signal": {
+    "series": "TWEXBGSMTH",
+    "source": "Federal Reserve Board G.5/H.10 distributed through FRED",
+    "frequency": "monthly",
+    "formula": "change_t=TWEXBGSMTH_t/TWEXBGSMTH_t_minus_1-1",
+    "target_rule": "TWEXBGSMTH_t above TWEXBGSMTH_t_minus_1 means SPY weight 1.0; equality or depreciation means QQQ weight 1.0",
+    "missing_rule": "fail closed; no interpolation, carry-forward, real-dollar substitution, AFE or EME sub-index, smoothing, persistence, acceleration, percentage threshold, price filter, volatility filter, grid or source blending",
+    "vintage_limitation": "the current-vintage series has no retained row-level historical revision chain and cannot be repaired after outcomes"
+  },
+  "timing_and_account": {
+    "signal_freeze": "final accepted XNYS close of reference month plus one",
+    "target_submission": "09:00 America/New_York on the next accepted XNYS session",
+    "execution": "that accepted session official open",
+    "holding": "until the following monthly accepted execution open",
+    "decision_price": "raw preceding-session close for each asset, available before target submission",
+    "initial_capital_usd": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "comparator": "50/50 SPY/QQQ rebalanced at identical monthly opens under identical whole-share, cost, calendar, lifecycle and corporate-action accounting"
+  },
+  "splits": {
+    "validation": {
+      "baseline_execution": "2021-01-04",
+      "first_holding_execution": "2021-02-01",
+      "terminal_execution": "2023-06-01",
+      "complete_intervals": 28
+    },
+    "retrospective_holdout": {
+      "baseline_execution": "2023-07-03",
+      "first_holding_execution": "2023-08-01",
+      "terminal_execution": "2026-06-01",
+      "complete_intervals": 34,
+      "sealed_until_validation_pass": true
+    },
+    "cross_boundary_rule": "no signal or portfolio state carries across splits"
+  },
+  "state_support_before_outcomes": {
+    "accepted": {
+      "validation": {
+        "complete_intervals": 28,
+        "spy_intervals": 18,
+        "qqq_intervals": 10,
+        "spy_to_qqq": 4,
+        "qqq_to_spy": 5
+      },
+      "retrospective_holdout": {
+        "complete_intervals": 34,
+        "spy_intervals": 15,
+        "qqq_intervals": 19,
+        "spy_to_qqq": 7,
+        "qqq_to_spy": 8
+      }
+    },
+    "minimums": "20 intervals, four of each state, and two transitions in each direction per split",
+    "independent_local_read_only_recompute": true,
+    "strategy_outcomes_opened": false
+  },
+  "validation": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "arithmetic mean paired monthly active return strictly positive",
+      "strategy maximum drawdown no worse than the 50/50 comparator"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout remains unopened and the lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "strategy maximum drawdown no worse than the 50/50 comparator",
+      "exactly 34 paired intervals",
+      "centered-null one-sided p-value at most 0.0000030517578125",
+      "uncentered type-7 0.0000030517578125 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap over monthly active returns",
+      "block_length_months": 3,
+      "resamples": 1000000,
+      "rng": "Python random.Random",
+      "seed": 1500301,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(1000000 + 1)",
+      "quantile": "linear type-7",
+      "limitation": "the three-month block is an outcome-blind dependence assumption, not proof of complete serial-dependence coverage"
+    }
+  },
+  "source_identities": {
+    "input_packet_path": "/home/rongyu/workspace/quant-data/staging/c15_broad_dollar_direction_spy_qqq_rotation_v1/dollar_qqq_input_packet.json",
+    "input_packet_sha256": "b6ebf7c4c4aea072930230f477c3e73767f0067352fa8ac0dcf10ea809fabcac",
+    "materialization_receipt_path": "/home/rongyu/workspace/quant-data/staging/c15_broad_dollar_direction_spy_qqq_rotation_v1/materialization_receipt.json",
+    "materialization_receipt_sha256": "237c7596d018f5dd26aa43eaea618cb754aec117f2f722365a5573fdc528551e",
+    "fred_twexbgsmth_response_sha256": "db8c7374bbd1d68b5f82a6977fe57cc1b8596dd80bf25433ac39b0584edf962e",
+    "federal_reserve_h10_response_sha256": "883900ec740b6e8123cf18f5f194e7f090272101816d2230c9ab39036138898b",
+    "reused_market_packet_sha256": "e1ab6583a1b8a0711961c9386135f73fd4e981394bf72e7a170a4d982fdd08ff",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "holdout_spy_bundle_sha256": "ff4b02932079ad013da05dbffcf2dd6e25af8592450e5b09e4a2f00d9f61f8d4",
+    "qqq_tiingo_raw_sha256": "c6a47126e2565a6a3bfaebe2c56ec5b4d6432119aa6d217368de489490d95c4d",
+    "qqq_price_crosscheck_rows": 1400,
+    "qqq_distribution_rows": 24,
+    "qqq_tiingo_action_rows_quarantined": 1,
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "adapter_sha256": "46fdc46a7dd9a0acd93cf8accdd2dc897d874ede4b35b2d3af6bb6c9ec8939d7",
+    "runner_role": "branch-only removable one-use research adapter; not shared infrastructure"
+  },
+  "one_use": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c15_broad_dollar_direction_spy_qqq_rotation_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c15_broad_dollar_direction_spy_qqq_rotation_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c15_broad_dollar_direction_spy_qqq_rotation_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c15_broad_dollar_direction_spy_qqq_rotation_v1_holdout/result.json",
+    "claim_before_runtime_bundle_capture": true,
+    "claim_and_result_mode": "0600",
+    "rerun_after_any_claim": false
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "input_error_after_claim": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "strategy_candidate_available": false,
+    "parameter_repair": false,
+    "rerun": false
+  },
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_write": false,
+    "external_review_requested": false,
+    "prospective_forward_access": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
