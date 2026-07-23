@@ -9,11 +9,15 @@ from quant_system.research.identity import (
     dataset_identity_sha256,
 )
 from quant_system.research.splits import (
+    SplitManifest,
     build_split_manifest,
+    build_split_evaluation_plan,
     evaluate_split,
+    load_split_manifest,
     purged_embargo_train_mask,
     require_split_evaluation_for_candidate,
     walk_forward_masks,
+    serialize_split_manifest,
 )
 
 
@@ -124,22 +128,36 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
         fold_ids=("test-1",) * len(observations),
     )
 
+    selected = tuple(sample.sample_id for sample in manifest.samples)
+    returns = (0.01, -0.02, 0.03, 0.01, -0.01, 0.02, 0.04)
+    returns_by_sample = dict(zip(selected, returns, strict=True))
     assert len(manifest.samples) == 7
     assert len({sample.sample_id for sample in manifest.samples}) == 7
     assert len({sample.overlap_group for sample in manifest.samples}) < 7
     with pytest.raises(ValueError, match="overlapping labels"):
         evaluate_split(
             manifest,
-            selected_sample_ids=tuple(sample.sample_id for sample in manifest.samples),
-            returns=(0.01, -0.02, 0.03, 0.01, -0.01, 0.02, 0.04),
-            method="non_overlapping",
+            plan=build_split_evaluation_plan(
+                manifest,
+                holdout_id="holdout-1",
+                selected_sample_ids=selected,
+                method="non_overlapping",
+                preregistered_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
+            ),
+            returns_by_sample=returns_by_sample,
         )
-    corrected = evaluate_split(
+    hac_plan = build_split_evaluation_plan(
         manifest,
-        selected_sample_ids=tuple(sample.sample_id for sample in manifest.samples),
-        returns=(0.01, -0.02, 0.03, 0.01, -0.01, 0.02, 0.04),
+        holdout_id="holdout-1",
+        selected_sample_ids=tuple(reversed(selected)),
         method="hac",
         hac_bandwidth=2,
+        preregistered_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
+    )
+    corrected = evaluate_split(
+        manifest,
+        plan=hac_plan,
+        returns_by_sample=returns_by_sample,
     )
     require_split_evaluation_for_candidate(corrected)
     assert corrected.nominal_n == 7
@@ -151,16 +169,26 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
 
     bootstrapped = evaluate_split(
         manifest,
-        selected_sample_ids=tuple(sample.sample_id for sample in manifest.samples),
-        returns=(0.01, -0.02, 0.03, 0.01, -0.01, 0.02, 0.04),
-        method="block_bootstrap",
-        block_length=3,
-        bootstrap_replicates=250,
+        plan=build_split_evaluation_plan(
+            manifest,
+            holdout_id="holdout-1",
+            selected_sample_ids=selected,
+            method="block_bootstrap",
+            block_length=3,
+            bootstrap_replicates=250,
+            preregistered_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
+        ),
+        returns_by_sample=returns_by_sample,
     )
     require_split_evaluation_for_candidate(bootstrapped)
     assert bootstrapped.block_length == 3
     assert bootstrapped.bootstrap_replicates == 250
     assert bootstrapped.standard_error > 0
+
+    loaded = load_split_manifest(serialize_split_manifest(manifest))
+    assert loaded == manifest
+    with pytest.raises(ValueError, match="controlled builder"):
+        SplitManifest(manifest.samples, manifest.manifest_sha256)
 
 
 def test_same_day_multi_security_panel_has_distinct_stable_sample_ids() -> None:
@@ -271,6 +299,13 @@ def test_captured_dataset_manifest_revalidates_all_semantic_bytes(tmp_path) -> N
         path = tmp_path / f"{name}.json"
         path.write_text(f'{{"identity":"{name}-v1"}}\n', encoding="utf-8")
         paths[name] = path
+    split_receipt = build_split_manifest(
+        entity_ids=("AAA",),
+        observed_at=(date(2026, 1, 2),),
+        label_end_at=(date(2026, 1, 2),),
+        fold_ids=("test",),
+    )
+    paths["split"].write_bytes(serialize_split_manifest(split_receipt))
     manifest = capture_dataset_manifest(
         dates=(date(2026, 1, 2),),
         frequency="1d-close",
@@ -280,6 +315,7 @@ def test_captured_dataset_manifest_revalidates_all_semantic_bytes(tmp_path) -> N
         feature_code_path=paths["feature"],
         label_code_path=paths["label"],
         split_manifest_path=paths["split"],
+        split_manifest_receipt=split_receipt,
         calendar_policy_path=paths["calendar"],
         action_policy_path=paths["action"],
         cost_policy_path=paths["cost"],
@@ -287,6 +323,7 @@ def test_captured_dataset_manifest_revalidates_all_semantic_bytes(tmp_path) -> N
     )
 
     assert manifest.has_captured_semantics is True
+    assert manifest.has_verified_split_manifest is True
     manifest.verify_identity()
     paths["cost"].write_text('{"identity":"cost-v2"}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="cost_policy_sha256"):

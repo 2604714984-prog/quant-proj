@@ -7,13 +7,18 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 import re
 from typing import Literal
 
+from quant_system.data import SourceIdentity, require_trusted_source
+from quant_system.research.splits import SplitEvaluation
+
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _EVENT_TOKEN = object()
+_HOLDOUT_RESULT_TOKEN = object()
 EventKind = Literal["PREREGISTERED", "HOLDOUT_RESULT"]
 ResultStatus = Literal["PASSED", "FAILED"]
 
@@ -47,10 +52,14 @@ class ExperimentEvent:
     dataset_sha256: str
     split_sha256: str
     stage_plan_sha256: str
+    split_evaluation_plan_sha256: str
+    candidate_run_config_sha256: str
     parameters_json: str
     multiplicity_family_id: str
+    holdout_id: str
     preregistered_at: datetime
     external_anchor_sha256: str
+    external_anchor_capture_level: str
     alpha: float
     family_size: int
     prior_event_sha256: str
@@ -61,6 +70,9 @@ class ExperimentEvent:
     multiplicity_method: str | None = None
     adjusted_pvalue: float | None = None
     raw_pvalue: float | None = None
+    split_evaluation_sha256: str | None = None
+    final_stage_hash: str | None = None
+    holdout_result_receipt_sha256: str | None = None
     _token: object | None = None
 
     def __post_init__(self) -> None:
@@ -74,12 +86,20 @@ class ExperimentEvent:
             "dataset_sha256",
             "split_sha256",
             "stage_plan_sha256",
+            "split_evaluation_plan_sha256",
+            "candidate_run_config_sha256",
         ):
             _sha(getattr(self, name), name)
         _sha(self.prior_event_sha256, "prior_event_sha256")
         _text(self.multiplicity_family_id, "multiplicity_family_id")
+        _text(self.holdout_id, "holdout_id")
         _timestamp(self.preregistered_at, "preregistered_at")
         _sha(self.external_anchor_sha256, "external_anchor_sha256")
+        if self.external_anchor_capture_level not in {
+            "GENERIC_CAPTURE",
+            "PROVIDER_QUALIFIED_CAPTURE",
+        }:
+            raise ValueError("external anchor must be a trusted capture")
         if (
             not isinstance(self.alpha, (int, float))
             or isinstance(self.alpha, bool)
@@ -109,6 +129,9 @@ class ExperimentEvent:
                     self.multiplicity_method,
                     self.adjusted_pvalue,
                     self.raw_pvalue,
+                    self.split_evaluation_sha256,
+                    self.final_stage_hash,
+                    self.holdout_result_receipt_sha256,
                 )
             ):
                 raise ValueError("preregistration cannot contain result fields")
@@ -117,6 +140,12 @@ class ExperimentEvent:
                 raise ValueError("holdout result requires access time")
             _timestamp(self.holdout_access_at, "holdout_access_at")
             _sha(self.result_sha256 or "", "result_sha256")
+            _sha(self.split_evaluation_sha256 or "", "split_evaluation_sha256")
+            _sha(self.final_stage_hash or "", "final_stage_hash")
+            _sha(
+                self.holdout_result_receipt_sha256 or "",
+                "holdout_result_receipt_sha256",
+            )
             if self.result_status not in {"PASSED", "FAILED"}:
                 raise ValueError("result_status must be PASSED or FAILED")
             _text(self.multiplicity_method or "", "multiplicity_method")
@@ -147,6 +176,113 @@ class ExperimentEvent:
             raise ValueError("unsupported experiment event kind")
         if hashlib.sha256(_event_payload(self)).hexdigest() != self.event_sha256:
             raise ValueError("experiment event hash mismatch")
+
+
+@dataclass(frozen=True)
+class HoldoutResultReceipt:
+    trial_id: str
+    holdout_id: str
+    final_stage_hash: str
+    split_evaluation_sha256: str
+    split_evaluation_plan_sha256: str
+    returns_sha256: str
+    raw_pvalue: float
+    holdout_access_at: datetime
+    result_sha256: str
+    receipt_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _HOLDOUT_RESULT_TOKEN:
+            raise ValueError(
+                "HoldoutResultReceipt must come from capture_holdout_result"
+            )
+        _text(self.trial_id, "trial_id")
+        _text(self.holdout_id, "holdout_id")
+        for name in (
+            "final_stage_hash",
+            "split_evaluation_sha256",
+            "split_evaluation_plan_sha256",
+            "returns_sha256",
+            "result_sha256",
+        ):
+            _sha(getattr(self, name), name)
+        _timestamp(self.holdout_access_at, "holdout_access_at")
+        expected_result = hashlib.sha256(
+            json.dumps(
+                {
+                    "final_stage_hash": self.final_stage_hash,
+                    "returns_sha256": self.returns_sha256,
+                    "split_evaluation_sha256": self.split_evaluation_sha256,
+                    "trial_id": self.trial_id,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest()
+        if self.result_sha256 != expected_result:
+            raise ValueError("holdout result identity is not derived from final artifacts")
+        if hashlib.sha256(_holdout_receipt_payload(self)).hexdigest() != (
+            self.receipt_sha256
+        ):
+            raise ValueError("holdout result receipt hash mismatch")
+
+
+def _holdout_receipt_payload(receipt: HoldoutResultReceipt) -> bytes:
+    return json.dumps(
+        {
+            name: value.isoformat() if isinstance(value, datetime) else value
+            for name, value in receipt.__dict__.items()
+            if name not in {"receipt_sha256", "_token"}
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def capture_holdout_result(
+    *,
+    trial_id: str,
+    holdout_id: str,
+    final_stage_hash: str,
+    split_evaluation: SplitEvaluation,
+    holdout_access_at: datetime,
+) -> HoldoutResultReceipt:
+    if not isinstance(split_evaluation, SplitEvaluation):
+        raise TypeError("split_evaluation must be a SplitEvaluation")
+    split_evaluation.__post_init__()
+    raw_pvalue = math.erfc(abs(split_evaluation.statistic) / math.sqrt(2.0))
+    result_sha = hashlib.sha256(
+        json.dumps(
+            {
+                "final_stage_hash": _sha(final_stage_hash, "final_stage_hash"),
+                "returns_sha256": split_evaluation.returns_sha256,
+                "split_evaluation_sha256": split_evaluation.evaluation_sha256,
+                "trial_id": _text(trial_id, "trial_id"),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+    values = {
+        "trial_id": trial_id,
+        "holdout_id": holdout_id,
+        "final_stage_hash": final_stage_hash,
+        "split_evaluation_sha256": split_evaluation.evaluation_sha256,
+        "split_evaluation_plan_sha256": split_evaluation.plan_sha256,
+        "returns_sha256": split_evaluation.returns_sha256,
+        "raw_pvalue": raw_pvalue,
+        "holdout_access_at": _timestamp(holdout_access_at, "holdout_access_at"),
+        "result_sha256": result_sha,
+    }
+    provisional = object.__new__(HoldoutResultReceipt)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    return HoldoutResultReceipt(
+        **values,
+        receipt_sha256=hashlib.sha256(_holdout_receipt_payload(provisional)).hexdigest(),
+        _token=_HOLDOUT_RESULT_TOKEN,
+    )
 
 
 def _event_payload(event: ExperimentEvent) -> bytes:
@@ -186,16 +322,31 @@ def preregister_trial(
     dataset_sha256: str,
     split_sha256: str,
     stage_plan_sha256: str,
+    split_evaluation_plan_sha256: str,
+    candidate_run_config_sha256: str,
     parameters: Mapping[str, object],
     multiplicity_family_id: str,
+    holdout_id: str,
     preregistered_at: datetime,
-    external_anchor_sha256: str,
+    external_anchor: SourceIdentity,
     alpha: float,
     family_size: int,
 ) -> tuple[ExperimentEvent, ...]:
     _validate_chain(events)
+    preregistered = _timestamp(preregistered_at, "preregistered_at")
+    require_trusted_source(external_anchor)
+    if external_anchor.available_at > preregistered:
+        raise ValueError("external anchor must exist before preregistration")
     if any(event.trial_id == trial_id for event in events):
         raise ValueError("trial_id is already present in the append-only chain")
+    holdout_events = tuple(event for event in events if event.holdout_id == holdout_id)
+    if any(event.kind == "HOLDOUT_RESULT" for event in holdout_events):
+        raise ValueError("holdout family cannot be extended after holdout access")
+    if any(
+        event.multiplicity_family_id != multiplicity_family_id
+        for event in holdout_events
+    ):
+        raise ValueError("one holdout_id must use one frozen multiplicity family")
     family = tuple(
         event
         for event in events
@@ -207,7 +358,10 @@ def preregister_trial(
     if family and any(
         event.family_size != family_size
         or event.alpha != alpha
-        or event.external_anchor_sha256 != external_anchor_sha256
+        or event.external_anchor_sha256 != external_anchor.capture_receipt_sha256
+        or event.holdout_id != holdout_id
+        or event.split_evaluation_plan_sha256 != split_evaluation_plan_sha256
+        or event.candidate_run_config_sha256 != candidate_run_config_sha256
         for event in family
     ):
         raise ValueError("multiplicity family preregistration contract changed")
@@ -230,16 +384,23 @@ def preregister_trial(
             dataset_sha256=_sha(dataset_sha256, "dataset_sha256"),
             split_sha256=_sha(split_sha256, "split_sha256"),
             stage_plan_sha256=_sha(stage_plan_sha256, "stage_plan_sha256"),
+            split_evaluation_plan_sha256=_sha(
+                split_evaluation_plan_sha256,
+                "split_evaluation_plan_sha256",
+            ),
+            candidate_run_config_sha256=_sha(
+                candidate_run_config_sha256,
+                "candidate_run_config_sha256",
+            ),
             parameters_json=parameters_json,
             multiplicity_family_id=_text(
                 multiplicity_family_id,
                 "multiplicity_family_id",
             ),
-            preregistered_at=_timestamp(preregistered_at, "preregistered_at"),
-            external_anchor_sha256=_sha(
-                external_anchor_sha256,
-                "external_anchor_sha256",
-            ),
+            holdout_id=_text(holdout_id, "holdout_id"),
+            preregistered_at=preregistered,
+            external_anchor_sha256=external_anchor.capture_receipt_sha256,
+            external_anchor_capture_level=external_anchor.capture_level,
             alpha=alpha,
             family_size=family_size,
             prior_event_sha256=prior,
@@ -249,58 +410,125 @@ def preregister_trial(
             multiplicity_method=None,
             adjusted_pvalue=None,
             raw_pvalue=None,
+            split_evaluation_sha256=None,
+            final_stage_hash=None,
+            holdout_result_receipt_sha256=None,
         ),
     )
 
 
-def record_holdout_result(
+def record_holdout_family_results(
     events: tuple[ExperimentEvent, ...],
     *,
-    trial_id: str,
-    holdout_access_at: datetime,
-    result_sha256: str,
-    result_status: ResultStatus,
+    receipts: tuple[HoldoutResultReceipt, ...],
     multiplicity_method: str,
-    raw_pvalue: float,
-    adjusted_pvalue: float,
 ) -> tuple[ExperimentEvent, ...]:
     _validate_chain(events)
-    if any(
-        event.kind == "HOLDOUT_RESULT" and event.trial_id == trial_id
-        for event in events
+    if multiplicity_method not in {"holm", "bonferroni"}:
+        raise ValueError("unsupported multiplicity_method")
+    if not receipts or any(
+        not isinstance(receipt, HoldoutResultReceipt) for receipt in receipts
     ):
-        raise ValueError("trial holdout has already been recorded")
+        raise ValueError("holdout receipts must be a nonempty immutable tuple")
+    for receipt in receipts:
+        receipt.__post_init__()
+    holdout_ids = {receipt.holdout_id for receipt in receipts}
+    if len(holdout_ids) != 1:
+        raise ValueError("one result batch must cover one holdout_id")
+    holdout_id = next(iter(holdout_ids))
     preregistrations = tuple(
         event
         for event in events
-        if event.kind == "PREREGISTERED" and event.trial_id == trial_id
+        if event.kind == "PREREGISTERED" and event.holdout_id == holdout_id
     )
-    if len(preregistrations) != 1:
-        raise ValueError("holdout result requires one matching preregistration")
-    trial = preregistrations[0]
-    return events + (
-        _event(
-            event_index=len(events),
+    if not preregistrations:
+        raise ValueError("holdout result requires a preregistered family")
+    family_size = preregistrations[0].family_size
+    if (
+        len(preregistrations) != family_size
+        or len(receipts) != family_size
+        or {event.trial_id for event in preregistrations}
+        != {receipt.trial_id for receipt in receipts}
+    ):
+        raise ValueError("holdout result batch must cover the complete frozen family")
+    if any(
+        event.kind == "HOLDOUT_RESULT" and event.holdout_id == holdout_id
+        for event in events
+    ):
+        raise ValueError("holdout family has already been recorded")
+    trials = {event.trial_id: event for event in preregistrations}
+    raw = {receipt.trial_id: receipt.raw_pvalue for receipt in receipts}
+    if multiplicity_method == "bonferroni":
+        adjusted = {
+            trial_id: min(1.0, pvalue * family_size)
+            for trial_id, pvalue in raw.items()
+        }
+    else:
+        adjusted = {}
+        running = 0.0
+        for index, (trial_id, pvalue) in enumerate(
+            sorted(raw.items(), key=lambda item: (item[1], item[0]))
+        ):
+            running = max(running, (family_size - index) * pvalue)
+            adjusted[trial_id] = min(1.0, running)
+    chain = events
+    for receipt in sorted(receipts, key=lambda item: item.trial_id):
+        trial = trials[receipt.trial_id]
+        if (
+            receipt.split_evaluation_plan_sha256
+            != trial.split_evaluation_plan_sha256
+            or receipt.holdout_access_at <= trial.preregistered_at
+        ):
+            raise ValueError("holdout receipt violates the preregistered plan or time")
+        adjusted_pvalue = adjusted[receipt.trial_id]
+        chain = chain + (
+            _event(
+            event_index=len(chain),
             kind="HOLDOUT_RESULT",
             trial_id=trial.trial_id,
             definition_sha256=trial.definition_sha256,
             dataset_sha256=trial.dataset_sha256,
             split_sha256=trial.split_sha256,
             stage_plan_sha256=trial.stage_plan_sha256,
+            split_evaluation_plan_sha256=trial.split_evaluation_plan_sha256,
+            candidate_run_config_sha256=trial.candidate_run_config_sha256,
             parameters_json=trial.parameters_json,
             multiplicity_family_id=trial.multiplicity_family_id,
+            holdout_id=trial.holdout_id,
             preregistered_at=trial.preregistered_at,
             external_anchor_sha256=trial.external_anchor_sha256,
+            external_anchor_capture_level=trial.external_anchor_capture_level,
             alpha=trial.alpha,
             family_size=trial.family_size,
-            prior_event_sha256=events[-1].event_sha256,
-            holdout_access_at=_timestamp(holdout_access_at, "holdout_access_at"),
-            result_sha256=_sha(result_sha256, "result_sha256"),
-            result_status=result_status,
+            prior_event_sha256=chain[-1].event_sha256,
+            holdout_access_at=receipt.holdout_access_at,
+            result_sha256=receipt.result_sha256,
+            result_status=(
+                "PASSED" if adjusted_pvalue <= float(trial.alpha) else "FAILED"
+            ),
             multiplicity_method=_text(multiplicity_method, "multiplicity_method"),
             adjusted_pvalue=adjusted_pvalue,
-            raw_pvalue=raw_pvalue,
-        ),
+            raw_pvalue=receipt.raw_pvalue,
+            split_evaluation_sha256=receipt.split_evaluation_sha256,
+            final_stage_hash=receipt.final_stage_hash,
+            holdout_result_receipt_sha256=receipt.receipt_sha256,
+            ),
+        )
+    return chain
+
+
+def record_holdout_result(
+    events: tuple[ExperimentEvent, ...],
+    *,
+    receipt: HoldoutResultReceipt,
+    multiplicity_method: str,
+) -> tuple[ExperimentEvent, ...]:
+    """Record a single-member family; multi-trial families use the batch entrypoint."""
+
+    return record_holdout_family_results(
+        events,
+        receipts=(receipt,),
+        multiplicity_method=multiplicity_method,
     )
 
 
@@ -330,6 +558,7 @@ def verify_experiment_manifest(
 def require_adjusted_holdout_for_candidate(
     event: ExperimentEvent,
     *,
+    receipt: HoldoutResultReceipt,
     manifest: ExperimentManifest,
     events: tuple[ExperimentEvent, ...],
 ) -> None:
@@ -340,6 +569,19 @@ def require_adjusted_holdout_for_candidate(
         raise ValueError("candidate holdout event is absent from the frozen manifest")
     if event.result_status != "PASSED":
         raise ValueError("candidate evidence requires a PASSED holdout result")
+    if not isinstance(receipt, HoldoutResultReceipt):
+        raise ValueError("candidate evidence requires a typed holdout result receipt")
+    receipt.__post_init__()
+    if (
+        receipt.trial_id != event.trial_id
+        or receipt.holdout_id != event.holdout_id
+        or receipt.receipt_sha256 != event.holdout_result_receipt_sha256
+        or receipt.result_sha256 != event.result_sha256
+        or receipt.raw_pvalue != event.raw_pvalue
+        or receipt.split_evaluation_sha256 != event.split_evaluation_sha256
+        or receipt.final_stage_hash != event.final_stage_hash
+    ):
+        raise ValueError("holdout result event does not bind its typed receipt")
     if (
         event.multiplicity_method not in {"holm", "bonferroni"}
         or event.adjusted_pvalue is None

@@ -23,6 +23,7 @@ from quant_system.backtest import (
     TerminalAction,
     TransactionCostModel,
     blocked_exit_from_receipt,
+    capture_candidate_run_config,
     capture_decision_artifact,
     create_stage_plan,
     genesis_stage,
@@ -57,12 +58,17 @@ from quant_system.markets.universe import (
 from quant_system.markets.us import CorporateActionValuationError
 from quant_system.research.identity import build_dataset_manifest
 from quant_system.research.experiments import (
+    capture_holdout_result,
     freeze_experiment_manifest,
     persist_experiment_ledger,
     preregister_trial,
     record_holdout_result,
 )
-from quant_system.research.splits import build_split_manifest, evaluate_split
+from quant_system.research.splits import (
+    build_split_evaluation_plan,
+    build_split_manifest,
+    evaluate_split,
+)
 
 UTC = timezone.utc
 DEFINITION_SHA = hashlib.sha256(b"fixture-strategy-definition-v1").hexdigest()
@@ -2803,7 +2809,10 @@ def _run_candidate_rebalance(
     **kwargs,
 ):
     artifact = kwargs["decision_artifact"]
-    if not isinstance(artifact, DecisionArtifact):
+    if not isinstance(artifact, DecisionArtifact) or not isinstance(
+        kwargs["cost_assumptions"],
+        ExecutionCostAssumptions,
+    ):
         return run_candidate_rebalance(
             portfolio,
             calendar,
@@ -2811,7 +2820,9 @@ def _run_candidate_rebalance(
             experiment_manifest=None,  # type: ignore[arg-type]
             experiment_ledger=None,  # type: ignore[arg-type]
             holdout_event=None,  # type: ignore[arg-type]
+            holdout_result_receipt=None,  # type: ignore[arg-type]
             split_evaluation=None,  # type: ignore[arg-type]
+            candidate_run_config=None,  # type: ignore[arg-type]
             **kwargs,
         )
     decision_at = kwargs["decision_at"]
@@ -2819,31 +2830,76 @@ def _run_candidate_rebalance(
         "evidence_stage_plan_sha256",
         kwargs["stage_context"].plan_sha256,
     )
+    split_manifest = _candidate_split_manifest(
+        kwargs["dataset_manifest"].dates[0],
+    )
+    split_plan = build_split_evaluation_plan(
+        split_manifest,
+        holdout_id=f"holdout-{artifact.artifact_sha256[:12]}",
+        selected_sample_ids=tuple(
+            sample.sample_id for sample in split_manifest.samples
+        ),
+        method="non_overlapping",
+        preregistered_at=decision_at - timedelta(days=1),
+    )
+    split_evaluation = evaluate_split(
+        split_manifest,
+        plan=split_plan,
+        returns_by_sample={
+            sample.sample_id: value
+            for sample, value in zip(
+                split_manifest.samples,
+                (0.01, 0.02),
+                strict=True,
+            )
+        },
+    )
+    trial_id = f"trial-{artifact.artifact_sha256[:12]}"
+    completed_final_stage_hash = hashlib.sha256(b"fixture-final-stage").hexdigest()
+    candidate_run_config = capture_candidate_run_config(
+        decision_artifact_sha256=artifact.artifact_sha256,
+        dataset_identity_sha256=kwargs["dataset_manifest"].identity_sha256,
+        split_identity_sha256=kwargs["dataset_manifest"].split_manifest_sha256,
+        split_evaluation_plan_sha256=split_plan.plan_sha256,
+        stage_plan_sha256=evidence_stage_plan_sha256,
+        final_stage_index=kwargs["stage_context"].stage_index,
+        completed_final_stage_hash=completed_final_stage_hash,
+        cost_assumptions_sha256=kwargs["cost_assumptions"].identity_sha256,
+        signal_session=kwargs["signal_session"],
+        decision_at=decision_at,
+        max_positions=kwargs.get("max_positions"),
+    )
     events = preregister_trial(
         (),
-        trial_id=f"trial-{artifact.artifact_sha256[:12]}",
+        trial_id=trial_id,
         definition_sha256=artifact.strategy_definition_sha256,
         dataset_sha256=artifact.dataset_identity_sha256,
         split_sha256=artifact.split_identity_sha256,
         stage_plan_sha256=evidence_stage_plan_sha256,
-        parameters={"fixture": True},
+        split_evaluation_plan_sha256=split_plan.plan_sha256,
+        candidate_run_config_sha256=candidate_run_config.config_sha256,
+        parameters=json.loads(candidate_run_config.parameters_json),
         multiplicity_family_id=f"family-{artifact.artifact_sha256[:12]}",
+        holdout_id=split_plan.holdout_id,
         preregistered_at=decision_at - timedelta(days=1),
-        external_anchor_sha256=hashlib.sha256(
-            f"external:{artifact.artifact_sha256}".encode()
-        ).hexdigest(),
+        external_anchor=_captured_source(
+            f"anchor-{artifact.artifact_sha256[:12]}",
+            decision_at - timedelta(days=2),
+        ),
         alpha=0.05,
         family_size=1,
     )
+    holdout_receipt = capture_holdout_result(
+        trial_id=trial_id,
+        holdout_id=split_plan.holdout_id,
+        final_stage_hash=completed_final_stage_hash,
+        split_evaluation=split_evaluation,
+        holdout_access_at=decision_at - timedelta(seconds=1),
+    )
     events = record_holdout_result(
         events,
-        trial_id=events[0].trial_id,
-        holdout_access_at=decision_at - timedelta(seconds=1),
-        result_sha256=hashlib.sha256(b"fixture-holdout-result").hexdigest(),
-        result_status="PASSED",
+        receipt=holdout_receipt,
         multiplicity_method="holm",
-        raw_pvalue=0.01,
-        adjusted_pvalue=0.01,
     )
     manifest = freeze_experiment_manifest(events)
     ledger = persist_experiment_ledger(
@@ -2854,17 +2910,6 @@ def _run_candidate_rebalance(
         ),
         events,
     )
-    split_manifest = _candidate_split_manifest(
-        kwargs["dataset_manifest"].dates[0],
-    )
-    split_evaluation = evaluate_split(
-        split_manifest,
-        selected_sample_ids=tuple(
-            sample.sample_id for sample in split_manifest.samples
-        ),
-        returns=(0.01, 0.02),
-        method="non_overlapping",
-    )
     return run_candidate_rebalance(
         portfolio,
         calendar,
@@ -2872,6 +2917,8 @@ def _run_candidate_rebalance(
         experiment_manifest=manifest,
         experiment_ledger=ledger,
         holdout_event=events[-1],
+        holdout_result_receipt=holdout_receipt,
+        candidate_run_config=candidate_run_config,
         split_evaluation=split_evaluation,
         **kwargs,
     )
@@ -3148,7 +3195,10 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     )
     assert rebound.target_weights == result.target_weights
     assert rebound.stage_hash != result.stage_hash
-    with pytest.raises(MarketDataError, match="complete stage plan"):
+    with pytest.raises(
+        MarketDataError,
+        match="complete stage plan|final-stage completion",
+    ):
         _run_candidate_rebalance(
             tmp_path,
             Portfolio.a_share(100_000, costs=TransactionCostModel()),

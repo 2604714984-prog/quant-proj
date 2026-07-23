@@ -13,15 +13,22 @@ from pathlib import Path
 
 from quant_system.data.source_identity import (
     SourceIdentity,
+    capture_file_bytes,
     capture_file_digest,
     require_aware_utc,
     require_provider_qualified_source,
+)
+from quant_system.research.splits import (
+    SplitManifest,
+    load_split_manifest,
+    serialize_split_manifest,
 )
 
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _DATASET_MANIFEST_TOKEN = object()
 _CAPTURED_SEMANTICS_TOKEN = object()
+_VERIFIED_SPLIT_TOKEN = object()
 
 
 @dataclass(frozen=True)
@@ -68,6 +75,18 @@ class DatasetManifest:
         compare=False,
         hash=False,
     )
+    _split_manifest_path: Path | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _verified_split_token: object | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
 
     def __post_init__(self) -> None:
         if self._token is not _DATASET_MANIFEST_TOKEN:
@@ -87,6 +106,10 @@ class DatasetManifest:
             and len(self.partition_parser_sha256s) == len(self.partition_sha256s)
             and self.schema_sha256 is not None
         )
+
+    @property
+    def has_verified_split_manifest(self) -> bool:
+        return self._verified_split_token is _VERIFIED_SPLIT_TOKEN
 
     def verify_identity(self) -> None:
         observed = dataset_identity_sha256(
@@ -119,11 +142,12 @@ class DatasetManifest:
             expected = {
                 "feature_code_sha256": self.feature_code_sha256,
                 "label_code_sha256": self.label_code_sha256,
-                "split_manifest_sha256": self.split_manifest_sha256,
                 "calendar_policy_sha256": self.calendar_policy_sha256,
                 "action_policy_sha256": self.action_policy_sha256,
                 "cost_policy_sha256": self.cost_policy_sha256,
             }
+            if not self.has_verified_split_manifest:
+                expected["split_manifest_sha256"] = self.split_manifest_sha256
             if dict(self._semantic_paths).keys() != expected.keys():
                 raise ValueError("dataset semantic path coverage is incomplete")
             for field_name, path in self._semantic_paths:
@@ -138,6 +162,12 @@ class DatasetManifest:
                 )
             ):
                 raise ValueError("dataset partition bytes no longer match manifest")
+            if self.has_verified_split_manifest:
+                if self._split_manifest_path is None:
+                    raise ValueError("verified split manifest path is missing")
+                split = load_split_manifest(capture_file_bytes(self._split_manifest_path))
+                if split.manifest_sha256 != self.split_manifest_sha256:
+                    raise ValueError("canonical split manifest no longer matches dataset")
         if self.has_pit_partitions:
             assert self.dataset_as_of is not None
             for digest, source in zip(
@@ -351,6 +381,7 @@ def capture_dataset_manifest(
     feature_code_path: Path,
     label_code_path: Path,
     split_manifest_path: Path,
+    split_manifest_receipt: SplitManifest | None = None,
     calendar_policy_path: Path,
     action_policy_path: Path,
     cost_policy_path: Path,
@@ -364,7 +395,7 @@ def capture_dataset_manifest(
     semantic_paths = (
         ("feature_code_sha256", feature_code_path),
         ("label_code_sha256", label_code_path),
-        ("split_manifest_sha256", split_manifest_path),
+        *((("split_manifest_sha256", split_manifest_path),) if split_manifest_receipt is None else ()),
         ("calendar_policy_sha256", calendar_policy_path),
         ("action_policy_sha256", action_policy_path),
         ("cost_policy_sha256", cost_policy_path),
@@ -373,6 +404,16 @@ def capture_dataset_manifest(
         field_name: capture_file_digest(path)[0]
         for field_name, path in semantic_paths
     }
+    verified_split = split_manifest_receipt is not None
+    if split_manifest_receipt is None:
+        hashes["split_manifest_sha256"] = capture_file_digest(split_manifest_path)[0]
+    else:
+        split_manifest_receipt.verify()
+        if capture_file_bytes(split_manifest_path) != serialize_split_manifest(
+            split_manifest_receipt
+        ):
+            raise ValueError("split manifest path is not the canonical split receipt")
+        hashes["split_manifest_sha256"] = split_manifest_receipt.manifest_sha256
     frozen_partitions = tuple(partition_paths)
     partition_hashes = tuple(
         capture_file_digest(path)[0] for path in frozen_partitions
@@ -434,4 +475,8 @@ def capture_dataset_manifest(
         _partition_paths=frozen_partitions,
         _partition_parser_paths=frozen_parser_paths,
         _captured_semantics_token=_CAPTURED_SEMANTICS_TOKEN,
+        _split_manifest_path=split_manifest_path,
+        _verified_split_token=(
+            _VERIFIED_SPLIT_TOKEN if verified_split else None
+        ),
     )

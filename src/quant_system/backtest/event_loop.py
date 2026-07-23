@@ -47,6 +47,7 @@ from quant_system.research.experiments import (
     ExperimentEvent,
     ExperimentLedgerReceipt,
     ExperimentManifest,
+    HoldoutResultReceipt,
     require_adjusted_holdout_for_candidate,
 )
 from quant_system.research.splits import (
@@ -94,6 +95,7 @@ _EXECUTION_PRICE_BASES = {
 _NO_OPEN_EVENT_BASIS = "confirmed_no_open_event"
 _DECISION_ARTIFACT_TOKEN = object()
 _STAGE_CONTEXT_TOKEN = object()
+_CANDIDATE_RUN_CONFIG_TOKEN = object()
 
 
 @dataclass(frozen=True)
@@ -124,6 +126,125 @@ class StageContext:
             raise TypeError("stage_session must be a date")
         if self._token is not _STAGE_CONTEXT_TOKEN:
             raise ValueError("StageContext must be created by genesis_stage or next_stage")
+
+
+@dataclass(frozen=True)
+class CandidateRunConfig:
+    decision_artifact_sha256: str
+    dataset_identity_sha256: str
+    split_identity_sha256: str
+    split_evaluation_plan_sha256: str
+    stage_plan_sha256: str
+    final_stage_index: int
+    completed_final_stage_hash: str
+    cost_assumptions_sha256: str
+    signal_session: date
+    decision_at: datetime
+    max_positions: int | None
+    parameters_json: str
+    config_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False, hash=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _CANDIDATE_RUN_CONFIG_TOKEN:
+            raise ValueError(
+                "CandidateRunConfig must come from capture_candidate_run_config"
+            )
+        for name in (
+            "decision_artifact_sha256",
+            "dataset_identity_sha256",
+            "split_identity_sha256",
+            "split_evaluation_plan_sha256",
+            "stage_plan_sha256",
+            "completed_final_stage_hash",
+            "cost_assumptions_sha256",
+        ):
+            _sha256(getattr(self, name), name)
+        if type(self.final_stage_index) is not int or self.final_stage_index < 0:
+            raise ValueError("final_stage_index must be nonnegative")
+        if type(self.signal_session) is not date:
+            raise TypeError("signal_session must be a date")
+        require_aware_datetime(self.decision_at, "decision_at")
+        if self.max_positions is not None and (
+            type(self.max_positions) is not int or self.max_positions < 1
+        ):
+            raise ValueError("max_positions must be a positive integer")
+        try:
+            parameters = json.loads(self.parameters_json)
+        except json.JSONDecodeError as exc:
+            raise ValueError("candidate parameters_json is invalid") from exc
+        if json.dumps(
+            parameters,
+            sort_keys=True,
+            separators=(",", ":"),
+        ) != self.parameters_json:
+            raise ValueError("candidate parameters_json must be canonical")
+        if hashlib.sha256(_candidate_run_config_payload(self)).hexdigest() != (
+            self.config_sha256
+        ):
+            raise ValueError("candidate run config hash mismatch")
+
+
+def _candidate_run_config_payload(config: CandidateRunConfig) -> bytes:
+    return json.dumps(
+        {
+            name: value.isoformat() if isinstance(value, (date, datetime)) else value
+            for name, value in config.__dict__.items()
+            if name not in {"config_sha256", "_token"}
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def capture_candidate_run_config(
+    *,
+    decision_artifact_sha256: str,
+    dataset_identity_sha256: str,
+    split_identity_sha256: str,
+    split_evaluation_plan_sha256: str,
+    stage_plan_sha256: str,
+    final_stage_index: int,
+    completed_final_stage_hash: str,
+    cost_assumptions_sha256: str,
+    signal_session: date,
+    decision_at: datetime,
+    max_positions: int | None,
+) -> CandidateRunConfig:
+    parameters = {
+        "decision_at": require_aware_datetime(decision_at, "decision_at").isoformat(),
+        "final_stage_index": final_stage_index,
+        "max_positions": max_positions,
+        "signal_session": signal_session.isoformat(),
+    }
+    values = {
+        "decision_artifact_sha256": decision_artifact_sha256,
+        "dataset_identity_sha256": dataset_identity_sha256,
+        "split_identity_sha256": split_identity_sha256,
+        "split_evaluation_plan_sha256": split_evaluation_plan_sha256,
+        "stage_plan_sha256": stage_plan_sha256,
+        "final_stage_index": final_stage_index,
+        "completed_final_stage_hash": completed_final_stage_hash,
+        "cost_assumptions_sha256": cost_assumptions_sha256,
+        "signal_session": signal_session,
+        "decision_at": decision_at,
+        "max_positions": max_positions,
+        "parameters_json": json.dumps(
+            parameters,
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+    }
+    provisional = object.__new__(CandidateRunConfig)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    return CandidateRunConfig(
+        **values,
+        config_sha256=hashlib.sha256(
+            _candidate_run_config_payload(provisional)
+        ).hexdigest(),
+        _token=_CANDIDATE_RUN_CONFIG_TOKEN,
+    )
 
 
 @dataclass(frozen=True)
@@ -236,6 +357,7 @@ class StaticRebalanceResult:
     split_identity_sha256: str | None = None
     experiment_manifest_sha256: str | None = None
     split_evaluation_sha256: str | None = None
+    candidate_run_config_sha256: str | None = None
     cost_assumptions_sha256: str | None = None
     adverse_input_identity_hash: str | None = None
     adverse_stage_hash: str | None = None
@@ -704,10 +826,12 @@ def run_candidate_rebalance(
     universe_materialization: UniverseMaterialization,
     dataset_manifest: DatasetManifest,
     decision_artifact: DecisionArtifact,
+    candidate_run_config: CandidateRunConfig,
     experiment_events: tuple[ExperimentEvent, ...],
     experiment_manifest: ExperimentManifest,
     experiment_ledger: ExperimentLedgerReceipt,
     holdout_event: ExperimentEvent,
+    holdout_result_receipt: HoldoutResultReceipt,
     split_evaluation: SplitEvaluation,
     cost_assumptions: ExecutionCostAssumptions,
     stage_context: StageContext,
@@ -730,15 +854,68 @@ def run_candidate_rebalance(
         raise MarketDataError("dataset manifest semantic identity mismatch") from exc
     if not isinstance(cost_assumptions, ExecutionCostAssumptions):
         raise TypeError("cost_assumptions must be ExecutionCostAssumptions")
+    if not isinstance(candidate_run_config, CandidateRunConfig):
+        raise TypeError("candidate_run_config must be a captured CandidateRunConfig")
+    candidate_run_config.__post_init__()
     if not isinstance(experiment_ledger, ExperimentLedgerReceipt):
         raise TypeError("experiment_ledger must be a persistent ledger receipt")
     experiment_ledger.verify_current_bytes()
     require_adjusted_holdout_for_candidate(
         holdout_event,
+        receipt=holdout_result_receipt,
         manifest=experiment_manifest,
         events=experiment_events,
     )
     require_split_evaluation_for_candidate(split_evaluation)
+    if (
+        holdout_result_receipt.split_evaluation_sha256
+        != split_evaluation.evaluation_sha256
+        or holdout_event.split_evaluation_plan_sha256
+        != split_evaluation.plan_sha256
+    ):
+        raise MarketDataError(
+            "holdout result must bind the evaluated preregistered split plan"
+        )
+    expected_parameters = json.dumps(
+        {
+            "decision_at": require_aware_datetime(
+                decision_at,
+                "decision_at",
+            ).isoformat(),
+            "final_stage_index": stage_context.stage_index,
+            "max_positions": max_positions,
+            "signal_session": signal_session.isoformat(),
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    if (
+        candidate_run_config.decision_artifact_sha256
+        != decision_artifact.artifact_sha256
+        or candidate_run_config.dataset_identity_sha256
+        != dataset_manifest.identity_sha256
+        or candidate_run_config.split_identity_sha256
+        != dataset_manifest.split_manifest_sha256
+        or candidate_run_config.split_evaluation_plan_sha256
+        != split_evaluation.plan_sha256
+        or candidate_run_config.stage_plan_sha256 != stage_context.plan_sha256
+        or candidate_run_config.final_stage_index != stage_context.stage_index
+        or candidate_run_config.completed_final_stage_hash
+        != holdout_result_receipt.final_stage_hash
+        or candidate_run_config.cost_assumptions_sha256
+        != cost_assumptions.identity_sha256
+        or candidate_run_config.signal_session != signal_session
+        or candidate_run_config.decision_at
+        != require_aware_datetime(decision_at, "decision_at")
+        or candidate_run_config.max_positions != max_positions
+        or candidate_run_config.parameters_json != expected_parameters
+        or holdout_event.candidate_run_config_sha256
+        != candidate_run_config.config_sha256
+        or holdout_event.parameters_json != candidate_run_config.parameters_json
+    ):
+        raise MarketDataError(
+            "candidate run parameters or final-stage completion differ from preregistration"
+        )
     if (
         experiment_ledger.event_count != experiment_manifest.event_count
         or experiment_ledger.head_sha256 != experiment_manifest.head_sha256
@@ -796,6 +973,9 @@ def run_candidate_rebalance(
         provider_qualified
         and dataset_manifest.has_captured_semantics
         and dataset_manifest.has_pit_partitions
+        and dataset_manifest.has_verified_split_manifest
+        and holdout_event.external_anchor_capture_level
+        == "PROVIDER_QUALIFIED_CAPTURE"
     )
     common = {
         "signal_session": signal_session,
@@ -835,7 +1015,8 @@ def run_candidate_rebalance(
             f"{result.input_identity_hash}|{decision_artifact.artifact_sha256}|"
             f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
             f"{split_evaluation.evaluation_sha256}|"
-            f"{experiment_manifest.head_sha256}|{assumption_sha}|base"
+            f"{experiment_manifest.head_sha256}|{candidate_run_config.config_sha256}|"
+            f"{assumption_sha}|base"
         ).encode()
     ).hexdigest()
     receipt_hashes, stage_hash = _hashes(
@@ -848,7 +1029,8 @@ def run_candidate_rebalance(
             f"{adverse.input_identity_hash}|{decision_artifact.artifact_sha256}|"
             f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
             f"{split_evaluation.evaluation_sha256}|"
-            f"{experiment_manifest.head_sha256}|{assumption_sha}|adverse"
+            f"{experiment_manifest.head_sha256}|{candidate_run_config.config_sha256}|"
+            f"{assumption_sha}|adverse"
         ).encode()
     ).hexdigest()
     _, adverse_stage_hash = _hashes(
@@ -875,6 +1057,7 @@ def run_candidate_rebalance(
         split_identity_sha256=decision_artifact.split_identity_sha256,
         experiment_manifest_sha256=experiment_manifest.head_sha256,
         split_evaluation_sha256=split_evaluation.evaluation_sha256,
+        candidate_run_config_sha256=candidate_run_config.config_sha256,
         cost_assumptions_sha256=assumption_sha,
         adverse_input_identity_hash=adverse_identity,
         adverse_stage_hash=adverse_stage_hash,

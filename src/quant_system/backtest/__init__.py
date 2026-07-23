@@ -16,6 +16,7 @@ from .costs import (
     TransactionCostModel,
 )
 from .event_loop import (
+    CandidateRunConfig,
     DecisionArtifact,
     DecisionContext,
     ExecutionInput,
@@ -25,6 +26,7 @@ from .event_loop import (
     StaticRebalanceResult,
     TerminalAction,
     blocked_exit_from_receipt,
+    capture_candidate_run_config,
     capture_decision_artifact,
     create_stage_plan,
     genesis_stage,
@@ -38,6 +40,7 @@ __all__ = [
     "BlockedExitOrder",
     "CapacityObservation",
     "CapacityPolicy",
+    "CandidateRunConfig",
     "CostBreakdown",
     "CostStressCase",
     "DecisionArtifact",
@@ -57,6 +60,7 @@ __all__ = [
     "advance_blocked_exit",
     "assess_capacity",
     "blocked_exit_from_receipt",
+    "capture_candidate_run_config",
     "capture_decision_artifact",
     "create_stage_plan",
     "execute_ready_blocked_exit",

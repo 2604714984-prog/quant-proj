@@ -11,12 +11,14 @@ import json
 import math
 import random
 import statistics
-from typing import Literal, Sequence, TypeAlias
+from typing import Literal, Mapping, Sequence, TypeAlias
 
 
 DateLike: TypeAlias = date | datetime
 EvaluationMethod = Literal["non_overlapping", "hac", "block_bootstrap"]
 _EVALUATION_TOKEN = object()
+_MANIFEST_TOKEN = object()
+_PLAN_TOKEN = object()
 
 
 def _time_text(value: DateLike) -> str:
@@ -43,10 +45,43 @@ class SplitSample:
 class SplitManifest:
     samples: tuple[SplitSample, ...]
     manifest_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _MANIFEST_TOKEN:
+            raise ValueError("SplitManifest must come from a controlled builder or loader")
+        if hashlib.sha256(_manifest_payload(self.samples)).hexdigest() != (
+            self.manifest_sha256
+        ):
+            raise ValueError("split manifest hash mismatch")
+
+    def verify(self) -> None:
+        self.__post_init__()
+
+
+@dataclass(frozen=True)
+class SplitEvaluationPlan:
+    holdout_id: str
+    manifest_sha256: str
+    selected_sample_ids: tuple[str, ...]
+    method: EvaluationMethod
+    hac_bandwidth: int | None
+    block_length: int | None
+    bootstrap_replicates: int | None
+    preregistered_at: datetime
+    plan_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _PLAN_TOKEN:
+            raise ValueError("SplitEvaluationPlan must come from its controlled builder")
+        if hashlib.sha256(_plan_payload(self)).hexdigest() != self.plan_sha256:
+            raise ValueError("split evaluation plan hash mismatch")
 
 
 @dataclass(frozen=True)
 class SplitEvaluation:
+    plan_sha256: str
     method: EvaluationMethod
     selected_sample_ids: tuple[str, ...]
     nominal_n: int
@@ -80,6 +115,92 @@ def _evaluation_payload(evaluation: SplitEvaluation) -> bytes:
         sort_keys=True,
         separators=(",", ":"),
     ).encode()
+
+
+def _sample_payload(sample: SplitSample) -> dict[str, str]:
+    return {
+        "entity_id": sample.entity_id,
+        "fold_id": sample.fold_id,
+        "label_end_at": _time_text(sample.label_end_at),
+        "label_time_type": type(sample.label_end_at).__name__,
+        "observed_at": _time_text(sample.observed_at),
+        "observed_time_type": type(sample.observed_at).__name__,
+        "overlap_group": sample.overlap_group,
+        "sample_id": sample.sample_id,
+    }
+
+
+def _manifest_payload(samples: tuple[SplitSample, ...]) -> bytes:
+    return json.dumps(
+        tuple(_sample_payload(sample) for sample in samples),
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def serialize_split_manifest(manifest: SplitManifest) -> bytes:
+    manifest.verify()
+    return json.dumps(
+        {
+            "manifest_sha256": manifest.manifest_sha256,
+            "samples": tuple(_sample_payload(sample) for sample in manifest.samples),
+            "version": 1,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def load_split_manifest(payload: bytes) -> SplitManifest:
+    try:
+        decoded = json.loads(payload)
+    except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("split manifest bytes must be valid JSON") from exc
+    if (
+        type(decoded) is not dict
+        or set(decoded) != {"manifest_sha256", "samples", "version"}
+        or decoded["version"] != 1
+    ):
+        raise ValueError("split manifest envelope is invalid")
+    samples: list[SplitSample] = []
+    for row in decoded["samples"]:
+        if type(row) is not dict or set(row) != {
+            "entity_id",
+            "fold_id",
+            "label_end_at",
+            "label_time_type",
+            "observed_at",
+            "observed_time_type",
+            "overlap_group",
+            "sample_id",
+        }:
+            raise ValueError("split manifest sample schema is invalid")
+
+        def parse_time(value: str, value_type: str) -> DateLike:
+            if value_type == "date":
+                return date.fromisoformat(value)
+            if value_type == "datetime":
+                parsed = datetime.fromisoformat(value)
+                if parsed.tzinfo is None or parsed.utcoffset() is None:
+                    raise ValueError("split manifest datetime must be timezone-aware")
+                return parsed
+            raise ValueError("split manifest time type is invalid")
+
+        samples.append(
+            SplitSample(
+                sample_id=row["sample_id"],
+                entity_id=row["entity_id"],
+                observed_at=parse_time(row["observed_at"], row["observed_time_type"]),
+                label_end_at=parse_time(row["label_end_at"], row["label_time_type"]),
+                fold_id=row["fold_id"],
+                overlap_group=row["overlap_group"],
+            )
+        )
+    return SplitManifest(
+        tuple(samples),
+        str(decoded["manifest_sha256"]),
+        _token=_MANIFEST_TOKEN,
+    )
 
 
 def build_split_manifest(
@@ -170,28 +291,97 @@ def build_split_manifest(
         )
         for row in sorted(rows, key=lambda item: str(item["sample_id"]))
     )
-    payload = tuple(sample.__dict__ for sample in samples)
-    digest = hashlib.sha256(
-        json.dumps(payload, sort_keys=True, separators=(",", ":"), default=_time_text).encode()
-    ).hexdigest()
-    return SplitManifest(samples, digest)
+    digest = hashlib.sha256(_manifest_payload(samples)).hexdigest()
+    return SplitManifest(samples, digest, _token=_MANIFEST_TOKEN)
+
+
+def _plan_payload(plan: SplitEvaluationPlan) -> bytes:
+    return json.dumps(
+        {
+            name: value.isoformat() if isinstance(value, datetime) else value
+            for name, value in plan.__dict__.items()
+            if name not in {"plan_sha256", "_token"}
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def build_split_evaluation_plan(
+    manifest: SplitManifest,
+    *,
+    holdout_id: str,
+    selected_sample_ids: Sequence[str],
+    method: EvaluationMethod,
+    preregistered_at: datetime,
+    hac_bandwidth: int | None = None,
+    block_length: int | None = None,
+    bootstrap_replicates: int = 1000,
+) -> SplitEvaluationPlan:
+    manifest.verify()
+    if not isinstance(holdout_id, str) or not holdout_id.strip():
+        raise ValueError("holdout_id must be stable nonempty text")
+    if preregistered_at.tzinfo is None or preregistered_at.utcoffset() is None:
+        raise ValueError("preregistered_at must be timezone-aware")
+    selected = tuple(selected_sample_ids)
+    if not selected or len(selected) != len(set(selected)):
+        raise ValueError("selected_sample_ids must be nonempty and unique")
+    by_id = {sample.sample_id: sample for sample in manifest.samples}
+    if not set(selected) <= set(by_id):
+        raise ValueError("selected sample is absent from split manifest")
+    canonical_selected = tuple(
+        sample.sample_id
+        for sample in sorted(
+            (by_id[sample_id] for sample_id in selected),
+            key=lambda sample: (
+                sample.observed_at,
+                sample.entity_id,
+                sample.label_end_at,
+                sample.sample_id,
+            ),
+        )
+    )
+    values = {
+        "holdout_id": holdout_id.strip(),
+        "manifest_sha256": manifest.manifest_sha256,
+        "selected_sample_ids": canonical_selected,
+        "method": method,
+        "hac_bandwidth": hac_bandwidth,
+        "block_length": block_length,
+        "bootstrap_replicates": (
+            bootstrap_replicates if method == "block_bootstrap" else None
+        ),
+        "preregistered_at": preregistered_at,
+    }
+    provisional = object.__new__(SplitEvaluationPlan)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    return SplitEvaluationPlan(
+        **values,
+        plan_sha256=hashlib.sha256(_plan_payload(provisional)).hexdigest(),
+        _token=_PLAN_TOKEN,
+    )
 
 
 def evaluate_split(
     manifest: SplitManifest,
     *,
-    selected_sample_ids: Sequence[str],
-    returns: Sequence[float],
-    method: EvaluationMethod,
-    hac_bandwidth: int | None = None,
-    block_length: int | None = None,
-    bootstrap_replicates: int = 1000,
+    plan: SplitEvaluationPlan,
+    returns_by_sample: Mapping[str, float],
 ) -> SplitEvaluation:
     if not isinstance(manifest, SplitManifest):
         raise TypeError("manifest must be a SplitManifest")
-    selected = tuple(selected_sample_ids)
-    if not selected or len(selected) != len(set(selected)):
-        raise ValueError("selected_sample_ids must be nonempty and unique")
+    manifest.verify()
+    if not isinstance(plan, SplitEvaluationPlan):
+        raise TypeError("plan must be a SplitEvaluationPlan")
+    plan.__post_init__()
+    if plan.manifest_sha256 != manifest.manifest_sha256:
+        raise ValueError("split evaluation plan does not bind this manifest")
+    selected = plan.selected_sample_ids
+    method = plan.method
+    hac_bandwidth = plan.hac_bandwidth
+    block_length = plan.block_length
+    bootstrap_replicates = plan.bootstrap_replicates or 0
     by_id = {sample.sample_id: sample for sample in manifest.samples}
     if not set(selected) <= set(by_id):
         raise ValueError("selected sample is absent from split manifest")
@@ -207,14 +397,16 @@ def evaluate_split(
     )
     if method == "non_overlapping" and overlapping:
         raise ValueError("non-overlapping evaluation selected overlapping labels")
-    frozen_returns = tuple(returns)
-    if len(frozen_returns) != len(selected) or len(frozen_returns) < 2 or any(
+    if set(returns_by_sample) != set(selected):
+        raise ValueError("returns_by_sample must exactly cover preregistered samples")
+    frozen_returns = tuple(returns_by_sample[sample_id] for sample_id in selected)
+    if len(frozen_returns) < 2 or any(
         not isinstance(value, (int, float))
         or isinstance(value, bool)
         or not math.isfinite(float(value))
         for value in frozen_returns
     ):
-        raise ValueError("returns must provide at least two finite values in selected order")
+        raise ValueError("returns must provide at least two finite values")
     values = tuple(float(value) for value in frozen_returns)
     mean = statistics.fmean(values)
     sample_variance = statistics.variance(values)
@@ -224,8 +416,9 @@ def evaluate_split(
         "hac_bandwidth": hac_bandwidth,
         "block_length": block_length,
         "bootstrap_replicates": (
-            bootstrap_replicates if method == "block_bootstrap" else None
+            plan.bootstrap_replicates if method == "block_bootstrap" else None
         ),
+        "plan_sha256": plan.plan_sha256,
     }
     if method == "non_overlapping":
         if hac_bandwidth is not None or block_length is not None:
@@ -292,12 +485,16 @@ def evaluate_split(
     if standard_error <= 0 or not math.isfinite(standard_error):
         raise ValueError("evaluation standard error must be positive and finite")
     returns_sha = hashlib.sha256(
-        json.dumps(values, separators=(",", ":")).encode()
+        json.dumps(
+            tuple(zip(selected, values, strict=True)),
+            separators=(",", ":"),
+        ).encode()
     ).hexdigest()
     estimator_sha = hashlib.sha256(
         json.dumps(estimator, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
     values_by_field = {
+        "plan_sha256": plan.plan_sha256,
         "method": method,
         "selected_sample_ids": selected,
         "nominal_n": len(selected),
@@ -311,7 +508,7 @@ def evaluate_split(
         "hac_bandwidth": hac_bandwidth,
         "block_length": block_length,
         "bootstrap_replicates": (
-            bootstrap_replicates if method == "block_bootstrap" else None
+            plan.bootstrap_replicates if method == "block_bootstrap" else None
         ),
     }
     provisional = object.__new__(SplitEvaluation)
