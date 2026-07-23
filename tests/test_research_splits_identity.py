@@ -119,7 +119,7 @@ def test_split_inputs_fail_closed_on_ambiguous_time_or_labels() -> None:
 
 
 def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
-    observations = tuple(date(2026, 1, day) for day in range(1, 8))
+    observations = tuple(date(2026, 1, 1) + timedelta(days=day) for day in range(35))
     labels = tuple(value + timedelta(days=5) for value in observations)
     manifest = build_split_manifest(
         entity_ids=("AAA",) * len(observations),
@@ -129,11 +129,11 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
     )
 
     selected = tuple(sample.sample_id for sample in manifest.samples)
-    returns = (0.01, -0.02, 0.03, 0.01, -0.01, 0.02, 0.04)
+    returns = tuple((day % 7 - 2) / 100 for day in range(35))
     returns_by_sample = dict(zip(selected, returns, strict=True))
-    assert len(manifest.samples) == 7
-    assert len({sample.sample_id for sample in manifest.samples}) == 7
-    assert len({sample.overlap_group for sample in manifest.samples}) < 7
+    assert len(manifest.samples) == 35
+    assert len({sample.sample_id for sample in manifest.samples}) == 35
+    assert len({sample.overlap_group for sample in manifest.samples}) < 35
     with pytest.raises(ValueError, match="overlapping labels"):
         evaluate_split(
             manifest,
@@ -160,12 +160,13 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
         returns_by_sample=returns_by_sample,
     )
     require_split_evaluation_for_candidate(corrected)
-    assert corrected.nominal_n == 7
-    assert 1 <= corrected.effective_n <= 7
+    assert corrected.nominal_n == 35
+    assert 1 <= corrected.effective_n <= 35
     assert corrected.standard_error > 0
     assert corrected.hac_bandwidth == 2
     assert len(corrected.returns_sha256) == 64
     assert len(corrected.estimator_sha256) == 64
+    assert corrected.inference_distribution == "hac_asymptotic_normal_min_n_30"
 
     bootstrapped = evaluate_split(
         manifest,
@@ -184,6 +185,8 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
     assert bootstrapped.block_length == 3
     assert bootstrapped.bootstrap_replicates == 250
     assert bootstrapped.standard_error > 0
+    assert bootstrapped.inference_distribution == "centered_moving_block_empirical"
+    assert 0 < bootstrapped.raw_pvalue <= 1
 
     loaded = load_split_manifest(serialize_split_manifest(manifest))
     assert loaded == manifest
@@ -202,6 +205,77 @@ def test_same_day_multi_security_panel_has_distinct_stable_sample_ids() -> None:
 
     assert len({sample.sample_id for sample in manifest.samples}) == 2
     assert len({sample.overlap_group for sample in manifest.samples}) == 1
+
+
+def test_daily_portfolio_unit_aggregates_panel_and_rejects_cross_fold_or_small_n() -> None:
+    days = tuple(date(2026, 2, 1) + timedelta(days=index) for index in range(5))
+    entities = tuple(entity for day in days for entity in ("AAA", "BBB"))
+    observed = tuple(day for day in days for _ in range(2))
+    manifest = build_split_manifest(
+        entity_ids=entities,
+        observed_at=observed,
+        label_end_at=observed,
+        fold_ids=("holdout",) * len(observed),
+    )
+    plan = build_split_evaluation_plan(
+        manifest,
+        holdout_id="panel-holdout",
+        selected_sample_ids=tuple(reversed([sample.sample_id for sample in manifest.samples])),
+        method="non_overlapping",
+        preregistered_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+    )
+    returns = {
+        sample.sample_id: (
+            0.01 * (days.index(sample.observed_at) + 1)
+            + (0.0 if sample.entity_id == "AAA" else 0.01)
+        )
+        for sample in manifest.samples
+    }
+    evaluation = evaluate_split(manifest, plan=plan, returns_by_sample=returns)
+    assert evaluation.evaluation_unit == "daily_portfolio"
+    assert evaluation.nominal_n == 5
+    assert evaluation.inference_distribution == "student_t_df_4"
+    assert 0 <= evaluation.raw_pvalue <= 1
+
+    too_small = build_split_manifest(
+        entity_ids=("AAA", "AAA"),
+        observed_at=days[:2],
+        label_end_at=days[:2],
+        fold_ids=("holdout", "holdout"),
+    )
+    with pytest.raises(ValueError, match="at least 5 daily portfolio returns"):
+        evaluate_split(
+            too_small,
+            plan=build_split_evaluation_plan(
+                too_small,
+                holdout_id="small",
+                selected_sample_ids=tuple(
+                    sample.sample_id for sample in too_small.samples
+                ),
+                method="non_overlapping",
+                preregistered_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            ),
+            returns_by_sample={sample.sample_id: 0.1 for sample in too_small.samples},
+        )
+
+    mixed = build_split_manifest(
+        entity_ids=("AAA",) * 5,
+        observed_at=days,
+        label_end_at=days,
+        fold_ids=("one", "one", "two", "two", "two"),
+    )
+    with pytest.raises(ValueError, match="cannot mix fold IDs"):
+        evaluate_split(
+            mixed,
+            plan=build_split_evaluation_plan(
+                mixed,
+                holdout_id="mixed",
+                selected_sample_ids=tuple(sample.sample_id for sample in mixed.samples),
+                method="non_overlapping",
+                preregistered_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            ),
+            returns_by_sample={sample.sample_id: 0.1 for sample in mixed.samples},
+        )
 
 
 def _identity(**overrides: object) -> str:

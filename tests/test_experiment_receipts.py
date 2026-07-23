@@ -38,12 +38,18 @@ def _anchor():
     ).source
 
 
-def _evaluation(*, holdout_id: str = "holdout-001", returns=(0.10, 0.11)):
+def _evaluation(
+    *,
+    holdout_id: str = "holdout-001",
+    returns=(0.10, 0.11, 0.09, 0.12, 0.08),
+):
+    count = len(returns)
+    observed = tuple(date(2026, 1, 1) + timedelta(days=index) for index in range(count))
     manifest = build_split_manifest(
-        entity_ids=("AAA", "BBB"),
-        observed_at=(date(2026, 1, 1), date(2026, 1, 2)),
-        label_end_at=(date(2026, 1, 1), date(2026, 1, 2)),
-        fold_ids=("holdout", "holdout"),
+        entity_ids=tuple(f"S{index}" for index in range(count)),
+        observed_at=observed,
+        label_end_at=observed,
+        fold_ids=("holdout",) * count,
     )
     plan = build_split_evaluation_plan(
         manifest,
@@ -92,7 +98,12 @@ def _preregister(
     )
 
 
-def _receipt(trial_id: str, *, holdout_id: str = "holdout-001", returns=(0.10, 0.11)):
+def _receipt(
+    trial_id: str,
+    *,
+    holdout_id: str = "holdout-001",
+    returns=(0.10, 0.11, 0.09, 0.12, 0.08),
+):
     _, evaluation = _evaluation(holdout_id=holdout_id, returns=returns)
     return capture_holdout_result(
         trial_id=trial_id,
@@ -105,7 +116,7 @@ def _receipt(trial_id: str, *, holdout_id: str = "holdout-001", returns=(0.10, 0
 
 def test_holdout_family_cannot_extend_after_access() -> None:
     events = _preregister()
-    receipt = _receipt("trial-001", returns=(-0.1, 0.1))
+    receipt = _receipt("trial-001", returns=(-0.1, 0.1, -0.1, 0.1, 0.0))
     events = record_holdout_result(
         events,
         receipt=receipt,
@@ -135,7 +146,7 @@ def test_deleting_failed_trial_breaks_frozen_manifest() -> None:
     events = _preregister()
     events = record_holdout_result(
         events,
-        receipt=_receipt("trial-001", returns=(-0.1, 0.1)),
+        receipt=_receipt("trial-001", returns=(-0.1, 0.1, -0.1, 0.1, 0.0)),
         multiplicity_method="holm",
     )
     manifest = freeze_experiment_manifest(events)
@@ -201,7 +212,11 @@ def test_complete_family_is_recorded_atomically_with_computed_holm_values() -> N
         )
     receipts = (
         _receipt("trial-a", holdout_id="holdout-002"),
-        _receipt("trial-b", holdout_id="holdout-002", returns=(0.08, 0.10)),
+        _receipt(
+            "trial-b",
+            holdout_id="holdout-002",
+            returns=(0.08, 0.10, 0.07, 0.09, 0.08),
+        ),
     )
     completed = record_holdout_family_results(
         events,

@@ -7,7 +7,6 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib
 import json
-import math
 import os
 from pathlib import Path
 import re
@@ -251,7 +250,7 @@ def capture_holdout_result(
     if not isinstance(split_evaluation, SplitEvaluation):
         raise TypeError("split_evaluation must be a SplitEvaluation")
     split_evaluation.__post_init__()
-    raw_pvalue = math.erfc(abs(split_evaluation.statistic) / math.sqrt(2.0))
+    raw_pvalue = split_evaluation.raw_pvalue
     result_sha = hashlib.sha256(
         json.dumps(
             {

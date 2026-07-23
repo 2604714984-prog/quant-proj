@@ -16,6 +16,7 @@ from typing import Literal, Mapping, Sequence, TypeAlias
 
 DateLike: TypeAlias = date | datetime
 EvaluationMethod = Literal["non_overlapping", "hac", "block_bootstrap"]
+EvaluationUnit = Literal["daily_portfolio"]
 _EVALUATION_TOKEN = object()
 _MANIFEST_TOKEN = object()
 _PLAN_TOKEN = object()
@@ -64,6 +65,7 @@ class SplitEvaluationPlan:
     holdout_id: str
     manifest_sha256: str
     selected_sample_ids: tuple[str, ...]
+    evaluation_unit: EvaluationUnit
     method: EvaluationMethod
     hac_bandwidth: int | None
     block_length: int | None
@@ -84,6 +86,7 @@ class SplitEvaluation:
     plan_sha256: str
     method: EvaluationMethod
     selected_sample_ids: tuple[str, ...]
+    evaluation_unit: EvaluationUnit
     nominal_n: int
     effective_n: float
     overlap_corrected: bool
@@ -91,6 +94,8 @@ class SplitEvaluation:
     returns_sha256: str
     estimator_sha256: str
     statistic: float
+    raw_pvalue: float
+    inference_distribution: str
     standard_error: float
     hac_bandwidth: int | None
     block_length: int | None
@@ -314,6 +319,7 @@ def build_split_evaluation_plan(
     selected_sample_ids: Sequence[str],
     method: EvaluationMethod,
     preregistered_at: datetime,
+    evaluation_unit: EvaluationUnit = "daily_portfolio",
     hac_bandwidth: int | None = None,
     block_length: int | None = None,
     bootstrap_replicates: int = 1000,
@@ -329,6 +335,8 @@ def build_split_evaluation_plan(
     by_id = {sample.sample_id: sample for sample in manifest.samples}
     if not set(selected) <= set(by_id):
         raise ValueError("selected sample is absent from split manifest")
+    if evaluation_unit != "daily_portfolio":
+        raise ValueError("only daily_portfolio evaluation is candidate-controlled")
     canonical_selected = tuple(
         sample.sample_id
         for sample in sorted(
@@ -345,6 +353,7 @@ def build_split_evaluation_plan(
         "holdout_id": holdout_id.strip(),
         "manifest_sha256": manifest.manifest_sha256,
         "selected_sample_ids": canonical_selected,
+        "evaluation_unit": evaluation_unit,
         "method": method,
         "hac_bandwidth": hac_bandwidth,
         "block_length": block_length,
@@ -388,8 +397,10 @@ def evaluate_split(
     if method not in {"non_overlapping", "hac", "block_bootstrap"}:
         raise ValueError("unsupported split evaluation method")
     selected_samples = tuple(by_id[sample_id] for sample_id in selected)
+    if len({sample.fold_id for sample in selected_samples}) != 1:
+        raise ValueError("one split evaluation cannot mix fold IDs")
     overlapping = any(
-        left.fold_id == right.fold_id
+        left.observed_at != right.observed_at
         and left.observed_at <= right.label_end_at
         and right.observed_at <= left.label_end_at
         for index, left in enumerate(selected_samples)
@@ -400,19 +411,31 @@ def evaluate_split(
     if set(returns_by_sample) != set(selected):
         raise ValueError("returns_by_sample must exactly cover preregistered samples")
     frozen_returns = tuple(returns_by_sample[sample_id] for sample_id in selected)
-    if len(frozen_returns) < 2 or any(
+    if any(
         not isinstance(value, (int, float))
         or isinstance(value, bool)
         or not math.isfinite(float(value))
         for value in frozen_returns
     ):
-        raise ValueError("returns must provide at least two finite values")
-    values = tuple(float(value) for value in frozen_returns)
+        raise ValueError("returns must provide finite values")
+    by_time: dict[str, list[float]] = defaultdict(list)
+    for sample_id, value in zip(selected, frozen_returns, strict=True):
+        by_time[_time_text(by_id[sample_id].observed_at)].append(float(value))
+    temporal_returns = tuple(
+        (observed_at, statistics.fmean(by_time[observed_at]))
+        for observed_at in sorted(by_time)
+    )
+    values = tuple(value for _, value in temporal_returns)
+    minimum_n = {"non_overlapping": 5, "hac": 30, "block_bootstrap": 20}[method]
+    if len(values) < minimum_n:
+        raise ValueError(f"{method} requires at least {minimum_n} daily portfolio returns")
     mean = statistics.fmean(values)
     sample_variance = statistics.variance(values)
     estimator = {
         "method": method,
-        "version": 1,
+        "version": 2,
+        "evaluation_unit": plan.evaluation_unit,
+        "minimum_n": minimum_n,
         "hac_bandwidth": hac_bandwidth,
         "block_length": block_length,
         "bootstrap_replicates": (
@@ -425,6 +448,9 @@ def evaluate_split(
             raise ValueError("non-overlapping evaluation does not accept correction parameters")
         standard_error = math.sqrt(sample_variance / len(values))
         effective_n = float(len(values))
+        statistic = mean / standard_error
+        raw_pvalue = _student_t_two_sided_pvalue(statistic, len(values) - 1)
+        inference_distribution = f"student_t_df_{len(values) - 1}"
     elif method == "hac":
         if (
             type(hac_bandwidth) is not int
@@ -447,6 +473,9 @@ def evaluate_split(
             float(len(values)),
             max(1.0, sample_variance / (standard_error * standard_error)),
         )
+        statistic = mean / standard_error
+        raw_pvalue = math.erfc(abs(statistic) / math.sqrt(2.0))
+        inference_distribution = "hac_asymptotic_normal_min_n_30"
     else:
         if (
             type(block_length) is not int
@@ -459,6 +488,7 @@ def evaluate_split(
                 "block bootstrap requires block_length in [2, nominal_n] "
                 "and at least 200 replicates"
             )
+        centered_values = tuple(value - mean for value in values)
         seed_payload = json.dumps(
             {"returns": values, **estimator},
             sort_keys=True,
@@ -471,7 +501,7 @@ def evaluate_split(
             while len(sample) < len(values):
                 start = generator.randrange(len(values))
                 sample.extend(
-                    values[(start + offset) % len(values)]
+                    centered_values[(start + offset) % len(values)]
                     for offset in range(block_length)
                 )
             bootstrap_means.append(statistics.fmean(sample[: len(values)]))
@@ -482,11 +512,17 @@ def evaluate_split(
             float(len(values)),
             max(1.0, sample_variance / (standard_error * standard_error)),
         )
+        statistic = mean / standard_error
+        exceedances = sum(
+            abs(bootstrap_mean) >= abs(mean) for bootstrap_mean in bootstrap_means
+        )
+        raw_pvalue = (exceedances + 1) / (bootstrap_replicates + 1)
+        inference_distribution = "centered_moving_block_empirical"
     if standard_error <= 0 or not math.isfinite(standard_error):
         raise ValueError("evaluation standard error must be positive and finite")
     returns_sha = hashlib.sha256(
         json.dumps(
-            tuple(zip(selected, values, strict=True)),
+            temporal_returns,
             separators=(",", ":"),
         ).encode()
     ).hexdigest()
@@ -497,13 +533,16 @@ def evaluate_split(
         "plan_sha256": plan.plan_sha256,
         "method": method,
         "selected_sample_ids": selected,
-        "nominal_n": len(selected),
+        "evaluation_unit": plan.evaluation_unit,
+        "nominal_n": len(values),
         "effective_n": float(effective_n),
         "overlap_corrected": method in {"hac", "block_bootstrap"} or not overlapping,
         "manifest_sha256": manifest.manifest_sha256,
         "returns_sha256": returns_sha,
         "estimator_sha256": estimator_sha,
-        "statistic": mean / standard_error,
+        "statistic": statistic,
+        "raw_pvalue": raw_pvalue,
+        "inference_distribution": inference_distribution,
         "standard_error": standard_error,
         "hac_bandwidth": hac_bandwidth,
         "block_length": block_length,
@@ -519,6 +558,71 @@ def evaluate_split(
         **values_by_field,
         evaluation_sha256=digest,
         _token=_EVALUATION_TOKEN,
+    )
+
+
+def _regularized_incomplete_beta(x: float, a: float, b: float) -> float:
+    """Numerically stable regularized incomplete beta for Student-t tails."""
+
+    if not 0 <= x <= 1 or a <= 0 or b <= 0:
+        raise ValueError("invalid incomplete beta arguments")
+    if x in {0.0, 1.0}:
+        return x
+
+    def continued_fraction(aa: float, bb: float, xx: float) -> float:
+        qab, qap, qam = aa + bb, aa + 1.0, aa - 1.0
+        c, d = 1.0, 1.0 - qab * xx / qap
+        d = 1.0 / max(abs(d), 1e-300) * (1 if d >= 0 else -1)
+        result = d
+        for index in range(1, 201):
+            twice = 2 * index
+            coefficient = index * (bb - index) * xx / (
+                (qam + twice) * (aa + twice)
+            )
+            d = 1.0 + coefficient * d
+            d = 1.0 / max(abs(d), 1e-300) * (1 if d >= 0 else -1)
+            c = 1.0 + coefficient / c
+            c = max(abs(c), 1e-300) * (1 if c >= 0 else -1)
+            result *= d * c
+            coefficient = -(aa + index) * (qab + index) * xx / (
+                (aa + twice) * (qap + twice)
+            )
+            d = 1.0 + coefficient * d
+            d = 1.0 / max(abs(d), 1e-300) * (1 if d >= 0 else -1)
+            c = 1.0 + coefficient / c
+            c = max(abs(c), 1e-300) * (1 if c >= 0 else -1)
+            delta = d * c
+            result *= delta
+            if abs(delta - 1.0) < 3e-14:
+                break
+        return result
+
+    factor = math.exp(
+        math.lgamma(a + b)
+        - math.lgamma(a)
+        - math.lgamma(b)
+        + a * math.log(x)
+        + b * math.log1p(-x)
+    )
+    if x < (a + 1.0) / (a + b + 2.0):
+        return factor * continued_fraction(a, b, x) / a
+    return 1.0 - factor * continued_fraction(b, a, 1.0 - x) / b
+
+
+def _student_t_two_sided_pvalue(statistic: float, degrees_of_freedom: int) -> float:
+    if degrees_of_freedom < 1:
+        raise ValueError("Student-t inference requires positive degrees of freedom")
+    x = degrees_of_freedom / (degrees_of_freedom + statistic * statistic)
+    return min(
+        1.0,
+        max(
+            0.0,
+            _regularized_incomplete_beta(
+                x,
+                degrees_of_freedom / 2.0,
+                0.5,
+            ),
+        ),
     )
 
 
