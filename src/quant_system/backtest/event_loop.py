@@ -98,7 +98,8 @@ _NO_OPEN_EVENT_BASIS = "confirmed_no_open_event"
 _DECISION_ARTIFACT_TOKEN = object()
 _STAGE_CONTEXT_TOKEN = object()
 _CANDIDATE_RUN_CONFIG_TOKEN = object()
-_RESULT_TOKEN = object()
+_EXPERIMENT_RESULT_TOKEN = object()
+_CONTROLLED_STAGE_TOKEN = object()
 
 
 @dataclass(frozen=True)
@@ -605,13 +606,34 @@ class StaticRebalanceResult:
     strategy_candidate_available: bool = False
     _token: object | None = field(default=None, repr=False, compare=False)
 
-    def verify_controlled_result(self) -> None:
-        if self._token is not _RESULT_TOKEN:
-            raise ValueError("stage result must come from the event-loop runner")
+    def verify_experimental_result(self) -> None:
+        if self._token is not _EXPERIMENT_RESULT_TOKEN:
+            raise ValueError("experimental result must come from run_static_rebalance")
         _sha256(self.stage_hash, "stage_hash")
         _sha256(self.prior_stage_hash, "prior_stage_hash")
         if not math.isfinite(self.final_nav):
             raise ValueError("stage result final NAV must be finite")
+
+
+@dataclass(frozen=True)
+class ControlledStageResult(StaticRebalanceResult):
+    """A stage executed from frozen decision and universe artifacts, without a callback."""
+
+    def verify_controlled_result(self) -> None:
+        if self._token is not _CONTROLLED_STAGE_TOKEN:
+            raise ValueError("controlled result must come from run_controlled_stage")
+        if self.interface_grade not in {
+            "CONTROLLED_STAGE",
+            "GROSS_ONLY_EXPERIMENT",
+            "RETROSPECTIVE_RESEARCH_ONLY",
+            "GENERIC_CAPTURE_EXPERIMENT",
+            "CONTROLLED_CANDIDATE_INPUT",
+        }:
+            raise ValueError("controlled result interface grade is invalid")
+        _sha256(self.stage_hash, "stage_hash")
+        _sha256(self.prior_stage_hash, "prior_stage_hash")
+        if not math.isfinite(self.final_nav):
+            raise ValueError("controlled stage final NAV must be finite")
 
 
 def create_stage_plan(sessions: tuple[date, ...]) -> StagePlan:
@@ -643,8 +665,14 @@ def genesis_stage(plan: StagePlan) -> StageContext:
     )
 
 
-def next_stage(plan: StagePlan, previous: StaticRebalanceResult) -> StageContext:
-    if not isinstance(plan, StagePlan) or not isinstance(previous, StaticRebalanceResult):
+def next_stage(
+    plan: StagePlan,
+    previous: StaticRebalanceResult | ControlledStageResult,
+) -> StageContext:
+    if not isinstance(plan, StagePlan) or not isinstance(
+        previous,
+        (StaticRebalanceResult, ControlledStageResult),
+    ):
         raise TypeError("next_stage requires a StagePlan and previous result")
     if previous.stage_plan_sha256 != plan.plan_sha256:
         raise ValueError("previous result belongs to a different stage plan")
@@ -1062,8 +1090,62 @@ def run_static_rebalance(
         stage_context.stage_session,
         stage_context.prior_stage_hash,
         execution_evidence_grade=_execution_evidence_grade(rows),
-        _token=_RESULT_TOKEN,
+        _token=_EXPERIMENT_RESULT_TOKEN,
     )
+
+
+def run_controlled_stage(
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    *,
+    signal_session: date,
+    decision_at: datetime,
+    execution_inputs: tuple[ExecutionInput, ...],
+    universe_materialization: UniverseMaterialization,
+    decision_artifact: DecisionArtifact,
+    stage_context: StageContext,
+    execution_calendar_revision: AcceptedSessionCalendar | None = None,
+    capacity_policy: CapacityPolicy | None = None,
+    max_positions: int | None = None,
+    slippage_bps: float = 0.0,
+) -> ControlledStageResult:
+    """Execute one stage from frozen artifacts without accepting caller strategy code."""
+
+    if not isinstance(decision_artifact, DecisionArtifact):
+        raise TypeError("decision_artifact must be a captured DecisionArtifact")
+    if not isinstance(universe_materialization, UniverseMaterialization):
+        raise TypeError("universe_materialization must be controlled")
+    cutoff = require_aware_datetime(decision_at, "decision_at")
+    if decision_artifact.decision_at != cutoff:
+        raise MarketDataError("decision artifact decision_at mismatch")
+    decision_artifact.verify_current_bytes()
+    universe_materialization.verify_current_bytes()
+    experimental = run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=signal_session,
+        decision_at=cutoff,
+        execution_inputs=execution_inputs,
+        execution_calendar_revision=execution_calendar_revision,
+        universe_members=universe_materialization.members,
+        universe_snapshot=universe_materialization.snapshot,
+        target_weights=lambda _: dict(decision_artifact.weights),
+        strategy_definition_sha256=decision_artifact.strategy_definition_sha256,
+        strategy_adapter_sha256=decision_artifact.strategy_adapter_sha256,
+        stage_context=stage_context,
+        capacity_policy=capacity_policy,
+        max_positions=max_positions,
+        slippage_bps=slippage_bps,
+    )
+    values = {
+        item.name: getattr(experimental, item.name)
+        for item in fields(StaticRebalanceResult)
+    }
+    values["interface_grade"] = "CONTROLLED_STAGE"
+    values["_token"] = _CONTROLLED_STAGE_TOKEN
+    controlled = ControlledStageResult(**values)
+    controlled.verify_controlled_result()
+    return controlled
 
 
 def run_candidate_rebalance(
@@ -1089,7 +1171,7 @@ def run_candidate_rebalance(
     stage_context: StageContext,
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
     max_positions: int | None = None,
-) -> StaticRebalanceResult:
+) -> ControlledStageResult:
     """Run the controlled interface from weights computed from frozen bytes only."""
 
     if not isinstance(decision_artifact, DecisionArtifact):
@@ -1201,7 +1283,6 @@ def run_candidate_rebalance(
         raise MarketDataError("decision artifact decision_at mismatch")
     decision_artifact.verify_current_bytes()
     universe_materialization.verify_current_bytes()
-    universe_members = universe_materialization.members
     universe_snapshot = universe_materialization.snapshot
     if dataset_manifest.universe_snapshot_sha256 != universe_materialization.materialization_sha256:
         raise MarketDataError("dataset manifest must bind the frozen universe partition")
@@ -1249,11 +1330,8 @@ def run_candidate_rebalance(
         "decision_at": cutoff,
         "execution_inputs": execution_inputs,
         "execution_calendar_revision": execution_calendar_revision,
-        "universe_members": universe_members,
-        "universe_snapshot": universe_snapshot,
-        "target_weights": lambda _: dict(decision_artifact.weights),
-        "strategy_definition_sha256": decision_artifact.strategy_definition_sha256,
-        "strategy_adapter_sha256": decision_artifact.strategy_adapter_sha256,
+        "universe_materialization": universe_materialization,
+        "decision_artifact": decision_artifact,
         "capacity_policy": cost_assumptions.capacity_policy,
         "max_positions": max_positions,
         "stage_context": stage_context,
@@ -1261,7 +1339,7 @@ def run_candidate_rebalance(
     base_portfolio = deepcopy(portfolio)
     base_portfolio.costs = cost_assumptions.base.transaction_cost_model()
     base_portfolio.a_share_stamp_tax_schedule = False
-    result = run_static_rebalance(
+    result = run_controlled_stage(
         base_portfolio,
         calendar,
         slippage_bps=cost_assumptions.base.slippage_bps,
@@ -1275,7 +1353,7 @@ def run_candidate_rebalance(
     adverse_portfolio = deepcopy(base_portfolio)
     adverse_portfolio.costs = cost_assumptions.adverse.transaction_cost_model()
     adverse_portfolio.a_share_stamp_tax_schedule = False
-    adverse = run_static_rebalance(
+    adverse = run_controlled_stage(
         adverse_portfolio,
         calendar,
         slippage_bps=cost_assumptions.adverse.slippage_bps,

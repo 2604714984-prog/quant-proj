@@ -7,7 +7,11 @@ import pytest
 from quant_system.data import capture_source_bytes, parse_provider_observation
 import quant_system.research.experiments as experiment_module
 import quant_system.backtest.event_loop as event_loop_module
-from quant_system.backtest.event_loop import StaticRebalanceResult, create_stage_plan
+from quant_system.backtest.event_loop import (
+    ControlledStageResult,
+    StaticRebalanceResult,
+    create_stage_plan,
+)
 from quant_system.research.experiments import (
     capture_family_anchor,
     capture_final_run_receipt,
@@ -156,7 +160,7 @@ def _receipt(
 ):
     _, evaluation = _evaluation(holdout_id=holdout_id, returns=returns)
     stage_plan = create_stage_plan((date(2026, 7, 1),))
-    executed = object.__new__(StaticRebalanceResult)
+    executed = object.__new__(ControlledStageResult)
     for name, value in {
         "stage_plan_sha256": stage_plan.plan_sha256,
         "stage_index": 0,
@@ -164,7 +168,8 @@ def _receipt(
         "prior_stage_hash": "0" * 64,
         "stage_hash": "d" * 64,
         "final_nav": 100.0,
-        "_token": event_loop_module._RESULT_TOKEN,
+        "interface_grade": "CONTROLLED_STAGE",
+        "_token": event_loop_module._CONTROLLED_STAGE_TOKEN,
     }.items():
         object.__setattr__(executed, name, value)
     final_run_receipt = capture_final_run_receipt(stage_plan, (executed,))
@@ -264,7 +269,7 @@ def test_final_run_receipt_requires_complete_ordered_stage_chain() -> None:
     plan = create_stage_plan((date(2026, 7, 1), date(2026, 7, 2)))
 
     def result(index: int, prior: str, stage_hash: str):
-        item = object.__new__(StaticRebalanceResult)
+        item = object.__new__(ControlledStageResult)
         for name, value in {
             "stage_plan_sha256": plan.plan_sha256,
             "stage_index": index,
@@ -272,7 +277,8 @@ def test_final_run_receipt_requires_complete_ordered_stage_chain() -> None:
             "prior_stage_hash": prior,
             "stage_hash": stage_hash,
             "final_nav": 100.0 + index,
-            "_token": event_loop_module._RESULT_TOKEN,
+            "interface_grade": "CONTROLLED_STAGE",
+            "_token": event_loop_module._CONTROLLED_STAGE_TOKEN,
         }.items():
             object.__setattr__(item, name, value)
         return item
@@ -285,6 +291,10 @@ def test_final_run_receipt_requires_complete_ordered_stage_chain() -> None:
         capture_final_run_receipt(plan, (first,))
     with pytest.raises(ValueError, match="skipped, reordered, or replaced"):
         capture_final_run_receipt(plan, (second, first))
+
+    experimental = object.__new__(StaticRebalanceResult)
+    with pytest.raises(ValueError, match="one actual result"):
+        capture_final_run_receipt(plan, (experimental, second))
 
 
 def test_complete_family_is_recorded_atomically_with_computed_holm_values(tmp_path) -> None:

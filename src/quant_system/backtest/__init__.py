@@ -18,6 +18,7 @@ from .costs import (
 from .event_loop import (
     CandidateRunConfig,
     CandidateRunBundle,
+    ControlledStageResult,
     DecisionArtifact,
     DecisionContext,
     ExecutionInput,
@@ -34,6 +35,7 @@ from .event_loop import (
     load_candidate_run_bundle,
     next_stage,
     run_candidate_rebalance,
+    run_controlled_stage,
     run_static_rebalance,
     serialize_candidate_run_bundle,
 )
@@ -45,6 +47,7 @@ __all__ = [
     "CapacityPolicy",
     "CandidateRunConfig",
     "CandidateRunBundle",
+    "ControlledStageResult",
     "CostBreakdown",
     "CostStressCase",
     "DecisionArtifact",
@@ -72,6 +75,7 @@ __all__ = [
     "load_candidate_run_bundle",
     "next_stage",
     "run_candidate_rebalance",
+    "run_controlled_stage",
     "run_static_rebalance",
     "serialize_candidate_run_bundle",
 ]

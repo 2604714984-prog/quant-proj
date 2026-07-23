@@ -33,6 +33,7 @@ from quant_system.backtest import (
     load_candidate_run_bundle,
     next_stage,
     run_candidate_rebalance,
+    run_controlled_stage,
     run_static_rebalance,
     serialize_candidate_run_bundle,
 )
@@ -2905,18 +2906,15 @@ def _run_candidate_rebalance(
         "cost_assumptions"
     ].base.transaction_cost_model()
     executed_portfolio.a_share_stamp_tax_schedule = False
-    executed_result = run_static_rebalance(
+    executed_result = run_controlled_stage(
         executed_portfolio,
         calendar,
         signal_session=kwargs["signal_session"],
         decision_at=decision_at,
         execution_inputs=kwargs["execution_inputs"],
         execution_calendar_revision=kwargs.get("execution_calendar_revision"),
-        universe_members=kwargs["universe_materialization"].members,
-        universe_snapshot=kwargs["universe_materialization"].snapshot,
-        target_weights=lambda _: dict(artifact.weights),
-        strategy_definition_sha256=artifact.strategy_definition_sha256,
-        strategy_adapter_sha256=artifact.strategy_adapter_sha256,
+        universe_materialization=kwargs["universe_materialization"],
+        decision_artifact=artifact,
         capacity_policy=kwargs["cost_assumptions"].capacity_policy,
         max_positions=kwargs.get("max_positions"),
         stage_context=kwargs["stage_context"],
@@ -3577,9 +3575,12 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
     assert gross.strategy_candidate_available is False
     assert observed_cost_models == [
         (False, 0.0005),
-        (False, 0.001),
         (False, 0.0005),
         (False, 0.001),
+        (False, 0.0005),
+        (False, 0.0005),
+        (False, 0.001),
+        (False, 0.0),
         (False, 0.0),
         (False, 0.0),
     ]

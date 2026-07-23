@@ -291,14 +291,14 @@ def _final_run_payload(receipt: FinalRunReceipt) -> bytes:
 def capture_final_run_receipt(stage_plan: object, results: tuple[object, ...]) -> FinalRunReceipt:
     """Freeze the complete, ordered result chain for an executed StagePlan."""
 
-    from quant_system.backtest.event_loop import StagePlan, StaticRebalanceResult
+    from quant_system.backtest.event_loop import ControlledStageResult, StagePlan
 
     if not isinstance(stage_plan, StagePlan):
         raise TypeError("stage_plan must be a controlled StagePlan")
     if (
         type(results) is not tuple
         or len(results) != len(stage_plan.sessions)
-        or any(not isinstance(result, StaticRebalanceResult) for result in results)
+        or any(not isinstance(result, ControlledStageResult) for result in results)
     ):
         raise ValueError("final run requires one actual result for every planned stage")
     prior = "0" * 64
