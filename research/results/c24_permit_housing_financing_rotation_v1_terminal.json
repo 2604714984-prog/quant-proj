@@ -1,0 +1,60 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C24_PERMIT_HOUSING_FINANCING_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE24",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053547757",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053623429",
+    "preoutcome_commit": "49d83ed5ccf6660959a494aefdf001c8d170053e",
+    "definition_sha256": "dcd53908c0c5fc92ac7a09a0a005d21982b023b5c0a812025ced8e68f35a47f2",
+    "adapter_sha256": "76e91c107a19a3ca689f67b668f08089cf3a6576556b14b5e5354c0840705d08",
+    "runner_sha256": "80916cae17ec671e545212d7017b62bff235307361caa311b9fb254575844abc",
+    "input_packet_sha256": "9d640c45d1c53e74d77eac667624766e886f0d0dd3dd178e1f80fe703bcd2af6"
+  },
+  "one_use_validation": {
+    "claim_sha256": "2d13068264b654ee101515b9016cd3871f600702ecc9bd3a543ade88b27e33a1",
+    "result_sha256": "b055548a705f44a41fbd5b4a0fc601e27f394d6334ba82021797fdb64c2927ce",
+    "observed_intervals": 28,
+    "gates_passed": 1,
+    "gates_total": 3,
+    "passed_gates": [
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator"
+    ],
+    "failed_gates": [
+      "arithmetic_mean_paired_active_return_strictly_positive",
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator"
+    ],
+    "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false
+  },
+  "program_multiplicity": {
+    "cycle24_familywise_alpha": 0.0000000059604644775390625,
+    "cycle1_to_cycle24_union_bound": 0.0999999940395355224609375,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "method_limitation": "PERMIT is a revisable seasonally adjusted annual-rate estimate rather than completed construction or realized spending; no holdout inference was opened.",
+  "terminal_state": {
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the PERMIT direction, vintage rule, lag, threshold, transform, smoothing, target mapping, comparator, cost, split, source or signal combination."
+}
