@@ -604,6 +604,52 @@ def test_no_fill_outcome_is_post_open_and_never_carried_by_instruction() -> None
         )
 
 
+def test_next_retry_instruction_must_follow_prior_no_fill_observation() -> None:
+    order = _blocked_order()
+    first = order.calendar.session_on(
+        order.requested_session,
+        as_of=datetime(2026, 7, 15, tzinfo=UTC),
+    )
+    second = order.calendar.next_session(
+        first.session_date,
+        as_of=first.open_at + timedelta(microseconds=1),
+    )
+    first_event = _no_fill_event(order, first.session_date, "suspended")
+    second_event = _no_fill_event(order, second.session_date, "limit_down_sell_rejected")
+    first_instruction = RetryInstruction(
+        first.open_at - timedelta(microseconds=1),
+        first.session_date,
+    )
+    stale_second_instruction = RetryInstruction(
+        first.open_at - timedelta(microseconds=1),
+        second.session_date,
+    )
+
+    with pytest.raises(MarketDataError, match="follow the prior no-fill"):
+        BlockedExitOrder(
+            order.symbol,
+            order.shares,
+            order.requested_session,
+            order.calendar,
+            retry_instructions=(first_instruction, stale_second_instruction),
+            no_fill_events=(first_event, second_event),
+        )
+
+    valid_second_instruction = RetryInstruction(
+        first_event.observed_at + timedelta(microseconds=1),
+        second.session_date,
+    )
+    advanced = BlockedExitOrder(
+        order.symbol,
+        order.shares,
+        order.requested_session,
+        order.calendar,
+        retry_instructions=(first_instruction, valid_second_instruction),
+        no_fill_events=(first_event, second_event),
+    )
+    assert advanced.retry_instructions[-1].decision_at > first_event.observed_at
+
+
 def test_blocked_exit_normalizes_stateful_numbers_once_before_sale() -> None:
     shares = _StatefulFloat(100, fail_on_call=2)
     order = BlockedExitOrder(

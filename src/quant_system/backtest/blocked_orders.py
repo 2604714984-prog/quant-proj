@@ -180,6 +180,7 @@ class BlockedExitOrder:
             raise ValueError("every retry instruction requires one post-open no-fill event")
 
         previous_session: date | None = None
+        previous_event: NoFillEvent | None = None
         for instruction, event in zip(
             self.retry_instructions,
             self.no_fill_events,
@@ -196,8 +197,16 @@ class BlockedExitOrder:
                 )
                 if accepted != expected:
                     raise ValueError("retry instructions must use consecutive accepted sessions")
+                if (
+                    previous_event is not None
+                    and instruction.decision_at <= previous_event.observed_at
+                ):
+                    raise MarketDataError(
+                        "next retry instruction must follow the prior no-fill observation"
+                    )
             _validate_no_fill_event(self, accepted, event)
             previous_session = accepted.session_date
+            previous_event = event
 
         if self.fill_event is None:
             if any(
