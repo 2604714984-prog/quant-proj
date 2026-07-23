@@ -269,7 +269,6 @@ def _parser() -> argparse.ArgumentParser:
     append.add_argument("--source-family-id")
     append.add_argument("--provider-id")
     append.add_argument("--subject-id")
-    append.add_argument("--canonical-owner")
     append.add_argument("--contract-version")
     append.add_argument("--execute", action="store_true")
     return parser
@@ -341,7 +340,6 @@ def main(argv: list[str] | None = None) -> int:
         "source_family_id",
         "provider_id",
         "subject_id",
-        "canonical_owner",
         "contract_version",
     )
     missing = tuple(name for name in controlled_fields if getattr(args, name) is None)
@@ -370,7 +368,6 @@ def main(argv: list[str] | None = None) -> int:
         source_identity=source_receipt.source,
         code_sha256=_package_code_sha256(),
         config_sha256=_settings_sha256(settings),
-        canonical_owner=args.canonical_owner,
         contract_version=args.contract_version,
         max_rows=settings.writer.max_rows_per_batch,
         lock_timeout_seconds=settings.writer.lock_timeout_seconds,

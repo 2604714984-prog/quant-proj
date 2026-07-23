@@ -45,8 +45,6 @@ def _controlled_args(tmp_path: Path) -> list[str]:
         "fixture-provider",
         "--subject-id",
         "market.daily",
-        "--canonical-owner",
-        "quant-system",
         "--contract-version",
         "market.daily.v1",
     ]

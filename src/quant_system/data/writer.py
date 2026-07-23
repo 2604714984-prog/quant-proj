@@ -34,6 +34,7 @@ METADATA_COLUMNS = (
     ("target", "VARCHAR", "NO"),
     ("source_sha256", "VARCHAR", "NO"),
     ("source_identity_json", "VARCHAR", "NO"),
+    ("capture_level", "VARCHAR", "NO"),
     ("code_sha256", "VARCHAR", "NO"),
     ("config_sha256", "VARCHAR", "NO"),
     ("contract_version", "VARCHAR", "NO"),
@@ -43,6 +44,8 @@ METADATA_COLUMNS = (
     ("existing_rows", "BIGINT", "NO"),
     ("completed_at", "TIMESTAMP WITH TIME ZONE", "NO"),
 )
+CANONICAL_WRITER_OWNER = "quant-system"
+MINIMUM_WRITE_CAPTURE_LEVEL = "GENERIC_CAPTURE"
 TARGET_CONTRACT_COLUMNS = (
     ("target", "VARCHAR", "NO"),
     ("ordered_natural_keys", "VARCHAR", "NO"),
@@ -62,6 +65,7 @@ class AppendResult:
     batch_sha256: str
     source_sha256: str
     source_capture_receipt_sha256: str
+    capture_level: str
     code_sha256: str
     config_sha256: str
     contract_version: str
@@ -94,6 +98,7 @@ def _stable_text(value: str, label: str) -> str:
 def _source_identity_json(source: SourceIdentity) -> str:
     payload = {
         "available_at": source.available_at.isoformat(),
+        "capture_level": source.capture_level,
         "capture_byte_count": source.capture_byte_count,
         "capture_receipt_sha256": source.capture_receipt_sha256,
         "content_sha256": source.content_sha256,
@@ -353,6 +358,7 @@ def _ensure_metadata(connection: duckdb.DuckDBPyConnection) -> None:
         "CREATE TABLE IF NOT EXISTS _quant_meta.ingest_runs ("
         "batch_id VARCHAR PRIMARY KEY, target VARCHAR NOT NULL, "
         "source_sha256 VARCHAR NOT NULL, source_identity_json VARCHAR NOT NULL, "
+        "capture_level VARCHAR NOT NULL, "
         "code_sha256 VARCHAR NOT NULL, config_sha256 VARCHAR NOT NULL, "
         "contract_version VARCHAR NOT NULL, batch_sha256 VARCHAR NOT NULL, "
         "row_count BIGINT NOT NULL, inserted_rows BIGINT NOT NULL, "
@@ -422,6 +428,7 @@ def _validate_previous(
     target: str,
     source_sha256: str,
     source_identity_json: str,
+    capture_level: str,
     code_sha256: str,
     config_sha256: str,
     contract_version: str,
@@ -432,15 +439,16 @@ def _validate_previous(
         target,
         source_sha256,
         source_identity_json,
+        capture_level,
         code_sha256,
         config_sha256,
         contract_version,
         batch_sha256,
         row_count,
     )
-    if previous[:8] != expected:
+    if previous[:9] != expected:
         raise DataWriteError("batch_id is already bound to different input")
-    stored = tuple(int(value) for value in previous[7:10])
+    stored = tuple(int(value) for value in previous[8:11])
     stored_rows, stored_inserted, stored_existing = stored
     if (
         min(stored) < 0
@@ -462,7 +470,6 @@ def append_rows(
     source_identity: SourceIdentity,
     code_sha256: str,
     config_sha256: str,
-    canonical_owner: str,
     contract_version: str,
     max_rows: int = 100_000,
     lock_timeout_seconds: float = 5.0,
@@ -489,8 +496,14 @@ def append_rows(
         config_sha256=config_sha256,
         max_rows=max_rows,
     )
-    canonical_owner = _stable_text(canonical_owner, "canonical_owner")
     contract_version = _stable_text(contract_version, "contract_version")
+    if source_identity.capture_level not in {
+        MINIMUM_WRITE_CAPTURE_LEVEL,
+        "PROVIDER_QUALIFIED_CAPTURE",
+    }:
+        raise DataWriteError(
+            f"writer requires at least {MINIMUM_WRITE_CAPTURE_LEVEL}"
+        )
     source_sha256 = source_identity.content_sha256
     source_json = _source_identity_json(source_identity)
     keys = tuple(natural_keys)
@@ -514,11 +527,12 @@ def append_rows(
                     target=target,
                     keys=keys,
                     schema_sha256=schema_sha256,
-                    canonical_owner=canonical_owner,
+                    canonical_owner=CANONICAL_WRITER_OWNER,
                     contract_version=contract_version,
                 )
                 previous = connection.execute(
-                    "SELECT target, source_sha256, source_identity_json, code_sha256, "
+                    "SELECT target, source_sha256, source_identity_json, capture_level, "
+                    "code_sha256, "
                     "config_sha256, contract_version, batch_sha256, row_count, "
                     "inserted_rows, existing_rows FROM _quant_meta.ingest_runs "
                     "WHERE batch_id = ?",
@@ -530,6 +544,7 @@ def append_rows(
                         target=target,
                         source_sha256=source_sha256,
                         source_identity_json=source_json,
+                        capture_level=source_identity.capture_level,
                         code_sha256=code_sha256,
                         config_sha256=config_sha256,
                         contract_version=contract_version,
@@ -634,6 +649,7 @@ def append_rows(
                         source_capture_receipt_sha256=(
                             source_identity.capture_receipt_sha256 or ""
                         ),
+                        capture_level=source_identity.capture_level,
                         code_sha256=code_sha256,
                         config_sha256=config_sha256,
                         contract_version=contract_version,
@@ -649,12 +665,13 @@ def append_rows(
                     )
                 connection.execute(
                     "INSERT INTO _quant_meta.ingest_runs VALUES "
-                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                    "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     [
                         batch_id,
                         target,
                         source_sha256,
                         source_json,
+                        source_identity.capture_level,
                         code_sha256,
                         config_sha256,
                         contract_version,
@@ -697,6 +714,7 @@ def append_rows(
         batch_sha256=batch_sha256,
         source_sha256=source_sha256,
         source_capture_receipt_sha256=source_identity.capture_receipt_sha256 or "",
+        capture_level=source_identity.capture_level,
         code_sha256=code_sha256,
         config_sha256=config_sha256,
         contract_version=contract_version,

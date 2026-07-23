@@ -74,7 +74,6 @@ def _append(path: Path, rows: list[dict[str, object]], batch: str, source: str):
         source_identity=_source(source),
         code_sha256=CODE_SHA,
         config_sha256=CONFIG_SHA,
-        canonical_owner="quant-system",
         contract_version="market.daily.v1",
     )
 
@@ -119,7 +118,6 @@ def test_target_contract_rejects_key_and_schema_drift(tmp_path: Path) -> None:
             source_identity=_source(SOURCE_B),
             code_sha256=CODE_SHA,
             config_sha256=CONFIG_SHA,
-            canonical_owner="quant-system",
             contract_version="market.daily.v1",
         )
 
@@ -137,7 +135,6 @@ def test_target_contract_rejects_key_and_schema_drift(tmp_path: Path) -> None:
             source_identity=_source("schema-drift"),
             code_sha256=CODE_SHA,
             config_sha256=CONFIG_SHA,
-            canonical_owner="quant-system",
             contract_version="market.daily.v1",
         )
 
@@ -166,7 +163,6 @@ def test_writer_rejects_manual_source_identity_before_write(tmp_path: Path) -> N
             source_identity=manual,
             code_sha256=CODE_SHA,
             config_sha256=CONFIG_SHA,
-            canonical_owner="quant-system",
             contract_version="market.daily.v1",
         )
     with duckdb.connect(str(path), read_only=True) as connection:
@@ -183,17 +179,19 @@ def test_ingest_receipt_persists_structured_lineage(tmp_path: Path) -> None:
 
     with duckdb.connect(str(path), read_only=True) as connection:
         lineage = connection.execute(
-            "SELECT source_identity_json, code_sha256, config_sha256, contract_version "
+            "SELECT source_identity_json, capture_level, code_sha256, config_sha256, "
+            "contract_version "
             "FROM _quant_meta.ingest_runs WHERE batch_id='batch-001'"
         ).fetchone()
         contract = connection.execute(
             "SELECT ordered_natural_keys, schema_sha256, canonical_owner, contract_version "
             "FROM _quant_meta.target_contracts WHERE target='market.daily'"
         ).fetchone()
-    assert json.loads(lineage[0])["capture_receipt_sha256"] == (
-        result.source_capture_receipt_sha256
-    )
-    assert lineage[1:] == (CODE_SHA, CONFIG_SHA, "market.daily.v1")
+    stored_source = json.loads(lineage[0])
+    assert stored_source["capture_receipt_sha256"] == result.source_capture_receipt_sha256
+    assert stored_source["capture_level"] == "GENERIC_CAPTURE"
+    assert lineage[1:] == ("GENERIC_CAPTURE", CODE_SHA, CONFIG_SHA, "market.daily.v1")
+    assert result.capture_level == "GENERIC_CAPTURE"
     assert json.loads(contract[0]) == ["symbol", "trade_date"]
     assert len(contract[1]) == 64
     assert contract[2:] == ("quant-system", "market.daily.v1")
@@ -328,7 +326,6 @@ def test_public_writer_rejects_private_metadata_schema(tmp_path: Path) -> None:
             source_identity=_source(SOURCE_A),
             code_sha256=CODE_SHA,
             config_sha256=CONFIG_SHA,
-            canonical_owner="quant-system",
             contract_version="market.daily.v1",
         )
 
