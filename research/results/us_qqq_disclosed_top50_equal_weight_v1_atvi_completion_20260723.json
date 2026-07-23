@@ -1,0 +1,49 @@
+{
+  "central_database": {
+    "database_path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "inserted": true,
+    "mapped_count": 93,
+    "row_count": 93,
+    "snapshot_id": "qqq_identity_complete_20260723_767fbc6dbfa92cb9",
+    "table": "us_equity_research.qqq_security_mapping_research",
+    "transaction_committed": true
+  },
+  "contract": {
+    "path": "/home/rongyu/workspace/.wt-us-qqq-disclosed-top50-equal-weight-v1/research/definitions/us_qqq_disclosed_top50_equal_weight_v1_atvi_completion.json",
+    "sha256": "4f27ca58478c146c13cba957d74e69fab9d85e97a241f2aeb0f057797da80a11"
+  },
+  "counts": {
+    "input_count": 93,
+    "mapped_count": 93,
+    "unmapped_count": 0
+  },
+  "current_status": "current",
+  "date": "2026-07-23",
+  "execution_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1_ATVI_IDENTITY_COMPLETION",
+  "failure": null,
+  "market": "US",
+  "next_action": "Qualify and fill adjusted daily prices for the complete mapped universe.",
+  "normalized_artifact": {
+    "path": "/home/rongyu/workspace/quant-data/staging/us_qqq_disclosed_top50_equal_weight_v1/atvi_completion/normalized/complete_cusip_mapping.csv",
+    "sha256": "767fbc6dbfa92cb921dddfd9c3accde6b50777002a32ca9513626fe811fe45c2"
+  },
+  "phase": "SINGLE_SECURITY_IDENTITY_COMPLETION",
+  "quality_gates": {
+    "all_93_cusips_mapped": true,
+    "central_write_committed": true,
+    "exact_atvi_gap_completed": true,
+    "prices_or_returns_accessed": false
+  },
+  "research_boundaries": {
+    "broker_order_paper_live_auto_enabled": false,
+    "current_executable_stock_list_output": false,
+    "strategy_candidate_available": false
+  },
+  "research_id": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1",
+  "result": "SECURITY_MAPPING_COMPLETE_PRICE_ACQUISITION_AUTHORIZED",
+  "source": {
+    "path": "/home/rongyu/workspace/quant-data/staging/us_qqq_disclosed_top50_equal_weight_v1/atvi_completion/raw/atvi_2019_10q.htm",
+    "sha256": "a275916979e41be37107556602d90d1e102f490d0094bb6121a7e272be4f7e76",
+    "url": "https://www.sec.gov/Archives/edgar/data/718877/000071887719000015/atvi-6302019x10xq.htm"
+  }
+}
