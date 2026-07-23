@@ -43,6 +43,12 @@ from quant_system.markets.us import (
     decide_fill as us_fill, resolve_mark,
 )
 from quant_system.research.identity import DatasetManifest
+from quant_system.research.experiments import (
+    ExperimentEvent,
+    ExperimentLedgerReceipt,
+    ExperimentManifest,
+    require_adjusted_holdout_for_candidate,
+)
 from .blocked_orders import (
     BLOCKED_EXIT_REASONS,
     BlockedExitOrder,
@@ -221,6 +227,7 @@ class StaticRebalanceResult:
     decision_artifact_sha256: str | None = None
     dataset_identity_sha256: str | None = None
     split_identity_sha256: str | None = None
+    experiment_manifest_sha256: str | None = None
     cost_assumptions_sha256: str | None = None
     adverse_input_identity_hash: str | None = None
     adverse_stage_hash: str | None = None
@@ -648,6 +655,10 @@ def run_candidate_rebalance(
     universe_materialization: UniverseMaterialization,
     dataset_manifest: DatasetManifest,
     decision_artifact: DecisionArtifact,
+    experiment_events: tuple[ExperimentEvent, ...],
+    experiment_manifest: ExperimentManifest,
+    experiment_ledger: ExperimentLedgerReceipt,
+    holdout_event: ExperimentEvent,
     cost_assumptions: ExecutionCostAssumptions,
     stage_context: StageContext,
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
@@ -665,6 +676,19 @@ def run_candidate_rebalance(
         raise TypeError("dataset_manifest must be a DatasetManifest")
     if not isinstance(cost_assumptions, ExecutionCostAssumptions):
         raise TypeError("cost_assumptions must be ExecutionCostAssumptions")
+    if not isinstance(experiment_ledger, ExperimentLedgerReceipt):
+        raise TypeError("experiment_ledger must be a persistent ledger receipt")
+    experiment_ledger.verify_current_bytes()
+    require_adjusted_holdout_for_candidate(
+        holdout_event,
+        manifest=experiment_manifest,
+        events=experiment_events,
+    )
+    if (
+        experiment_ledger.event_count != experiment_manifest.event_count
+        or experiment_ledger.head_sha256 != experiment_manifest.head_sha256
+    ):
+        raise MarketDataError("persistent experiment ledger does not match manifest")
     if any(row.capacity is None for row in execution_inputs):
         raise MarketDataError("candidate execution requires capacity evidence for every input")
     if any(row.currency != cost_assumptions.currency for row in execution_inputs):
@@ -686,6 +710,12 @@ def run_candidate_rebalance(
         )
     if decision_artifact.split_identity_sha256 != dataset_manifest.split_manifest_sha256:
         raise MarketDataError("decision artifact split identity must match the dataset manifest")
+    if (
+        holdout_event.definition_sha256 != decision_artifact.strategy_definition_sha256
+        or holdout_event.dataset_sha256 != dataset_manifest.identity_sha256
+        or holdout_event.split_sha256 != dataset_manifest.split_manifest_sha256
+    ):
+        raise MarketDataError("holdout evidence does not bind candidate strategy/data/split")
     _require_candidate_sources(
         calendar,
         execution_inputs,
@@ -730,7 +760,7 @@ def run_candidate_rebalance(
         (
             f"{result.input_identity_hash}|{decision_artifact.artifact_sha256}|"
             f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
-            f"{assumption_sha}|base"
+            f"{experiment_manifest.head_sha256}|{assumption_sha}|base"
         ).encode()
     ).hexdigest()
     receipt_hashes, stage_hash = _hashes(
@@ -742,7 +772,7 @@ def run_candidate_rebalance(
         (
             f"{adverse.input_identity_hash}|{decision_artifact.artifact_sha256}|"
             f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
-            f"{assumption_sha}|adverse"
+            f"{experiment_manifest.head_sha256}|{assumption_sha}|adverse"
         ).encode()
     ).hexdigest()
     _, adverse_stage_hash = _hashes(
@@ -765,6 +795,7 @@ def run_candidate_rebalance(
         decision_artifact_sha256=decision_artifact.artifact_sha256,
         dataset_identity_sha256=decision_artifact.dataset_identity_sha256,
         split_identity_sha256=decision_artifact.split_identity_sha256,
+        experiment_manifest_sha256=experiment_manifest.head_sha256,
         cost_assumptions_sha256=assumption_sha,
         adverse_input_identity_hash=adverse_identity,
         adverse_stage_hash=adverse_stage_hash,

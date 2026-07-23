@@ -7,9 +7,11 @@ from quant_system.research.identity import (
 )
 from quant_system.research.experiments import (
     ExperimentEvent,
+    ExperimentLedgerReceipt,
     ExperimentManifest,
     freeze_experiment_manifest,
     preregister_trial,
+    persist_experiment_ledger,
     record_holdout_result,
     require_adjusted_holdout_for_candidate,
     verify_experiment_manifest,
@@ -30,6 +32,7 @@ __all__ = [
     "build_dataset_manifest",
     "DatasetManifest",
     "ExperimentEvent",
+    "ExperimentLedgerReceipt",
     "ExperimentManifest",
     "SplitEvaluation",
     "SplitManifest",
@@ -38,6 +41,7 @@ __all__ = [
     "evaluate_split",
     "freeze_experiment_manifest",
     "preregister_trial",
+    "persist_experiment_ledger",
     "purged_embargo_train_mask",
     "record_holdout_result",
     "require_adjusted_holdout_for_candidate",

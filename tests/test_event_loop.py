@@ -56,6 +56,12 @@ from quant_system.markets.universe import (
 )
 from quant_system.markets.us import CorporateActionValuationError
 from quant_system.research.identity import build_dataset_manifest
+from quant_system.research.experiments import (
+    freeze_experiment_manifest,
+    persist_experiment_ledger,
+    preregister_trial,
+    record_holdout_result,
+)
 
 UTC = timezone.utc
 DEFINITION_SHA = hashlib.sha256(b"fixture-strategy-definition-v1").hexdigest()
@@ -2729,6 +2735,65 @@ def _dataset_manifest(materialization: UniverseMaterialization, session: date):
     )
 
 
+def _run_candidate_rebalance(
+    tmp_path: Path,
+    portfolio: Portfolio,
+    calendar: AcceptedSessionCalendar,
+    **kwargs,
+):
+    artifact = kwargs["decision_artifact"]
+    if not isinstance(artifact, DecisionArtifact):
+        return run_candidate_rebalance(
+            portfolio,
+            calendar,
+            experiment_events=(),
+            experiment_manifest=None,  # type: ignore[arg-type]
+            experiment_ledger=None,  # type: ignore[arg-type]
+            holdout_event=None,  # type: ignore[arg-type]
+            **kwargs,
+        )
+    decision_at = kwargs["decision_at"]
+    events = preregister_trial(
+        (),
+        trial_id=f"trial-{artifact.artifact_sha256[:12]}",
+        definition_sha256=artifact.strategy_definition_sha256,
+        dataset_sha256=artifact.dataset_identity_sha256,
+        split_sha256=artifact.split_identity_sha256,
+        parameters={"fixture": True},
+        multiplicity_family_id=f"family-{artifact.artifact_sha256[:12]}",
+        preregistered_at=decision_at - timedelta(days=1),
+        external_anchor_sha256=hashlib.sha256(
+            f"external:{artifact.artifact_sha256}".encode()
+        ).hexdigest(),
+        alpha=0.05,
+        family_size=1,
+    )
+    events = record_holdout_result(
+        events,
+        trial_id=events[0].trial_id,
+        holdout_access_at=decision_at - timedelta(seconds=1),
+        result_sha256=hashlib.sha256(b"fixture-holdout-result").hexdigest(),
+        result_status="PASSED",
+        multiplicity_method="holm",
+        raw_pvalue=0.01,
+        adjusted_pvalue=0.01,
+    )
+    manifest = freeze_experiment_manifest(events)
+    ledger = persist_experiment_ledger(
+        tmp_path / f"experiment-{artifact.artifact_sha256}.ndjson",
+        events,
+    )
+    return run_candidate_rebalance(
+        portfolio,
+        calendar,
+        experiment_events=events,
+        experiment_manifest=manifest,
+        experiment_ledger=ledger,
+        holdout_event=events[-1],
+        **kwargs,
+    )
+
+
 def test_callable_interface_is_permanently_experimental() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14))
     calendar = _calendar(days, "Asia/Shanghai")
@@ -2947,7 +3012,8 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         dataset_identity_sha256=dataset_manifest.identity_sha256,
     )
 
-    result = run_candidate_rebalance(
+    result = _run_candidate_rebalance(
+        tmp_path,
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
         calendar,
         signal_session=days[0],
@@ -2977,7 +3043,8 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         minimum_score=0.5,
         name="-different-definition",
     )
-    rebound = run_candidate_rebalance(
+    rebound = _run_candidate_rebalance(
+        tmp_path,
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
         calendar,
         signal_session=days[0],
@@ -3023,7 +3090,8 @@ def test_candidate_retrospective_execution_is_research_only(tmp_path: Path) -> N
         decision_at,
         dataset_identity_sha256=dataset_manifest.identity_sha256,
     )
-    result = run_candidate_rebalance(
+    result = _run_candidate_rebalance(
+        tmp_path,
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
         calendar,
         signal_session=days[0],
@@ -3071,7 +3139,8 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
     before = deepcopy(portfolio.__dict__)
 
     with pytest.raises(TypeError, match="ExecutionCostAssumptions"):
-        run_candidate_rebalance(
+        _run_candidate_rebalance(
+            tmp_path,
             portfolio,
             calendar,
             signal_session=days[0],
@@ -3084,7 +3153,8 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
             stage_context=genesis_stage(create_stage_plan((days[0],))),
         )
     with pytest.raises(MarketDataError, match="capacity evidence"):
-        run_candidate_rebalance(
+        _run_candidate_rebalance(
+            tmp_path,
             portfolio,
             calendar,
             signal_session=days[0],
@@ -3148,7 +3218,8 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
         return real_run_static(portfolio, calendar, **kwargs)
 
     monkeypatch.setattr(event_loop_module, "run_static_rebalance", recording_run_static)
-    base = run_candidate_rebalance(
+    base = _run_candidate_rebalance(
+        tmp_path,
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
         calendar,
         cost_assumptions=_cost_assumptions(
@@ -3157,7 +3228,8 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
         ),
         **arguments,
     )
-    stressed = run_candidate_rebalance(
+    stressed = _run_candidate_rebalance(
+        tmp_path,
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
         calendar,
         cost_assumptions=_cost_assumptions(
@@ -3166,7 +3238,8 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
         ),
         **arguments,
     )
-    gross = run_candidate_rebalance(
+    gross = _run_candidate_rebalance(
+        tmp_path,
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
         calendar,
         cost_assumptions=_cost_assumptions(spread_bps=0, gross_only=True),
@@ -3213,7 +3286,8 @@ def test_candidate_rejects_partition_manifest_drift_before_mutation(tmp_path: Pa
     before = deepcopy(portfolio.__dict__)
 
     with pytest.raises(MarketDataError, match="dataset manifest"):
-        run_candidate_rebalance(
+        _run_candidate_rebalance(
+            tmp_path,
             portfolio,
             calendar,
             signal_session=days[0],
@@ -3253,7 +3327,8 @@ def test_candidate_interface_rejects_callable_before_mutation(tmp_path: Path) ->
     dataset_manifest = _dataset_manifest(materialization, days[1])
 
     with pytest.raises(TypeError, match="DecisionArtifact"):
-        run_candidate_rebalance(
+        _run_candidate_rebalance(
+            tmp_path,
             portfolio,
             calendar,
             signal_session=days[0],
@@ -3305,7 +3380,8 @@ def test_candidate_interface_rejects_manual_universe_snapshot(tmp_path: Path) ->
     dataset_manifest = _dataset_manifest(materialization, days[1])
 
     with pytest.raises(TypeError, match="materialize_universe_partition"):
-        run_candidate_rebalance(
+        _run_candidate_rebalance(
+            tmp_path,
             portfolio,
             calendar,
             signal_session=days[0],
