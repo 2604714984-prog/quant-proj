@@ -1247,24 +1247,16 @@ def _require_a_share_adjustment_receipt(
         raise MarketDataError(
             "adjustment receipt action_types must exactly match executable actions"
         )
-    if expected_actions and receipt.price_basis != "raw":
+    if receipt.price_basis != "raw":
         raise MarketDataError(
-            "A-share action sessions require raw executable price units"
+            "A-share execution and portfolio accounting require raw price units"
         )
-    expected_basis = {
-        "qfq": "adjusted_qfq",
-        "hfq": "adjusted_hfq",
-        "total_return": "adjusted_total_return",
-    }.get(receipt.price_basis)
     if row.decision_price_basis is None:
         return
-    if expected_basis is None:
-        if row.decision_price_basis not in {
-            "raw_pre_action_per_old_share",
-            "raw_execution_units",
-        }:
-            raise MarketDataError("raw and adjusted price bases cannot be mixed")
-    elif row.decision_price_basis != expected_basis:
+    if row.decision_price_basis not in {
+        "raw_pre_action_per_old_share",
+        "raw_execution_units",
+    }:
         raise MarketDataError("raw and adjusted price bases cannot be mixed")
 
 

@@ -3005,7 +3005,7 @@ def test_a_share_missing_adjustment_receipt_fails_before_callback() -> None:
     assert portfolio.__dict__ == before
 
 
-def test_a_share_raw_and_adjusted_price_bases_cannot_mix() -> None:
+def test_a_share_adjusted_prices_cannot_enter_execution_or_portfolio_accounting() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14))
     calendar = _calendar(days, "Asia/Shanghai")
     signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
@@ -3018,7 +3018,7 @@ def test_a_share_raw_and_adjusted_price_bases_cannot_mix() -> None:
         adjustment_factor="0.9",
     )
 
-    with pytest.raises(MarketDataError, match="raw and adjusted"):
+    with pytest.raises(MarketDataError, match="require raw price units"):
         _run_static_rebalance(
             Portfolio.a_share(10_000, costs=TransactionCostModel()),
             calendar,
@@ -3029,15 +3029,20 @@ def test_a_share_raw_and_adjusted_price_bases_cannot_mix() -> None:
         )
 
     adjusted = replace(mixed, decision_price_basis="adjusted_qfq")
-    result = _run_static_rebalance(
-        Portfolio.a_share(10_000, costs=TransactionCostModel()),
-        calendar,
-        signal_session=days[0],
-        decision_at=signal.close_at,
-        execution_inputs=(adjusted,),
-        target_weights=lambda _: {},
-    )
-    assert result.strategy_candidate_available is False
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    before = deepcopy(portfolio.__dict__)
+    callback_calls: list[object] = []
+    with pytest.raises(MarketDataError, match="require raw price units"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            signal_session=days[0],
+            decision_at=signal.close_at,
+            execution_inputs=(adjusted,),
+            target_weights=lambda context: callback_calls.append(context) or {},
+        )
+    assert callback_calls == []
+    assert portfolio.__dict__ == before
 
 
 def test_a_share_action_receipt_accepts_raw_actions_but_rejects_duplicates() -> None:
