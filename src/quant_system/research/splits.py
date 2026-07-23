@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections import defaultdict
 from dataclasses import dataclass
+from dataclasses import field
 from datetime import date, datetime, timedelta
 import hashlib
 import json
@@ -15,6 +16,7 @@ from typing import Literal, Sequence, TypeAlias
 
 DateLike: TypeAlias = date | datetime
 EvaluationMethod = Literal["non_overlapping", "hac", "block_bootstrap"]
+_EVALUATION_TOKEN = object()
 
 
 def _time_text(value: DateLike) -> str:
@@ -58,6 +60,26 @@ class SplitEvaluation:
     hac_bandwidth: int | None
     block_length: int | None
     bootstrap_replicates: int | None
+    evaluation_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _EVALUATION_TOKEN:
+            raise ValueError("SplitEvaluation must be created by evaluate_split")
+        if hashlib.sha256(_evaluation_payload(self)).hexdigest() != self.evaluation_sha256:
+            raise ValueError("split evaluation receipt hash mismatch")
+
+
+def _evaluation_payload(evaluation: SplitEvaluation) -> bytes:
+    return json.dumps(
+        {
+            name: value
+            for name, value in evaluation.__dict__.items()
+            if name not in {"evaluation_sha256", "_token"}
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
 
 
 def build_split_manifest(
@@ -275,20 +297,31 @@ def evaluate_split(
     estimator_sha = hashlib.sha256(
         json.dumps(estimator, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()
+    values_by_field = {
+        "method": method,
+        "selected_sample_ids": selected,
+        "nominal_n": len(selected),
+        "effective_n": float(effective_n),
+        "overlap_corrected": method in {"hac", "block_bootstrap"} or not overlapping,
+        "manifest_sha256": manifest.manifest_sha256,
+        "returns_sha256": returns_sha,
+        "estimator_sha256": estimator_sha,
+        "statistic": mean / standard_error,
+        "standard_error": standard_error,
+        "hac_bandwidth": hac_bandwidth,
+        "block_length": block_length,
+        "bootstrap_replicates": (
+            bootstrap_replicates if method == "block_bootstrap" else None
+        ),
+    }
+    provisional = object.__new__(SplitEvaluation)
+    for name, value in values_by_field.items():
+        object.__setattr__(provisional, name, value)
+    digest = hashlib.sha256(_evaluation_payload(provisional)).hexdigest()
     return SplitEvaluation(
-        method,
-        selected,
-        len(selected),
-        float(effective_n),
-        method in {"hac", "block_bootstrap"} or not overlapping,
-        manifest.manifest_sha256,
-        returns_sha,
-        estimator_sha,
-        mean / standard_error,
-        standard_error,
-        hac_bandwidth,
-        block_length,
-        bootstrap_replicates if method == "block_bootstrap" else None,
+        **values_by_field,
+        evaluation_sha256=digest,
+        _token=_EVALUATION_TOKEN,
     )
 
 

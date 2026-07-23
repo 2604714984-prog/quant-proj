@@ -62,6 +62,7 @@ from quant_system.research.experiments import (
     preregister_trial,
     record_holdout_result,
 )
+from quant_system.research.splits import build_split_manifest, evaluate_split
 
 UTC = timezone.utc
 DEFINITION_SHA = hashlib.sha256(b"fixture-strategy-definition-v1").hexdigest()
@@ -2609,6 +2610,7 @@ def _captured_decision_artifact(
     decision_at: datetime,
     *,
     dataset_identity_sha256: str = "d" * 64,
+    split_identity_sha256: str = "e" * 64,
     scores: dict[str, float] | None = None,
     minimum_score: float = 0.0,
     name: str = "",
@@ -2647,7 +2649,7 @@ def _captured_decision_artifact(
         strategy_adapter_path=adapter,
         decision_at=decision_at,
         dataset_identity_sha256=dataset_identity_sha256,
-        split_identity_sha256="e" * 64,
+        split_identity_sha256=split_identity_sha256,
     )
 
 
@@ -2724,6 +2726,7 @@ def _dataset_manifest(
     *,
     cost_assumptions: ExecutionCostAssumptions | None = None,
 ):
+    split_manifest = _candidate_split_manifest(session)
     return build_dataset_manifest(
         dates=(session,),
         frequency="1d-open",
@@ -2732,13 +2735,22 @@ def _dataset_manifest(
         universe_snapshot_sha256=materialization.materialization_sha256,
         feature_code_sha256="2" * 64,
         label_code_sha256="3" * 64,
-        split_manifest_sha256="e" * 64,
+        split_manifest_sha256=split_manifest.manifest_sha256,
         calendar_policy_sha256="4" * 64,
         action_policy_sha256="5" * 64,
         cost_policy_sha256=(
             cost_assumptions or _cost_assumptions()
         ).identity_sha256,
         partition_sha256s=("7" * 64,),
+    )
+
+
+def _candidate_split_manifest(session: date):
+    return build_split_manifest(
+        entity_ids=("AAA", "BBB"),
+        observed_at=(session - timedelta(days=2),) * 2,
+        label_end_at=(session - timedelta(days=1),) * 2,
+        fold_ids=("candidate-a", "candidate-b"),
     )
 
 
@@ -2757,6 +2769,7 @@ def _run_candidate_rebalance(
             experiment_manifest=None,  # type: ignore[arg-type]
             experiment_ledger=None,  # type: ignore[arg-type]
             holdout_event=None,  # type: ignore[arg-type]
+            split_evaluation=None,  # type: ignore[arg-type]
             **kwargs,
         )
     decision_at = kwargs["decision_at"]
@@ -2799,6 +2812,17 @@ def _run_candidate_rebalance(
         ),
         events,
     )
+    split_manifest = _candidate_split_manifest(
+        kwargs["dataset_manifest"].dates[0],
+    )
+    split_evaluation = evaluate_split(
+        split_manifest,
+        selected_sample_ids=tuple(
+            sample.sample_id for sample in split_manifest.samples
+        ),
+        returns=(0.01, 0.02),
+        method="non_overlapping",
+    )
     return run_candidate_rebalance(
         portfolio,
         calendar,
@@ -2806,6 +2830,7 @@ def _run_candidate_rebalance(
         experiment_manifest=manifest,
         experiment_ledger=ledger,
         holdout_event=events[-1],
+        split_evaluation=split_evaluation,
         **kwargs,
     )
 
@@ -3026,6 +3051,7 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         tmp_path,
         decision_at,
         dataset_identity_sha256=dataset_manifest.identity_sha256,
+        split_identity_sha256=dataset_manifest.split_manifest_sha256,
     )
 
     result = _run_candidate_rebalance(
@@ -3056,6 +3082,7 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         tmp_path,
         decision_at,
         dataset_identity_sha256=dataset_manifest.identity_sha256,
+        split_identity_sha256=dataset_manifest.split_manifest_sha256,
         minimum_score=0.5,
         name="-different-definition",
     )
@@ -3120,6 +3147,7 @@ def test_candidate_retrospective_execution_is_research_only(tmp_path: Path) -> N
         tmp_path,
         decision_at,
         dataset_identity_sha256=dataset_manifest.identity_sha256,
+        split_identity_sha256=dataset_manifest.split_manifest_sha256,
     )
     result = _run_candidate_rebalance(
         tmp_path,
@@ -3165,6 +3193,7 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
         tmp_path,
         decision_at,
         dataset_identity_sha256=dataset_manifest.identity_sha256,
+        split_identity_sha256=dataset_manifest.split_manifest_sha256,
     )
     portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
@@ -3243,6 +3272,7 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
             tmp_path,
             decision_at,
             dataset_identity_sha256=manifest.identity_sha256,
+            split_identity_sha256=manifest.split_manifest_sha256,
             name=name,
         )
         return _run_candidate_rebalance(

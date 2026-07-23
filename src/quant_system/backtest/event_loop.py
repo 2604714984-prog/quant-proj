@@ -49,6 +49,10 @@ from quant_system.research.experiments import (
     ExperimentManifest,
     require_adjusted_holdout_for_candidate,
 )
+from quant_system.research.splits import (
+    SplitEvaluation,
+    require_split_evaluation_for_candidate,
+)
 from .blocked_orders import (
     BLOCKED_EXIT_REASONS,
     BlockedExitOrder,
@@ -228,6 +232,7 @@ class StaticRebalanceResult:
     dataset_identity_sha256: str | None = None
     split_identity_sha256: str | None = None
     experiment_manifest_sha256: str | None = None
+    split_evaluation_sha256: str | None = None
     cost_assumptions_sha256: str | None = None
     adverse_input_identity_hash: str | None = None
     adverse_stage_hash: str | None = None
@@ -659,6 +664,7 @@ def run_candidate_rebalance(
     experiment_manifest: ExperimentManifest,
     experiment_ledger: ExperimentLedgerReceipt,
     holdout_event: ExperimentEvent,
+    split_evaluation: SplitEvaluation,
     cost_assumptions: ExecutionCostAssumptions,
     stage_context: StageContext,
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
@@ -688,6 +694,7 @@ def run_candidate_rebalance(
         manifest=experiment_manifest,
         events=experiment_events,
     )
+    require_split_evaluation_for_candidate(split_evaluation)
     if (
         experiment_ledger.event_count != experiment_manifest.event_count
         or experiment_ledger.head_sha256 != experiment_manifest.head_sha256
@@ -716,6 +723,8 @@ def run_candidate_rebalance(
         )
     if decision_artifact.split_identity_sha256 != dataset_manifest.split_manifest_sha256:
         raise MarketDataError("decision artifact split identity must match the dataset manifest")
+    if split_evaluation.manifest_sha256 != dataset_manifest.split_manifest_sha256:
+        raise MarketDataError("split evaluation must match the dataset split manifest")
     if dataset_manifest.cost_policy_sha256 != cost_assumptions.identity_sha256:
         raise MarketDataError("dataset cost policy must match execution cost assumptions")
     if (
@@ -768,6 +777,7 @@ def run_candidate_rebalance(
         (
             f"{result.input_identity_hash}|{decision_artifact.artifact_sha256}|"
             f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
+            f"{split_evaluation.evaluation_sha256}|"
             f"{experiment_manifest.head_sha256}|{assumption_sha}|base"
         ).encode()
     ).hexdigest()
@@ -780,6 +790,7 @@ def run_candidate_rebalance(
         (
             f"{adverse.input_identity_hash}|{decision_artifact.artifact_sha256}|"
             f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
+            f"{split_evaluation.evaluation_sha256}|"
             f"{experiment_manifest.head_sha256}|{assumption_sha}|adverse"
         ).encode()
     ).hexdigest()
@@ -806,6 +817,7 @@ def run_candidate_rebalance(
         dataset_identity_sha256=decision_artifact.dataset_identity_sha256,
         split_identity_sha256=decision_artifact.split_identity_sha256,
         experiment_manifest_sha256=experiment_manifest.head_sha256,
+        split_evaluation_sha256=split_evaluation.evaluation_sha256,
         cost_assumptions_sha256=assumption_sha,
         adverse_input_identity_hash=adverse_identity,
         adverse_stage_hash=adverse_stage_hash,
