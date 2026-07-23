@@ -1,0 +1,55 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C15_BROAD_DOLLAR_DIRECTION_SPY_QQQ_ROTATION_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE15",
+  "created_at": "2026-07-23T00:07:20.393995Z",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5052827419",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5052882421",
+    "definition_sha256": "7e48ec814331c3a57e71e8439b6bf6929b0338c188b212f877f799ab39d709c7",
+    "adapter_sha256": "46fdc46a7dd9a0acd93cf8accdd2dc897d874ede4b35b2d3af6bb6c9ec8939d7",
+    "runner_sha256": "f63aa2bf48f2c3c167ac05e7fd060d05512b8dc657fb02e41b91283b77d618b0",
+    "input_packet_sha256": "b6ebf7c4c4aea072930230f477c3e73767f0067352fa8ac0dcf10ea809fabcac",
+    "runtime_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a"
+  },
+  "one_use_validation": {
+    "claim_sha256": "4692b85c4d8c51c45923fe9e8bc47c018601bc94f8790a419da9986aa02430d2",
+    "result_sha256": "c29319fda909856e491daac6699abd22d4ad53befd2ac27cbe44f58243524714",
+    "observed_intervals": 28,
+    "gates_passed": 0,
+    "gates_total": 3,
+    "failed_gates": [
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator",
+      "arithmetic_mean_paired_active_return_strictly_positive",
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator"
+    ],
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "program_multiplicity": {
+    "cycle15_familywise_alpha": 0.0000030517578125,
+    "cycle1_to_cycle15_union_bound": 0.0999969482421875,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "terminal_state": {
+    "retrospective_holdout_opened": false,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "source_switch_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the dollar index, sign, lag, threshold, persistence, smoothing, currency subset, comparator, cost, split, or signal combination."
+}
