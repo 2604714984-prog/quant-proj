@@ -1783,6 +1783,144 @@ def test_engine_adjusts_pre_action_decision_price_for_split_and_distribution() -
         )
 
 
+def test_a_share_split_changes_shares_cost_and_mark_economics() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("AAA", 100, 10, days[0])
+    split = CorporateActionIdentity(
+        "AAA",
+        "aaa-split-2-for-1",
+        "split",
+        execution.open_at,
+        _source("aaa-split-source", signal.close_at),
+        "Asia/Shanghai",
+        ex_date=days[1],
+        split_ratio=Decimal("2"),
+    )
+
+    result = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input(
+                "AAA",
+                "a_share",
+                execution,
+                price=5,
+                corporate_actions=(split,),
+                decision_price=10,
+                a_share_action_types=("split",),
+            ),
+        ),
+        target_weights=lambda _: {"AAA": 0.1},
+    )
+
+    position = result.portfolio.positions["AAA"]
+    assert position.shares == 200
+    assert position.sellable_shares == 200
+    assert position.average_cost == pytest.approx(5)
+    assert result.portfolio.nav({"AAA": 5}) == pytest.approx(10_000)
+    assert any(item.side == "split" for item in result.receipts)
+
+
+def test_a_share_cash_dividend_enters_pending_cash_and_preserves_value() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("AAA", 100, 10, days[0])
+    distribution = CorporateActionIdentity(
+        "AAA",
+        "aaa-cash-1",
+        "cash_dividend",
+        execution.open_at,
+        _source("aaa-cash-source", signal.close_at),
+        "Asia/Shanghai",
+        ex_date=days[1],
+        record_date=days[1],
+        pay_date=days[2],
+        cash_amount=Decimal("1"),
+        currency="CNY",
+        unit="per_share",
+    )
+
+    result = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input(
+                "AAA",
+                "a_share",
+                execution,
+                price=9,
+                corporate_actions=(distribution,),
+                decision_price=10,
+                a_share_action_types=("cash_dividend",),
+            ),
+        ),
+        target_weights=lambda _: {"AAA": 0.09},
+    )
+
+    assert result.portfolio.positions["AAA"].shares == 100
+    assert result.portfolio.pending_cash_total == pytest.approx(100)
+    assert result.portfolio.nav({"AAA": 9}) == pytest.approx(10_000)
+    assert any(item.side == "distribution" for item in result.receipts)
+
+
+def test_a_share_delisting_settles_explicit_recovery_and_removes_position() -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _calendar(days, "Asia/Shanghai")
+    signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 12, tzinfo=UTC))
+    execution = calendar.session_on(days[1], as_of=signal.close_at)
+    portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
+    portfolio.start_session(days[0])
+    portfolio.buy("DEAD", 100, 10, days[0])
+    terminal = TerminalAction(
+        "dead-a-share-delisting-v1",
+        "delisting",
+        execution.open_at,
+        2.5,
+        _source("dead-a-share-delisting-source", signal.close_at),
+        execution.session_date,
+        (),
+    )
+
+    result = _run_static_rebalance(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=signal.close_at,
+        execution_inputs=(
+            _input(
+                "DEAD",
+                "a_share",
+                execution,
+                price=None,
+                delisted=True,
+                action_types=("delisting",),
+                terminal=terminal,
+                execution_price_basis="confirmed_no_open_event",
+                a_share_action_types=("delisting",),
+            ),
+        ),
+        target_weights=lambda _: {},
+    )
+
+    assert "DEAD" not in result.portfolio.positions
+    assert result.portfolio.available_cash == pytest.approx(9_250)
+    assert result.receipts[0].reason == "terminal_delisting"
+
+
 def test_invalid_weights_and_late_or_duplicate_actions_leave_caller_unchanged() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14), date(2026, 7, 15))
     calendar = _calendar(days, "America/New_York")
@@ -2710,17 +2848,17 @@ def test_a_share_raw_and_adjusted_price_bases_cannot_mix() -> None:
     assert result.strategy_candidate_available is False
 
 
-def test_a_share_action_completeness_rejects_raw_duplicate_and_delisting() -> None:
+def test_a_share_action_receipt_accepts_raw_actions_but_rejects_duplicates() -> None:
     session = date(2026, 7, 14)
     portfolio = Portfolio.a_share(10_000, costs=TransactionCostModel())
     before = deepcopy(portfolio.__dict__)
 
-    with pytest.raises(MarketDataError, match="raw basis cannot omit"):
-        _adjustment_receipt(
-            "AAA",
-            session,
-            action_types=("cash_dividend",),
-        )
+    raw_action = _adjustment_receipt(
+        "AAA",
+        session,
+        action_types=("cash_dividend",),
+    )
+    assert raw_action.action_types == ("cash_dividend",)
     with pytest.raises(MarketDataError, match="sorted, unique"):
         _adjustment_receipt(
             "AAA",
@@ -2729,14 +2867,12 @@ def test_a_share_action_completeness_rejects_raw_duplicate_and_delisting() -> No
             adjustment_factor="0.9",
             action_types=("split", "split"),
         )
-    with pytest.raises(MarketDataError, match="explicit terminal evidence"):
-        _adjustment_receipt(
-            "AAA",
-            session,
-            price_basis="qfq",
-            adjustment_factor="0.9",
-            action_types=("delisting",),
-        )
+    terminal_declaration = _adjustment_receipt(
+        "AAA",
+        session,
+        action_types=("delisting",),
+    )
+    assert terminal_declaration.action_types == ("delisting",)
     assert portfolio.__dict__ == before
 
 

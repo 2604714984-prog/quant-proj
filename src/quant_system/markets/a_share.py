@@ -71,12 +71,6 @@ class AShareAdjustmentReceipt:
             raise MarketDataError("adjustment_factor must be positive and finite")
         if self.price_basis == "raw" and self.adjustment_factor != Decimal("1"):
             raise MarketDataError("raw basis requires adjustment_factor=1")
-        if self.price_basis == "raw" and self.action_types:
-            raise MarketDataError("raw basis cannot omit declared corporate actions")
-        if "delisting" in self.action_types:
-            raise MarketDataError(
-                "delisting requires explicit terminal evidence and cannot be adjustment-only"
-            )
         try:
             require_trusted_source(self.factor_source)
             require_trusted_source(self.action_completeness_source)

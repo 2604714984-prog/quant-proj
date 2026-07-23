@@ -902,11 +902,9 @@ def _inputs(
         if effective_at != execution.open_at:
             raise MarketDataError(
                 "execution price effective_at must equal the accepted-session open"
-            )
+        )
         confirmed_no_open = row.execution_price_basis == _NO_OPEN_EVENT_BASIS
         if confirmed_no_open:
-            if row.market != "us":
-                raise MarketDataError("confirmed no-open events are US-only")
             if row.open_price is not None:
                 raise MarketDataError(
                     "confirmed no-open event basis requires open_price=None"
@@ -980,11 +978,6 @@ def _inputs(
             row.up_limit is not None or row.down_limit is not None
         ):
             raise MarketDataError("no-limit regime cannot carry limit fields")
-        if row.market == "a_share":
-            _require_a_share_adjustment_receipt(row, execution, cutoff)
-        if row.market == "a_share" and (row.action_types or row.corporate_actions
-                                        or row.terminal_action is not None):
-            raise MarketDataError("US action fields cannot be used for A-share inputs")
         if row.market == "us" and (
             row.is_suspended
             or row.up_limit is not None
@@ -1023,6 +1016,8 @@ def _inputs(
             if row.terminal_action.action_type not in row.action_types:
                 raise MarketDataError("terminal action must appear in action_types")
             action_ids.append(row.terminal_action.event_id)
+        if row.market == "a_share":
+            _require_a_share_adjustment_receipt(row, execution, cutoff)
         if confirmed_no_open and not (
             "trading_halt" in row.action_types
             or row.terminal_action is not None
@@ -1050,6 +1045,26 @@ def _require_a_share_adjustment_receipt(
         or receipt.action_completeness_source.available_at > cutoff
     ):
         raise MarketDataError("adjustment evidence was unavailable at decision_at")
+    expected_actions = tuple(
+        sorted(
+            {
+                *(item.action_type for item in row.corporate_actions),
+                *(
+                    (row.terminal_action.action_type,)
+                    if row.terminal_action is not None
+                    else ()
+                ),
+            }
+        )
+    )
+    if receipt.action_types != expected_actions:
+        raise MarketDataError(
+            "adjustment receipt action_types must exactly match executable actions"
+        )
+    if expected_actions and receipt.price_basis != "raw":
+        raise MarketDataError(
+            "A-share action sessions require raw executable price units"
+        )
     expected_basis = {
         "qfq": "adjusted_qfq",
         "hfq": "adjusted_hfq",

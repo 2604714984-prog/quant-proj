@@ -363,8 +363,6 @@ class Portfolio:
     ) -> float:
         """Freeze ex-date entitlement and settle one cash action exactly once."""
 
-        if not self.us_cash_settlement:
-            raise ValueError("cash distributions are supported only for US portfolios")
         self._require_stable_identity(symbol, "symbol")
         self._require_stable_identity(event_id, "event_id")
         if event_id in self._applied_distribution_action_ids:
@@ -403,16 +401,13 @@ class Portfolio:
         successor_symbol: str | None = None,
         successor_shares_per_share: float | None = None,
     ) -> float:
-        """Settle one accepted US terminal event exactly once."""
-
-        if not self.us_cash_settlement:
-            raise ValueError("terminal actions are supported only for US portfolios")
+        """Settle one accepted terminal event exactly once."""
         self._require_stable_identity(symbol, "symbol")
         self._require_stable_identity(event_id, "event_id")
         if event_id in self._applied_terminal_action_ids:
             raise ValueError("terminal action event_id has already been applied")
         if action_type not in TERMINAL_ACTION_TYPES:
-            raise ValueError("action_type must be a terminal US corporate action")
+            raise ValueError("action_type must be a terminal corporate action")
 
         position = self.positions.get(symbol)
         if position is None:
