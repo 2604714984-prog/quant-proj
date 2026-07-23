@@ -71,6 +71,7 @@ real-data, provider, Release-asset, or independent-review evidence requirements.
 | Round 2 P0 | `389ac356a0a62f8c50a803ca5ee115f034506aef` | `python -m pytest -q`; `python -m ruff check .` | `258 passed`; Ruff passed | 0 | 0 |
 | Round 2 P1 | `389ac356a0a62f8c50a803ca5ee115f034506aef` | `python -m ruff check .`; `python -m pytest -q` | Ruff passed; `258 passed` | 0 | 0 |
 | Round 2 installed wheel | `389ac356a0a62f8c50a803ca5ee115f034506aef` | `pip wheel --no-deps`; SHA-256; isolated venv force-install; `pip check`; checkout-outside installed-wheel full pytest; unbound `quant info` | Wheel SHA-256 `22b0d21cd708fc3529ea5050e1116e12b2dfe96f9785468ddee7abb1d8279a37`; `pip check` passed; installed wheel `258 passed`; `UNBOUND_DATA_ROOT`; database absent | 0 | 0 |
+| Round 2 final pre-closeout | `a7b06ed4bdeb0921382802b2abe7af54e884ebcd` | `ruff check .`; source-tree `pytest -q`; `git diff --check`; clean status; `pip wheel --no-deps`; isolated force-install; pinned dependency install; `pip check`; checkout-outside installed-wheel full pytest; unbound `quant info` | Ruff passed; source tree `258 passed`; wheel SHA-256 `0375948599ea1c4e9c8e8b5b910a0645413b936a627c38f7098486c9652d8704`; `pip check` passed after correcting the first system-site environment's missing DuckDB/stale pytz; installed wheel `258 passed`; `UNBOUND_DATA_ROOT`; database absent. The ledger-only closeout commit is revalidated at the frozen PR head and its exact result is reported in the Draft PR. | 0 | 0 |
 
 ## Round 2 closeout state before frozen-head validation
 
