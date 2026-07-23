@@ -12,6 +12,7 @@ from quant_system.backtest.event_loop import (
     StaticRebalanceResult,
     create_stage_plan,
 )
+from quant_system.backtest.portfolio import Portfolio
 from quant_system.research.experiments import (
     capture_family_anchor,
     capture_final_run_receipt,
@@ -161,6 +162,9 @@ def _receipt(
     _, evaluation = _evaluation(holdout_id=holdout_id, returns=returns)
     stage_plan = create_stage_plan((date(2026, 7, 1),))
     executed = object.__new__(ControlledStageResult)
+    final_portfolio = Portfolio.us(100.0)
+    initial_json = event_loop_module._portfolio_state_json(final_portfolio)
+    final_json = event_loop_module._portfolio_state_json(final_portfolio)
     for name, value in {
         "stage_plan_sha256": stage_plan.plan_sha256,
         "stage_index": 0,
@@ -168,6 +172,15 @@ def _receipt(
         "prior_stage_hash": "0" * 64,
         "stage_hash": "d" * 64,
         "final_nav": 100.0,
+        "portfolio": final_portfolio,
+        "initial_portfolio_json": initial_json,
+        "initial_portfolio_sha256": event_loop_module.hashlib.sha256(
+            initial_json.encode()
+        ).hexdigest(),
+        "final_portfolio_json": final_json,
+        "final_portfolio_sha256": event_loop_module.hashlib.sha256(
+            final_json.encode()
+        ).hexdigest(),
         "interface_grade": "CONTROLLED_STAGE",
         "_token": event_loop_module._CONTROLLED_STAGE_TOKEN,
     }.items():
@@ -268,7 +281,21 @@ def test_persistent_ledger_detects_deleted_prefix(tmp_path) -> None:
 def test_final_run_receipt_requires_complete_ordered_stage_chain() -> None:
     plan = create_stage_plan((date(2026, 7, 1), date(2026, 7, 2)))
 
-    def result(index: int, prior: str, stage_hash: str):
+    first_portfolio = Portfolio.us(100.0)
+    second_portfolio = Portfolio.us(101.0)
+    third_portfolio = Portfolio.us(102.0)
+    first_state = event_loop_module._portfolio_state_json(first_portfolio)
+    second_state = event_loop_module._portfolio_state_json(second_portfolio)
+    third_state = event_loop_module._portfolio_state_json(third_portfolio)
+
+    def result(
+        index: int,
+        prior: str,
+        stage_hash: str,
+        initial_json: str,
+        final_json: str,
+        final_portfolio: Portfolio,
+    ):
         item = object.__new__(ControlledStageResult)
         for name, value in {
             "stage_plan_sha256": plan.plan_sha256,
@@ -277,20 +304,53 @@ def test_final_run_receipt_requires_complete_ordered_stage_chain() -> None:
             "prior_stage_hash": prior,
             "stage_hash": stage_hash,
             "final_nav": 100.0 + index,
+            "portfolio": final_portfolio,
+            "initial_portfolio_json": initial_json,
+            "initial_portfolio_sha256": event_loop_module.hashlib.sha256(
+                initial_json.encode()
+            ).hexdigest(),
+            "final_portfolio_json": final_json,
+            "final_portfolio_sha256": event_loop_module.hashlib.sha256(
+                final_json.encode()
+            ).hexdigest(),
             "interface_grade": "CONTROLLED_STAGE",
             "_token": event_loop_module._CONTROLLED_STAGE_TOKEN,
         }.items():
             object.__setattr__(item, name, value)
         return item
 
-    first = result(0, "0" * 64, "1" * 64)
-    second = result(1, first.stage_hash, "2" * 64)
+    first = result(
+        0,
+        "0" * 64,
+        "1" * 64,
+        first_state,
+        second_state,
+        second_portfolio,
+    )
+    second = result(
+        1,
+        first.stage_hash,
+        "2" * 64,
+        second_state,
+        third_state,
+        third_portfolio,
+    )
     receipt = capture_final_run_receipt(plan, (first, second))
     assert receipt.final_stage_hash == second.stage_hash
     with pytest.raises(ValueError, match="one actual result"):
         capture_final_run_receipt(plan, (first,))
     with pytest.raises(ValueError, match="skipped, reordered, or replaced"):
         capture_final_run_receipt(plan, (second, first))
+    discontinuous = result(
+        1,
+        first.stage_hash,
+        "3" * 64,
+        first_state,
+        third_state,
+        third_portfolio,
+    )
+    with pytest.raises(ValueError, match="portfolio state is discontinuous"):
+        capture_final_run_receipt(plan, (first, discontinuous))
 
     experimental = object.__new__(StaticRebalanceResult)
     with pytest.raises(ValueError, match="one actual result"):

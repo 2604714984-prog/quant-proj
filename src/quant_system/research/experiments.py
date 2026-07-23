@@ -247,7 +247,10 @@ class FinalRunReceipt:
     stage_plan_sha256: str
     stage_count: int
     ordered_stage_hashes: tuple[str, ...]
+    ordered_portfolio_transitions: tuple[tuple[str, str], ...]
     final_stage_hash: str
+    initial_portfolio_sha256: str
+    final_portfolio_sha256: str
     final_nav: float
     receipt_sha256: str
     _token: object | None = field(default=None, repr=False, compare=False)
@@ -260,12 +263,30 @@ class FinalRunReceipt:
             type(self.stage_count) is not int
             or self.stage_count < 1
             or len(self.ordered_stage_hashes) != self.stage_count
+            or len(self.ordered_portfolio_transitions) != self.stage_count
         ):
             raise ValueError("final run receipt stage count is invalid")
         for stage_hash in self.ordered_stage_hashes:
             _sha(stage_hash, "ordered_stage_hash")
+        for initial_sha, final_sha in self.ordered_portfolio_transitions:
+            _sha(initial_sha, "initial_portfolio_sha256")
+            _sha(final_sha, "final_portfolio_sha256")
+        if any(
+            current[0] != previous[1]
+            for previous, current in zip(
+                self.ordered_portfolio_transitions,
+                self.ordered_portfolio_transitions[1:],
+                strict=False,
+            )
+        ):
+            raise ValueError("final run portfolio state is discontinuous between stages")
         if self.final_stage_hash != self.ordered_stage_hashes[-1]:
             raise ValueError("final run receipt does not end at its final stage")
+        if (
+            self.initial_portfolio_sha256 != self.ordered_portfolio_transitions[0][0]
+            or self.final_portfolio_sha256 != self.ordered_portfolio_transitions[-1][1]
+        ):
+            raise ValueError("final run portfolio boundary hashes are invalid")
         if (
             not isinstance(self.final_nav, (int, float))
             or isinstance(self.final_nav, bool)
@@ -313,12 +334,20 @@ def capture_final_run_receipt(stage_plan: object, results: tuple[object, ...]) -
             or result.prior_stage_hash != prior
         ):
             raise ValueError("final run results are skipped, reordered, or replaced")
+        if index and result.initial_portfolio_sha256 != results[index - 1].final_portfolio_sha256:
+            raise ValueError("final run portfolio state is discontinuous between stages")
         prior = result.stage_hash
     values = {
         "stage_plan_sha256": stage_plan.plan_sha256,
         "stage_count": len(results),
         "ordered_stage_hashes": tuple(result.stage_hash for result in results),
+        "ordered_portfolio_transitions": tuple(
+            (result.initial_portfolio_sha256, result.final_portfolio_sha256)
+            for result in results
+        ),
         "final_stage_hash": results[-1].stage_hash,
+        "initial_portfolio_sha256": results[0].initial_portfolio_sha256,
+        "final_portfolio_sha256": results[-1].final_portfolio_sha256,
         "final_nav": results[-1].final_nav,
     }
     provisional = object.__new__(FinalRunReceipt)

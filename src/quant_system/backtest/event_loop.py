@@ -583,6 +583,10 @@ class StaticRebalanceResult:
     stage_index: int
     stage_session: date
     prior_stage_hash: str
+    initial_portfolio_json: str
+    initial_portfolio_sha256: str
+    final_portfolio_json: str
+    final_portfolio_sha256: str
     execution_evidence_grade: str = "UNCLASSIFIED"
     interface_grade: str = "UNTRUSTED_EXPERIMENT"
     decision_artifact_sha256: str | None = None
@@ -613,6 +617,16 @@ class StaticRebalanceResult:
         _sha256(self.prior_stage_hash, "prior_stage_hash")
         if not math.isfinite(self.final_nav):
             raise ValueError("stage result final NAV must be finite")
+        _verify_portfolio_artifact(
+            self.initial_portfolio_json,
+            self.initial_portfolio_sha256,
+            "initial",
+        )
+        _verify_portfolio_artifact(
+            self.final_portfolio_json,
+            self.final_portfolio_sha256,
+            "final",
+        )
 
 
 @dataclass(frozen=True)
@@ -634,6 +648,18 @@ class ControlledStageResult(StaticRebalanceResult):
         _sha256(self.prior_stage_hash, "prior_stage_hash")
         if not math.isfinite(self.final_nav):
             raise ValueError("controlled stage final NAV must be finite")
+        _verify_portfolio_artifact(
+            self.initial_portfolio_json,
+            self.initial_portfolio_sha256,
+            "initial",
+        )
+        _verify_portfolio_artifact(
+            self.final_portfolio_json,
+            self.final_portfolio_sha256,
+            "final",
+        )
+        if self.final_portfolio_json != _portfolio_state_json(self.portfolio):
+            raise ValueError("controlled stage final portfolio object changed")
 
 
 def create_stage_plan(sessions: tuple[date, ...]) -> StagePlan:
@@ -954,6 +980,7 @@ def run_static_rebalance(
         raise ValueError("max_positions must be a positive integer or None")
     ordered_members_sha256(universe_members)
     rows = _inputs(execution_inputs, portfolio, execution, cutoff)
+    initial_portfolio_json = _portfolio_state_json(portfolio)
     working = deepcopy(portfolio)
     working.start_session(execution.session_date)
     if set(working.positions) - rows.keys():
@@ -1054,6 +1081,7 @@ def run_static_rebalance(
                     receipts,
                 )
     final_nav = working.nav(_marks(working, rows))
+    final_portfolio_json = _portfolio_state_json(working)
     input_artifact_json = _identity_artifact(
         context,
         calendar,
@@ -1089,6 +1117,10 @@ def run_static_rebalance(
         stage_context.stage_index,
         stage_context.stage_session,
         stage_context.prior_stage_hash,
+        initial_portfolio_json,
+        hashlib.sha256(initial_portfolio_json.encode()).hexdigest(),
+        final_portfolio_json,
+        hashlib.sha256(final_portfolio_json.encode()).hexdigest(),
         execution_evidence_grade=_execution_evidence_grade(rows),
         _token=_EXPERIMENT_RESULT_TOKEN,
     )
@@ -2449,6 +2481,29 @@ def _normal(value: Any) -> Any:
     return value
 
 
+def _portfolio_state_json(portfolio: Portfolio) -> str:
+    if not isinstance(portfolio, Portfolio):
+        raise TypeError("portfolio artifact requires a Portfolio")
+    return json.dumps(
+        _normal(portfolio.__dict__),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+
+
+def _verify_portfolio_artifact(payload: str, digest: str, label: str) -> None:
+    try:
+        decoded = json.loads(payload)
+    except (TypeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"{label} portfolio artifact is invalid") from exc
+    if (
+        json.dumps(decoded, sort_keys=True, separators=(",", ":")) != payload
+        or hashlib.sha256(payload.encode()).hexdigest()
+        != _sha256(digest, f"{label}_portfolio_sha256")
+    ):
+        raise ValueError(f"{label} portfolio artifact hash mismatch")
+
+
 def _source_receipt_hashes(*values: object) -> tuple[str, ...]:
     receipts: set[str] = set()
 
@@ -2519,11 +2574,7 @@ def _build_candidate_run_bundle(
         ),
         "base_receipt_hashes": base_receipt_hashes,
         "base_stage_hash": base_stage_hash,
-        "base_final_portfolio_json": json.dumps(
-            _normal(result.portfolio.__dict__),
-            sort_keys=True,
-            separators=(",", ":"),
-        ),
+        "base_final_portfolio_json": result.final_portfolio_json,
         "base_final_nav": result.final_nav,
         "adverse_underlying_input_identity_hash": adverse.input_identity_hash,
         "adverse_input_artifact_json": adverse.input_artifact_json,
@@ -2533,11 +2584,7 @@ def _build_candidate_run_bundle(
             for receipt in adverse.receipts
         ),
         "adverse_stage_hash": adverse_stage_hash,
-        "adverse_final_portfolio_json": json.dumps(
-            _normal(adverse.portfolio.__dict__),
-            sort_keys=True,
-            separators=(",", ":"),
-        ),
+        "adverse_final_portfolio_json": adverse.final_portfolio_json,
         "adverse_final_nav": adverse.final_nav,
     }
     provisional = object.__new__(CandidateRunBundle)

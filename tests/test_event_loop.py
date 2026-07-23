@@ -491,6 +491,7 @@ def test_stage_plan_requires_genesis_then_exact_previous_result() -> None:
     assert second.stage_index == 1
     assert second.stage_session == days[1]
     assert second.prior_stage_hash == first.stage_hash
+    assert second.initial_portfolio_sha256 == first.final_portfolio_sha256
     with pytest.raises(ValueError, match="StageContext must be created"):
         StageContext(plan.plan_sha256, 1, days[1], "0" * 64)
     with pytest.raises(ValueError, match="session must match"):
