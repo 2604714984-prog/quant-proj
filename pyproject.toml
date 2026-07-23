@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = ["duckdb==1.5.4", "pytz==2026.2"]
 
 [project.optional-dependencies]
-dev = ["pytest==9.1.1", "ruff==0.15.21"]
+dev = ["numpy==2.4.6", "pytest==9.1.1", "ruff==0.15.21"]
 
 [project.scripts]
 quant = "quant_system.cli:main"
