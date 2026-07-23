@@ -32,7 +32,6 @@ _ACTION_TYPES = frozenset(ActionType.__args__)
 _CASH_ACTION_TYPES = frozenset({"cash_dividend", "special_dividend"})
 _SPLIT_ACTION_TYPES = frozenset({"split", "reverse_split"})
 _CAPTURE_TOKEN = object()
-_PROVIDER_CAPTURE_TOKEN = object()
 _TYPED_OBSERVATION_TOKEN = object()
 CaptureLevel = Literal[
     "UNCAPTURED",
@@ -194,6 +193,11 @@ class SourceIdentity:
             "PROVIDER_QUALIFIED_CAPTURE",
         }:
             raise SourceIdentityError("unsupported capture_level")
+        if self.capture_level == "PROVIDER_QUALIFIED_CAPTURE":
+            raise SourceIdentityError(
+                "provider-qualified capture is disabled until a fixed adapter "
+                "or external signature verifier is configured"
+            )
         capture_fields = (
             self.capture_receipt_sha256,
             self.capture_byte_count,
@@ -226,12 +230,7 @@ class SourceIdentity:
                     capture_level=self.capture_level,
                 )
             ).hexdigest()
-            expected_token = (
-                _PROVIDER_CAPTURE_TOKEN
-                if self.capture_level == "PROVIDER_QUALIFIED_CAPTURE"
-                else _CAPTURE_TOKEN
-            )
-            if self._capture_token is not expected_token or receipt_sha != expected:
+            if self._capture_token is not _CAPTURE_TOKEN or receipt_sha != expected:
                 raise SourceIdentityError(
                     "trusted source identities must come from the capture entrypoint"
                 )
@@ -244,11 +243,11 @@ class SourceIdentity:
 
     @property
     def is_trusted_capture(self) -> bool:
-        return self._capture_token in {_CAPTURE_TOKEN, _PROVIDER_CAPTURE_TOKEN}
+        return self._capture_token is _CAPTURE_TOKEN
 
     @property
     def is_provider_qualified_capture(self) -> bool:
-        return self._capture_token is _PROVIDER_CAPTURE_TOKEN
+        return False
 
 
 @dataclass(frozen=True)
@@ -599,8 +598,11 @@ def _build_capture_receipt(
     subject_id: str,
     supersedes_revision_id: str | None,
     url_migration_receipt_sha256: str | None,
-    capture_level: CaptureLevel = "GENERIC_CAPTURE",
+    transport_only: bool = False,
 ) -> SourceCaptureReceipt:
+    capture_level: CaptureLevel = (
+        "TRANSPORT_CAPTURE" if transport_only else "GENERIC_CAPTURE"
+    )
     payload = _capture_payload(
         source_url=source_url,
         content_sha256=content_sha256,
@@ -632,11 +634,7 @@ def _build_capture_receipt(
         publication_evidence_sha256=publication_evidence_sha256,
         url_migration_receipt_sha256=url_migration_receipt_sha256,
         capture_level=capture_level,
-        _capture_token=(
-            _PROVIDER_CAPTURE_TOKEN
-            if capture_level == "PROVIDER_QUALIFIED_CAPTURE"
-            else _CAPTURE_TOKEN
-        ),
+        _capture_token=_CAPTURE_TOKEN,
     )
     return SourceCaptureReceipt(source, byte_count, receipt_sha)
 
@@ -784,7 +782,7 @@ def capture_github_release_asset(
             subject_id=f"{repository}:{asset_name}",
             supersedes_revision_id=None,
             url_migration_receipt_sha256=None,
-            capture_level="TRANSPORT_CAPTURE",
+            transport_only=True,
         )
     except (
         KeyError,

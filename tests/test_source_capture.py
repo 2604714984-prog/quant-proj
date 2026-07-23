@@ -87,6 +87,41 @@ def test_manual_source_is_experimental_only() -> None:
         require_trusted_source(_manual_source("r1", available_at=AVAILABLE))
 
 
+def test_generic_builder_cannot_mint_provider_qualified_capture() -> None:
+    with pytest.raises(TypeError, match="capture_level"):
+        source_module._build_capture_receipt(
+            content_sha256="a" * 64,
+            byte_count=1,
+            publication_evidence_sha256="b" * 64,
+            source_url="https://authority.example.test/data",
+            available_at=AVAILABLE,
+            retrieved_at=RETRIEVED,
+            revision_id="r1",
+            source_family_id="daily-bars-v1",
+            provider_id="example-provider",
+            subject_id="SPY",
+            supersedes_revision_id=None,
+            url_migration_receipt_sha256=None,
+            capture_level="PROVIDER_QUALIFIED_CAPTURE",
+        )
+    with pytest.raises(SourceIdentityError, match="disabled"):
+        SourceIdentity(
+            source_url="https://authority.example.test/data",
+            content_sha256="a" * 64,
+            available_at=AVAILABLE,
+            retrieved_at=RETRIEVED,
+            revision_id="r1",
+            source_family_id="daily-bars-v1",
+            provider_id="example-provider",
+            subject_id="SPY",
+            capture_receipt_sha256="b" * 64,
+            capture_byte_count=1,
+            publication_evidence_sha256="c" * 64,
+            capture_level="PROVIDER_QUALIFIED_CAPTURE",
+            _capture_token=source_module._CAPTURE_TOKEN,
+        )
+
+
 def test_github_release_adapter_derives_provider_metadata(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

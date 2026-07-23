@@ -1,6 +1,5 @@
 from decimal import Decimal
 from datetime import datetime, timezone
-import hashlib
 import json
 import os
 from pathlib import Path
@@ -10,7 +9,6 @@ import duckdb
 import pytest
 
 import quant_system.data.writer as writer_module
-import quant_system.data.source_identity as source_module
 from quant_system.data.writer import DataWriteError, append_rows
 from quant_system.data import SourceIdentity, capture_source_bytes
 
@@ -33,25 +31,6 @@ def _source(label: str):
         source_family_id="writer-fixture",
         provider_id="fixture-provider",
         subject_id="market.daily",
-    ).source
-
-
-def _provider_fixture_source(label: str):
-    content = label.encode()
-    return source_module._build_capture_receipt(
-        content_sha256=hashlib.sha256(content).hexdigest(),
-        byte_count=len(content),
-        publication_evidence_sha256=hashlib.sha256(b"published").hexdigest(),
-        source_url="https://authority.example.test/data",
-        available_at=datetime(2026, 7, 14, tzinfo=UTC),
-        retrieved_at=datetime(2026, 7, 14, 0, 1, tzinfo=UTC),
-        revision_id=label,
-        source_family_id="provider-fixture",
-        provider_id="authority-fixture",
-        subject_id="market.daily",
-        supersedes_revision_id=None,
-        url_migration_receipt_sha256=None,
-        capture_level="PROVIDER_QUALIFIED_CAPTURE",
     ).source
 
 
@@ -144,26 +123,16 @@ def test_target_data_grade_is_fixed_and_cannot_be_downgraded(tmp_path: Path) -> 
             minimum_capture_level="PROVIDER_QUALIFIED_CAPTURE",
             **common,
         )
-    append_rows(
-        path,
-        batch_id="provider-accepted",
-        source_identity=_provider_fixture_source("provider"),
-        minimum_capture_level="PROVIDER_QUALIFIED_CAPTURE",
-        **common,
-    )
-    with pytest.raises(DataWriteError, match="data grade changed"):
+    with pytest.raises(DataWriteError, match="PROVIDER_QUALIFIED_CAPTURE"):
         append_rows(
             path,
-            batch_id="downgrade-rejected",
-            source_identity=_provider_fixture_source("provider-2"),
-            minimum_capture_level="GENERIC_CAPTURE",
+            batch_id="transport-rejected",
+            source_identity=_source("transport"),
+            minimum_capture_level="PROVIDER_QUALIFIED_CAPTURE",
             **common,
         )
-    with duckdb.connect(str(path), read_only=True) as connection:
-        assert connection.execute(
-            "SELECT minimum_capture_level FROM _quant_meta.target_contracts "
-            "WHERE target='market.daily'"
-        ).fetchone() == ("PROVIDER_QUALIFIED_CAPTURE",)
+
+
 def test_target_contract_rejects_key_and_schema_drift(tmp_path: Path) -> None:
     path = _database(tmp_path / "test.duckdb")
     _append(path, _rows(), "batch-001", SOURCE_A)
