@@ -1,0 +1,147 @@
+{
+  "research_id": "US_QQQ_CORE_PIT_RESIDUAL_TILT_V1",
+  "phase": "ONE_USE_HISTORICAL_FEASIBILITY",
+  "current_status": "closed",
+  "result": "DISCOVERY_FAIL_PERMANENTLY_CLOSED",
+  "formal_run_count": 1,
+  "repository": {
+    "path": "/home/rongyu/workspace/.wt-us-qqq-core-pit-residual-tilt-v1",
+    "contract_path": "/home/rongyu/workspace/.wt-us-qqq-core-pit-residual-tilt-v1/research/archive/us_qqq_core_pit_residual_tilt_v1/definitions/us_qqq_core_pit_residual_tilt_v1.json",
+    "contract_sha256": "a5408c27a08c742f5bbbf92199b1a22f60a6417a4cbd72ab96e2b226c11ea0a4",
+    "script_path": "/home/rongyu/workspace/.wt-us-qqq-core-pit-residual-tilt-v1/research/archive/us_qqq_core_pit_residual_tilt_v1/scripts/us_qqq_core_pit_residual_tilt_v1.py",
+    "script_sha256": "b8dc78c3794abcac14605b99012d9cbb7a8af9f971cc7141a431dae9bdeb3321"
+  },
+  "input_identity_sha256": "899bf7ccb0e0f705209dfb1bef5408bcba283923c68cdcd844842c50d19f3177",
+  "period": {
+    "start": "2022-02-28",
+    "end": "2026-07-22",
+    "formation_count": 18,
+    "minimum_eligible": 48
+  },
+  "metrics": {
+    "strategy_base_15bps": {
+      "total_return": 1.2197657849811145,
+      "cagr": 0.19883683782960948,
+      "daily_sharpe": 0.9040431864073367,
+      "maximum_drawdown": -0.2831674373434978,
+      "annualized_volatility": 0.2310241389680383,
+      "years": 4.396988364134154
+    },
+    "strategy_stress_30bps": {
+      "total_return": 1.213835263479674,
+      "cagr": 0.19810765039023237,
+      "daily_sharpe": 0.9013650641670435,
+      "maximum_drawdown": -0.2832651493581867,
+      "annualized_volatility": 0.2310346335628205,
+      "years": 4.396988364134154
+    },
+    "qqq_2bps_entry": {
+      "total_return": 1.0903181615630988,
+      "cagr": 0.18256600519421506,
+      "daily_sharpe": 0.8452340673508216,
+      "maximum_drawdown": -0.29561764936518653,
+      "annualized_volatility": 0.23077502844096356,
+      "years": 4.396988364134154
+    },
+    "base_cagr_excess": 0.016270832635394417,
+    "stress_cagr_excess": 0.015541645196017306,
+    "daily_sharpe_margin": 0.05880911905651509,
+    "drawdown_shortfall": -0.012450212021688722,
+    "annualized_one_way_turnover": 0.4050884936067502
+  },
+  "subperiods": [
+    {
+      "subperiod": 1,
+      "start": "2022-02-28",
+      "end": "2023-08-15",
+      "strategy_return": 0.06491582777610283,
+      "qqq_return": 0.06725750263253993,
+      "excess_return": -0.0023416748564371037
+    },
+    {
+      "subperiod": 2,
+      "start": "2023-08-16",
+      "end": "2025-02-03",
+      "strategy_return": 0.4232531815826468,
+      "qqq_return": 0.42803635584336286,
+      "excess_return": -0.004783174260716061
+    },
+    {
+      "subperiod": 3,
+      "start": "2025-02-04",
+      "end": "2026-07-22",
+      "strategy_return": 0.46456856276502867,
+      "qqq_return": 0.3715255842492007,
+      "excess_return": 0.09304297851582799
+    }
+  ],
+  "monthly_excess_bootstrap": {
+    "months": 53,
+    "mean_monthly_excess": 0.0011854823405067912,
+    "lower_95": -0.0006569696610080546,
+    "upper_95": 0.0034044992595920038,
+    "block_length_months": 3,
+    "replications": 10000,
+    "seed": 20260724
+  },
+  "signal_diagnostics": {
+    "rank_ic": {
+      "21": {
+        "observations": 18,
+        "mean": -0.017169122968336267,
+        "median": 0.017746800847998775
+      },
+      "63": {
+        "observations": 18,
+        "mean": 0.021040607732454683,
+        "median": 0.03260504201680672
+      },
+      "holding": {
+        "observations": 18,
+        "mean": 0.024194883627209746,
+        "median": 0.01843937575030012
+      }
+    },
+    "holding_period_quintile_mean_returns": {
+      "1": 0.04101083836087248,
+      "2": 0.038069718271335755,
+      "3": 0.03355278688116802,
+      "4": 0.0306478741971413,
+      "5": 0.07935959630014058
+    },
+    "diagnostic_only_not_strategy_evidence": true
+  },
+  "acceptance_gates": {
+    "base_cagr_excess_positive": true,
+    "stress_cagr_excess_positive": true,
+    "daily_sharpe_margin_at_least_0_02": true,
+    "drawdown_shortfall_at_most_0_02": true,
+    "annualized_one_way_turnover_at_most_0_50": true,
+    "at_least_2_of_3_positive_subperiods": false,
+    "recent_subperiod_nonnegative": true
+  },
+  "gate_pass_count": 6,
+  "gate_total_count": 7,
+  "all_gates_passed": false,
+  "artifacts": {
+    "formal_run_marker": "/home/rongyu/workspace/quant-data/staging/us_qqq_core_pit_residual_tilt_v1/formal/formal_run_marker.json",
+    "daily_comparison": {
+      "path": "/home/rongyu/workspace/quant-data/staging/us_qqq_core_pit_residual_tilt_v1/formal/daily_comparison.csv",
+      "sha256": "abaafc9f44970954108f7ecf0712714e6da7d0c73d5f92cc55106d6b8295eaf8"
+    }
+  },
+  "limitations": [
+    "Historical feasibility is not prospective strategy evidence.",
+    "The signal family was previously studied on a different survivorship-biased universe; no prior alpha is recycled.",
+    "ATVI and WBA local cache closes lack inferred dividend adjustment."
+  ],
+  "research_boundaries": {
+    "strategy_candidate_available": false,
+    "current_rankings_output": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false
+  },
+  "next_action": "Close this identity without variants or repairs."
+}
