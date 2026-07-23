@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 
 from quant_system.data import (
     AcceptedSession, AcceptedSessionCalendar, CalendarIdentityError,
-    CorporateActionIdentity, SourceIdentity, capture_file_digest,
+    CorporateActionIdentity, SourceIdentity, capture_file_bytes, capture_file_digest,
     require_trusted_source,
 )
 from quant_system.markets.a_share import (
@@ -352,7 +352,6 @@ def _decision_artifact_payload(artifact: DecisionArtifact) -> bytes:
 
 def capture_decision_artifact(
     *,
-    weights: Mapping[str, float],
     feature_snapshot_path: Path,
     strategy_definition_path: Path,
     strategy_adapter_path: Path,
@@ -360,13 +359,21 @@ def capture_decision_artifact(
     dataset_identity_sha256: str,
     split_identity_sha256: str,
 ) -> DecisionArtifact:
-    """Capture actual feature, definition, and adapter bytes into one decision receipt."""
+    """Execute frozen declarative strategy bytes and capture their derived weights."""
 
-    symbols = tuple(sorted(weights))
-    frozen = _weights(weights, symbols)
-    feature_sha = capture_file_digest(feature_snapshot_path)[0]
-    definition_sha = capture_file_digest(strategy_definition_path)[0]
-    adapter_sha = capture_file_digest(strategy_adapter_path)[0]
+    feature_bytes = capture_file_bytes(feature_snapshot_path)
+    definition_bytes = capture_file_bytes(strategy_definition_path)
+    adapter_bytes = capture_file_bytes(strategy_adapter_path)
+    computed = _execute_frozen_adapter(
+        feature_bytes=feature_bytes,
+        definition_bytes=definition_bytes,
+        adapter_bytes=adapter_bytes,
+    )
+    symbols = tuple(sorted(computed))
+    frozen = _weights(computed, symbols)
+    feature_sha = hashlib.sha256(feature_bytes).hexdigest()
+    definition_sha = hashlib.sha256(definition_bytes).hexdigest()
+    adapter_sha = hashlib.sha256(adapter_bytes).hexdigest()
     provisional = object.__new__(DecisionArtifact)
     values = {
         "weights": frozen,
@@ -388,6 +395,53 @@ def capture_decision_artifact(
         artifact_sha256=artifact_sha,
         _artifact_token=_DECISION_ARTIFACT_TOKEN,
     )
+
+
+def _execute_frozen_adapter(
+    *,
+    feature_bytes: bytes,
+    definition_bytes: bytes,
+    adapter_bytes: bytes,
+) -> dict[str, float]:
+    """Execute the sole controlled, declarative score-to-weight contract."""
+
+    try:
+        feature = json.loads(feature_bytes.decode("utf-8"))
+        definition = json.loads(definition_bytes.decode("utf-8"))
+        adapter = json.loads(adapter_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise MarketDataError("controlled strategy artifacts must be UTF-8 JSON") from exc
+    if adapter != {
+        "feature_field": "scores",
+        "normalization": "positive_sum",
+        "transform": "threshold",
+        "version": 1,
+    }:
+        raise MarketDataError("unsupported controlled strategy adapter contract")
+    if not isinstance(definition, dict) or set(definition) != {
+        "minimum_score",
+        "version",
+    } or definition["version"] != 1:
+        raise MarketDataError("controlled strategy definition has an invalid schema")
+    threshold = definition["minimum_score"]
+    if not is_finite_number(threshold) or float(threshold) < 0:
+        raise MarketDataError("minimum_score must be finite and nonnegative")
+    if not isinstance(feature, dict) or set(feature) != {"scores", "version"} \
+            or feature["version"] != 1 or not isinstance(feature["scores"], dict):
+        raise MarketDataError("controlled feature snapshot has an invalid schema")
+    scores: dict[str, float] = {}
+    for symbol, score in feature["scores"].items():
+        if not isinstance(symbol, str) or not symbol.strip():
+            raise MarketDataError("feature symbols must be nonempty strings")
+        if not is_finite_number(score):
+            raise MarketDataError("feature scores must be finite numbers")
+        normalized = float(score)
+        if normalized > float(threshold):
+            scores[symbol] = normalized
+    total = math.fsum(scores.values())
+    if not scores or not math.isfinite(total) or total <= 0:
+        raise MarketDataError("controlled strategy produced no positive eligible scores")
+    return {symbol: score / total for symbol, score in scores.items()}
 
 
 def run_static_rebalance(
@@ -599,7 +653,7 @@ def run_candidate_rebalance(
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
     max_positions: int | None = None,
 ) -> StaticRebalanceResult:
-    """Run the controlled interface from frozen weights and captured bytes only."""
+    """Run the controlled interface from weights computed from frozen bytes only."""
 
     if not isinstance(decision_artifact, DecisionArtifact):
         raise TypeError("decision_artifact must be a captured DecisionArtifact")
@@ -673,7 +727,11 @@ def run_candidate_rebalance(
     )
     assumption_sha = cost_assumptions.identity_sha256
     candidate_identity = hashlib.sha256(
-        f"{result.input_identity_hash}|{assumption_sha}|base".encode()
+        (
+            f"{result.input_identity_hash}|{decision_artifact.artifact_sha256}|"
+            f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
+            f"{assumption_sha}|base"
+        ).encode()
     ).hexdigest()
     receipt_hashes, stage_hash = _hashes(
         result.receipts,
@@ -681,7 +739,11 @@ def run_candidate_rebalance(
         stage_context,
     )
     adverse_identity = hashlib.sha256(
-        f"{adverse.input_identity_hash}|{assumption_sha}|adverse".encode()
+        (
+            f"{adverse.input_identity_hash}|{decision_artifact.artifact_sha256}|"
+            f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
+            f"{assumption_sha}|adverse"
+        ).encode()
     ).hexdigest()
     _, adverse_stage_hash = _hashes(
         adverse.receipts,

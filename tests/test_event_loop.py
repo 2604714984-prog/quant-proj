@@ -2603,15 +2603,39 @@ def _captured_decision_artifact(
     decision_at: datetime,
     *,
     dataset_identity_sha256: str = "d" * 64,
+    scores: dict[str, float] | None = None,
+    minimum_score: float = 0.0,
+    name: str = "",
 ) -> DecisionArtifact:
-    feature = tmp_path / "feature.json"
-    definition = tmp_path / "definition.json"
-    adapter = tmp_path / "adapter.py"
-    feature.write_text('{"AAA": 1.0}\n', encoding="utf-8")
-    definition.write_text('{"identity": "fixture-v1"}\n', encoding="utf-8")
-    adapter.write_text("WEIGHT = 1.0\n", encoding="utf-8")
+    feature = tmp_path / f"feature{name}.json"
+    definition = tmp_path / f"definition{name}.json"
+    adapter = tmp_path / f"adapter{name}.json"
+    feature.write_text(
+        json.dumps(
+            {"scores": scores or {"AAA": 1.0}, "version": 1},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    definition.write_text(
+        json.dumps(
+            {"minimum_score": minimum_score, "version": 1},
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    adapter.write_text(
+        (
+            '{"feature_field":"scores","normalization":"positive_sum",'
+            '"transform":"threshold","version":1}\n'
+        ),
+        encoding="utf-8",
+    )
     return capture_decision_artifact(
-        weights={"AAA": 1.0},
         feature_snapshot_path=feature,
         strategy_definition_path=definition,
         strategy_adapter_path=adapter,
@@ -2666,6 +2690,30 @@ def _controlled_materialization(
         session=execution,
         decision_at=decision_at,
     )
+
+
+def test_candidate_weights_are_computed_from_frozen_strategy_artifacts(
+    tmp_path: Path,
+) -> None:
+    decision_at = datetime(2026, 7, 13, 7, tzinfo=UTC)
+    artifact = _captured_decision_artifact(
+        tmp_path,
+        decision_at,
+        scores={"AAA": 3.0, "BBB": 1.0, "CCC": -5.0},
+        name="-derived",
+    )
+
+    assert artifact.weights == (("AAA", 0.75), ("BBB", 0.25))
+    with pytest.raises(TypeError, match="unexpected keyword argument 'weights'"):
+        capture_decision_artifact(
+            weights={"CCC": 1.0},  # type: ignore[call-arg]
+            feature_snapshot_path=tmp_path / "feature-derived.json",
+            strategy_definition_path=tmp_path / "definition-derived.json",
+            strategy_adapter_path=tmp_path / "adapter-derived.json",
+            decision_at=decision_at,
+            dataset_identity_sha256="d" * 64,
+            split_identity_sha256="e" * 64,
+        )
 
 
 def _dataset_manifest(materialization: UniverseMaterialization, session: date):
@@ -2925,6 +2973,28 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     assert result.base_fx_adjusted_final_nav is not None
     assert result.adverse_fx_adjusted_final_nav is not None
     assert result.strategy_candidate_available is False
+
+    same_weights_different_definition = _captured_decision_artifact(
+        tmp_path,
+        decision_at,
+        dataset_identity_sha256=dataset_manifest.identity_sha256,
+        minimum_score=0.5,
+        name="-different-definition",
+    )
+    rebound = run_candidate_rebalance(
+        Portfolio.a_share(100_000, costs=TransactionCostModel()),
+        calendar,
+        signal_session=days[0],
+        decision_at=decision_at,
+        execution_inputs=(row,),
+        universe_materialization=materialization,
+        dataset_manifest=dataset_manifest,
+        decision_artifact=same_weights_different_definition,
+        cost_assumptions=_cost_assumptions(),
+        stage_context=genesis_stage(create_stage_plan((days[0],))),
+    )
+    assert rebound.target_weights == result.target_weights
+    assert rebound.stage_hash != result.stage_hash
 
 
 def test_candidate_retrospective_execution_is_research_only(tmp_path: Path) -> None:
