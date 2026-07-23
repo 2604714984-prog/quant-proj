@@ -8,7 +8,6 @@ from collections.abc import Iterable
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
-import inspect
 import json
 import math
 import re
@@ -328,9 +327,9 @@ def _decode_provider_observations(content: bytes) -> tuple[str, tuple[dict[str, 
 
 
 def _typed_parser_code_sha256() -> str:
-    return hashlib.sha256(
-        inspect.getsource(_decode_provider_observations).encode("utf-8")
-    ).hexdigest()
+    """Bind typed receipts to every parser and canonicalization helper."""
+
+    return hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
 
 
 @dataclass(frozen=True)

@@ -25,6 +25,11 @@ AVAILABLE = datetime(2026, 7, 22, 20, tzinfo=UTC)
 RETRIEVED = AVAILABLE + timedelta(minutes=5)
 
 
+def test_typed_parser_identity_binds_complete_module_artifact() -> None:
+    expected = hashlib.sha256(Path(source_module.__file__).read_bytes()).hexdigest()
+    assert source_module._typed_parser_code_sha256() == expected
+
+
 def _manual_source(
     revision_id: str,
     *,
