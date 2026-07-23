@@ -1,0 +1,163 @@
+{
+  "schema_version": "c29-stlfsi4-weekly-stress-change-prereg-v1",
+  "research_id": "C29_STLFSI4_WEEKLY_STRESS_CHANGE_ROTATION_SPY_QQQ_V1",
+  "mechanism_id": "C29_STLFSI4_WEEKLY_STRESS_CHANGE_ROTATION_SPY_QQQ",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE29",
+  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_READY",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+  "selection_without_outcomes": {
+    "economic_reason": "a weekly increase in the St. Louis Fed Financial Stress Index indicates worsening broad financial stress and favors the diversified SPY exposure, while unchanged or declining stress favors the more growth-sensitive QQQ exposure",
+    "price_return_nav_sharpe_or_drawdown_used_for_selection": false,
+    "parameter_grid": false,
+    "variant_count": 1,
+    "independent_mechanism_statement": "this is an official Federal Reserve Bank of St. Louis weekly financial-stress change mechanism and is distinct from the closed level-volatility, credit-price, yield, inflation, growth, labor, production, housing, sentiment, commodity, currency, seasonal and ETF-price mechanisms",
+    "closed_lines_remain_closed_through_cycle": 28
+  },
+  "program_multiplicity": {
+    "cycle29_familywise_alpha": 0.000000000186264514923095703125,
+    "sole_primary_alpha": 0.000000000186264514923095703125,
+    "cycle1_to_cycle29_union_bound": 0.099999999813735485076904296875,
+    "alpha_recycling": false,
+    "formal_outcome_lanes": 1
+  },
+  "signal": {
+    "series": "STLFSI4",
+    "source": "Federal Reserve Bank of St. Louis ALFRED official real-time-period history",
+    "frequency": "weekly",
+    "formula": "at each cutoff choose the latest PIT-qualified STLFSI4 observation and its exact previous accepted weekly observation; delta=current_index-previous_index",
+    "target_rule": "delta above zero means SPY weight 1.0; equal or lower means QQQ weight 1.0",
+    "availability_rule": "ALFRED realtime_start becomes conservatively available only at 23:59:59.999999 America/New_York",
+    "missing_rule": "fail closed; no interpolation, smoothing, persistence, threshold grid, alternate lag, level filter, price filter, volatility filter or source blend",
+    "limitation": "STLFSI4 is a revised weekly aggregate financial-stress measure and the sign of its one-week change is a coarse regime proxy"
+  },
+  "timing_and_account": {
+    "target_submission": "09:00 America/New_York on the first accepted XNYS session after the conservative signal availability timestamp",
+    "execution": "that accepted session official open",
+    "holding": "until the next accepted weekly execution open",
+    "decision_price": "raw preceding-session close for each asset, available before target submission",
+    "initial_capital_usd": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "comparator": "50/50 SPY/QQQ rebalanced at identical weekly opens under identical whole-share, cost, calendar, lifecycle and cash-distribution accounting",
+    "corporate_action_mode": "official historical events are used only for retrospective account reconstruction, never for signal formation or source selection; their current source bytes were retrieved after historical decisions and are not represented as PIT strategy evidence"
+  },
+  "splits": {
+    "validation": {
+      "first_holding_execution": "2023-01-06",
+      "terminal_execution": "2024-06-28",
+      "complete_intervals": 77
+    },
+    "retrospective_holdout": {
+      "first_holding_execution": "2024-07-05",
+      "terminal_execution": "2026-06-30",
+      "complete_intervals": 104,
+      "sealed_until_validation_pass": true
+    },
+    "cross_boundary_rule": "no signal or portfolio state carries across splits"
+  },
+  "state_support_before_outcomes": {
+    "accepted": {
+      "validation": {
+        "complete_intervals": 77,
+        "spy_intervals": 35,
+        "qqq_intervals": 42,
+        "spy_to_qqq": 21,
+        "qqq_to_spy": 21
+      },
+      "retrospective_holdout": {
+        "complete_intervals": 104,
+        "spy_intervals": 59,
+        "qqq_intervals": 45,
+        "spy_to_qqq": 27,
+        "qqq_to_spy": 27
+      }
+    },
+    "minimums": "52 intervals, eight of each state, and four transitions in each direction per split",
+    "strategy_outcomes_opened": false
+  },
+  "validation": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "arithmetic mean paired weekly active return strictly positive",
+      "strategy maximum drawdown no worse than the 50/50 comparator"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout remains unopened and the lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "strategy maximum drawdown no worse than the 50/50 comparator",
+      "exactly 104 paired intervals",
+      "centered-null one-sided p-value at most 0.000000000186264514923095703125",
+      "uncentered type-7 0.000000000186264514923095703125 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap over weekly active returns",
+      "block_length_weeks": 13,
+      "resamples": 8192000000,
+      "rng": "Python random.Random",
+      "seed": 2500101,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(8192000000 + 1)",
+      "quantile": "linear type-7",
+      "limitation": "the thirteen-week block is an outcome-blind dependence assumption, not proof of complete serial-dependence coverage"
+    }
+  },
+  "source_identities": {
+    "signal_packet_path": "/home/rongyu/workspace/quant-data/staging/c29_stlfsi4_weekly_stress_change_rotation_spy_qqq_v1/stlfsi4_weekly_stress_change_signal_packet.json",
+    "signal_packet_sha256": "b22195f8b097afb4b2a6690ee0ca13065b5844f7d5c29e4a55652e23a437b3bb",
+    "signal_receipt_sha256": "9214ce9de3218ca3f0d03f8913accc6fc8e1fa5a9ebbffbac6f856e2479277b9",
+    "runtime_packet_path": "/home/rongyu/workspace/quant-data/staging/c29_stlfsi4_weekly_stress_change_rotation_spy_qqq_v1/c29_full_runtime_packet.json",
+    "runtime_packet_sha256": "15a654f3002f5d83b5907fc23b4ec0e1e8d8022174d9a29479f80c0ca110cb84",
+    "runtime_receipt_sha256": "5c5153ce963d370ddea20347dbec989670259ee5dfb5b986967464fd4f5c9645",
+    "spy_tiingo_raw_sha256": "695494dd12f3c8b9a1e2946ba1de8f594c69026185a5e25a6bbfce8503d569e4",
+    "qqq_tiingo_raw_sha256": "c6a47126e2565a6a3bfaebe2c56ec5b4d6432119aa6d217368de489490d95c4d",
+    "spy_validation_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "spy_holdout_bundle_sha256": "ff4b02932079ad013da05dbffcf2dd6e25af8592450e5b09e4a2f00d9f61f8d4",
+    "qqq_market_packet_sha256": "a862a5721313c45579099be163ac4a3248e0be90cd680080df2c0c9c4cf458a0",
+    "accepted_xnys_calendar_sha256": "08b1722c675012d89e0b4f92ed51f51160adbd1d54961c093c52101c067fc553",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "adapter_sha256": "fbbd285306a480c2f3090f07f330197c0fdc07f4dc80b25bc7c2b50b98fd27f9",
+    "runner_role": "branch-only removable one-use research adapter; not shared infrastructure"
+  },
+  "one_use": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c29_stlfsi4_weekly_stress_change_rotation_spy_qqq_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c29_stlfsi4_weekly_stress_change_rotation_spy_qqq_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c29_stlfsi4_weekly_stress_change_rotation_spy_qqq_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c29_stlfsi4_weekly_stress_change_rotation_spy_qqq_v1_holdout/result.json",
+    "claim_before_runtime_packet_capture": true,
+    "claim_and_result_mode": "0600",
+    "rerun_after_any_claim": false
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "input_error_after_claim": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "strategy_candidate_available": false,
+    "parameter_repair": false,
+    "rerun": false
+  },
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_open_or_write": false,
+    "external_review_requested": false,
+    "prospective_forward_access": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
