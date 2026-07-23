@@ -100,6 +100,15 @@ def test_active_tree_has_no_governance_control_plane_or_sidecars() -> None:
     assert not tuple(ROOT.rglob("*.sha256"))
 
 
+def test_terminal_research_is_not_an_active_tree_dependency() -> None:
+    terminal_roots = (
+        ROOT / "research" / "archive",
+        ROOT / "research" / "reports",
+        ROOT / "research" / "results",
+    )
+    assert all(not path.exists() or not any(path.rglob("*")) for path in terminal_roots)
+
+
 def test_at_most_one_adapter_and_no_script_to_script_import() -> None:
     scripts_root = ROOT / "scripts"
     scripts = tuple(sorted(scripts_root.glob("*.py"))) if scripts_root.exists() else ()
@@ -112,6 +121,35 @@ def test_at_most_one_adapter_and_no_script_to_script_import() -> None:
                 assert not (node.module or "").startswith("scripts.")
             elif isinstance(node, ast.Import):
                 assert all(not alias.name.startswith("scripts") for alias in node.names)
+
+
+def test_only_canonical_writer_can_open_duckdb_for_writes() -> None:
+    source_roots = (ROOT / "src", ROOT / "scripts", ROOT / "research")
+    canonical_writer = ROOT / "src" / "quant_system" / "data" / "writer.py"
+    for source_root in source_roots:
+        if not source_root.exists():
+            continue
+        for path in source_root.rglob("*.py"):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                if not (
+                    isinstance(node, ast.Call)
+                    and isinstance(node.func, ast.Attribute)
+                    and isinstance(node.func.value, ast.Name)
+                    and node.func.value.id == "duckdb"
+                    and node.func.attr == "connect"
+                ):
+                    continue
+                if path == canonical_writer:
+                    continue
+                read_only = next(
+                    (keyword.value for keyword in node.keywords if keyword.arg == "read_only"),
+                    None,
+                )
+                assert isinstance(read_only, ast.Constant) and read_only.value is True, (
+                    f"{path.relative_to(ROOT)} opens DuckDB outside the canonical writer "
+                    "without read_only=True"
+                )
 
 
 def test_shared_source_does_not_depend_on_specific_family_or_scripts() -> None:
