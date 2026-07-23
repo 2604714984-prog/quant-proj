@@ -3321,6 +3321,28 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         text=True,
     ).strip()
     assert replayed == result.stage_hash
+    final_state = json.loads(result.run_bundle.base_final_portfolio_json)
+    final_state["settled_cash"] += 1
+    with pytest.raises(ValueError, match="final NAV cannot be replayed"):
+        replace(
+            result.run_bundle,
+            base_final_portfolio_json=json.dumps(
+                final_state,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
+        ).verify()
+    input_state = json.loads(result.run_bundle.base_input_artifact_json)
+    input_state["portfolio"]["settled_cash"] += 1
+    with pytest.raises(ValueError, match="input identity cannot be replayed"):
+        replace(
+            result.run_bundle,
+            base_input_artifact_json=json.dumps(
+                input_state,
+                sort_keys=True,
+                separators=(",", ":"),
+            ),
+        ).verify()
 
     same_weights_different_definition = _captured_decision_artifact(
         tmp_path,

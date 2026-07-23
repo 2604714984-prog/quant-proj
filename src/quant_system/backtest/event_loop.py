@@ -340,6 +340,7 @@ class ExecutionReceipt:
 class CandidateRunBundle:
     decision_artifact_sha256: str
     dataset_identity_sha256: str
+    split_identity_sha256: str
     split_evaluation_sha256: str
     experiment_manifest_sha256: str
     candidate_run_config_sha256: str
@@ -350,19 +351,28 @@ class CandidateRunBundle:
     stage_index: int
     stage_session: date
     prior_stage_hash: str
+    base_underlying_input_identity_hash: str
+    base_input_artifact_json: str
     base_input_identity_hash: str
     base_receipt_payloads: tuple[str, ...]
     base_receipt_hashes: tuple[str, ...]
     base_stage_hash: str
+    base_final_portfolio_json: str
+    base_final_nav: float
+    adverse_underlying_input_identity_hash: str
+    adverse_input_artifact_json: str
     adverse_input_identity_hash: str
     adverse_receipt_payloads: tuple[str, ...]
     adverse_stage_hash: str
+    adverse_final_portfolio_json: str
+    adverse_final_nav: float
     bundle_sha256: str
 
     def verify(self) -> None:
         for name in (
             "decision_artifact_sha256",
             "dataset_identity_sha256",
+            "split_identity_sha256",
             "split_evaluation_sha256",
             "experiment_manifest_sha256",
             "candidate_run_config_sha256",
@@ -370,9 +380,11 @@ class CandidateRunBundle:
             "universe_materialization_sha256",
             "stage_plan_sha256",
             "prior_stage_hash",
+            "base_underlying_input_identity_hash",
             "base_input_identity_hash",
             "base_stage_hash",
             "adverse_input_identity_hash",
+            "adverse_underlying_input_identity_hash",
             "adverse_stage_hash",
             "bundle_sha256",
         ):
@@ -385,6 +397,41 @@ class CandidateRunBundle:
             raise ValueError("run bundle source receipts must be sorted and unique")
         for digest in self.source_receipt_sha256s:
             _sha256(digest, "source_receipt_sha256")
+        for case, artifact_json, underlying_identity in (
+            (
+                "base",
+                self.base_input_artifact_json,
+                self.base_underlying_input_identity_hash,
+            ),
+            (
+                "adverse",
+                self.adverse_input_artifact_json,
+                self.adverse_underlying_input_identity_hash,
+            ),
+        ):
+            try:
+                artifact = json.loads(artifact_json)
+            except json.JSONDecodeError as exc:
+                raise ValueError(f"run bundle {case} input artifact is invalid") from exc
+            if (
+                json.dumps(artifact, sort_keys=True, separators=(",", ":"))
+                != artifact_json
+                or hashlib.sha256(artifact_json.encode()).hexdigest()
+                != underlying_identity
+            ):
+                raise ValueError(f"run bundle {case} input identity cannot be replayed")
+            expected_identity = hashlib.sha256(
+                (
+                    f"{underlying_identity}|{self.decision_artifact_sha256}|"
+                    f"{self.dataset_identity_sha256}|{self.split_identity_sha256}|"
+                    f"{self.split_evaluation_sha256}|"
+                    f"{self.experiment_manifest_sha256}|"
+                    f"{self.candidate_run_config_sha256}|"
+                    f"{self.cost_assumptions_sha256}|{case}"
+                ).encode()
+            ).hexdigest()
+            if expected_identity != getattr(self, f"{case}_input_identity_hash"):
+                raise ValueError(f"run bundle {case} candidate identity cannot be replayed")
         if type(self.stage_index) is not int or self.stage_index < 0:
             raise ValueError("run bundle stage_index must be nonnegative")
         if type(self.stage_session) is not date:
@@ -409,6 +456,13 @@ class CandidateRunBundle:
         )
         if adverse_stage != self.adverse_stage_hash:
             raise ValueError("run bundle adverse stage hash cannot be replayed")
+        for case in ("base", "adverse"):
+            observed_nav = _portfolio_nav_from_artifact(
+                getattr(self, f"{case}_final_portfolio_json")
+            )
+            declared_nav = getattr(self, f"{case}_final_nav")
+            if abs(observed_nav - declared_nav) > 1e-9:
+                raise ValueError(f"run bundle {case} final NAV cannot be replayed")
         if hashlib.sha256(_candidate_run_bundle_payload(self)).hexdigest() != (
             self.bundle_sha256
         ):
@@ -461,7 +515,7 @@ def serialize_candidate_run_bundle(bundle: CandidateRunBundle) -> bytes:
         {
             **json.loads(_candidate_run_bundle_payload(bundle)),
             "bundle_sha256": bundle.bundle_sha256,
-            "version": 1,
+            "version": 2,
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -473,13 +527,13 @@ def load_candidate_run_bundle(payload: bytes) -> CandidateRunBundle:
         values = json.loads(payload)
     except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("candidate run bundle must be valid UTF-8 JSON") from exc
-    if type(values) is not dict or values.pop("version", None) != 1:
+    if type(values) is not dict or values.pop("version", None) != 2:
         raise ValueError("candidate run bundle version is invalid")
     tuple_fields = (
         "source_receipt_sha256s",
         "base_receipt_payloads",
         "base_receipt_hashes",
-        "adverse_receipt_payloads",
+            "adverse_receipt_payloads",
     )
     for name in tuple_fields:
         if type(values.get(name)) is not list:
@@ -494,6 +548,23 @@ def load_candidate_run_bundle(payload: bytes) -> CandidateRunBundle:
     return bundle
 
 
+def _portfolio_nav_from_artifact(payload: str) -> float:
+    try:
+        state = json.loads(payload)
+        settled = float(state["settled_cash"])
+        pending = math.fsum(float(item["amount"]) for item in state["pending_cash"])
+        marked = math.fsum(
+            float(position["shares"]) * float(position["last_accepted_mark"])
+            for position in state["positions"].values()
+        )
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("run bundle final portfolio artifact is invalid") from exc
+    nav = settled + pending + marked
+    if not math.isfinite(nav):
+        raise ValueError("run bundle final portfolio NAV is nonfinite")
+    return nav
+
+
 @dataclass(frozen=True)
 class StaticRebalanceResult:
     portfolio: Portfolio
@@ -501,6 +572,7 @@ class StaticRebalanceResult:
     target_weights: tuple[tuple[str, float], ...]
     receipts: tuple[ExecutionReceipt, ...]
     input_identity_hash: str
+    input_artifact_json: str
     receipt_hashes: tuple[str, ...]
     stage_hash: str
     final_nav: float
@@ -954,7 +1026,7 @@ def run_static_rebalance(
                     receipts,
                 )
     final_nav = working.nav(_marks(working, rows))
-    identity = _identity(
+    input_artifact_json = _identity_artifact(
         context,
         calendar,
         rows,
@@ -971,6 +1043,7 @@ def run_static_rebalance(
         execution_calendar_revision,
         execution_calendar_revision_rows,
     )
+    identity = hashlib.sha256(input_artifact_json.encode()).hexdigest()
     receipt_hashes, stage_hash = _hashes(tuple(receipts), identity, stage_context)
     return StaticRebalanceResult(
         working,
@@ -978,6 +1051,7 @@ def run_static_rebalance(
         weights,
         tuple(receipts),
         identity,
+        input_artifact_json,
         receipt_hashes,
         stage_hash,
         final_nav,
@@ -2235,7 +2309,7 @@ def _receipt(
                                      float(cash_after), reason))
 
 
-def _identity(
+def _identity_artifact(
     context: DecisionContext, calendar: AcceptedSessionCalendar,
     rows: Mapping[str, ExecutionInput], portfolio: Portfolio,
     weights: tuple[tuple[str, float], ...], policy: CapacityPolicy | None,
@@ -2272,8 +2346,7 @@ def _identity(
         raise RuntimeError("execution calendar revision rows lack a revision identity")
     if max_positions is not None:
         payload["max_positions"] = max_positions
-    encoded = json.dumps(_normal(payload), sort_keys=True, separators=(",", ":"))
-    return hashlib.sha256(encoded.encode()).hexdigest()
+    return json.dumps(_normal(payload), sort_keys=True, separators=(",", ":"))
 
 
 def _normal(value: Any) -> Any:
@@ -2346,6 +2419,7 @@ def _build_candidate_run_bundle(
     values = {
         "decision_artifact_sha256": decision_artifact.artifact_sha256,
         "dataset_identity_sha256": dataset_manifest.identity_sha256,
+        "split_identity_sha256": dataset_manifest.split_manifest_sha256,
         "split_evaluation_sha256": split_evaluation.evaluation_sha256,
         "experiment_manifest_sha256": experiment_manifest.head_sha256,
         "candidate_run_config_sha256": candidate_run_config.config_sha256,
@@ -2358,6 +2432,8 @@ def _build_candidate_run_bundle(
         "stage_index": stage_context.stage_index,
         "stage_session": stage_context.stage_session,
         "prior_stage_hash": stage_context.prior_stage_hash,
+        "base_underlying_input_identity_hash": result.input_identity_hash,
+        "base_input_artifact_json": result.input_artifact_json,
         "base_input_identity_hash": base_input_identity_hash,
         "base_receipt_payloads": tuple(
             json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
@@ -2365,12 +2441,26 @@ def _build_candidate_run_bundle(
         ),
         "base_receipt_hashes": base_receipt_hashes,
         "base_stage_hash": base_stage_hash,
+        "base_final_portfolio_json": json.dumps(
+            _normal(result.portfolio.__dict__),
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        "base_final_nav": result.final_nav,
+        "adverse_underlying_input_identity_hash": adverse.input_identity_hash,
+        "adverse_input_artifact_json": adverse.input_artifact_json,
         "adverse_input_identity_hash": adverse_input_identity_hash,
         "adverse_receipt_payloads": tuple(
             json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
             for receipt in adverse.receipts
         ),
         "adverse_stage_hash": adverse_stage_hash,
+        "adverse_final_portfolio_json": json.dumps(
+            _normal(adverse.portfolio.__dict__),
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
+        "adverse_final_nav": adverse.final_nav,
     }
     provisional = object.__new__(CandidateRunBundle)
     for name, value in values.items():
