@@ -1,0 +1,174 @@
+{
+  "schema_version": "c31-rrp-liquidity-release-prereg-v1",
+  "research_id": "C31_RRP_LIQUIDITY_RELEASE_ROTATION_SPY_QQQ_V1",
+  "mechanism_id": "C31_RRP_LIQUIDITY_RELEASE_ROTATION_SPY_QQQ",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_EPOCH2_C31_C33",
+  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_READY",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+  "selection_without_outcomes": {
+    "economic_reason": "a fall in overnight reverse-repurchase balances releases cash from the Federal Reserve facility and is treated as favorable to QQQ's longer-duration equity exposure; an equal or higher balance favors broader SPY exposure",
+    "price_return_nav_sharpe_or_drawdown_used_for_selection": false,
+    "parameter_grid": false,
+    "variant_count": 1,
+    "independent_mechanism_statement": "this is an official Federal Reserve liquidity-allocation mechanism distinct from all permanently closed price, volatility, labor, credit, inflation, rates, production, consumption, housing, currency, commodity and seasonal lineages",
+    "closed_cycles_1_through_30_remain_closed": true
+  },
+  "program_multiplicity": {
+    "epoch2_familywise_alpha": 0.05,
+    "epoch2_mechanism_count": 3,
+    "fixed_order": [
+      "C31_RRP_LIQUIDITY_RELEASE_ROTATION_SPY_QQQ_V1",
+      "C32_CBOE_SKEW_21_SESSION_CHANGE_ROTATION_SPY_QQQ_V1",
+      "C33_BAA10YM_SPREAD_MONTHLY_CHANGE_ROTATION_SPY_QQQ_V1"
+    ],
+    "sole_primary_alpha": 0.016666666666666666,
+    "method": "Bonferroni across exactly the three frozen Epoch 2 mechanisms",
+    "alpha_recycling": false,
+    "lifetime_fwer_claim": false,
+    "formal_outcome_lanes": 1
+  },
+  "signal": {
+    "series": "RRPONTTLD",
+    "source": "Federal Reserve Bank of New York overnight reverse repurchase operations, distributed through official FRED/ALFRED real-time history",
+    "frequency": "monthly",
+    "formula": "at each decision cutoff, select the newest eligible RRPONTTLD observation and the newest eligible observation on or before the 28-calendar-day anchor; delta_t=current_billions_usd-prior_anchor_billions_usd",
+    "target_rule": "negative delta_t means QQQ weight 1.0; equal or positive delta_t means SPY weight 1.0",
+    "availability_rule": "an ALFRED realtime_start date is conservatively available only at 23:59:59.999999 America/New_York; values later than the frozen cutoff are excluded",
+    "anchor_staleness_rule": "the prior observation must be no later than the 28-day anchor and no more than four calendar days older than that anchor",
+    "missing_rule": "fail closed; no interpolation, carry-forward beyond the frozen anchor tolerance, threshold grid, level filter, price filter, volatility filter, persistence filter, alternate lag or source blending",
+    "ancestry_limitation": "RRPONTTLD is a facility balance rather than a complete measure of aggregate market liquidity; the 28-day difference and its direction are frozen economic assumptions, not conclusions learned from outcomes"
+  },
+  "timing_and_account": {
+    "signal_freeze": "20:05 America/New_York after the final accepted XNYS close preceding the next monthly execution session",
+    "target_submission": "09:00 America/New_York on the next accepted XNYS session",
+    "execution": "that accepted session official open",
+    "holding": "until the following monthly accepted execution open",
+    "decision_price": "raw preceding-session close for each asset, available before target submission",
+    "initial_capital_usd": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "comparator": "50/50 SPY/QQQ rebalanced at identical monthly opens under identical whole-share, cost, calendar, lifecycle and corporate-action accounting"
+  },
+  "splits": {
+    "validation": {
+      "baseline_execution": "2021-01-04",
+      "first_holding_execution": "2021-02-01",
+      "terminal_execution": "2023-06-01",
+      "complete_intervals": 28
+    },
+    "retrospective_holdout": {
+      "baseline_execution": "2023-07-03",
+      "first_holding_execution": "2023-08-01",
+      "terminal_execution": "2026-06-01",
+      "complete_intervals": 34,
+      "sealed_until_validation_pass": true
+    },
+    "cross_boundary_rule": "no signal or portfolio state carries across splits"
+  },
+  "state_support_before_outcomes": {
+    "accepted": {
+      "validation": {
+        "complete_intervals": 28,
+        "spy_intervals": 19,
+        "qqq_intervals": 9,
+        "spy_to_qqq": 6,
+        "qqq_to_spy": 7
+      },
+      "retrospective_holdout": {
+        "complete_intervals": 34,
+        "spy_intervals": 13,
+        "qqq_intervals": 21,
+        "spy_to_qqq": 8,
+        "qqq_to_spy": 8
+      }
+    },
+    "minimums": "20 intervals, four of each state, and two transitions in each direction per split",
+    "independent_local_read_only_recompute": true,
+    "strategy_outcomes_opened": false
+  },
+  "validation": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "arithmetic mean paired monthly active return strictly positive",
+      "strategy maximum drawdown no worse than the 50/50 comparator"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout remains unopened and the lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "strategy maximum drawdown no worse than the 50/50 comparator",
+      "exactly 34 paired intervals",
+      "centered-null one-sided p-value at most 0.016666666666666666",
+      "uncentered type-7 0.016666666666666666 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap over monthly active returns",
+      "block_length_months": 3,
+      "resamples": 100000,
+      "rng": "Python random.Random",
+      "seed": 3100101,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(100000 + 1)",
+      "quantile": "linear type-7",
+      "limitation": "the three-month block is an outcome-blind dependence assumption, not proof of complete serial-dependence coverage"
+    }
+  },
+  "source_identities": {
+    "input_packet_path": "/home/rongyu/workspace/quant-data/staging/c31_rrp_liquidity_release_rotation_spy_qqq_v1/c31_full_input_packet.json",
+    "input_packet_sha256": "372ae407a5838538ab451956aeac2319d16bca986dd64e206051dbc17430c47f",
+    "materialization_receipt_path": "/home/rongyu/workspace/quant-data/staging/c31_rrp_liquidity_release_rotation_spy_qqq_v1/full_materialization_receipt.json",
+    "materialization_receipt_sha256": "4ff1a338ae1cae9624c061a02bc78e5465a09fedd2ecf77999436923b1d77d1e",
+    "rrponttld_raw_alfred_zip_sha256": "7de11930d081532d97127c5ea0ab1fc106870d6fedf9fb6eb6f52e9de540b317",
+    "rrponttld_acquisition_receipt_sha256": "ef1d8d7f929d268a23aa83f03d951e8b2e6027bf68ffda51ca01a31a20e2654d",
+    "rrponttld_signal_packet_sha256": "dfcac15b0f482ab3f363fa3c623f6a6baea98b121bf28a9f85b462f81f43996b",
+    "rrponttld_signal_receipt_sha256": "bd31462465fb58cd201f2149f99565ac64175141707e54078906841ac91166d2",
+    "reused_qqq_market_packet_sha256": "b3e2b1919f12538628509e19595478470ab7e6f217eae9c07a7347732cc2bdc6",
+    "reused_qqq_market_receipt_sha256": "4c106a5dde0ebb069865636d2280fd7483081ed3084c7f83b346e8834faebb29",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "holdout_spy_bundle_sha256": "ff4b02932079ad013da05dbffcf2dd6e25af8592450e5b09e4a2f00d9f61f8d4",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "adapter_sha256": "ca99a46754b16fd8de0b8cde3201ae7b4b6c2421dc11a68045326a39ed6da33c",
+    "runner_role": "branch-only removable one-use research adapter; not shared infrastructure"
+  },
+  "one_use": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c31_rrp_liquidity_release_rotation_spy_qqq_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c31_rrp_liquidity_release_rotation_spy_qqq_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c31_rrp_liquidity_release_rotation_spy_qqq_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c31_rrp_liquidity_release_rotation_spy_qqq_v1_holdout/result.json",
+    "claim_before_runtime_bundle_capture": true,
+    "claim_and_result_mode": "0600",
+    "rerun_after_any_claim": false
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "input_error_after_claim": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "strategy_candidate_available": false,
+    "parameter_repair": false,
+    "rerun": false
+  },
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_write": false,
+    "external_review_requested": false,
+    "prospective_forward_access": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
