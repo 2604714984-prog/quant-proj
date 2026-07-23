@@ -1,0 +1,137 @@
+{
+  "schema_version": "c145-nyfed-treasury-settlement-fails-stress-prereg-v1",
+  "research_id": "C145_NYFED_TREASURY_SETTLEMENT_FAILS_STRESS_ROTATION_SPY_QQQ_V1",
+  "mechanism_id": "C145_NYFED_TREASURY_SETTLEMENT_FAILS_STRESS_ROTATION_SPY_QQQ",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_EPOCH89_C145",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "market": "US",
+  "economic_hypothesis": {
+    "null": "the frozen weekly change in Treasury settlement fails does not improve net weekly SPY/QQQ rotation over the frozen comparators",
+    "alternative": "rising Treasury fails-to-deliver identify worsening settlement and collateral-market plumbing in which broad SPY is preferred; otherwise QQQ is preferred",
+    "independent_mechanism_statement": "the signal uses official New York Fed primary-dealer Treasury settlement-fails data and is distinct from closed dealer-inventory, money-market-spread, price-volume, FINRA short-sale, CFTC positioning, margin-debit, HYG-leadership, options-sentiment and Treasury-auction lineages",
+    "proxy_limitation": "fails can reflect operations, settlement chains, scarcity or delivery difficulty rather than equity risk alone; the aggregate series can be revised, and the frozen four-week inference block is an outcome-blind design assumption rather than proof of sufficient dependence coverage"
+  },
+  "universe": {
+    "symbols": [
+      "SPY",
+      "QQQ"
+    ],
+    "currency": "USD",
+    "initial_capital": 40000.0,
+    "whole_shares": true,
+    "residual_cash_return": 0.0,
+    "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
+  },
+  "signal": {
+    "source": "Federal Reserve Bank of New York official Primary Dealer Statistics PDFTD-USTET observations",
+    "frequency": "weekly",
+    "decision_time": "09:00 America/New_York on the first accepted XNYS session of each week",
+    "latest_allowed_observation": "the latest as-of-Wednesday observation whose following-Thursday release precedes the decision",
+    "current_measure": "current PDFTD-USTET value minus the immediately previous weekly value",
+    "threshold": "zero USD millions",
+    "target_rule": "a strictly positive fails impulse selects SPY at weight 1.0; otherwise selects QQQ at weight 1.0",
+    "missing_rule": "missing or duplicate weekly observation, nonfinite value, unavailable publication identity, calendar mismatch or insufficient anchors invalidates the interval; no interpolation, alternate source, threshold, smoothing, persistence, source blend or direction repair"
+  },
+  "execution": {
+    "entry": "next accepted XNYS open after the preceding accepted signal session; the frozen 09:00 decision must precede that open",
+    "holding": "until the following weekly accepted execution open",
+    "one_way_cost_bps": 10.0,
+    "decision_price_basis": "previous accepted-session raw close, known before the 09:00 decision",
+    "fill_price_basis": "retrospective raw daily-bar open",
+    "corporate_actions": "accepted SPY and QQQ cash distributions and split identities are processed by the shared portfolio core"
+  },
+  "comparator": {
+    "primary": "weekly rebalanced 50/50 SPY/QQQ target notional under identical cost, whole-share, cash, calendar, lifecycle and corporate-action rules",
+    "secondary": "weekly rebalanced SPY-only under identical rules"
+  },
+  "splits": {
+    "validation": {
+      "execution_start": "2021-01-04",
+      "execution_end": "2023-06-30",
+      "paired_intervals": 129
+    },
+    "retrospective_holdout": {
+      "execution_start": "2023-07-03",
+      "execution_end": "2026-06-30",
+      "paired_intervals": 156,
+      "sealed_until_validation_pass": true
+    },
+    "prospective_forward": "not opened or authorized"
+  },
+  "state_support": {
+    "minimum_intervals_each_split": 100,
+    "minimum_spy_states_each_split": 24,
+    "minimum_qqq_states_each_split": 24,
+    "accepted_observed_support": {
+      "validation": {
+        "intervals": 129,
+        "qqq_states": 61,
+        "spy_states": 68
+      },
+      "retrospective_holdout": {
+        "intervals": 156,
+        "qqq_states": 79,
+        "spy_states": 77
+      }
+    }
+  },
+  "validation_gates": [
+    "strategy terminal net wealth strictly above the 50/50 comparator",
+    "strategy terminal net wealth strictly above SPY-only",
+    "arithmetic mean paired active return versus the 50/50 comparator strictly positive",
+    "strategy maximum drawdown no worse than the 50/50 comparator"
+  ],
+  "holdout_gates": [
+    "all four validation-form gates evaluated on the holdout",
+    "exactly 156 paired weekly intervals",
+    "centered-null one-sided paired bootstrap p-value at most 0.05",
+    "uncentered type-7 5% bootstrap lower bound on mean active return strictly positive"
+  ],
+  "inference": {
+    "method": "paired circular moving-block bootstrap over weekly active returns versus the 50/50 comparator",
+    "block_length_weeks": 4,
+    "resamples": 100000,
+    "seed": 14500101,
+    "quantile": "type-7 linearly interpolated fifth percentile",
+    "limitation": "the prospectively frozen four-week block is an outcome-blind dependence assumption, not proof of statistical sufficiency"
+  },
+  "program_multiplicity": {
+    "sole_primary_alpha": 0.05,
+    "non_recycled": true,
+    "no_outcome_dependent_reordering": true
+  },
+  "source_identities": {
+    "adapter_sha256": "0108712e31b3d0576066182296910fba1a9bd3689c1feb99c726027da726dc78",
+    "signal_input_path": "/home/rongyu/workspace/quant-data/staging/c145_nyfed_treasury_settlement_fails_stress_rotation_spy_qqq_v1/signal_input_packet.json",
+    "signal_input_sha256": "0b9f37f152a64323f9c4509c8b2d6783c330680c3a296f5b666fa3797ca85c24",
+    "signal_source_rows_sha256": "1bb3d7ebe2796c276d20a20245ab39789e64d50f807af7fc9360bfa035fa7771",
+    "signal_receipt_sha256": "7f30777edab7a947c589888ab4deb8a04bf362f93569f6c0c2b699ce954a165d",
+    "runtime_receipt_sha256": "dd61afd3a8c8b7f8ecaf694421d6e5c6b4616f4ad72842a3621f9b54a5ee61ae",
+    "validation_runtime_bundle_sha256": "0e433011df7b9b0683bc9343b19d5981635d4c96e9882f77616f01af1c971033",
+    "holdout_runtime_bundle_sha256": "84447bad0dae9861916f0a1b1d1950a2384706dc703a9e9bdc24a83b364f7e3c",
+    "central_database_sha256": "f87722ecf19f9813bb161e365b0e5aa5069ef3d4a16471ad712abb131d7e9fdd",
+    "shared_core_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "shared_core_file_count": 23
+  },
+  "one_use_paths": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c145_nyfed_treasury_settlement_fails_stress_rotation_spy_qqq_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c145_nyfed_treasury_settlement_fails_stress_rotation_spy_qqq_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c145_nyfed_treasury_settlement_fails_stress_rotation_spy_qqq_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c145_nyfed_treasury_settlement_fails_stress_rotation_spy_qqq_v1_holdout/result.json"
+  },
+  "stop_rules": {
+    "validation_failure": "permanently close the lineage without holdout access",
+    "validation_pass": "unlock exactly one retrospective holdout execution",
+    "holdout_failure": "permanently close the lineage",
+    "holdout_pass": "stop at RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "forbidden": "no tuning, rerun, threshold or window change, alternate source, source blending, new comparator, changed holding period or post-outcome repair"
+  },
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "rerun_authorized": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
