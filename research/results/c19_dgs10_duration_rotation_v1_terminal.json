@@ -1,0 +1,63 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C19_DGS10_DURATION_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE19",
+  "classification": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053094070",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053164397",
+    "definition_sha256": "206b6d41eb223554aecbc619ef6da345cc77fba1d41b451795d5dfc811ba30d7",
+    "adapter_sha256": "700739f69507ae0dac7b50c1dfa3da1dc9f78ea893c561189763fbf0c94fc8f7",
+    "runner_sha256": "1eed7182a30b3cbd06c576bb53b20f23801eb2d6e596d0c6ffc230589afae9c0",
+    "input_packet_sha256": "d1a34108905904db8918464f3eab7ee79307488bfd936424cb7f96921c6bc290"
+  },
+  "one_use_validation": {
+    "claim_sha256": "b8d44c6df3576ec09047e42e47b3401f50b194b45c76f568ecb9b317c061091b",
+    "result_sha256": "651ea8951cba302616181821b977e9700d626b17107eadcf056b8676ed85332b",
+    "observed_intervals": 28,
+    "gates_passed": 3,
+    "gates_total": 3,
+    "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_PASS_HOLDOUT_UNLOCKED"
+  },
+  "one_use_holdout": {
+    "claim_sha256": "a2f4e5f9a41e3c54438595fca6ee9c9ff7f5cd9ff2ae3152e452b9ae5c8a7efe",
+    "result_sha256": "72c8094440693d6dc59eb8318c82e3ec071f45ea353a942ec459c9ed8ac6da04",
+    "observed_intervals": 34,
+    "gates_passed": 1,
+    "gates_total": 5,
+    "passed_gates": [
+      "exactly_34_paired_intervals"
+    ],
+    "failed_gates": [
+      "centered_null_one_sided_p_at_most_0_00000019073486328125",
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator",
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator",
+      "uncentered_type7_0_00000019073486328125_lower_bound_strictly_positive"
+    ],
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "program_multiplicity": {
+    "cycle19_familywise_alpha": 0.00000019073486328125,
+    "cycle1_to_cycle19_union_bound": 0.09999980926513671875,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "method_limitation": "The frozen three-month bootstrap block is an outcome-blind dependence assumption, not proof that all serial dependence is covered.",
+  "terminal_state": {
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the DGS10 sign, lag, threshold, smoothing, target mapping, comparator, cost, split, bootstrap, source or signal combination."
+}
