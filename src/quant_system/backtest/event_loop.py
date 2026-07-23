@@ -298,6 +298,9 @@ class DecisionArtifact:
     feature_snapshot_sha256: str
     strategy_definition_sha256: str
     strategy_adapter_sha256: str
+    feature_source: SourceIdentity
+    strategy_definition_source: SourceIdentity
+    strategy_adapter_source: SourceIdentity
     decision_at: datetime
     dataset_identity_sha256: str
     split_identity_sha256: str
@@ -325,6 +328,17 @@ class DecisionArtifact:
             "split_identity_sha256",
         ):
             object.__setattr__(self, field_name, _sha256(getattr(self, field_name), field_name))
+        for field_name in (
+            "feature_source",
+            "strategy_definition_source",
+            "strategy_adapter_source",
+        ):
+            try:
+                require_trusted_source(getattr(self, field_name))
+            except ValueError as exc:
+                raise MarketDataError(
+                    "decision artifact sources must be captured identities"
+                ) from exc
         object.__setattr__(self, "decision_at", require_aware_datetime(self.decision_at, "decision_at"))
         expected = hashlib.sha256(_decision_artifact_payload(self)).hexdigest()
         if self._artifact_token is not _DECISION_ARTIFACT_TOKEN or self.artifact_sha256 != expected:
@@ -353,9 +367,16 @@ def _decision_artifact_payload(artifact: DecisionArtifact) -> bytes:
             "decision_at",
         ).isoformat(),
         "feature_snapshot_sha256": artifact.feature_snapshot_sha256,
+        "feature_source_receipt_sha256": artifact.feature_source.capture_receipt_sha256,
         "split_identity_sha256": artifact.split_identity_sha256,
         "strategy_adapter_sha256": artifact.strategy_adapter_sha256,
+        "strategy_adapter_source_receipt_sha256": (
+            artifact.strategy_adapter_source.capture_receipt_sha256
+        ),
         "strategy_definition_sha256": artifact.strategy_definition_sha256,
+        "strategy_definition_source_receipt_sha256": (
+            artifact.strategy_definition_source.capture_receipt_sha256
+        ),
         "version": 1,
         "weights": artifact.weights,
     }
@@ -367,6 +388,9 @@ def capture_decision_artifact(
     feature_snapshot_path: Path,
     strategy_definition_path: Path,
     strategy_adapter_path: Path,
+    feature_source: SourceIdentity,
+    strategy_definition_source: SourceIdentity,
+    strategy_adapter_source: SourceIdentity,
     decision_at: datetime,
     dataset_identity_sha256: str,
     split_identity_sha256: str,
@@ -386,12 +410,29 @@ def capture_decision_artifact(
     feature_sha = hashlib.sha256(feature_bytes).hexdigest()
     definition_sha = hashlib.sha256(definition_bytes).hexdigest()
     adapter_sha = hashlib.sha256(adapter_bytes).hexdigest()
+    sources_and_hashes = (
+        (feature_source, feature_sha),
+        (strategy_definition_source, definition_sha),
+        (strategy_adapter_source, adapter_sha),
+    )
+    for source, digest in sources_and_hashes:
+        try:
+            require_trusted_source(source)
+        except ValueError as exc:
+            raise MarketDataError("strategy artifact source is not captured") from exc
+        if source.content_sha256 != digest:
+            raise MarketDataError("strategy artifact bytes do not match source receipt")
+        if source.available_at > decision_at:
+            raise MarketDataError("strategy artifact was unavailable at decision_at")
     provisional = object.__new__(DecisionArtifact)
     values = {
         "weights": frozen,
         "feature_snapshot_sha256": feature_sha,
         "strategy_definition_sha256": definition_sha,
         "strategy_adapter_sha256": adapter_sha,
+        "feature_source": feature_source,
+        "strategy_definition_source": strategy_definition_source,
+        "strategy_adapter_source": strategy_adapter_source,
         "decision_at": require_aware_datetime(decision_at, "decision_at"),
         "dataset_identity_sha256": _sha256(dataset_identity_sha256, "dataset_identity_sha256"),
         "split_identity_sha256": _sha256(split_identity_sha256, "split_identity_sha256"),
@@ -739,6 +780,14 @@ def run_candidate_rebalance(
         universe_snapshot,
         cutoff,
         execution_calendar_revision,
+    )
+    provider_qualified = provider_qualified and all(
+        source.is_provider_qualified_capture
+        for source in (
+            decision_artifact.feature_source,
+            decision_artifact.strategy_definition_source,
+            decision_artifact.strategy_adapter_source,
+        )
     )
     common = {
         "signal_session": signal_session,

@@ -2618,35 +2618,54 @@ def _captured_decision_artifact(
     feature = tmp_path / f"feature{name}.json"
     definition = tmp_path / f"definition{name}.json"
     adapter = tmp_path / f"adapter{name}.json"
-    feature.write_text(
+    feature_bytes = (
         json.dumps(
             {"scores": scores or {"AAA": 1.0}, "version": 1},
             sort_keys=True,
             separators=(",", ":"),
         )
-        + "\n",
-        encoding="utf-8",
-    )
-    definition.write_text(
+        + "\n"
+    ).encode()
+    definition_bytes = (
         json.dumps(
             {"minimum_score": minimum_score, "version": 1},
             sort_keys=True,
             separators=(",", ":"),
         )
-        + "\n",
-        encoding="utf-8",
-    )
-    adapter.write_text(
-        (
-            '{"feature_field":"scores","normalization":"positive_sum",'
-            '"transform":"threshold","version":1}\n'
-        ),
-        encoding="utf-8",
+        + "\n"
+    ).encode()
+    adapter_bytes = (
+        '{"feature_field":"scores","normalization":"positive_sum",'
+        '"transform":"threshold","version":1}\n'
+    ).encode()
+    feature.write_bytes(feature_bytes)
+    definition.write_bytes(definition_bytes)
+    adapter.write_bytes(adapter_bytes)
+    artifact_sources = tuple(
+        capture_source_bytes(
+            content,
+            publication_evidence=f"published:{label}".encode(),
+            source_url=f"https://example.test/{label}",
+            available_at=datetime(2000, 1, 1, tzinfo=UTC),
+            retrieved_at=datetime(2000, 1, 1, 0, 1, tzinfo=UTC),
+            revision_id=f"{label}{name}",
+            source_family_id=f"{label}-fixture",
+            provider_id="fixture-provider",
+            subject_id=f"{label}{name}",
+        ).source
+        for label, content in (
+            ("feature", feature_bytes),
+            ("definition", definition_bytes),
+            ("adapter", adapter_bytes),
+        )
     )
     return capture_decision_artifact(
         feature_snapshot_path=feature,
         strategy_definition_path=definition,
         strategy_adapter_path=adapter,
+        feature_source=artifact_sources[0],
+        strategy_definition_source=artifact_sources[1],
+        strategy_adapter_source=artifact_sources[2],
         decision_at=decision_at,
         dataset_identity_sha256=dataset_identity_sha256,
         split_identity_sha256=split_identity_sha256,
@@ -2708,6 +2727,29 @@ def test_candidate_weights_are_computed_from_frozen_strategy_artifacts(
     )
 
     assert artifact.weights == (("AAA", 0.75), ("BBB", 0.25))
+    late_feature_source = capture_source_bytes(
+        artifact._feature_snapshot_path.read_bytes(),
+        publication_evidence=b"late feature publication",
+        source_url="https://example.test/late-feature",
+        available_at=decision_at + timedelta(seconds=1),
+        retrieved_at=decision_at + timedelta(seconds=2),
+        revision_id="late-feature",
+        source_family_id="feature-fixture",
+        provider_id="fixture-provider",
+        subject_id="late-feature",
+    ).source
+    with pytest.raises(MarketDataError, match="unavailable at decision_at"):
+        capture_decision_artifact(
+            feature_snapshot_path=artifact._feature_snapshot_path,
+            strategy_definition_path=artifact._strategy_definition_path,
+            strategy_adapter_path=artifact._strategy_adapter_path,
+            feature_source=late_feature_source,
+            strategy_definition_source=artifact.strategy_definition_source,
+            strategy_adapter_source=artifact.strategy_adapter_source,
+            decision_at=decision_at,
+            dataset_identity_sha256="d" * 64,
+            split_identity_sha256="e" * 64,
+        )
     with pytest.raises(TypeError, match="unexpected keyword argument 'weights'"):
         capture_decision_artifact(
             weights={"CCC": 1.0},  # type: ignore[call-arg]
