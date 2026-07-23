@@ -3,6 +3,9 @@
   "audit_target_head": "62300cdff8e300a43c0fc54b0fba2df0e456511f",
   "remediation_branch": "agent/external-audit-codex-remediation-20260723",
   "draft_pr": 126,
+  "external_audit_verdict": "PENDING_UNIFIED_REVIEW",
+  "code_remediation_complete_for_available_scope": true,
+  "only_external_evidence_remaining": true,
   "database_writes": 0,
   "market_data_provider_requests": 0,
   "authorization": {
@@ -236,7 +239,45 @@
       "unverified": []
     }
   ],
-  "phase_validation": [],
+  "phase_validation": [
+    {
+      "phase": "ROUND3_P0",
+      "head_sha": "ed0595b2d82d759b79d0da611eb0d87c5c691f63",
+      "commands": [
+        "python -m ruff check .",
+        "PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q"
+      ],
+      "result": "Ruff passed; 260 passed in 3.26s",
+      "database_writes": 0,
+      "provider_requests": 0
+    },
+    {
+      "phase": "ROUND3_P1",
+      "head_sha": "ed0595b2d82d759b79d0da611eb0d87c5c691f63",
+      "commands": [
+        "PYTHONPATH=src PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q",
+        "python -m ruff check ."
+      ],
+      "result": "260 passed in 3.30s; Ruff passed",
+      "database_writes": 0,
+      "provider_requests": 0
+    },
+    {
+      "phase": "ROUND3_FINAL_PRE_CLOSEOUT",
+      "head_sha": "ed0595b2d82d759b79d0da611eb0d87c5c691f63",
+      "commands": [
+        "pip wheel --no-deps",
+        "sha256sum quant_proj-2.0.0-py3-none-any.whl",
+        "isolated venv force-install wheel plus declared runtime/test dependencies",
+        "pip check",
+        "checkout-outside quant info",
+        "checkout-outside PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python -m pytest -q -o pythonpath= <repo>/tests"
+      ],
+      "result": "wheel SHA-256 cd63ebaf95ef7c0ab50023c1ba9e3e5a3a09fdb36bc26f04a12d587beb2db325; pip check passed; quant info reported UNBOUND_DATA_ROOT and database_exists=false; installed wheel 260 passed in 3.43s",
+      "database_writes": 0,
+      "provider_requests": 0
+    }
+  ],
   "external_evidence": {
     "status": "BLOCKED_EXTERNAL_EVIDENCE",
     "items": [
