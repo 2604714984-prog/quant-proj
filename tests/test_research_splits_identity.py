@@ -1,5 +1,6 @@
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
+import hashlib
 import json
 
 import pytest
@@ -431,7 +432,9 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
         subject_id="AAA",
     ).source
     program = tmp_path / "transform.py"
-    program.write_text(
+    feature_program = tmp_path / "feature.py"
+    label_program = tmp_path / "label.py"
+    feature_program.write_text(
         "import argparse,json\n"
         "p=argparse.ArgumentParser();p.add_argument('--config');"
         "p.add_argument('--output');p.add_argument('raw',nargs='+');a=p.parse_args()\n"
@@ -442,6 +445,26 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
         "    out.write(json.dumps(row,sort_keys=True,separators=(',',':'))+'\\n')\n",
         encoding="utf-8",
     )
+    passthrough_program = (
+        "import argparse\n"
+        "p=argparse.ArgumentParser();p.add_argument('--config');"
+        "p.add_argument('--output');p.add_argument('inputs',nargs='+');a=p.parse_args()\n"
+        "with open(a.output,'wb') as out:\n"
+        "  for path in a.inputs: out.write(open(path,'rb').read())\n"
+    )
+    label_program.write_text(passthrough_program, encoding="utf-8")
+    program.write_text(
+        passthrough_program,
+        encoding="utf-8",
+    )
+    malicious = tmp_path / "malicious-feature.py"
+    malicious.write_text(
+        "import argparse,os\n"
+        "p=argparse.ArgumentParser();p.add_argument('--config');"
+        "p.add_argument('--output');p.add_argument('raw',nargs='+');a=p.parse_args()\n"
+        "open(a.output,'w').write(os.environ['UNDECLARED_FUTURE_PATH'])\n",
+        encoding="utf-8",
+    )
     config = tmp_path / "transform.json"
     config.write_text('{"version":1}\n', encoding="utf-8")
     output = tmp_path / "partition.jsonl"
@@ -449,6 +472,8 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
         raw_paths=(raw_path,),
         raw_sources=(source,),
         program_path=program,
+        feature_program_path=feature_program,
+        label_program_path=label_program,
         config_path=config,
         output_path=output,
         schema=(
@@ -456,12 +481,42 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
             ("close", "DOUBLE"),
             ("source_available_at", "TIMESTAMP"),
         ),
+        field_metadata=(
+            ("symbol", "security_identifier", "NA"),
+            ("close", "USD_per_share", "NA"),
+            ("source_available_at", "instant", "UTC"),
+        ),
         dataset_as_of=as_of,
         executed_at=as_of,
     )
     assert receipt.row_count == 1
     assert receipt.is_authoritative is False
+    assert receipt.feature_program_sha256 == hashlib.sha256(
+        feature_program.read_bytes()
+    ).hexdigest()
+    assert receipt.label_program_sha256 == hashlib.sha256(
+        label_program.read_bytes()
+    ).hexdigest()
+    assert receipt.field_contracts[1] == ("close", "DOUBLE", "USD_per_share", "NA")
     receipt.verify()
     output.write_text('{"symbol":"TAMPERED"}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="output partition bytes changed"):
         receipt.verify()
+
+    with pytest.raises(ValueError, match="hermetic transformation step"):
+        execute_transformation(
+            raw_paths=(raw_path,),
+            raw_sources=(source,),
+            program_path=program,
+            feature_program_path=malicious,
+            label_program_path=label_program,
+            config_path=config,
+            output_path=tmp_path / "malicious-output.jsonl",
+            schema=receipt.schema,
+            field_metadata=tuple(
+                (name, unit, timezone_name)
+                for name, _, unit, timezone_name in receipt.field_contracts
+            ),
+            dataset_as_of=as_of,
+            executed_at=as_of,
+        )

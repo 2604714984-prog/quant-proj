@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 import os
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -14,6 +16,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from datetime import date, datetime, timezone
 from pathlib import Path
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from quant_system.data.source_identity import (
     SourceIdentity,
@@ -41,14 +44,19 @@ _TRANSFORMATION_TOKEN = object()
 class TransformationReceipt:
     raw_sources: tuple[SourceIdentity, ...]
     program_sha256: str
+    feature_program_sha256: str
+    label_program_sha256: str
     config_sha256: str
     schema: tuple[tuple[str, str], ...]
+    field_contracts: tuple[tuple[str, str, str, str], ...]
     row_count: int
     output_partition_sha256: str
     dataset_as_of: datetime
     executed_at: datetime
     receipt_sha256: str
     _program_path: Path = field(repr=False, compare=False)
+    _feature_program_path: Path = field(repr=False, compare=False)
+    _label_program_path: Path = field(repr=False, compare=False)
     _config_path: Path = field(repr=False, compare=False)
     _raw_paths: tuple[Path, ...] = field(repr=False, compare=False)
     _output_path: Path = field(repr=False, compare=False)
@@ -74,6 +82,13 @@ class TransformationReceipt:
                 raise ValueError("transformation raw source bytes or PIT time changed")
         if capture_file_digest(self._program_path)[0] != self.program_sha256:
             raise ValueError("transformation program bytes changed")
+        if (
+            capture_file_digest(self._feature_program_path)[0]
+            != self.feature_program_sha256
+            or capture_file_digest(self._label_program_path)[0]
+            != self.label_program_sha256
+        ):
+            raise ValueError("feature or label program bytes changed")
         if capture_file_digest(self._config_path)[0] != self.config_sha256:
             raise ValueError("transformation config bytes changed")
         if capture_file_digest(self._output_path)[0] != self.output_partition_sha256:
@@ -82,11 +97,17 @@ class TransformationReceipt:
             replay = Path(directory) / "partition.jsonl"
             _run_transformation(
                 self._program_path,
+                self._feature_program_path,
+                self._label_program_path,
                 self._config_path,
                 self._raw_paths,
                 replay,
             )
-            row_count = _validate_partition(replay, self.schema, self.dataset_as_of)
+            row_count = _validate_partition(
+                replay,
+                self.field_contracts,
+                self.dataset_as_of,
+            )
             if (
                 row_count != self.row_count
                 or capture_file_digest(replay)[0] != self.output_partition_sha256
@@ -105,11 +126,14 @@ def _transformation_payload(receipt: TransformationReceipt) -> bytes:
             "executed_at": receipt.executed_at.isoformat(),
             "output_partition_sha256": receipt.output_partition_sha256,
             "program_sha256": receipt.program_sha256,
+            "feature_program_sha256": receipt.feature_program_sha256,
+            "label_program_sha256": receipt.label_program_sha256,
             "raw_source_receipt_sha256s": tuple(
                 source.capture_receipt_sha256 for source in receipt.raw_sources
             ),
             "row_count": receipt.row_count,
             "schema": receipt.schema,
+            "field_contracts": receipt.field_contracts,
             "version": 1,
         },
         sort_keys=True,
@@ -117,37 +141,151 @@ def _transformation_payload(receipt: TransformationReceipt) -> bytes:
     ).encode()
 
 
-def _run_transformation(
+_HERMETIC_RUNNER = r"""
+import json
+import os
+from pathlib import Path
+import runpy
+import sys
+
+program = Path(sys.argv[1]).resolve()
+declared_output = Path(sys.argv[2]).resolve()
+allowed_inputs = {Path(item).resolve() for item in json.loads(sys.argv[3])}
+allowed_inputs.add(program)
+stdlib_root = Path(sys.base_prefix).resolve()
+
+def audit(event, args):
+    if event.startswith("socket.") or event in {
+        "subprocess.Popen",
+        "os.system",
+        "pty.spawn",
+    }:
+        raise PermissionError("hermetic transformation denied external capability")
+    if event == "open" and args and isinstance(args[0], (str, os.PathLike)):
+        candidate = Path(args[0]).resolve()
+        mode = args[1] if len(args) > 1 else "r"
+        writing = (
+            isinstance(mode, str) and any(flag in mode for flag in "wax+")
+        ) or (
+            isinstance(mode, int)
+            and bool(mode & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC))
+        )
+        if writing:
+            if candidate != declared_output:
+                raise PermissionError("hermetic transformation denied undeclared write")
+        elif candidate not in allowed_inputs and not candidate.is_relative_to(stdlib_root):
+            raise PermissionError("hermetic transformation denied undeclared read")
+
+sys.addaudithook(audit)
+sys.argv = [str(program), *sys.argv[4:]]
+runpy.run_path(str(program), run_name="__main__")
+"""
+
+
+def _run_hermetic_step(
     program_path: Path,
     config_path: Path,
-    raw_paths: tuple[Path, ...],
+    input_paths: tuple[Path, ...],
     output_path: Path,
+    *,
+    cwd: Path,
 ) -> None:
+    allowed_inputs = (program_path, config_path, *input_paths)
     command = [
         sys.executable,
+        "-I",
+        "-c",
+        _HERMETIC_RUNNER,
         str(program_path),
+        str(output_path),
+        json.dumps(tuple(str(path) for path in allowed_inputs)),
         "--config",
         str(config_path),
         "--output",
         str(output_path),
-        *(str(path) for path in raw_paths),
+        *(str(path) for path in input_paths),
     ]
     completed = subprocess.run(  # noqa: S603
         command,
         check=False,
         capture_output=True,
+        cwd=cwd,
+        env={
+            "LANG": "C.UTF-8",
+            "LC_ALL": "C.UTF-8",
+            "PYTHONDONTWRITEBYTECODE": "1",
+            "PYTHONHASHSEED": "0",
+            "TZ": "UTC",
+        },
         timeout=120,
     )
     if completed.returncode != 0 or not output_path.is_file():
-        raise ValueError("transformation program did not produce its declared partition")
+        raise ValueError("hermetic transformation step did not produce its declared output")
+
+
+def _run_transformation(
+    program_path: Path,
+    feature_program_path: Path,
+    label_program_path: Path,
+    config_path: Path,
+    raw_paths: tuple[Path, ...],
+    output_path: Path,
+) -> None:
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="quant-hermetic-") as directory:
+        workspace = Path(directory)
+        staged_programs = []
+        for index, original in enumerate(
+            (feature_program_path, label_program_path, program_path)
+        ):
+            staged = workspace / f"program-{index}.py"
+            shutil.copyfile(original, staged)
+            staged.chmod(0o444)
+            staged_programs.append(staged)
+        staged_config = workspace / "config.json"
+        shutil.copyfile(config_path, staged_config)
+        staged_config.chmod(0o444)
+        staged_raw: list[Path] = []
+        for index, original in enumerate(raw_paths):
+            staged = workspace / f"raw-{index}.bin"
+            shutil.copyfile(original, staged)
+            staged.chmod(0o444)
+            staged_raw.append(staged)
+        feature_output = workspace / "features.jsonl"
+        label_output = workspace / "labels.jsonl"
+        final_output = workspace / "partition.jsonl"
+        _run_hermetic_step(
+            staged_programs[0],
+            staged_config,
+            tuple(staged_raw),
+            feature_output,
+            cwd=workspace,
+        )
+        feature_output.chmod(0o444)
+        _run_hermetic_step(
+            staged_programs[1],
+            staged_config,
+            (feature_output,),
+            label_output,
+            cwd=workspace,
+        )
+        label_output.chmod(0o444)
+        _run_hermetic_step(
+            staged_programs[2],
+            staged_config,
+            (label_output,),
+            final_output,
+            cwd=workspace,
+        )
+        os.replace(final_output, output_path)
 
 
 def _validate_partition(
     path: Path,
-    schema: tuple[tuple[str, str], ...],
+    field_contracts: tuple[tuple[str, str, str, str], ...],
     dataset_as_of: datetime,
 ) -> int:
-    expected = {name for name, _ in schema}
+    expected = {name for name, _, _, _ in field_contracts}
     rows = 0
     for line in path.read_text(encoding="utf-8").splitlines():
         try:
@@ -156,7 +294,15 @@ def _validate_partition(
             raise ValueError("transformation output must be JSON Lines") from exc
         if type(row) is not dict or set(row) != expected:
             raise ValueError("transformation output does not match the declared schema")
-        for name, value in row.items():
+        for name, data_type, unit, timezone_name in field_contracts:
+            value = row[name]
+            _validate_field_value(
+                name,
+                value,
+                data_type,
+                unit,
+                timezone_name,
+            )
             if name.endswith("available_at"):
                 observed = require_aware_utc(
                     datetime.fromisoformat(str(value)),
@@ -170,14 +316,65 @@ def _validate_partition(
     return rows
 
 
+def _validate_field_value(
+    name: str,
+    value: object,
+    data_type: str,
+    unit: str,
+    timezone_name: str,
+) -> None:
+    if not unit or not timezone_name:
+        raise ValueError("schema fields require explicit unit and timezone contracts")
+    normalized_type = data_type.upper()
+    if normalized_type in {"DOUBLE", "FLOAT", "REAL"}:
+        if (
+            not isinstance(value, (int, float))
+            or isinstance(value, bool)
+            or not math.isfinite(float(value))
+        ):
+            raise ValueError(f"{name} violates its numeric schema")
+    elif normalized_type in {"INTEGER", "BIGINT"}:
+        if not isinstance(value, int) or isinstance(value, bool):
+            raise ValueError(f"{name} violates its integer schema")
+    elif normalized_type in {"VARCHAR", "TEXT"}:
+        if not isinstance(value, str):
+            raise ValueError(f"{name} violates its text schema")
+    elif normalized_type in {"TIMESTAMP", "TIMESTAMPTZ"}:
+        try:
+            parsed = datetime.fromisoformat(str(value))
+        except ValueError as exc:
+            raise ValueError(f"{name} violates its timestamp schema") from exc
+        if parsed.tzinfo is None or parsed.utcoffset() is None:
+            raise ValueError(f"{name} timestamp must carry an explicit timezone")
+        try:
+            ZoneInfo(timezone_name)
+        except ZoneInfoNotFoundError as exc:
+            raise ValueError(f"{name} timezone contract is not an IANA zone") from exc
+    elif normalized_type == "DATE":
+        try:
+            date.fromisoformat(str(value))
+        except ValueError as exc:
+            raise ValueError(f"{name} violates its date schema") from exc
+        if timezone_name != "NA":
+            raise ValueError(f"{name} DATE timezone contract must be NA")
+    elif normalized_type == "BOOLEAN":
+        if type(value) is not bool:
+            raise ValueError(f"{name} violates its boolean schema")
+    else:
+        raise ValueError(f"{name} uses an unsupported schema data type")
+
+
 def execute_transformation(
     *,
     raw_paths: Sequence[Path],
     raw_sources: Sequence[SourceIdentity],
     program_path: Path,
+    feature_program_path: Path,
+    label_program_path: Path,
     config_path: Path,
     output_path: Path,
     schema: Sequence[tuple[str, str]],
+    field_metadata: Sequence[tuple[str, str, str]],
     dataset_as_of: datetime,
     executed_at: datetime,
 ) -> TransformationReceipt:
@@ -186,6 +383,20 @@ def execute_transformation(
     frozen_raw_paths = tuple(raw_paths)
     frozen_sources = tuple(raw_sources)
     frozen_schema = tuple(schema)
+    frozen_metadata = tuple(field_metadata)
+    metadata_by_name = {
+        name: (unit, timezone_name)
+        for name, unit, timezone_name in frozen_metadata
+    }
+    if (
+        len(metadata_by_name) != len(frozen_metadata)
+        or set(metadata_by_name) != {name for name, _ in frozen_schema}
+    ):
+        raise ValueError("field metadata must cover every schema field exactly once")
+    field_contracts = tuple(
+        (name, data_type, *metadata_by_name[name])
+        for name, data_type in frozen_schema
+    )
     as_of = require_aware_utc(dataset_as_of, "dataset_as_of")
     executed = require_aware_utc(executed_at, "executed_at")
     if output_path.exists():
@@ -199,6 +410,8 @@ def execute_transformation(
         if source.available_at > as_of:
             raise ValueError("raw source was unavailable at dataset_as_of")
     program_sha = capture_file_digest(program_path)[0]
+    feature_program_sha = capture_file_digest(feature_program_path)[0]
+    label_program_sha = capture_file_digest(label_program_path)[0]
     config_sha = capture_file_digest(config_path)[0]
     output_path.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(
@@ -208,23 +421,30 @@ def execute_transformation(
         generated = Path(directory) / "partition.jsonl"
         _run_transformation(
             program_path,
+            feature_program_path,
+            label_program_path,
             config_path,
             frozen_raw_paths,
             generated,
         )
-        row_count = _validate_partition(generated, frozen_schema, as_of)
+        row_count = _validate_partition(generated, field_contracts, as_of)
         output_sha = capture_file_digest(generated)[0]
         os.replace(generated, output_path)
     values = {
         "raw_sources": frozen_sources,
         "program_sha256": program_sha,
+        "feature_program_sha256": feature_program_sha,
+        "label_program_sha256": label_program_sha,
         "config_sha256": config_sha,
         "schema": frozen_schema,
+        "field_contracts": field_contracts,
         "row_count": row_count,
         "output_partition_sha256": output_sha,
         "dataset_as_of": as_of,
         "executed_at": executed,
         "_program_path": program_path,
+        "_feature_program_path": feature_program_path,
+        "_label_program_path": label_program_path,
         "_config_path": config_path,
         "_raw_paths": frozen_raw_paths,
         "_output_path": output_path,
@@ -682,9 +902,13 @@ def capture_dataset_manifest(
                 receipt.output_partition_sha256 != digest
                 or receipt.dataset_as_of != as_of
                 or receipt.schema != tuple(schema)
+                or receipt.feature_program_sha256
+                != hashes["feature_code_sha256"]
+                or receipt.label_program_sha256 != hashes["label_code_sha256"]
             ):
                 raise ValueError(
-                    "transformation receipt does not bind partition, schema, or as-of"
+                    "transformation receipt does not bind feature, label, partition, "
+                    "schema, or as-of"
                 )
         canonical_schema = json.dumps(tuple(schema), separators=(",", ":")).encode()
         pit_inputs = {
