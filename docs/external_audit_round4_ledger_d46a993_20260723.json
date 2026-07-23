@@ -1,0 +1,380 @@
+{
+  "schema": "quant.external_audit_round4.v1",
+  "audit_date": "2026-07-23",
+  "repository": "2604714984-prog/quant-proj",
+  "pull_request": 126,
+  "branch": "agent/external-audit-codex-remediation-20260723",
+  "base_sha": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+  "previous_audited_head": "62300cdff8e300a43c0fc54b0fba2df0e456511f",
+  "audited_head": "d46a993d95b0b3454a10134c2ef822f17483ddc6",
+  "github_actions_merge_ref": "6868d8dbc19310915797c8b0dd7353a7e7bee593",
+  "evidence_repository": "2604714984-prog/a-share-canonical-evidence-data-room",
+  "evidence_repository_sha": "de38f03466a58b9c786ed35e2cc38abff3e9b0fe",
+  "verdict": {
+    "external_audit_verdict": "REQUEST_CHANGES",
+    "lightweight_architecture": true,
+    "fail_closed_default": true,
+    "experimental_research_infrastructure": true,
+    "code_remediation_complete": false,
+    "only_external_evidence_remaining": false,
+    "capital_grade_research_process": false
+  },
+  "authorization": {
+    "strategy_candidate_available": false,
+    "recommendation_authorized": false,
+    "paper_trading_authorized": false,
+    "live_trading_authorized": false,
+    "automatic_execution_authorized": false
+  },
+  "ci_evidence": {
+    "workflow_run_id": 30005183678,
+    "status": "completed",
+    "conclusion": "success",
+    "tested_merge_ref": "6868d8dbc19310915797c8b0dd7353a7e7bee593",
+    "observed_successful_steps": [
+      "wheel build",
+      "wheel install",
+      "pip check",
+      "quant info outside checkout",
+      "ruff",
+      "pytest"
+    ],
+    "reported_source_test_result": "260 passed",
+    "reported_installed_wheel_test_result": "260 passed",
+    "reported_wheel_sha256": "fe4b8b76fbee4b42ca0142e5be71865ee12f79fc84256f2d2a404449a41465da",
+    "exact_test_counts_independently_extracted": false,
+    "wheel_sha256_independently_verified": false,
+    "local_tests_rerun": false
+  },
+  "finding_counts": {
+    "HIGH": 8,
+    "MEDIUM": 3
+  },
+  "findings": [
+    {
+      "finding_id": "RA4-001",
+      "severity": "HIGH",
+      "title": "GitHub Release transport is treated as an authoritative market-data provider",
+      "maps_to": ["RA3-001", "RA3-003", "RA3-006"],
+      "files_functions": [
+        "src/quant_system/data/source_identity.py::capture_github_release_asset",
+        "src/quant_system/data/source_identity.py::require_provider_qualified_source",
+        "src/quant_system/backtest/event_loop.py::_require_candidate_sources",
+        "src/quant_system/backtest/event_loop.py::run_candidate_rebalance"
+      ],
+      "trigger": "A caller publishes observations, partitions, or a preregistration anchor in any caller-controlled GitHub Release and captures it through capture_github_release_asset.",
+      "impact": "GitHub proves upload time and bytes, not that the bytes came from an exchange, market-data vendor, filing source, or independent timestamp authority. Self-controlled evidence can receive PROVIDER_QUALIFIED_CAPTURE and contribute to CONTROLLED_CANDIDATE_INPUT.",
+      "facts": [
+        "The adapter accepts any owner/repository, tag, and asset name.",
+        "It hard-codes provider_id=github-releases and capture_level=PROVIDER_QUALIFIED_CAPTURE.",
+        "The qualification gate checks the module token/capture level, not an authoritative market-data trust root."
+      ],
+      "minimal_fix": "Downgrade GitHub Release to a transport or external-artifact capture. Only data-family-specific adapters with fixed authoritative identities, domains, schemas, and publication semantics may issue authoritative provider receipts.",
+      "regression_tests": [
+        "A caller-owned GitHub Release cannot issue authoritative market-data or preregistration evidence.",
+        "Unknown repositories and data families remain experimental.",
+        "Only an approved authoritative adapter can enter controlled candidate grade."
+      ]
+    },
+    {
+      "finding_id": "RA4-002",
+      "severity": "HIGH",
+      "title": "Limit-up/down, limit regime, and halt/no-open declarations are not bound by typed receipts",
+      "maps_to": ["RA3-001", "QF-007", "QF-009"],
+      "files_functions": [
+        "src/quant_system/backtest/event_loop.py::ExecutionInput",
+        "src/quant_system/backtest/event_loop.py::_require_candidate_typed_values",
+        "src/quant_system/backtest/event_loop.py::_inputs",
+        "src/quant_system/markets/a_share.py::decide_fill"
+      ],
+      "trigger": "Change up_limit, down_limit, limit_regime, or add action_types=trading_halt while leaving the execution-price typed receipt unchanged.",
+      "impact": "An impossible A-share fill can become executable, or an unexplained missing open can be relabelled as a confirmed halt, directly changing fills, positions, and drawdowns while preserving provider-qualified grade.",
+      "facts": [
+        "The execution typed receipt binds basis, currency, effective_at, open_price, and symbol only.",
+        "Limit fields and limit_regime are outside the receipt.",
+        "The confirmed-no-open path accepts a free trading_halt action string without a typed halt receipt."
+      ],
+      "minimal_fix": "Add typed A-share execution-constraint observations for limits and a typed halt/no-open event. Derive action types from typed events rather than caller strings.",
+      "regression_tests": [
+        "Changing limits or no-limit regime without changing provider bytes fails before mutation.",
+        "Missing open without a typed halt/no-open event remains an unexplained gap.",
+        "A halt receipt with mismatched subject or time is rejected."
+      ]
+    },
+    {
+      "finding_id": "RA4-003",
+      "severity": "HIGH",
+      "title": "The external preregistration anchor predates preregistration and does not commit to the experiment head",
+      "maps_to": ["RA3-003", "RA3-004"],
+      "files_functions": [
+        "src/quant_system/research/experiments.py::ExperimentEvent",
+        "src/quant_system/research/experiments.py::preregister_trial",
+        "src/quant_system/research/experiments.py::require_adjusted_holdout_for_candidate",
+        "src/quant_system/backtest/event_loop.py::run_candidate_rebalance"
+      ],
+      "trigger": "Supply any provider-qualified source that existed before preregistered_at as the external anchor.",
+      "impact": "An unrelated pre-existing asset cannot commit to the later-created trial, family contract, parameters, or ledger head. It does not prove that research choices were frozen before holdout access.",
+      "facts": [
+        "The code requires anchor.available_at <= preregistered_at.",
+        "The event stores only the anchor SHA and capture level.",
+        "Anchor contents are not parsed for holdout_id, family, parameters, or ledger head.",
+        "Current tests use an anchor older than preregistration."
+      ],
+      "minimal_fix": "Freeze and persist the complete family first, then publish an AnchorReceipt containing the holdout key, family contract, parameter digest, and preregistration ledger head. Anchor availability must be after family freeze and before holdout access.",
+      "regression_tests": [
+        "An unrelated provider-qualified asset cannot serve as an anchor.",
+        "An anchor before family freeze or after holdout access fails.",
+        "Changing the family or ledger head invalidates the old anchor."
+      ]
+    },
+    {
+      "finding_id": "RA4-004",
+      "severity": "HIGH",
+      "title": "The same holdout can still be split across new event chains and ledger paths",
+      "maps_to": ["RA3-003", "QF-004"],
+      "files_functions": [
+        "src/quant_system/research/experiments.py::_validate_chain",
+        "src/quant_system/research/experiments.py::preregister_trial",
+        "src/quant_system/research/experiments.py::persist_experiment_ledger",
+        "src/quant_system/research/experiments.py::require_adjusted_holdout_for_candidate"
+      ],
+      "trigger": "Restart from events=() for the same dataset/split and use another NDJSON path or process, then submit only the winning chain.",
+      "impact": "Holm/Bonferroni is correct inside one supplied chain, but the global number of attempted strategies can still be understated through multiple singleton families.",
+      "facts": [
+        "One-family checks are local to the supplied events tuple.",
+        "The ledger path is caller-selected.",
+        "There is no configured canonical ledger or cross-ledger uniqueness constraint for a holdout key.",
+        "The candidate gate checks only the supplied ledger and manifest."
+      ],
+      "minimal_fix": "Use one configured canonical experiment NDJSON under QUANT_DATA_ROOT. Define a stable holdout key from dataset, split, and stage plan; permit only one family contract per key and freeze it at first access. This requires only a file and lock, not a control plane.",
+      "regression_tests": [
+        "A new process cannot create a second family for the same holdout key.",
+        "Two singleton families cannot replace one family of size two.",
+        "Omitting a historical failed trial breaks the anchored head."
+      ]
+    },
+    {
+      "finding_id": "RA4-005",
+      "severity": "HIGH",
+      "title": "completed_final_stage_hash is a caller-supplied digest not reconciled to the actual complete run",
+      "maps_to": ["RA3-004", "RA3-012", "QF-011"],
+      "files_functions": [
+        "src/quant_system/backtest/event_loop.py::CandidateRunConfig",
+        "src/quant_system/backtest/event_loop.py::capture_candidate_run_config",
+        "src/quant_system/backtest/event_loop.py::run_candidate_rebalance",
+        "src/quant_system/research/experiments.py::capture_holdout_result"
+      ],
+      "trigger": "Supply any valid SHA as completed_final_stage_hash before the run and use the same SHA in HoldoutResultReceipt.",
+      "impact": "Config, event, and holdout receipt are internally consistent even when the digest does not identify the actual completed StagePlan. Candidate evidence can bind to a nonexistent or unrelated run.",
+      "facts": [
+        "CandidateRunConfig requires the output hash before run_candidate_rebalance.",
+        "capture_holdout_result accepts a caller-provided final-stage hash.",
+        "The candidate runner compares only those two supplied fields.",
+        "The newly computed base stage_hash is not compared to the claimed completed hash.",
+        "The test helper uses hash(fixture-final-stage) rather than an actual run result."
+      ],
+      "minimal_fix": "First execute the complete StagePlan and create a FinalRunReceipt from the actual last result and prior-stage chain. Then construct HoldoutResultReceipt from that FinalRunReceipt. Do not preregister an unknown output hash.",
+      "regression_tests": [
+        "A fixture digest different from the actual final stage fails.",
+        "An incomplete StagePlan cannot create a holdout result.",
+        "Skipping, reordering, or replacing an intermediate stage invalidates the final receipt."
+      ]
+    },
+    {
+      "finding_id": "RA4-006",
+      "severity": "HIGH",
+      "title": "All statistical methods use a standard-normal erfc p-value",
+      "maps_to": ["RA3-004", "RA3-005"],
+      "files_functions": [
+        "src/quant_system/research/experiments.py::capture_holdout_result",
+        "src/quant_system/research/splits.py::evaluate_split"
+      ],
+      "trigger": "Use a small non-overlapping sample, small-sample HAC, or block bootstrap and then capture a holdout result.",
+      "impact": "Candidate pass/fail can rely on a badly calibrated p-value. The empirical bootstrap distribution is discarded, and even n=2 is treated as a normal z-test.",
+      "facts": [
+        "capture_holdout_result always uses erfc(abs(statistic)/sqrt(2)).",
+        "It does not branch by evaluation method.",
+        "SplitEvaluation accepts as few as two returns.",
+        "Block bootstrap stores a standard error but not an empirical null-tail probability."
+      ],
+      "minimal_fix": "Use method-specific inference: t-distribution and a minimum n for independent returns; explicit minimum n and preregistered bandwidth for HAC; centered empirical bootstrap p-values for block bootstrap.",
+      "regression_tests": [
+        "n=2 cannot produce a near-zero normal p-value.",
+        "Bootstrap p-values come from the empirical distribution.",
+        "Methods below their minimum sample size fail closed."
+      ]
+    },
+    {
+      "finding_id": "RA4-007",
+      "severity": "HIGH",
+      "title": "Panel samples are treated as one time series and cross-fold label overlap is ignored",
+      "maps_to": ["RA3-005", "QF-005"],
+      "files_functions": [
+        "src/quant_system/research/splits.py::build_split_manifest",
+        "src/quant_system/research/splits.py::build_split_evaluation_plan",
+        "src/quant_system/research/splits.py::evaluate_split"
+      ],
+      "trigger": "Evaluate multiple securities on the same date, or select samples across folds whose label intervals overlap.",
+      "impact": "HAC and moving-block bootstrap order cross-sectional securities into a pseudo time series. Same-date dependence, clustering, and cross-fold overlap are not modeled, which can understate uncertainty.",
+      "facts": [
+        "SplitManifest supports multiple entities at the same observed time.",
+        "The plan orders samples by observed time and entity ID.",
+        "HAC/bootstrap consumes that one-dimensional sequence.",
+        "The overlap predicate requires equal fold IDs.",
+        "The plan has no evaluation unit, aggregation, or cluster policy."
+      ],
+      "minimal_fix": "Freeze evaluation_unit in the plan. For a personal daily cross-sectional strategy, aggregate to one portfolio return per day before HAC/bootstrap. If security-level samples remain, implement date clustering or two-way clustering and disallow mixing non-independent folds.",
+      "regression_tests": [
+        "Same-day multi-security rows cannot enter ordinary one-dimensional HAC.",
+        "Cross-fold overlapping labels are detected or a plan is restricted to one fold.",
+        "Entity ordering does not change results; daily aggregation is stable."
+      ]
+    },
+    {
+      "finding_id": "RA4-008",
+      "severity": "HIGH",
+      "title": "DatasetManifest does not prove that declared parser/feature/label code produced the partition",
+      "maps_to": ["RA3-006", "QF-011"],
+      "files_functions": [
+        "src/quant_system/research/identity.py::DatasetManifest",
+        "src/quant_system/research/identity.py::capture_dataset_manifest",
+        "src/quant_system/research/identity.py::DatasetManifest.verify_identity"
+      ],
+      "trigger": "Submit arbitrary provider-qualified partition bytes alongside arbitrary parser, feature, label, and policy files.",
+      "impact": "The system proves each file did not change, but not that the partition was generated by those files from those raw sources. Labels or rows can be edited after the fact and wrapped in a self-consistent manifest.",
+      "facts": [
+        "The manifest hashes parser, feature, label, policy, and partition files independently.",
+        "Verification rehashes them and checks partition source identity and time.",
+        "It does not run the transformation or bind input sources, code, config, and output in a TransformationReceipt.",
+        "source_snapshot_sha256s remains a list of digests rather than verified raw-source receipt objects."
+      ],
+      "minimal_fix": "Add a minimal TransformationReceipt containing raw source receipts, parser/feature/label code identities, config, schema, row count, output partition digest, and execution time. DatasetManifest should consume transformation receipts rather than parallel bare hashes.",
+      "regression_tests": [
+        "Replacing output bytes under the same code/input fails.",
+        "Pairing a partition with different code without replay proof fails.",
+        "Rows whose source became available after dataset as-of fail closed."
+      ]
+    },
+    {
+      "finding_id": "RA4-009",
+      "severity": "MEDIUM",
+      "title": "CandidateRunBundle replays a submitted hash chain, not the complete research result",
+      "maps_to": ["RA3-007"],
+      "files_functions": [
+        "src/quant_system/backtest/event_loop.py::CandidateRunBundle",
+        "src/quant_system/backtest/event_loop.py::CandidateRunBundle.verify",
+        "src/quant_system/backtest/event_loop.py::serialize_candidate_run_bundle",
+        "src/quant_system/backtest/event_loop.py::load_candidate_run_bundle",
+        "src/quant_system/data/source_identity.py::_capture_payload"
+      ],
+      "trigger": "A new process has only the bundle JSON, without source payloads, data partitions, strategy bytes, or the initial portfolio.",
+      "impact": "It can recompute the receipt-chain formula but cannot recompute input identity, fills, final NAV, or business values. Re-fetching the same GitHub asset changes retrieved_at and therefore the receipt identity.",
+      "facts": [
+        "The bundle contains input hashes, source-receipt SHA lists, and execution receipt payloads.",
+        "Verification starts from the submitted input identity.",
+        "It omits complete source receipts, partitions, strategy bytes, initial portfolio, marks, and final NAV.",
+        "Source capture identity includes retrieved_at; the GitHub adapter uses the current time."
+      ],
+      "minimal_fix": "Use an immutable artifact manifest that stores or locates all receipt payloads, strategy/data artifacts, initial portfolio, and run config, then recompute input identity, receipts, and NAV. Separate stable source identity from acquisition audit or persist and reuse the original receipt.",
+      "regression_tests": [
+        "A new process recomputes identical fills, NAV, and stage hash from the bundle and artifacts.",
+        "Deleting an artifact or changing the initial portfolio fails replay.",
+        "Reacquiring the same immutable asset does not change stable content identity."
+      ]
+    },
+    {
+      "finding_id": "RA4-010",
+      "severity": "MEDIUM",
+      "title": "Typed parser identity omits canonicalization helper semantics",
+      "maps_to": ["RA3-001"],
+      "files_functions": [
+        "src/quant_system/data/source_identity.py::_typed_parser_code_sha256",
+        "src/quant_system/data/source_identity.py::_decode_provider_observations",
+        "src/quant_system/data/source_identity.py::_canonical_observation_value"
+      ],
+      "trigger": "Change canonicalization or validation helpers without modifying the _decode_provider_observations function body.",
+      "impact": "Parsing semantics change while parser_code_sha256 remains unchanged; an old receipt can claim the same parser identity.",
+      "facts": [
+        "The digest covers inspect.getsource(_decode_provider_observations) only.",
+        "That function calls canonicalization and stable-ID helpers.",
+        "The helpers are outside the digest."
+      ],
+      "minimal_fix": "Hash an immutable parser module/artifact or explicitly include all helpers and schema versions. Avoid a local inspect.getsource digest as the complete parser identity.",
+      "regression_tests": [
+        "Changing a canonicalization helper changes parser identity.",
+        "The installed wheel and source tree compute the same parser artifact digest."
+      ]
+    },
+    {
+      "finding_id": "RA4-011",
+      "severity": "MEDIUM",
+      "title": "The writer has a global GENERIC_CAPTURE minimum instead of a per-target data grade",
+      "maps_to": ["RA3-011", "QF-010"],
+      "files_functions": [
+        "src/quant_system/data/writer.py::MINIMUM_WRITE_CAPTURE_LEVEL",
+        "src/quant_system/data/writer.py::_ensure_metadata",
+        "src/quant_system/data/writer.py::_bind_target_contract",
+        "src/quant_system/cli.py::main"
+      ],
+      "trigger": "Write generic and provider-qualified batches to the same canonical target or read the business table without checking ingest metadata.",
+      "impact": "Metadata distinguishes grades, but one business table can mix experimental and externally qualified rows. A consumer querying only the table cannot infer evidence grade.",
+      "facts": [
+        "MINIMUM_WRITE_CAPTURE_LEVEL is globally GENERIC_CAPTURE.",
+        "Target contracts do not store a minimum capture level.",
+        "The CLI append path creates generic capture receipts.",
+        "Capture level is now persisted and owner is fixed, which are accepted improvements."
+      ],
+      "minimal_fix": "Add a minimum data grade to each target contract and make it immutable. Staging targets may allow generic capture; research-canonical targets should require their controlled grade.",
+      "regression_tests": [
+        "A provider-only target rejects generic batches.",
+        "A target grade cannot be lowered after binding.",
+        "A research snapshot proves all partitions meet the target grade."
+      ]
+    }
+  ],
+  "status_matrix": [
+    {"control": "repository role and single mainline", "status": "PASS"},
+    {"control": "lightweight architecture", "status": "PASS"},
+    {"control": "default fail closed", "status": "PASS"},
+    {"control": "look-ahead bias", "status": "PARTIAL"},
+    {"control": "PIT data", "status": "FAIL"},
+    {"control": "survivorship bias", "status": "PARTIAL_PASS"},
+    {"control": "labels across split", "status": "PARTIAL_PASS"},
+    {"control": "test-set tuning", "status": "FAIL"},
+    {"control": "multiple testing", "status": "FAIL"},
+    {"control": "overlapping returns", "status": "FAIL"},
+    {"control": "transaction costs and liquidity", "status": "PARTIAL_PASS"},
+    {"control": "corporate actions and delistings", "status": "PARTIAL_PASS"},
+    {"control": "data snapshot and lineage", "status": "FAIL"},
+    {"control": "cross-process reproducibility", "status": "PARTIAL"},
+    {"control": "independent evidence acceptance", "status": "BLOCKED"}
+  ],
+  "accepted_improvements": [
+    "Frozen feature/definition/adapter bytes compute weights; caller weights are removed.",
+    "Universe materialization executes a fixed lifecycle rule over a complete partition.",
+    "A-share execution and accounting are raw-only; split, dividend, and terminal economics are represented.",
+    "Suspension, limit-regime completeness, blocked exits, costs, capacity, and evidence grades are fail-closed.",
+    "SplitManifest controlled construction and single-chain multiplicity/HAC/bootstrap mechanics are implemented.",
+    "DuckDB target contracts, structured lineage, single writer ownership, and path protections remain intact.",
+    "No manager, dispatcher, registry, broker, paper/live, or automatic execution path was restored."
+  ],
+  "review_scope": {
+    "files_in_pr": 37,
+    "files_reread_at_current_head": 26,
+    "remaining_files": "read in prior audit and confirmed unchanged by compare",
+    "current_delta": "62300cdff8e300a43c0fc54b0fba2df0e456511f..d46a993d95b0b3454a10134c2ef822f17483ddc6"
+  },
+  "unverified": [
+    "real authoritative provider-qualified PIT observations",
+    "typed A-share limit and halt/no-open evidence",
+    "an independent preregistration anchor containing the frozen ledger head",
+    "global single-ledger completeness across processes",
+    "a real FinalRunReceipt derived from a complete stage chain",
+    "method-valid p-values on real frozen returns",
+    "a panel aggregation or clustering policy",
+    "transformation receipts for feature and label partitions",
+    "end-to-end cross-process result replay",
+    "real calibrated transaction-cost and liquidity evidence",
+    "QF-014/EA-001 independent reviewer receipt"
+  ]
+}
