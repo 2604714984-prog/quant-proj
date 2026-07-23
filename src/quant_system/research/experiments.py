@@ -46,6 +46,7 @@ class ExperimentEvent:
     definition_sha256: str
     dataset_sha256: str
     split_sha256: str
+    stage_plan_sha256: str
     parameters_json: str
     multiplicity_family_id: str
     preregistered_at: datetime
@@ -68,7 +69,12 @@ class ExperimentEvent:
         if type(self.event_index) is not int or self.event_index < 0:
             raise ValueError("event_index must be nonnegative")
         _text(self.trial_id, "trial_id")
-        for name in ("definition_sha256", "dataset_sha256", "split_sha256"):
+        for name in (
+            "definition_sha256",
+            "dataset_sha256",
+            "split_sha256",
+            "stage_plan_sha256",
+        ):
             _sha(getattr(self, name), name)
         _sha(self.prior_event_sha256, "prior_event_sha256")
         _text(self.multiplicity_family_id, "multiplicity_family_id")
@@ -179,6 +185,7 @@ def preregister_trial(
     definition_sha256: str,
     dataset_sha256: str,
     split_sha256: str,
+    stage_plan_sha256: str,
     parameters: Mapping[str, object],
     multiplicity_family_id: str,
     preregistered_at: datetime,
@@ -222,6 +229,7 @@ def preregister_trial(
             definition_sha256=_sha(definition_sha256, "definition_sha256"),
             dataset_sha256=_sha(dataset_sha256, "dataset_sha256"),
             split_sha256=_sha(split_sha256, "split_sha256"),
+            stage_plan_sha256=_sha(stage_plan_sha256, "stage_plan_sha256"),
             parameters_json=parameters_json,
             multiplicity_family_id=_text(
                 multiplicity_family_id,
@@ -278,6 +286,7 @@ def record_holdout_result(
             definition_sha256=trial.definition_sha256,
             dataset_sha256=trial.dataset_sha256,
             split_sha256=trial.split_sha256,
+            stage_plan_sha256=trial.stage_plan_sha256,
             parameters_json=trial.parameters_json,
             multiplicity_family_id=trial.multiplicity_family_id,
             preregistered_at=trial.preregistered_at,

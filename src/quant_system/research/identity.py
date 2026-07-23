@@ -17,6 +17,9 @@ _DATASET_MANIFEST_TOKEN = object()
 
 @dataclass(frozen=True)
 class DatasetManifest:
+    dates: tuple[date | datetime, ...]
+    frequency: str
+    schema: tuple[tuple[str, str], ...]
     source_snapshot_sha256s: tuple[str, ...]
     universe_snapshot_sha256: str
     feature_code_sha256: str
@@ -32,6 +35,24 @@ class DatasetManifest:
     def __post_init__(self) -> None:
         if self._token is not _DATASET_MANIFEST_TOKEN:
             raise ValueError("DatasetManifest must be created by build_dataset_manifest")
+
+    def verify_identity(self) -> None:
+        observed = dataset_identity_sha256(
+            dates=self.dates,
+            frequency=self.frequency,
+            schema=self.schema,
+            source_snapshot_sha256s=self.source_snapshot_sha256s,
+            universe_snapshot_sha256=self.universe_snapshot_sha256,
+            feature_code_sha256=self.feature_code_sha256,
+            label_code_sha256=self.label_code_sha256,
+            split_manifest_sha256=self.split_manifest_sha256,
+            calendar_policy_sha256=self.calendar_policy_sha256,
+            action_policy_sha256=self.action_policy_sha256,
+            cost_policy_sha256=self.cost_policy_sha256,
+            partition_sha256s=self.partition_sha256s,
+        )
+        if observed != self.identity_sha256:
+            raise ValueError("dataset manifest semantic identity mismatch")
 
 
 def _canonical_timestamp(value: date | datetime) -> str:
@@ -143,6 +164,9 @@ def build_dataset_manifest(
 
     identity = dataset_identity_sha256(**inputs)  # type: ignore[arg-type]
     return DatasetManifest(
+        dates=tuple(inputs["dates"]),  # type: ignore[arg-type]
+        frequency=str(inputs["frequency"]),
+        schema=tuple(inputs["schema"]),  # type: ignore[arg-type]
         source_snapshot_sha256s=tuple(inputs["source_snapshot_sha256s"]),  # type: ignore[arg-type]
         universe_snapshot_sha256=str(inputs["universe_snapshot_sha256"]),
         feature_code_sha256=str(inputs["feature_code_sha256"]),

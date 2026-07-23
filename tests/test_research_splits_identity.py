@@ -1,3 +1,4 @@
+from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
 
 import pytest
@@ -246,3 +247,6 @@ def test_dataset_manifest_exposes_bound_semantic_identities() -> None:
     manifest = build_dataset_manifest(**inputs)
     assert manifest.identity_sha256 == dataset_identity_sha256(**inputs)
     assert manifest.split_manifest_sha256 == "7" * 64
+    manifest.verify_identity()
+    with pytest.raises(ValueError, match="semantic identity mismatch"):
+        replace(manifest, cost_policy_sha256="b" * 64).verify_identity()

@@ -2718,7 +2718,12 @@ def test_candidate_weights_are_computed_from_frozen_strategy_artifacts(
         )
 
 
-def _dataset_manifest(materialization: UniverseMaterialization, session: date):
+def _dataset_manifest(
+    materialization: UniverseMaterialization,
+    session: date,
+    *,
+    cost_assumptions: ExecutionCostAssumptions | None = None,
+):
     return build_dataset_manifest(
         dates=(session,),
         frequency="1d-open",
@@ -2730,7 +2735,9 @@ def _dataset_manifest(materialization: UniverseMaterialization, session: date):
         split_manifest_sha256="e" * 64,
         calendar_policy_sha256="4" * 64,
         action_policy_sha256="5" * 64,
-        cost_policy_sha256="6" * 64,
+        cost_policy_sha256=(
+            cost_assumptions or _cost_assumptions()
+        ).identity_sha256,
         partition_sha256s=("7" * 64,),
     )
 
@@ -2753,12 +2760,17 @@ def _run_candidate_rebalance(
             **kwargs,
         )
     decision_at = kwargs["decision_at"]
+    evidence_stage_plan_sha256 = kwargs.pop(
+        "evidence_stage_plan_sha256",
+        kwargs["stage_context"].plan_sha256,
+    )
     events = preregister_trial(
         (),
         trial_id=f"trial-{artifact.artifact_sha256[:12]}",
         definition_sha256=artifact.strategy_definition_sha256,
         dataset_sha256=artifact.dataset_identity_sha256,
         split_sha256=artifact.split_identity_sha256,
+        stage_plan_sha256=evidence_stage_plan_sha256,
         parameters={"fixture": True},
         multiplicity_family_id=f"family-{artifact.artifact_sha256[:12]}",
         preregistered_at=decision_at - timedelta(days=1),
@@ -2780,7 +2792,11 @@ def _run_candidate_rebalance(
     )
     manifest = freeze_experiment_manifest(events)
     ledger = persist_experiment_ledger(
-        tmp_path / f"experiment-{artifact.artifact_sha256}.ndjson",
+        tmp_path
+        / (
+            f"experiment-{artifact.artifact_sha256}-"
+            f"{evidence_stage_plan_sha256}.ndjson"
+        ),
         events,
     )
     return run_candidate_rebalance(
@@ -3058,6 +3074,21 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     )
     assert rebound.target_weights == result.target_weights
     assert rebound.stage_hash != result.stage_hash
+    with pytest.raises(MarketDataError, match="complete stage plan"):
+        _run_candidate_rebalance(
+            tmp_path,
+            Portfolio.a_share(100_000, costs=TransactionCostModel()),
+            calendar,
+            signal_session=days[0],
+            decision_at=decision_at,
+            execution_inputs=(row,),
+            universe_materialization=materialization,
+            dataset_manifest=dataset_manifest,
+            decision_artifact=artifact,
+            cost_assumptions=_cost_assumptions(),
+            stage_context=genesis_stage(create_stage_plan((days[0],))),
+            evidence_stage_plan_sha256="0" * 64,
+        )
 
 
 def test_candidate_retrospective_execution_is_research_only(tmp_path: Path) -> None:
@@ -3192,22 +3223,6 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
         decision_at,
         (row,),
     )
-    dataset_manifest = _dataset_manifest(materialization, days[1])
-    artifact = _captured_decision_artifact(
-        tmp_path,
-        decision_at,
-        dataset_identity_sha256=dataset_manifest.identity_sha256,
-    )
-    arguments = {
-        "signal_session": days[0],
-        "decision_at": decision_at,
-        "execution_inputs": (row,),
-        "universe_materialization": materialization,
-        "dataset_manifest": dataset_manifest,
-        "decision_artifact": artifact,
-        "stage_context": genesis_stage(create_stage_plan((days[0],))),
-    }
-
     observed_cost_models = []
     real_run_static = event_loop_module.run_static_rebalance
 
@@ -3218,32 +3233,43 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(
         return real_run_static(portfolio, calendar, **kwargs)
 
     monkeypatch.setattr(event_loop_module, "run_static_rebalance", recording_run_static)
-    base = _run_candidate_rebalance(
-        tmp_path,
-        Portfolio.a_share(100_000, costs=TransactionCostModel()),
-        calendar,
-        cost_assumptions=_cost_assumptions(
-            spread_bps=2,
-            adverse_regulatory_fee=0.001,
-        ),
-        **arguments,
+    def run_for(costs: ExecutionCostAssumptions, name: str):
+        manifest = _dataset_manifest(
+            materialization,
+            days[1],
+            cost_assumptions=costs,
+        )
+        artifact = _captured_decision_artifact(
+            tmp_path,
+            decision_at,
+            dataset_identity_sha256=manifest.identity_sha256,
+            name=name,
+        )
+        return _run_candidate_rebalance(
+            tmp_path,
+            Portfolio.a_share(100_000, costs=TransactionCostModel()),
+            calendar,
+            signal_session=days[0],
+            decision_at=decision_at,
+            execution_inputs=(row,),
+            universe_materialization=materialization,
+            dataset_manifest=manifest,
+            decision_artifact=artifact,
+            stage_context=genesis_stage(create_stage_plan((days[0],))),
+            cost_assumptions=costs,
+        )
+
+    base = run_for(
+        _cost_assumptions(spread_bps=2, adverse_regulatory_fee=0.001),
+        "-base-cost",
     )
-    stressed = _run_candidate_rebalance(
-        tmp_path,
-        Portfolio.a_share(100_000, costs=TransactionCostModel()),
-        calendar,
-        cost_assumptions=_cost_assumptions(
-            spread_bps=4,
-            adverse_regulatory_fee=0.001,
-        ),
-        **arguments,
+    stressed = run_for(
+        _cost_assumptions(spread_bps=4, adverse_regulatory_fee=0.001),
+        "-stressed-cost",
     )
-    gross = _run_candidate_rebalance(
-        tmp_path,
-        Portfolio.a_share(100_000, costs=TransactionCostModel()),
-        calendar,
-        cost_assumptions=_cost_assumptions(spread_bps=0, gross_only=True),
-        **arguments,
+    gross = run_for(
+        _cost_assumptions(spread_bps=0, gross_only=True),
+        "-gross-cost",
     )
 
     assert base.input_identity_hash != stressed.input_identity_hash

@@ -674,6 +674,10 @@ def run_candidate_rebalance(
         )
     if not isinstance(dataset_manifest, DatasetManifest):
         raise TypeError("dataset_manifest must be a DatasetManifest")
+    try:
+        dataset_manifest.verify_identity()
+    except ValueError as exc:
+        raise MarketDataError("dataset manifest semantic identity mismatch") from exc
     if not isinstance(cost_assumptions, ExecutionCostAssumptions):
         raise TypeError("cost_assumptions must be ExecutionCostAssumptions")
     if not isinstance(experiment_ledger, ExperimentLedgerReceipt):
@@ -689,6 +693,8 @@ def run_candidate_rebalance(
         or experiment_ledger.head_sha256 != experiment_manifest.head_sha256
     ):
         raise MarketDataError("persistent experiment ledger does not match manifest")
+    if holdout_event.stage_plan_sha256 != stage_context.plan_sha256:
+        raise MarketDataError("holdout evidence does not bind the complete stage plan")
     if any(row.capacity is None for row in execution_inputs):
         raise MarketDataError("candidate execution requires capacity evidence for every input")
     if any(row.currency != cost_assumptions.currency for row in execution_inputs):
@@ -710,6 +716,8 @@ def run_candidate_rebalance(
         )
     if decision_artifact.split_identity_sha256 != dataset_manifest.split_manifest_sha256:
         raise MarketDataError("decision artifact split identity must match the dataset manifest")
+    if dataset_manifest.cost_policy_sha256 != cost_assumptions.identity_sha256:
+        raise MarketDataError("dataset cost policy must match execution cost assumptions")
     if (
         holdout_event.definition_sha256 != decision_artifact.strategy_definition_sha256
         or holdout_event.dataset_sha256 != dataset_manifest.identity_sha256

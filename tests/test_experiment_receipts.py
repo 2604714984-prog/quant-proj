@@ -22,6 +22,7 @@ def _preregister(trial_id: str = "trial-001"):
         definition_sha256="a" * 64,
         dataset_sha256="b" * 64,
         split_sha256="c" * 64,
+        stage_plan_sha256="9" * 64,
         parameters={"holding_days": 5, "threshold": 0.2},
         multiplicity_family_id="family-001",
         preregistered_at=datetime(2026, 7, 22, tzinfo=UTC),
@@ -50,6 +51,7 @@ def test_definition_change_cannot_unlock_holdout_twice() -> None:
             definition_sha256="e" * 64,
             dataset_sha256="b" * 64,
             split_sha256="c" * 64,
+            stage_plan_sha256="9" * 64,
             parameters={"holding_days": 20},
             multiplicity_family_id="family-001",
             preregistered_at=datetime(2026, 7, 23, tzinfo=UTC),
@@ -117,6 +119,7 @@ def test_candidate_requires_complete_recomputable_multiplicity_family() -> None:
     common = {
         "dataset_sha256": "b" * 64,
         "split_sha256": "c" * 64,
+        "stage_plan_sha256": "9" * 64,
         "multiplicity_family_id": "family-002",
         "external_anchor_sha256": "f" * 64,
         "alpha": 0.05,
