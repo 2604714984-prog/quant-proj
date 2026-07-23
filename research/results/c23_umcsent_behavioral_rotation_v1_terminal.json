@@ -1,0 +1,65 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C23_UMCSENT_BEHAVIORAL_RISK_APPETITE_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE23",
+  "classification": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053461291",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053508406",
+    "preoutcome_commit": "7c6cf81b59a2ded5319397baa215af60032bee8d",
+    "definition_sha256": "48d7dc538ab1c91f2ec5ff7824ccf98880c5af44a86902f464da3b1f00856015",
+    "adapter_sha256": "57513444f0e43ab25b29c4605569aabaab163df8c943f023d3b60b3db5c2bce5",
+    "runner_sha256": "536dcf7b91bff3bae8ee5c23ed18cc4b01bcbd300f28f359288c399d112e8f5d",
+    "input_packet_sha256": "57ff845c063dbe11927419b879d2dd52fcc31242839ed148a7ab3a82cb3d481d"
+  },
+  "one_use_validation": {
+    "claim_sha256": "d669b427060b8bc9a87147f77572d270215f6f31247d2c6a867b280d706a9665",
+    "result_sha256": "6f2ee43d526ea79acd578af189cd0f6b47033abe929ab82b0c9ead5cd3b881e7",
+    "observed_intervals": 28,
+    "gates_passed": 3,
+    "gates_total": 3,
+    "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_PASS_HOLDOUT_UNLOCKED"
+  },
+  "one_use_holdout": {
+    "claim_sha256": "95b5e807352cf3e55733f6826006caee2d8e46571e6cc6a5eec631ba0140ed33",
+    "result_sha256": "d395e1bbd5a31fe15a38c29aa3ca5c2bb1660d0fbc037be723cc934ced8423e5",
+    "observed_intervals": 34,
+    "gates_passed": 2,
+    "gates_total": 5,
+    "passed_gates": [
+      "exactly_34_paired_intervals",
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator"
+    ],
+    "failed_gates": [
+      "centered_null_one_sided_p_at_most_0_000000011920928955078125",
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator",
+      "uncentered_type7_0_000000011920928955078125_lower_bound_strictly_positive"
+    ],
+    "classification": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "program_multiplicity": {
+    "cycle23_familywise_alpha": 0.000000011920928955078125,
+    "cycle1_to_cycle23_union_bound": 0.099999988079071044921875,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "method_limitation": "UMCSENT is a revisable survey rather than direct spending, and the frozen three-month bootstrap block is an outcome-blind dependence assumption rather than proof of complete serial-dependence coverage.",
+  "terminal_state": {
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the UMCSENT direction, vintage rule, lag, threshold, smoothing, target mapping, comparator, cost, split, bootstrap, source or signal combination."
+}
