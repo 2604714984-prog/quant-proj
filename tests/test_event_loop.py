@@ -65,6 +65,7 @@ from quant_system.markets.us import CorporateActionValuationError
 from quant_system.research.identity import build_dataset_manifest
 from quant_system.research.experiments import (
     capture_family_anchor,
+    capture_final_run_receipt,
     capture_holdout_result,
     freeze_experiment_manifest,
     persist_experiment_ledger,
@@ -2861,6 +2862,7 @@ def _run_candidate_rebalance(
             experiment_anchor=None,  # type: ignore[arg-type]
             holdout_event=None,  # type: ignore[arg-type]
             holdout_result_receipt=None,  # type: ignore[arg-type]
+            final_run_receipt=None,  # type: ignore[arg-type]
             split_evaluation=None,  # type: ignore[arg-type]
             candidate_run_config=None,  # type: ignore[arg-type]
             **kwargs,
@@ -2895,7 +2897,35 @@ def _run_candidate_rebalance(
         },
     )
     trial_id = f"trial-{artifact.artifact_sha256[:12]}"
-    completed_final_stage_hash = hashlib.sha256(b"fixture-final-stage").hexdigest()
+    fixture_stage_plan = create_stage_plan((kwargs["stage_context"].stage_session,))
+    if fixture_stage_plan.plan_sha256 != kwargs["stage_context"].plan_sha256:
+        raise ValueError("candidate fixture only supports a complete single-stage plan")
+    executed_portfolio = deepcopy(portfolio)
+    executed_portfolio.costs = kwargs[
+        "cost_assumptions"
+    ].base.transaction_cost_model()
+    executed_portfolio.a_share_stamp_tax_schedule = False
+    executed_result = run_static_rebalance(
+        executed_portfolio,
+        calendar,
+        signal_session=kwargs["signal_session"],
+        decision_at=decision_at,
+        execution_inputs=kwargs["execution_inputs"],
+        execution_calendar_revision=kwargs.get("execution_calendar_revision"),
+        universe_members=kwargs["universe_materialization"].members,
+        universe_snapshot=kwargs["universe_materialization"].snapshot,
+        target_weights=lambda _: dict(artifact.weights),
+        strategy_definition_sha256=artifact.strategy_definition_sha256,
+        strategy_adapter_sha256=artifact.strategy_adapter_sha256,
+        capacity_policy=kwargs["cost_assumptions"].capacity_policy,
+        max_positions=kwargs.get("max_positions"),
+        stage_context=kwargs["stage_context"],
+        slippage_bps=kwargs["cost_assumptions"].base.slippage_bps,
+    )
+    final_run_receipt = capture_final_run_receipt(
+        fixture_stage_plan,
+        (executed_result,),
+    )
     candidate_run_config = capture_candidate_run_config(
         decision_artifact_sha256=artifact.artifact_sha256,
         dataset_identity_sha256=kwargs["dataset_manifest"].identity_sha256,
@@ -2903,7 +2933,6 @@ def _run_candidate_rebalance(
         split_evaluation_plan_sha256=split_plan.plan_sha256,
         stage_plan_sha256=evidence_stage_plan_sha256,
         final_stage_index=kwargs["stage_context"].stage_index,
-        completed_final_stage_hash=completed_final_stage_hash,
         cost_assumptions_sha256=kwargs["cost_assumptions"].identity_sha256,
         signal_session=kwargs["signal_session"],
         decision_at=decision_at,
@@ -2991,7 +3020,7 @@ def _run_candidate_rebalance(
     holdout_receipt = capture_holdout_result(
         trial_id=trial_id,
         holdout_id=split_plan.holdout_id,
-        final_stage_hash=completed_final_stage_hash,
+        final_run_receipt=final_run_receipt,
         split_evaluation=split_evaluation,
         holdout_access_at=decision_at - timedelta(seconds=1),
     )
@@ -3015,6 +3044,7 @@ def _run_candidate_rebalance(
         experiment_anchor=anchor,
         holdout_event=events[-1],
         holdout_result_receipt=holdout_receipt,
+        final_run_receipt=final_run_receipt,
         candidate_run_config=candidate_run_config,
         split_evaluation=split_evaluation,
         **kwargs,
@@ -3429,7 +3459,7 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
             cost_assumptions=None,  # type: ignore[arg-type]
             stage_context=genesis_stage(create_stage_plan((days[0],))),
         )
-    with pytest.raises(MarketDataError, match="capacity evidence"):
+    with pytest.raises(MarketDataError, match="capacity (evidence|policy)"):
         _run_candidate_rebalance(
             tmp_path,
             portfolio,

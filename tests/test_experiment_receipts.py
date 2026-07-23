@@ -6,8 +6,11 @@ import pytest
 
 from quant_system.data import capture_source_bytes, parse_provider_observation
 import quant_system.research.experiments as experiment_module
+import quant_system.backtest.event_loop as event_loop_module
+from quant_system.backtest.event_loop import StaticRebalanceResult, create_stage_plan
 from quant_system.research.experiments import (
     capture_family_anchor,
+    capture_final_run_receipt,
     capture_holdout_result,
     freeze_experiment_manifest,
     persist_experiment_ledger,
@@ -152,10 +155,23 @@ def _receipt(
     returns=(0.10, 0.11, 0.09, 0.12, 0.08),
 ):
     _, evaluation = _evaluation(holdout_id=holdout_id, returns=returns)
+    stage_plan = create_stage_plan((date(2026, 7, 1),))
+    executed = object.__new__(StaticRebalanceResult)
+    for name, value in {
+        "stage_plan_sha256": stage_plan.plan_sha256,
+        "stage_index": 0,
+        "stage_session": stage_plan.sessions[0],
+        "prior_stage_hash": "0" * 64,
+        "stage_hash": "d" * 64,
+        "final_nav": 100.0,
+        "_token": event_loop_module._RESULT_TOKEN,
+    }.items():
+        object.__setattr__(executed, name, value)
+    final_run_receipt = capture_final_run_receipt(stage_plan, (executed,))
     return capture_holdout_result(
         trial_id=trial_id,
         holdout_id=holdout_id,
-        final_stage_hash="d" * 64,
+        final_run_receipt=final_run_receipt,
         split_evaluation=evaluation,
         holdout_access_at=datetime(2026, 7, 23, tzinfo=UTC),
     )
@@ -242,6 +258,33 @@ def test_persistent_ledger_detects_deleted_prefix(tmp_path) -> None:
     receipt.path.write_bytes(b"")
     with pytest.raises(ValueError, match="bytes changed"):
         receipt.verify_current_bytes()
+
+
+def test_final_run_receipt_requires_complete_ordered_stage_chain() -> None:
+    plan = create_stage_plan((date(2026, 7, 1), date(2026, 7, 2)))
+
+    def result(index: int, prior: str, stage_hash: str):
+        item = object.__new__(StaticRebalanceResult)
+        for name, value in {
+            "stage_plan_sha256": plan.plan_sha256,
+            "stage_index": index,
+            "stage_session": plan.sessions[index],
+            "prior_stage_hash": prior,
+            "stage_hash": stage_hash,
+            "final_nav": 100.0 + index,
+            "_token": event_loop_module._RESULT_TOKEN,
+        }.items():
+            object.__setattr__(item, name, value)
+        return item
+
+    first = result(0, "0" * 64, "1" * 64)
+    second = result(1, first.stage_hash, "2" * 64)
+    receipt = capture_final_run_receipt(plan, (first, second))
+    assert receipt.final_stage_hash == second.stage_hash
+    with pytest.raises(ValueError, match="one actual result"):
+        capture_final_run_receipt(plan, (first,))
+    with pytest.raises(ValueError, match="skipped, reordered, or replaced"):
+        capture_final_run_receipt(plan, (second, first))
 
 
 def test_complete_family_is_recorded_atomically_with_computed_holm_values(tmp_path) -> None:

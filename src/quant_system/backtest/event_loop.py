@@ -48,6 +48,7 @@ from quant_system.research.experiments import (
     ExperimentAnchorReceipt,
     ExperimentLedgerReceipt,
     ExperimentManifest,
+    FinalRunReceipt,
     HoldoutResultReceipt,
     require_adjusted_holdout_for_candidate,
 )
@@ -97,6 +98,7 @@ _NO_OPEN_EVENT_BASIS = "confirmed_no_open_event"
 _DECISION_ARTIFACT_TOKEN = object()
 _STAGE_CONTEXT_TOKEN = object()
 _CANDIDATE_RUN_CONFIG_TOKEN = object()
+_RESULT_TOKEN = object()
 
 
 @dataclass(frozen=True)
@@ -137,7 +139,6 @@ class CandidateRunConfig:
     split_evaluation_plan_sha256: str
     stage_plan_sha256: str
     final_stage_index: int
-    completed_final_stage_hash: str
     cost_assumptions_sha256: str
     signal_session: date
     decision_at: datetime
@@ -157,7 +158,6 @@ class CandidateRunConfig:
             "split_identity_sha256",
             "split_evaluation_plan_sha256",
             "stage_plan_sha256",
-            "completed_final_stage_hash",
             "cost_assumptions_sha256",
         ):
             _sha256(getattr(self, name), name)
@@ -206,7 +206,6 @@ def capture_candidate_run_config(
     split_evaluation_plan_sha256: str,
     stage_plan_sha256: str,
     final_stage_index: int,
-    completed_final_stage_hash: str,
     cost_assumptions_sha256: str,
     signal_session: date,
     decision_at: datetime,
@@ -225,7 +224,6 @@ def capture_candidate_run_config(
         "split_evaluation_plan_sha256": split_evaluation_plan_sha256,
         "stage_plan_sha256": stage_plan_sha256,
         "final_stage_index": final_stage_index,
-        "completed_final_stage_hash": completed_final_stage_hash,
         "cost_assumptions_sha256": cost_assumptions_sha256,
         "signal_session": signal_session,
         "decision_at": decision_at,
@@ -533,6 +531,15 @@ class StaticRebalanceResult:
     base_fx_adjusted_final_nav: float | None = None
     adverse_fx_adjusted_final_nav: float | None = None
     strategy_candidate_available: bool = False
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    def verify_controlled_result(self) -> None:
+        if self._token is not _RESULT_TOKEN:
+            raise ValueError("stage result must come from the event-loop runner")
+        _sha256(self.stage_hash, "stage_hash")
+        _sha256(self.prior_stage_hash, "prior_stage_hash")
+        if not math.isfinite(self.final_nav):
+            raise ValueError("stage result final NAV must be finite")
 
 
 def create_stage_plan(sessions: tuple[date, ...]) -> StagePlan:
@@ -981,6 +988,7 @@ def run_static_rebalance(
         stage_context.stage_session,
         stage_context.prior_stage_hash,
         execution_evidence_grade=_execution_evidence_grade(rows),
+        _token=_RESULT_TOKEN,
     )
 
 
@@ -1001,6 +1009,7 @@ def run_candidate_rebalance(
     experiment_anchor: ExperimentAnchorReceipt,
     holdout_event: ExperimentEvent,
     holdout_result_receipt: HoldoutResultReceipt,
+    final_run_receipt: FinalRunReceipt,
     split_evaluation: SplitEvaluation,
     cost_assumptions: ExecutionCostAssumptions,
     stage_context: StageContext,
@@ -1076,8 +1085,6 @@ def run_candidate_rebalance(
         != split_evaluation.plan_sha256
         or candidate_run_config.stage_plan_sha256 != stage_context.plan_sha256
         or candidate_run_config.final_stage_index != stage_context.stage_index
-        or candidate_run_config.completed_final_stage_hash
-        != holdout_result_receipt.final_stage_hash
         or candidate_run_config.cost_assumptions_sha256
         != cost_assumptions.identity_sha256
         or candidate_run_config.signal_session != signal_session
@@ -1099,6 +1106,16 @@ def run_candidate_rebalance(
         raise MarketDataError("persistent experiment ledger does not match manifest")
     if holdout_event.stage_plan_sha256 != stage_context.plan_sha256:
         raise MarketDataError("holdout evidence does not bind the complete stage plan")
+    if (
+        not isinstance(final_run_receipt, FinalRunReceipt)
+        or final_run_receipt.stage_plan_sha256 != stage_context.plan_sha256
+        or final_run_receipt.stage_count != stage_context.stage_index + 1
+        or final_run_receipt.final_stage_hash != holdout_result_receipt.final_stage_hash
+        or holdout_result_receipt.final_run_receipt_sha256
+        != final_run_receipt.receipt_sha256
+    ):
+        raise MarketDataError("holdout evidence does not bind the actual final run")
+    final_run_receipt.__post_init__()
     if any(row.capacity is None for row in execution_inputs):
         raise MarketDataError("candidate execution requires capacity evidence for every input")
     if any(row.currency != cost_assumptions.currency for row in execution_inputs):
@@ -1176,6 +1193,11 @@ def run_candidate_rebalance(
         slippage_bps=cost_assumptions.base.slippage_bps,
         **common,
     )
+    if (
+        result.stage_hash != final_run_receipt.final_stage_hash
+        or abs(result.final_nav - final_run_receipt.final_nav) > 1e-12
+    ):
+        raise MarketDataError("candidate replay differs from the frozen final run")
     adverse_portfolio = deepcopy(base_portfolio)
     adverse_portfolio.costs = cost_assumptions.adverse.transaction_cost_model()
     adverse_portfolio.a_share_stamp_tax_schedule = False

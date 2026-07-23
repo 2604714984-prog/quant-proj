@@ -9,6 +9,7 @@ from datetime import datetime, timezone
 import hashlib
 import fcntl
 import json
+import math
 import os
 from pathlib import Path
 import re
@@ -26,6 +27,7 @@ _SHA256 = re.compile(r"[0-9a-f]{64}")
 _EVENT_TOKEN = object()
 _HOLDOUT_RESULT_TOKEN = object()
 _ANCHOR_TOKEN = object()
+_FINAL_RUN_TOKEN = object()
 EventKind = Literal["PREREGISTERED", "HOLDOUT_RESULT"]
 ResultStatus = Literal["PASSED", "FAILED"]
 
@@ -192,6 +194,7 @@ class HoldoutResultReceipt:
     trial_id: str
     holdout_id: str
     final_stage_hash: str
+    final_run_receipt_sha256: str
     split_evaluation_sha256: str
     split_evaluation_plan_sha256: str
     returns_sha256: str
@@ -210,6 +213,7 @@ class HoldoutResultReceipt:
         _text(self.holdout_id, "holdout_id")
         for name in (
             "final_stage_hash",
+            "final_run_receipt_sha256",
             "split_evaluation_sha256",
             "split_evaluation_plan_sha256",
             "returns_sha256",
@@ -221,6 +225,7 @@ class HoldoutResultReceipt:
             json.dumps(
                 {
                     "final_stage_hash": self.final_stage_hash,
+                    "final_run_receipt_sha256": self.final_run_receipt_sha256,
                     "returns_sha256": self.returns_sha256,
                     "split_evaluation_sha256": self.split_evaluation_sha256,
                     "trial_id": self.trial_id,
@@ -235,6 +240,95 @@ class HoldoutResultReceipt:
             self.receipt_sha256
         ):
             raise ValueError("holdout result receipt hash mismatch")
+
+
+@dataclass(frozen=True)
+class FinalRunReceipt:
+    stage_plan_sha256: str
+    stage_count: int
+    ordered_stage_hashes: tuple[str, ...]
+    final_stage_hash: str
+    final_nav: float
+    receipt_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _FINAL_RUN_TOKEN:
+            raise ValueError("FinalRunReceipt must come from capture_final_run_receipt")
+        _sha(self.stage_plan_sha256, "stage_plan_sha256")
+        if (
+            type(self.stage_count) is not int
+            or self.stage_count < 1
+            or len(self.ordered_stage_hashes) != self.stage_count
+        ):
+            raise ValueError("final run receipt stage count is invalid")
+        for stage_hash in self.ordered_stage_hashes:
+            _sha(stage_hash, "ordered_stage_hash")
+        if self.final_stage_hash != self.ordered_stage_hashes[-1]:
+            raise ValueError("final run receipt does not end at its final stage")
+        if (
+            not isinstance(self.final_nav, (int, float))
+            or isinstance(self.final_nav, bool)
+            or not math.isfinite(float(self.final_nav))
+        ):
+            raise ValueError("final run NAV must be finite")
+        if hashlib.sha256(_final_run_payload(self)).hexdigest() != self.receipt_sha256:
+            raise ValueError("final run receipt hash mismatch")
+
+
+def _final_run_payload(receipt: FinalRunReceipt) -> bytes:
+    return json.dumps(
+        {
+            name: value
+            for name, value in receipt.__dict__.items()
+            if name not in {"receipt_sha256", "_token"}
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def capture_final_run_receipt(stage_plan: object, results: tuple[object, ...]) -> FinalRunReceipt:
+    """Freeze the complete, ordered result chain for an executed StagePlan."""
+
+    from quant_system.backtest.event_loop import StagePlan, StaticRebalanceResult
+
+    if not isinstance(stage_plan, StagePlan):
+        raise TypeError("stage_plan must be a controlled StagePlan")
+    if (
+        type(results) is not tuple
+        or len(results) != len(stage_plan.sessions)
+        or any(not isinstance(result, StaticRebalanceResult) for result in results)
+    ):
+        raise ValueError("final run requires one actual result for every planned stage")
+    prior = "0" * 64
+    for index, (session, result) in enumerate(
+        zip(stage_plan.sessions, results, strict=True)
+    ):
+        result.verify_controlled_result()
+        if (
+            result.stage_plan_sha256 != stage_plan.plan_sha256
+            or result.stage_index != index
+            or result.stage_session != session
+            or result.prior_stage_hash != prior
+        ):
+            raise ValueError("final run results are skipped, reordered, or replaced")
+        prior = result.stage_hash
+    values = {
+        "stage_plan_sha256": stage_plan.plan_sha256,
+        "stage_count": len(results),
+        "ordered_stage_hashes": tuple(result.stage_hash for result in results),
+        "final_stage_hash": results[-1].stage_hash,
+        "final_nav": results[-1].final_nav,
+    }
+    provisional = object.__new__(FinalRunReceipt)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    return FinalRunReceipt(
+        **values,
+        receipt_sha256=hashlib.sha256(_final_run_payload(provisional)).hexdigest(),
+        _token=_FINAL_RUN_TOKEN,
+    )
 
 
 @dataclass(frozen=True)
@@ -313,18 +407,23 @@ def capture_holdout_result(
     *,
     trial_id: str,
     holdout_id: str,
-    final_stage_hash: str,
+    final_run_receipt: FinalRunReceipt,
     split_evaluation: SplitEvaluation,
     holdout_access_at: datetime,
 ) -> HoldoutResultReceipt:
     if not isinstance(split_evaluation, SplitEvaluation):
         raise TypeError("split_evaluation must be a SplitEvaluation")
     split_evaluation.__post_init__()
+    if not isinstance(final_run_receipt, FinalRunReceipt):
+        raise TypeError("final_run_receipt must be a FinalRunReceipt")
+    final_run_receipt.__post_init__()
+    final_stage_hash = final_run_receipt.final_stage_hash
     raw_pvalue = split_evaluation.raw_pvalue
     result_sha = hashlib.sha256(
         json.dumps(
             {
                 "final_stage_hash": _sha(final_stage_hash, "final_stage_hash"),
+                "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
                 "returns_sha256": split_evaluation.returns_sha256,
                 "split_evaluation_sha256": split_evaluation.evaluation_sha256,
                 "trial_id": _text(trial_id, "trial_id"),
@@ -337,6 +436,7 @@ def capture_holdout_result(
         "trial_id": trial_id,
         "holdout_id": holdout_id,
         "final_stage_hash": final_stage_hash,
+        "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
         "split_evaluation_sha256": split_evaluation.evaluation_sha256,
         "split_evaluation_plan_sha256": split_evaluation.plan_sha256,
         "returns_sha256": split_evaluation.returns_sha256,
