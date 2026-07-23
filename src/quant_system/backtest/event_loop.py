@@ -15,8 +15,8 @@ from zoneinfo import ZoneInfo
 
 from quant_system.data import (
     AcceptedSession, AcceptedSessionCalendar, CalendarIdentityError,
-    CorporateActionIdentity, SourceIdentity, capture_file_bytes, capture_file_digest,
-    require_trusted_source,
+    CorporateActionIdentity, SourceIdentity, TypedObservationReceipt, capture_file_bytes,
+    capture_file_digest, require_trusted_source, require_typed_observation,
 )
 from quant_system.markets.a_share import (
     AShareAdjustmentReceipt,
@@ -137,6 +137,7 @@ class TerminalAction:
     accepted_settlement_sessions: tuple[AcceptedSession, ...]
     successor_symbol: str | None = None
     successor_shares_per_share: float | None = None
+    observation_receipt: TypedObservationReceipt | None = None
 
     def __post_init__(self) -> None:
         require_nonempty_text(self.event_id, "event_id")
@@ -185,6 +186,8 @@ class ExecutionInput:
     execution_price_basis: ExecutionPriceBasis | None = None
     limit_regime: LimitRegime | None = None
     adjustment_receipt: AShareAdjustmentReceipt | None = None
+    execution_observation_receipt: TypedObservationReceipt | None = None
+    decision_observation_receipt: TypedObservationReceipt | None = None
 
 
 @dataclass(frozen=True)
@@ -789,7 +792,11 @@ def run_candidate_rebalance(
             decision_artifact.strategy_adapter_source,
         )
     )
-    provider_qualified = provider_qualified and dataset_manifest.has_captured_semantics
+    provider_qualified = (
+        provider_qualified
+        and dataset_manifest.has_captured_semantics
+        and dataset_manifest.has_pit_partitions
+    )
     common = {
         "signal_session": signal_session,
         "decision_at": cutoff,
@@ -933,6 +940,9 @@ def _require_candidate_sources(
     if execution_calendar_revision is not None:
         require_trusted_source(execution_calendar_revision.identity.source_identity)
         sources.append(execution_calendar_revision.identity.source_identity)
+        for session in execution_calendar_revision.sessions:
+            require_trusted_source(session.source)
+            sources.append(session.source)
     for row in execution_inputs:
         require_trusted_source(row.source)
         sources.append(row.source)
@@ -960,9 +970,190 @@ def _require_candidate_sources(
         if row.terminal_action is not None:
             require_trusted_source(row.terminal_action.source)
             sources.append(row.terminal_action.source)
-    return bool(sources) and all(
+    provider_qualified = bool(sources) and all(
         source.is_provider_qualified_capture for source in sources
     )
+    if provider_qualified:
+        try:
+            _require_candidate_typed_values(
+                calendar,
+                execution_inputs,
+                universe_snapshot,
+                execution_calendar_revision,
+            )
+        except ValueError as exc:
+            raise MarketDataError(
+                "provider-qualified candidate values lack matching typed receipts"
+            ) from exc
+    return provider_qualified
+
+
+def _require_session_observation(session: AcceptedSession) -> None:
+    require_typed_observation(
+        session.observation_receipt,
+        source=session.source,
+        observation_kind="calendar_session",
+        subject_id=f"{session.exchange_id}:{session.session_date.isoformat()}",
+        expected_values={
+            "close_at": session.close_at,
+            "exchange_id": session.exchange_id,
+            "exchange_timezone": session.exchange_timezone,
+            "is_early_close": session.is_early_close,
+            "open_at": session.open_at,
+            "session_date": session.session_date,
+        },
+    )
+
+
+def _require_candidate_typed_values(
+    calendar: AcceptedSessionCalendar,
+    execution_inputs: tuple[ExecutionInput, ...],
+    universe_snapshot: UniverseSnapshotIdentity,
+    execution_calendar_revision: AcceptedSessionCalendar | None,
+) -> None:
+    for session in calendar.sessions:
+        _require_session_observation(session)
+    if execution_calendar_revision is not None:
+        for session in execution_calendar_revision.sessions:
+            _require_session_observation(session)
+    require_typed_observation(
+        universe_snapshot.observation_receipt,
+        source=universe_snapshot.source_identity,
+        observation_kind="universe_snapshot",
+        subject_id=(
+            f"{universe_snapshot.exchange_id}:"
+            f"{universe_snapshot.effective_session.isoformat()}"
+        ),
+        expected_values={
+            "calendar_identity_sha256": universe_snapshot.calendar_identity_sha256,
+            "exchange_id": universe_snapshot.exchange_id,
+            "lifecycle_coverage_sha256": universe_snapshot.lifecycle_coverage_sha256,
+            "market": universe_snapshot.market,
+            "member_count": universe_snapshot.member_count,
+            "ordered_members_sha256": universe_snapshot.ordered_members_sha256,
+        },
+    )
+    for row in execution_inputs:
+        require_typed_observation(
+            row.execution_observation_receipt,
+            source=row.source,
+            observation_kind="execution_price",
+            subject_id=row.symbol,
+            expected_values={
+                "basis": row.execution_price_basis,
+                "currency": row.currency,
+                "effective_at": row.execution_price_effective_at,
+                "open_price": row.open_price,
+                "symbol": row.symbol,
+            },
+        )
+        if row.decision_price_source is not None:
+            require_typed_observation(
+                row.decision_observation_receipt,
+                source=row.decision_price_source,
+                observation_kind="decision_price",
+                subject_id=row.symbol,
+                expected_values={
+                    "basis": row.decision_price_basis,
+                    "currency": row.currency,
+                    "price": row.decision_price,
+                    "symbol": row.symbol,
+                },
+            )
+        for status in row.status_records:
+            require_typed_observation(
+                status.observation_receipt,
+                source=status.source,
+                observation_kind="status",
+                subject_id=status.symbol,
+                expected_values={
+                    "effective_from": status.effective_from,
+                    "effective_to": status.effective_to,
+                    "exchange_timezone": status.exchange_timezone,
+                    "kind": status.kind,
+                    "status_id": status.status_id,
+                    "symbol": status.symbol,
+                    "value": status.value,
+                },
+            )
+        for action in row.corporate_actions:
+            require_typed_observation(
+                action.observation_receipt,
+                source=action.source,
+                observation_kind="corporate_action",
+                subject_id=action.subject_id,
+                expected_values={
+                    "action_id": action.action_id,
+                    "action_type": action.action_type,
+                    "cash_amount": action.cash_amount,
+                    "currency": action.currency,
+                    "effective_at": action.effective_at,
+                    "ex_date": action.ex_date,
+                    "new_subject_id": action.new_subject_id,
+                    "pay_date": action.pay_date,
+                    "record_date": action.record_date,
+                    "split_ratio": action.split_ratio,
+                    "subject_id": action.subject_id,
+                    "unit": action.unit,
+                },
+            )
+        if row.capacity is not None:
+            require_typed_observation(
+                row.capacity.observation_receipt,
+                source=row.capacity.source,
+                observation_kind="capacity",
+                subject_id=row.capacity.subject_id,
+                expected_values={
+                    "currency": row.capacity.currency,
+                    "observed_session": row.capacity.observed_session.session_date,
+                    "session_amount": row.capacity.session_amount,
+                    "session_volume_shares": row.capacity.session_volume_shares,
+                    "subject_id": row.capacity.subject_id,
+                },
+            )
+        if row.adjustment_receipt is not None:
+            adjustment = row.adjustment_receipt
+            require_typed_observation(
+                adjustment.factor_observation_receipt,
+                source=adjustment.factor_source,
+                observation_kind="a_share_adjustment_factor",
+                subject_id=adjustment.subject_id,
+                expected_values={
+                    "adjustment_factor": adjustment.adjustment_factor,
+                    "price_basis": adjustment.price_basis,
+                    "session": adjustment.effective_session,
+                    "symbol": adjustment.subject_id,
+                },
+            )
+            require_typed_observation(
+                adjustment.action_observation_receipt,
+                source=adjustment.action_completeness_source,
+                observation_kind="a_share_action_completeness",
+                subject_id=adjustment.subject_id,
+                expected_values={
+                    "action_types": list(adjustment.action_types),
+                    "session": adjustment.effective_session,
+                    "symbol": adjustment.subject_id,
+                },
+            )
+        if row.terminal_action is not None:
+            action = row.terminal_action
+            require_typed_observation(
+                action.observation_receipt,
+                source=action.source,
+                observation_kind="terminal_action",
+                subject_id=row.symbol,
+                expected_values={
+                    "action_type": action.action_type,
+                    "effective_at": action.effective_at,
+                    "event_id": action.event_id,
+                    "payment_date": action.payment_date,
+                    "recovery_per_share": action.recovery_per_share,
+                    "successor_shares_per_share": action.successor_shares_per_share,
+                    "successor_symbol": action.successor_symbol,
+                    "symbol": row.symbol,
+                },
+            )
 
 
 def _execution_calendar(

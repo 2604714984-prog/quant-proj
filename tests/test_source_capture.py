@@ -1,6 +1,7 @@
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
 import hashlib
+import json
 import os
 from pathlib import Path
 
@@ -12,7 +13,9 @@ from quant_system.data import (
     SourceIdentityError,
     capture_github_release_asset,
     capture_source_file,
+    parse_provider_observation,
     require_provider_qualified_source,
+    require_typed_observation,
     require_trusted_source,
     select_source_revision,
 )
@@ -87,7 +90,27 @@ def test_github_release_adapter_derives_provider_metadata(
         b'download/v1/data.bin","id":42,"name":"data.bin",'
         b'"updated_at":"2026-07-22T20:00:00Z"}]}'
     )
-    responses = iter((release, b"provider asset bytes"))
+    provider_bytes = json.dumps(
+        {
+            "schema": "market-open.v1",
+            "observations": [
+                {
+                    "kind": "execution_price",
+                    "subject_id": "AAA",
+                    "values": {
+                        "basis": "timestamped_session_open",
+                        "currency": "USD",
+                        "effective_at": "2026-07-22T20:00:00+00:00",
+                        "open_price": 10.0,
+                        "symbol": "AAA",
+                    },
+                }
+            ],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    responses = iter((release, provider_bytes))
 
     class Response:
         def __init__(self, payload: bytes) -> None:
@@ -114,12 +137,45 @@ def test_github_release_adapter_derives_provider_metadata(
         asset_name="data.bin",
     )
 
-    assert content == b"provider asset bytes"
+    assert content == provider_bytes
     assert receipt.source.provider_id == "github-releases"
     assert receipt.source.subject_id == "o/r:data.bin"
     assert receipt.source.available_at == AVAILABLE
     assert receipt.source.capture_level == "PROVIDER_QUALIFIED_CAPTURE"
     assert require_provider_qualified_source(receipt.source) is receipt.source
+    typed = parse_provider_observation(
+        receipt,
+        content,
+        observation_kind="execution_price",
+        subject_id="AAA",
+    )
+    require_typed_observation(
+        typed,
+        source=receipt.source,
+        observation_kind="execution_price",
+        subject_id="AAA",
+        expected_values={
+            "basis": "timestamped_session_open",
+            "currency": "USD",
+            "effective_at": AVAILABLE,
+            "open_price": 10.0,
+            "symbol": "AAA",
+        },
+    )
+    with pytest.raises(SourceIdentityError, match="do not match provider bytes"):
+        require_typed_observation(
+            typed,
+            source=receipt.source,
+            observation_kind="execution_price",
+            subject_id="AAA",
+            expected_values={
+                "basis": "timestamped_session_open",
+                "currency": "USD",
+                "effective_at": AVAILABLE,
+                "open_price": 20.0,
+                "symbol": "AAA",
+            },
+        )
 
 
 @pytest.mark.parametrize("link_kind", ["symlink", "hardlink"])

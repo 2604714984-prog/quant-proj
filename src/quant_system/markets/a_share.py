@@ -14,7 +14,12 @@ import json
 import math
 from typing import Literal
 
-from quant_system.data import SourceIdentity, capture_source_bytes, require_trusted_source
+from quant_system.data import (
+    SourceIdentity,
+    TypedObservationReceipt,
+    capture_source_bytes,
+    require_trusted_source,
+)
 
 from .common import (
     FillDecision,
@@ -53,6 +58,8 @@ class AShareAdjustmentReceipt:
     factor_source: SourceIdentity
     action_completeness_source: SourceIdentity
     receipt_sha256: str
+    factor_observation_receipt: TypedObservationReceipt | None = None
+    action_observation_receipt: TypedObservationReceipt | None = None
     _token: object | None = field(default=None, repr=False, compare=False, hash=False)
 
     def __post_init__(self) -> None:

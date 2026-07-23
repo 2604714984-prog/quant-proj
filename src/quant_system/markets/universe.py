@@ -16,6 +16,7 @@ from quant_system.data import (
     AcceptedSession,
     CalendarIdentity,
     SourceIdentity,
+    TypedObservationReceipt,
     calendar_identity_sha256,
     capture_file_bytes,
     capture_file_digest,
@@ -56,6 +57,7 @@ class StatusEvidence:
     effective_to: date | None
     exchange_timezone: str
     source: SourceIdentity
+    observation_receipt: TypedObservationReceipt | None = None
 
     def __post_init__(self) -> None:
         require_nonempty_text(self.status_id, "status_id")
@@ -105,6 +107,7 @@ class UniverseSnapshotIdentity:
     source_identity: SourceIdentity
     source_partition_sha256: str | None = None
     materialization_sha256: str | None = None
+    observation_receipt: TypedObservationReceipt | None = None
 
     def __post_init__(self) -> None:
         if self.market not in {"a_share", "us"}:

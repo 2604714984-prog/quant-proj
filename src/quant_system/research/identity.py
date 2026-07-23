@@ -11,7 +11,12 @@ from dataclasses import field
 from datetime import date, datetime, timezone
 from pathlib import Path
 
-from quant_system.data.source_identity import capture_file_digest
+from quant_system.data.source_identity import (
+    SourceIdentity,
+    capture_file_digest,
+    require_aware_utc,
+    require_provider_qualified_source,
+)
 
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
@@ -34,6 +39,10 @@ class DatasetManifest:
     cost_policy_sha256: str
     partition_sha256s: tuple[str, ...]
     identity_sha256: str
+    dataset_as_of: datetime | None = None
+    partition_sources: tuple[SourceIdentity, ...] = ()
+    partition_parser_sha256s: tuple[str, ...] = ()
+    schema_sha256: str | None = None
     _token: object | None = field(default=None, repr=False, compare=False, hash=False)
     _semantic_paths: tuple[tuple[str, Path], ...] = field(
         default=(),
@@ -42,6 +51,12 @@ class DatasetManifest:
         hash=False,
     )
     _partition_paths: tuple[Path, ...] = field(
+        default=(),
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _partition_parser_paths: tuple[Path, ...] = field(
         default=(),
         repr=False,
         compare=False,
@@ -64,6 +79,15 @@ class DatasetManifest:
     def has_captured_semantics(self) -> bool:
         return self._captured_semantics_token is _CAPTURED_SEMANTICS_TOKEN
 
+    @property
+    def has_pit_partitions(self) -> bool:
+        return (
+            self.dataset_as_of is not None
+            and len(self.partition_sources) == len(self.partition_sha256s)
+            and len(self.partition_parser_sha256s) == len(self.partition_sha256s)
+            and self.schema_sha256 is not None
+        )
+
     def verify_identity(self) -> None:
         observed = dataset_identity_sha256(
             dates=self.dates,
@@ -78,6 +102,16 @@ class DatasetManifest:
             action_policy_sha256=self.action_policy_sha256,
             cost_policy_sha256=self.cost_policy_sha256,
             partition_sha256s=self.partition_sha256s,
+            dataset_as_of=self.dataset_as_of,
+            partition_source_receipt_sha256s=tuple(
+                source.capture_receipt_sha256 or ""
+                for source in self.partition_sources
+            ),
+            partition_available_ats=tuple(
+                source.available_at for source in self.partition_sources
+            ),
+            partition_parser_sha256s=self.partition_parser_sha256s,
+            schema_sha256=self.schema_sha256,
         )
         if observed != self.identity_sha256:
             raise ValueError("dataset manifest semantic identity mismatch")
@@ -104,6 +138,29 @@ class DatasetManifest:
                 )
             ):
                 raise ValueError("dataset partition bytes no longer match manifest")
+        if self.has_pit_partitions:
+            assert self.dataset_as_of is not None
+            for digest, source in zip(
+                self.partition_sha256s,
+                self.partition_sources,
+                strict=True,
+            ):
+                require_provider_qualified_source(source)
+                if source.content_sha256 != digest:
+                    raise ValueError("partition source bytes do not match partition hash")
+                if source.available_at > self.dataset_as_of:
+                    raise ValueError("partition source was unavailable at dataset_as_of")
+            if len(self._partition_parser_paths) != len(self.partition_parser_sha256s):
+                raise ValueError("partition parser path coverage is incomplete")
+            if any(
+                capture_file_digest(path)[0] != digest
+                for path, digest in zip(
+                    self._partition_parser_paths,
+                    self.partition_parser_sha256s,
+                    strict=True,
+                )
+            ):
+                raise ValueError("partition parser bytes no longer match manifest")
 
 
 def _canonical_timestamp(value: date | datetime) -> str:
@@ -131,6 +188,11 @@ def dataset_identity_sha256(
     action_policy_sha256: str,
     cost_policy_sha256: str,
     partition_sha256s: Sequence[str],
+    dataset_as_of: datetime | None = None,
+    partition_source_receipt_sha256s: Sequence[str] = (),
+    partition_available_ats: Sequence[datetime] = (),
+    partition_parser_sha256s: Sequence[str] = (),
+    schema_sha256: str | None = None,
 ) -> str:
     """Hash exact partitions and every dataset-semantic artifact."""
 
@@ -204,6 +266,44 @@ def dataset_identity_sha256(
         "source_snapshot_sha256s": frozen_sources,
         "version": 2,
     }
+    pit_receipts = tuple(partition_source_receipt_sha256s)
+    pit_available = tuple(partition_available_ats)
+    pit_parsers = tuple(partition_parser_sha256s)
+    if any((dataset_as_of is not None, pit_receipts, pit_available, pit_parsers, schema_sha256)):
+        if (
+            dataset_as_of is None
+            or schema_sha256 is None
+            or len(pit_receipts) != len(frozen_partitions)
+            or len(pit_available) != len(frozen_partitions)
+            or len(pit_parsers) != len(frozen_partitions)
+        ):
+            raise ValueError("PIT partition identity fields must cover every partition")
+        as_of = require_aware_utc(dataset_as_of, "dataset_as_of")
+        available = tuple(
+            require_aware_utc(value, "partition_available_at")
+            for value in pit_available
+        )
+        if any(value > as_of for value in available):
+            raise ValueError("partition was unavailable at dataset_as_of")
+        for label, values in (
+            ("partition_source_receipt_sha256s", pit_receipts),
+            ("partition_parser_sha256s", pit_parsers),
+            ("schema_sha256", (schema_sha256,)),
+        ):
+            if any(_SHA256.fullmatch(value) is None for value in values):
+                raise ValueError(f"{label} must contain lowercase SHA-256 values")
+        payload.update(
+            {
+                "dataset_as_of": as_of.isoformat(timespec="microseconds"),
+                "partition_available_ats": tuple(
+                    value.isoformat(timespec="microseconds") for value in available
+                ),
+                "partition_parser_sha256s": pit_parsers,
+                "partition_source_receipt_sha256s": pit_receipts,
+                "schema_sha256": schema_sha256,
+                "version": 3,
+            }
+        )
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
@@ -213,7 +313,10 @@ def build_dataset_manifest(
 ) -> DatasetManifest:
     """Build an immutable dataset receipt from validated semantic identities."""
 
-    identity = dataset_identity_sha256(**inputs)  # type: ignore[arg-type]
+    identity_inputs = {
+        key: value for key, value in inputs.items() if key != "partition_sources"
+    }
+    identity = dataset_identity_sha256(**identity_inputs)  # type: ignore[arg-type]
     return DatasetManifest(
         dates=tuple(inputs["dates"]),  # type: ignore[arg-type]
         frequency=str(inputs["frequency"]),
@@ -228,6 +331,12 @@ def build_dataset_manifest(
         cost_policy_sha256=str(inputs["cost_policy_sha256"]),
         partition_sha256s=tuple(inputs["partition_sha256s"]),  # type: ignore[arg-type]
         identity_sha256=identity,
+        dataset_as_of=inputs.get("dataset_as_of"),  # type: ignore[arg-type]
+        partition_sources=tuple(inputs.get("partition_sources", ())),  # type: ignore[arg-type]
+        partition_parser_sha256s=tuple(
+            inputs.get("partition_parser_sha256s", ())
+        ),  # type: ignore[arg-type]
+        schema_sha256=inputs.get("schema_sha256"),  # type: ignore[arg-type]
         _token=_DATASET_MANIFEST_TOKEN,
     )
 
@@ -246,6 +355,9 @@ def capture_dataset_manifest(
     action_policy_path: Path,
     cost_policy_path: Path,
     partition_paths: Sequence[Path],
+    partition_sources: Sequence[SourceIdentity] = (),
+    partition_parser_paths: Sequence[Path] = (),
+    dataset_as_of: datetime | None = None,
 ) -> DatasetManifest:
     """Capture all dataset-semantic and partition bytes into a revalidated manifest."""
 
@@ -262,15 +374,52 @@ def capture_dataset_manifest(
         for field_name, path in semantic_paths
     }
     frozen_partitions = tuple(partition_paths)
+    partition_hashes = tuple(
+        capture_file_digest(path)[0] for path in frozen_partitions
+    )
+    frozen_sources = tuple(partition_sources)
+    frozen_parser_paths = tuple(partition_parser_paths)
+    pit_inputs: dict[str, object] = {}
+    if any((frozen_sources, frozen_parser_paths, dataset_as_of is not None)):
+        if (
+            dataset_as_of is None
+            or len(frozen_sources) != len(frozen_partitions)
+            or len(frozen_parser_paths) != len(frozen_partitions)
+        ):
+            raise ValueError("PIT source and parser paths must cover every partition")
+        as_of = require_aware_utc(dataset_as_of, "dataset_as_of")
+        for digest, source in zip(partition_hashes, frozen_sources, strict=True):
+            require_provider_qualified_source(source)
+            if source.content_sha256 != digest:
+                raise ValueError("partition source receipt does not bind partition bytes")
+            if source.available_at > as_of:
+                raise ValueError("partition source was unavailable at dataset_as_of")
+        canonical_schema = json.dumps(
+            tuple(schema),
+            separators=(",", ":"),
+        ).encode()
+        pit_inputs = {
+            "dataset_as_of": as_of,
+            "partition_available_ats": tuple(
+                source.available_at for source in frozen_sources
+            ),
+            "partition_parser_sha256s": tuple(
+                capture_file_digest(path)[0] for path in frozen_parser_paths
+            ),
+            "partition_source_receipt_sha256s": tuple(
+                source.capture_receipt_sha256 for source in frozen_sources
+            ),
+            "schema_sha256": hashlib.sha256(canonical_schema).hexdigest(),
+        }
     manifest = build_dataset_manifest(
         dates=dates,
         frequency=frequency,
         schema=schema,
         source_snapshot_sha256s=source_snapshot_sha256s,
         universe_snapshot_sha256=universe_snapshot_sha256,
-        partition_sha256s=tuple(
-            capture_file_digest(path)[0] for path in frozen_partitions
-        ),
+        partition_sha256s=partition_hashes,
+        partition_sources=frozen_sources,
+        **pit_inputs,
         **hashes,
     )
     values = {
@@ -283,5 +432,6 @@ def capture_dataset_manifest(
         _token=_DATASET_MANIFEST_TOKEN,
         _semantic_paths=semantic_paths,
         _partition_paths=frozen_partitions,
+        _partition_parser_paths=frozen_parser_paths,
         _captured_semantics_token=_CAPTURED_SEMANTICS_TOKEN,
     )

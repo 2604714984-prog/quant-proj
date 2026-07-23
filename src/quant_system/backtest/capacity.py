@@ -7,7 +7,7 @@ from datetime import datetime
 import math
 from typing import Literal
 
-from quant_system.data import AcceptedSession, SourceIdentity
+from quant_system.data import AcceptedSession, SourceIdentity, TypedObservationReceipt
 from quant_system.markets.common import (
     MarketDataError,
     is_finite_number,
@@ -45,6 +45,7 @@ class CapacityObservation:
     session_amount: float
     currency: str
     source: SourceIdentity
+    observation_receipt: TypedObservationReceipt | None = None
 
     def __post_init__(self) -> None:
         require_nonempty_text(self.subject_id, "subject_id")

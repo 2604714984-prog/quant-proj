@@ -8,7 +8,9 @@ from collections.abc import Iterable
 from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 import hashlib
+import inspect
 import json
+import math
 import re
 import os
 from pathlib import Path
@@ -32,6 +34,7 @@ _CASH_ACTION_TYPES = frozenset({"cash_dividend", "special_dividend"})
 _SPLIT_ACTION_TYPES = frozenset({"split", "reverse_split"})
 _CAPTURE_TOKEN = object()
 _PROVIDER_CAPTURE_TOKEN = object()
+_TYPED_OBSERVATION_TOKEN = object()
 CaptureLevel = Literal["UNCAPTURED", "GENERIC_CAPTURE", "PROVIDER_QUALIFIED_CAPTURE"]
 
 
@@ -259,6 +262,229 @@ class SourceCaptureReceipt:
             self.source.capture_receipt_sha256
         ):
             raise SourceIdentityError("capture receipt hash mismatch")
+
+
+def _canonical_observation_value(value: object) -> object:
+    if value is None or type(value) in {bool, int, str}:
+        return value
+    if isinstance(value, Decimal):
+        if not value.is_finite():
+            raise SourceIdentityError("typed observation decimals must be finite")
+        return format(value, "f")
+    if type(value) is float:
+        if not math.isfinite(value):
+            raise SourceIdentityError("typed observation floats must be finite")
+        return value
+    if type(value) is datetime:
+        return require_aware_utc(value, "typed observation datetime").isoformat()
+    if type(value) is date:
+        return value.isoformat()
+    if type(value) is list:
+        return [_canonical_observation_value(item) for item in value]
+    if type(value) is dict:
+        if any(type(key) is not str or not key for key in value):
+            raise SourceIdentityError("typed observation keys must be nonempty strings")
+        return {
+            key: _canonical_observation_value(value[key])
+            for key in sorted(value)
+        }
+    raise SourceIdentityError("typed observation contains an unsupported value")
+
+
+def _decode_provider_observations(content: bytes) -> tuple[str, tuple[dict[str, object], ...]]:
+    """Decode the one supported provider-observation envelope."""
+
+    if type(content) is not bytes:
+        raise TypeError("provider observation content must be immutable bytes")
+    try:
+        payload = json.loads(content.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise SourceIdentityError("provider observation bytes must be valid UTF-8 JSON") from exc
+    if type(payload) is not dict or set(payload) != {"schema", "observations"}:
+        raise SourceIdentityError("provider observation envelope fields are invalid")
+    schema_id = require_stable_id(payload["schema"], "schema")
+    observations = payload["observations"]
+    if type(observations) is not list or not observations:
+        raise SourceIdentityError("provider observations must be a nonempty list")
+    normalized: list[dict[str, object]] = []
+    for row in observations:
+        if type(row) is not dict or set(row) != {"kind", "subject_id", "values"}:
+            raise SourceIdentityError("provider observation row fields are invalid")
+        kind = require_stable_id(row["kind"], "kind")
+        subject_id = require_stable_id(row["subject_id"], "subject_id")
+        values = _canonical_observation_value(row["values"])
+        if type(values) is not dict or not values:
+            raise SourceIdentityError("provider observation values must be a nonempty object")
+        normalized.append(
+            {"kind": kind, "subject_id": subject_id, "values": values}
+        )
+    return schema_id, tuple(normalized)
+
+
+def _typed_parser_code_sha256() -> str:
+    return hashlib.sha256(
+        inspect.getsource(_decode_provider_observations).encode("utf-8")
+    ).hexdigest()
+
+
+@dataclass(frozen=True)
+class TypedObservationReceipt:
+    """One typed row deterministically parsed from exact provider-qualified bytes."""
+
+    source: SourceIdentity
+    schema_id: str
+    observation_kind: str
+    subject_id: str
+    values_json: str
+    row_payload_sha256: str
+    parser_code_sha256: str
+    receipt_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False, hash=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _TYPED_OBSERVATION_TOKEN:
+            raise SourceIdentityError(
+                "TypedObservationReceipt must come from parse_provider_observation"
+            )
+        require_provider_qualified_source(self.source)
+        schema_id = require_stable_id(self.schema_id, "schema_id")
+        kind = require_stable_id(self.observation_kind, "observation_kind")
+        subject = require_stable_id(self.subject_id, "subject_id")
+        try:
+            values = json.loads(self.values_json)
+        except json.JSONDecodeError as exc:
+            raise SourceIdentityError("typed observation values_json is invalid") from exc
+        canonical_values = json.dumps(
+            _canonical_observation_value(values),
+            sort_keys=True,
+            separators=(",", ":"),
+        )
+        if canonical_values != self.values_json:
+            raise SourceIdentityError("typed observation values_json is not canonical")
+        row_payload = json.dumps(
+            {
+                "kind": kind,
+                "subject_id": subject,
+                "values": values,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        row_sha = require_sha256(self.row_payload_sha256, "row_payload_sha256")
+        if hashlib.sha256(row_payload).hexdigest() != row_sha:
+            raise SourceIdentityError("typed observation row payload hash mismatch")
+        parser_sha = require_sha256(self.parser_code_sha256, "parser_code_sha256")
+        if parser_sha != _typed_parser_code_sha256():
+            raise SourceIdentityError("typed observation parser code has changed")
+        receipt_payload = json.dumps(
+            {
+                "available_at": self.source.available_at.isoformat(),
+                "capture_receipt_sha256": self.source.capture_receipt_sha256,
+                "parser_code_sha256": parser_sha,
+                "row_payload_sha256": row_sha,
+                "schema_id": schema_id,
+                "version": 1,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        if hashlib.sha256(receipt_payload).hexdigest() != require_sha256(
+            self.receipt_sha256,
+            "receipt_sha256",
+        ):
+            raise SourceIdentityError("typed observation receipt hash mismatch")
+
+
+def parse_provider_observation(
+    receipt: SourceCaptureReceipt,
+    content: bytes,
+    *,
+    observation_kind: str,
+    subject_id: str,
+) -> TypedObservationReceipt:
+    """Select exactly one typed row from bytes captured by a provider adapter."""
+
+    if not isinstance(receipt, SourceCaptureReceipt):
+        raise SourceIdentityError("receipt must be a SourceCaptureReceipt")
+    source = require_provider_qualified_source(receipt.source)
+    if len(content) != receipt.byte_count or hashlib.sha256(content).hexdigest() != (
+        source.content_sha256
+    ):
+        raise SourceIdentityError("provider bytes do not match the source receipt")
+    kind = require_stable_id(observation_kind, "observation_kind")
+    subject = require_stable_id(subject_id, "subject_id")
+    schema_id, rows = _decode_provider_observations(content)
+    selected = tuple(
+        row
+        for row in rows
+        if row["kind"] == kind and row["subject_id"] == subject
+    )
+    if len(selected) != 1:
+        raise SourceIdentityError("typed observation selector is absent or ambiguous")
+    row_payload = json.dumps(
+        selected[0],
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    values_json = json.dumps(
+        selected[0]["values"],
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    row_sha = hashlib.sha256(row_payload).hexdigest()
+    parser_sha = _typed_parser_code_sha256()
+    receipt_payload = json.dumps(
+        {
+            "available_at": source.available_at.isoformat(),
+            "capture_receipt_sha256": source.capture_receipt_sha256,
+            "parser_code_sha256": parser_sha,
+            "row_payload_sha256": row_sha,
+            "schema_id": schema_id,
+            "version": 1,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return TypedObservationReceipt(
+        source=source,
+        schema_id=schema_id,
+        observation_kind=kind,
+        subject_id=subject,
+        values_json=values_json,
+        row_payload_sha256=row_sha,
+        parser_code_sha256=parser_sha,
+        receipt_sha256=hashlib.sha256(receipt_payload).hexdigest(),
+        _token=_TYPED_OBSERVATION_TOKEN,
+    )
+
+
+def require_typed_observation(
+    receipt: TypedObservationReceipt | None,
+    *,
+    source: SourceIdentity,
+    observation_kind: str,
+    subject_id: str,
+    expected_values: dict[str, object],
+) -> TypedObservationReceipt:
+    """Verify that domain values equal the row parsed from exact provider bytes."""
+
+    if not isinstance(receipt, TypedObservationReceipt):
+        raise SourceIdentityError("provider-qualified domain values require a typed receipt")
+    receipt.__post_init__()
+    if (
+        receipt.source.capture_receipt_sha256 != source.capture_receipt_sha256
+        or receipt.observation_kind != observation_kind
+        or receipt.subject_id != subject_id
+    ):
+        raise SourceIdentityError("typed observation identity does not match domain values")
+    expected_json = json.dumps(
+        _canonical_observation_value(expected_values),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    if receipt.values_json != expected_json:
+        raise SourceIdentityError("typed observation values do not match provider bytes")
+    return receipt
 
 
 def capture_file_digest(path: Path) -> tuple[str, int]:
@@ -588,6 +814,7 @@ class CorporateActionIdentity:
     currency: str | None = None
     unit: str | None = None
     new_subject_id: str | None = None
+    observation_receipt: TypedObservationReceipt | None = None
 
     def __post_init__(self) -> None:
         if not isinstance(self.source, SourceIdentity):
@@ -809,11 +1036,14 @@ __all__ = [
     "SourceCaptureReceipt",
     "SourceIdentity",
     "SourceIdentityError",
+    "TypedObservationReceipt",
     "capture_source_bytes",
     "capture_source_file",
     "capture_github_release_asset",
     "capture_file_bytes",
     "capture_file_digest",
+    "parse_provider_observation",
+    "require_typed_observation",
     "require_trusted_source",
     "require_provider_qualified_source",
     "select_corporate_action_revision",
