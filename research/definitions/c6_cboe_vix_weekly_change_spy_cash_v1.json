@@ -1,0 +1,211 @@
+{
+  "schema_version": "c6-vix-weekly-change-spy-cash-prereg-v1",
+  "research_id": "C6_VIX_WEEKLY_CHANGE_IMPULSE_SPY_CASH_V1",
+  "mechanism_id": "C6_CBOE_VIX_WEEKLY_CHANGE_IMPULSE_SPY_CASH",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE6",
+  "derived_from": "USDEM-018_DIAGNOSTIC_ANCESTRY_ONLY",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "program_multiplicity": {
+    "cycle6_familywise_alpha": 0.0015625,
+    "sole_primary_alpha": 0.0015625,
+    "cycle1_to_cycle6_union_bound": 0.0984375,
+    "alpha_recycling": false,
+    "formal_outcome_lanes": 1
+  },
+  "economic_hypothesis": {
+    "signal": "sign of the change in official Cboe VIX close between consecutive weekly anchors",
+    "vix_increase_action": "hold non-interest-bearing cash",
+    "vix_flat_or_decrease_action": "hold SPY",
+    "exact_equality_action": "hold SPY",
+    "variant_count": 1,
+    "parameter_grid": false,
+    "not_a_retry_of": [
+      "M119-01_SPY_REALIZED_VOLATILITY_SCALING",
+      "C5_CBOE_VOL_TERM_STRUCTURE_INVERSION_SPY_CASH_V1"
+    ]
+  },
+  "signal_input": {
+    "controlling_url": "https://cdn.cboe.com/api/global/us_indices/daily_prices/VIX_History.csv",
+    "controlling_raw_sha256": "6bb2b56b85dd581c7dddacbc282f1e48d0d6d3b41824c45bcc5f7eb4803faf33",
+    "cboe_methodology_sha256": "5e0e8dd278a5e4c2e0315ff573b60a314d31946841e6fc67eac784dfba729622",
+    "fred_vixcls_cross_check_only_sha256": "d1238e16132c8660f4788f68d37be6b1ed6d04243292486c67f2c42bd858c345",
+    "allowed_fields": [
+      "DATE",
+      "CLOSE"
+    ],
+    "weekly_anchor": "last accepted XNYS session in each America/New_York Monday-Sunday bucket",
+    "availability": "METHOD_BASED_CONSERVATIVE_AVAILABILITY at 16:15 America/New_York on observation_date",
+    "missing_rule": "fail closed; no carry, interpolation, replacement week, source substitution, or row fusion"
+  },
+  "portfolio": {
+    "instrument": "SPY",
+    "account_currency": "USD",
+    "initial_capital": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "benchmark": "buy-and-hold SPY under identical split endpoints, cost, calendar, lifecycle, action, and terminal-liquidation semantics"
+  },
+  "timing": {
+    "decision": "09:00 America/New_York on the next accepted XNYS session after the weekly anchor",
+    "execution": "that accepted session official open",
+    "decision_price_session": "the exact accepted weekly-anchor signal session",
+    "decision_price_effective_at": "the accepted XNYS close_at for decision_price_session",
+    "decision_price_source_cutoff": "decision_price_source.available_at must be no later than decision_at",
+    "terminal_exit": "the final frozen split boundary",
+    "split_carry": false
+  },
+  "splits": {
+    "development": {
+      "execution_start": "2018-03-01",
+      "execution_end": "2020-12-31",
+      "complete_intervals": 147,
+      "purpose": "mechanics and state support only"
+    },
+    "validation": {
+      "execution_start": "2021-01-01",
+      "execution_end": "2023-06-30",
+      "complete_intervals": 129
+    },
+    "retrospective_holdout": {
+      "execution_start": "2023-07-01",
+      "execution_end": "2026-06-30",
+      "complete_intervals": 156,
+      "sealed_until_validation_pass": true
+    }
+  },
+  "state_support": {
+    "required_per_validation_and_holdout": [
+      "at least 104 complete weekly intervals",
+      "at least 13 SPY-state intervals",
+      "at least 13 cash-state intervals",
+      "at least four SPY-to-cash transitions",
+      "at least four cash-to-SPY transitions"
+    ],
+    "exact_frozen_counts": {
+      "development": 147,
+      "validation": 129,
+      "holdout": 156
+    },
+    "failure_rule": "INPUT_BLOCKED; alpha consumed; no SPY outcome access"
+  },
+  "validation": {
+    "intervals": 129,
+    "gates": [
+      "strategy terminal net wealth strictly above SPY",
+      "arithmetic mean paired weekly active return strictly positive",
+      "strategy maximum drawdown no worse than SPY"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout remains unopened and lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "intervals": 156,
+    "gates": [
+      "strategy terminal net wealth strictly above SPY",
+      "strategy maximum drawdown no worse than SPY",
+      "exactly 156 paired intervals",
+      "centered-null one-sided p-value at most 0.0015625",
+      "uncentered type-7 0.0015625 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap",
+      "block_length_weeks": 13,
+      "resamples": 10000,
+      "rng": "Python random.Random",
+      "seed": 1196101,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(10000 + 1)",
+      "quantile": "linear type-7",
+      "limitation": "prospectively frozen dependence assumption, not proof of complete dependence coverage; tail Monte Carlo precision cannot be repaired after outcomes"
+    }
+  },
+  "runtime_bundle_contract": {
+    "schema_version": "c6-vix-weekly-change-runtime-v1",
+    "execution_fields": [
+      "decision_price",
+      "decision_price_session",
+      "decision_price_effective_at",
+      "decision_price_source",
+      "decision_price_basis",
+      "execution_price_effective_at",
+      "execution_price_basis"
+    ],
+    "decision_price_rule": "finite positive raw close for the exact weekly-anchor signal session",
+    "decision_price_basis_rule": "raw_pre_action_per_old_share exactly when an ordinary execution-day corporate action exists; otherwise raw_execution_units",
+    "calendar_rule": "every reconstruction and epoch identity and row is XNYS in America/New_York; duplicate epoch calendar bytes are rejected; every universe snapshot binds the exact selected decision-calendar identity",
+    "preclaim_identity_preflight": "capture and fully validate the exact stage bundle, weekly-state binding, calendars, universe membership and lifecycle identities before publishing the technical-continuation claim; strategy simulation and decision remain forbidden until after claim publication",
+    "state_cross_binding": "each execution point binds the exact accepted outcome-free weekly-state row SHA256",
+    "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
+  },
+  "input_identities": {
+    "weekly_state_input_path": "/home/rongyu/workspace/quant-data/staging/c6_vix_weekly_change_impulse_spy_cash_v1/vix_weekly_change_input.json",
+    "weekly_state_input_sha256": "3a221b43b625634f456a4e29a010b7eb8746508933aaeba1b29e3540911a4491",
+    "weekly_state_receipt_sha256": "e5ba49693658d2deabf53d3df4c6c6fcb51e0c506c9b3ce367246f1b4bf75812",
+    "accepted_xnys_calendar_path": "/home/rongyu/workspace/quant-data/staging/us_fomc_policy_state_v2/accepted_xnys_calendar_projection_dst_repaired_v2.jsonl",
+    "accepted_xnys_calendar_sha256": "08b1722c675012d89e0b4f92ed51f51160adbd1d54961c093c52101c067fc553",
+    "validation_bundle_path": "/home/rongyu/workspace/quant-data/staging/c6_vix_weekly_change_impulse_spy_cash_v1/spy_validation_runtime_bundle.json",
+    "validation_bundle_sha256": "51c402ef95ab93a235dd38c862be517f9f0ed06fa47c3bb91becc33e914aa2d6",
+    "holdout_bundle_path": "/home/rongyu/workspace/quant-data/staging/c6_vix_weekly_change_impulse_spy_cash_v1/spy_holdout_runtime_bundle.json",
+    "holdout_bundle_sha256": "120eeeacd724af31125c7209985621d90d1edd1c95cfe068098fc3bf903a8db1",
+    "prior_validation_claim_path": "/home/rongyu/workspace/quant-data/private_results/c6_vix_weekly_change_spy_cash_v1_validation/claim.json",
+    "prior_validation_claim_sha256": "b238f671e9c1f5f71106da5ca31dc54fc8389f6e61b138dc1f911710d9bd2d03",
+    "prior_validation_result_path": "/home/rongyu/workspace/quant-data/private_results/c6_vix_weekly_change_spy_cash_v1_validation/result.json",
+    "prior_validation_result_sha256": "72b76ad796245c031a83bc42afd6277248ab18c6fb0a883eb0610862de715494",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "adapter_sha256": "8be3db4b0bf24f55f3c93ef38c844563f8b2e1f8310aaec07dbae28cad022f52",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
+  },
+  "runtime_materialization": {
+    "status": "CORRECTED_HASHES_PATCHED_AWAITING_PREOUTCOME_TECHNICAL_CONTINUATION_1",
+    "placeholder_policy": "runner must reject placeholders before creating a one-use claim"
+  },
+  "one_use": {
+    "technical_continuation_id": "PREOUTCOME_TECHNICAL_CONTINUATION_1",
+    "technical_continuation_rule": "the prior validation claim/result remain immutable and are hash-bound; this single continuation repairs only pre-outcome bundle identity wiring and does not change economic semantics",
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c6_vix_weekly_change_spy_cash_v1_technical_continuation_1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c6_vix_weekly_change_spy_cash_v1_technical_continuation_1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c6_vix_weekly_change_spy_cash_v1_technical_continuation_1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c6_vix_weekly_change_spy_cash_v1_technical_continuation_1_holdout/result.json",
+    "runtime_bundle_preflight_before_claim": true,
+    "claim_before_strategy_simulation": true,
+    "claim_and_result_mode": "0600",
+    "rerun_after_any_claim": false
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "input_error_before_claim": "NO_CLAIM_NO_RESULT",
+    "input_error_after_claim": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "strategy_candidate_available": false
+  },
+  "forbidden_repairs": [
+    "threshold change",
+    "frequency change",
+    "source substitution or blending",
+    "bootstrap block-length change",
+    "rerun",
+    "holdout reopening"
+  ],
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_read_or_write": false,
+    "prospective_forward_access": false,
+    "outcome_access_before_patched_runtime_identity": false,
+    "strategy_candidate_available": false,
+    "rerun": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
