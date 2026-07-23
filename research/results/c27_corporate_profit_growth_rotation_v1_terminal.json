@@ -1,0 +1,60 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C27_CORPORATE_PROFIT_GROWTH_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE27",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053939252",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053989330",
+    "preoutcome_commit": "b9c29924e6a084917ac9f25e3b860f2341ce747d",
+    "preoutcome_tree": "7d0172a727eaee8ddfed67472b0906a3263c2892",
+    "definition_sha256": "d3bb524630bd32823bd7bdc6464f5973d92271eac44b00f8290df36933fa4633",
+    "adapter_sha256": "e6aa42dc3b72a784aaaab4a7573150694df7c7d416e406ed942f4d587f33722d",
+    "runner_sha256": "164733ca8ba80b2dfcd5f2d7c19a9279f77d7943670a492ec9018cb8774e7b73",
+    "input_packet_sha256": "a862a5721313c45579099be163ac4a3248e0be90cd680080df2c0c9c4cf458a0"
+  },
+  "one_use_validation": {
+    "claim_sha256": "6639f8507cffca57a3856390623da78e1039cd8571748d0c3ff9d606a05c5445",
+    "result_sha256": "54ee0fcc861a13e9cb09ca4ac16b2b080ad4dff283d1b53938ce1e90b714aa83",
+    "observed_intervals": 28,
+    "gates_passed": 1,
+    "gates_total": 3,
+    "passed_gates": [
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator"
+    ],
+    "failed_gates": [
+      "arithmetic_mean_paired_active_return_strictly_positive",
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator"
+    ],
+    "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "one_use_holdout": {
+    "opened": false,
+    "reason": "validation failed the frozen all-three-gates requirement"
+  },
+  "program_multiplicity": {
+    "cycle27_familywise_alpha": 0.0000000007450580596923828125,
+    "cycle1_to_cycle27_union_bound": 0.0999999992549419403076171875,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "method_limitation": "Quarterly after-tax corporate profits are broad, lagged and revisable; the exact-prior-quarter sign rule is a coarse earnings-cycle proxy, and the frozen three-month bootstrap block is a dependence assumption rather than proof of complete coverage.",
+  "terminal_state": {
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the profit series, growth direction, vintage rule, quarter comparison, threshold, transform, target mapping, comparator, cost, split, bootstrap, source or signal combination."
+}
