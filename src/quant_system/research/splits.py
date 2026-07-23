@@ -7,6 +7,9 @@ from dataclasses import dataclass
 from datetime import date, datetime, timedelta
 import hashlib
 import json
+import math
+import random
+import statistics
 from typing import Literal, Sequence, TypeAlias
 
 
@@ -48,6 +51,13 @@ class SplitEvaluation:
     effective_n: float
     overlap_corrected: bool
     manifest_sha256: str
+    returns_sha256: str
+    estimator_sha256: str
+    statistic: float
+    standard_error: float
+    hac_bandwidth: int | None
+    block_length: int | None
+    bootstrap_replicates: int | None
 
 
 def build_split_manifest(
@@ -149,8 +159,11 @@ def evaluate_split(
     manifest: SplitManifest,
     *,
     selected_sample_ids: Sequence[str],
+    returns: Sequence[float],
     method: EvaluationMethod,
-    effective_n: float,
+    hac_bandwidth: int | None = None,
+    block_length: int | None = None,
+    bootstrap_replicates: int = 1000,
 ) -> SplitEvaluation:
     if not isinstance(manifest, SplitManifest):
         raise TypeError("manifest must be a SplitManifest")
@@ -172,12 +185,96 @@ def evaluate_split(
     )
     if method == "non_overlapping" and overlapping:
         raise ValueError("non-overlapping evaluation selected overlapping labels")
-    if not isinstance(effective_n, (int, float)) or isinstance(effective_n, bool):
-        raise ValueError("effective_n must be numeric")
-    if not 0 < float(effective_n) <= len(selected):
-        raise ValueError("effective_n must be in (0, nominal_n]")
-    if method == "non_overlapping" and float(effective_n) != len(selected):
-        raise ValueError("non-overlapping evaluation effective_n must equal nominal_n")
+    frozen_returns = tuple(returns)
+    if len(frozen_returns) != len(selected) or len(frozen_returns) < 2 or any(
+        not isinstance(value, (int, float))
+        or isinstance(value, bool)
+        or not math.isfinite(float(value))
+        for value in frozen_returns
+    ):
+        raise ValueError("returns must provide at least two finite values in selected order")
+    values = tuple(float(value) for value in frozen_returns)
+    mean = statistics.fmean(values)
+    sample_variance = statistics.variance(values)
+    estimator = {
+        "method": method,
+        "version": 1,
+        "hac_bandwidth": hac_bandwidth,
+        "block_length": block_length,
+        "bootstrap_replicates": (
+            bootstrap_replicates if method == "block_bootstrap" else None
+        ),
+    }
+    if method == "non_overlapping":
+        if hac_bandwidth is not None or block_length is not None:
+            raise ValueError("non-overlapping evaluation does not accept correction parameters")
+        standard_error = math.sqrt(sample_variance / len(values))
+        effective_n = float(len(values))
+    elif method == "hac":
+        if (
+            type(hac_bandwidth) is not int
+            or not 1 <= hac_bandwidth < len(values)
+            or block_length is not None
+        ):
+            raise ValueError("HAC requires bandwidth in [1, nominal_n)")
+        centered = tuple(value - mean for value in values)
+        long_run_variance = math.fsum(value * value for value in centered) / len(values)
+        for lag in range(1, hac_bandwidth + 1):
+            covariance = math.fsum(
+                centered[index] * centered[index - lag]
+                for index in range(lag, len(values))
+            ) / len(values)
+            long_run_variance += 2 * (1 - lag / (hac_bandwidth + 1)) * covariance
+        if long_run_variance <= 0 or not math.isfinite(long_run_variance):
+            raise ValueError("HAC long-run variance must be positive and finite")
+        standard_error = math.sqrt(long_run_variance / len(values))
+        effective_n = min(
+            float(len(values)),
+            max(1.0, sample_variance / (standard_error * standard_error)),
+        )
+    else:
+        if (
+            type(block_length) is not int
+            or not 2 <= block_length <= len(values)
+            or hac_bandwidth is not None
+            or type(bootstrap_replicates) is not int
+            or bootstrap_replicates < 200
+        ):
+            raise ValueError(
+                "block bootstrap requires block_length in [2, nominal_n] "
+                "and at least 200 replicates"
+            )
+        seed_payload = json.dumps(
+            {"returns": values, **estimator},
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        generator = random.Random(int(hashlib.sha256(seed_payload).hexdigest(), 16))
+        bootstrap_means: list[float] = []
+        for _ in range(bootstrap_replicates):
+            sample: list[float] = []
+            while len(sample) < len(values):
+                start = generator.randrange(len(values))
+                sample.extend(
+                    values[(start + offset) % len(values)]
+                    for offset in range(block_length)
+                )
+            bootstrap_means.append(statistics.fmean(sample[: len(values)]))
+        standard_error = statistics.stdev(bootstrap_means)
+        if standard_error <= 0 or not math.isfinite(standard_error):
+            raise ValueError("block-bootstrap standard error must be positive and finite")
+        effective_n = min(
+            float(len(values)),
+            max(1.0, sample_variance / (standard_error * standard_error)),
+        )
+    if standard_error <= 0 or not math.isfinite(standard_error):
+        raise ValueError("evaluation standard error must be positive and finite")
+    returns_sha = hashlib.sha256(
+        json.dumps(values, separators=(",", ":")).encode()
+    ).hexdigest()
+    estimator_sha = hashlib.sha256(
+        json.dumps(estimator, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
     return SplitEvaluation(
         method,
         selected,
@@ -185,6 +282,13 @@ def evaluate_split(
         float(effective_n),
         method in {"hac", "block_bootstrap"} or not overlapping,
         manifest.manifest_sha256,
+        returns_sha,
+        estimator_sha,
+        mean / standard_error,
+        standard_error,
+        hac_bandwidth,
+        block_length,
+        bootstrap_replicates if method == "block_bootstrap" else None,
     )
 
 

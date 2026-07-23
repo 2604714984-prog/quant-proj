@@ -126,18 +126,36 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
         evaluate_split(
             manifest,
             selected_sample_ids=tuple(sample.sample_id for sample in manifest.samples),
+            returns=(0.01, -0.02, 0.03, 0.01, -0.01, 0.02, 0.04),
             method="non_overlapping",
-            effective_n=7,
         )
     corrected = evaluate_split(
         manifest,
         selected_sample_ids=tuple(sample.sample_id for sample in manifest.samples),
+        returns=(0.01, -0.02, 0.03, 0.01, -0.01, 0.02, 0.04),
         method="hac",
-        effective_n=2.5,
+        hac_bandwidth=2,
     )
     require_split_evaluation_for_candidate(corrected)
     assert corrected.nominal_n == 7
-    assert corrected.effective_n == 2.5
+    assert 1 <= corrected.effective_n <= 7
+    assert corrected.standard_error > 0
+    assert corrected.hac_bandwidth == 2
+    assert len(corrected.returns_sha256) == 64
+    assert len(corrected.estimator_sha256) == 64
+
+    bootstrapped = evaluate_split(
+        manifest,
+        selected_sample_ids=tuple(sample.sample_id for sample in manifest.samples),
+        returns=(0.01, -0.02, 0.03, 0.01, -0.01, 0.02, 0.04),
+        method="block_bootstrap",
+        block_length=3,
+        bootstrap_replicates=250,
+    )
+    require_split_evaluation_for_candidate(bootstrapped)
+    assert bootstrapped.block_length == 3
+    assert bootstrapped.bootstrap_replicates == 250
+    assert bootstrapped.standard_error > 0
 
 
 def test_same_day_multi_security_panel_has_distinct_stable_sample_ids() -> None:
