@@ -1,0 +1,346 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-23T23:10:00+08:00",
+  "audit_round": 4,
+  "audited_code_head": "d46a993d95b0b3454a10134c2ef822f17483ddc6",
+  "round4_document_head": "34b066efc53a1356c45cfa5b16bcb722e3bced70",
+  "remediated_code_head": "77c094ebaea5d5b04ac7a767b0322b6ba4c511e2",
+  "branch": "agent/external-audit-codex-remediation-20260723",
+  "pull_request": 126,
+  "pull_request_state": "DRAFT",
+  "external_audit_verdict": "PENDING_UNIFIED_REVIEW",
+  "code_remediation_complete_for_round4_findings": true,
+  "only_external_evidence_remaining_claim": "PENDING_UNIFIED_REVIEW",
+  "architecture": {
+    "new_manager_or_dispatcher": false,
+    "new_ticket_or_registry": false,
+    "new_proxy_layer": false,
+    "second_canonical_writer": false,
+    "broker_or_paper_live_path_restored": false,
+    "mutable_data_written_to_git": false,
+    "fixed_machine_path_added": false,
+    "fail_closed_weakened": false
+  },
+  "authorizations": {
+    "strategy_candidate_available": false,
+    "recommendation_authorized": false,
+    "paper_trading_authorized": false,
+    "live_trading_authorized": false,
+    "automatic_execution_authorized": false
+  },
+  "findings": [
+    {
+      "finding_id": "RA4-001",
+      "severity": "HIGH",
+      "status": "CODE_CLOSED_EXTERNAL_EVIDENCE_BLOCKED",
+      "commit_sha": "15c234b7957c13374fb90ad45fd0851099077d34",
+      "files": [
+        "src/quant_system/data/source_identity.py",
+        "tests/test_source_capture.py"
+      ],
+      "functions": [
+        "SourceCaptureLevel",
+        "capture_github_release_asset",
+        "require_provider_qualified_source"
+      ],
+      "change": "GitHub Release assets are transport captures and cannot satisfy the provider-qualified candidate gate.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_source_capture.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "No real authoritative market-data provider adapter or independent provider receipt was available."
+      ]
+    },
+    {
+      "finding_id": "RA4-002",
+      "severity": "HIGH",
+      "status": "CODE_CLOSED_EXTERNAL_EVIDENCE_BLOCKED",
+      "commit_sha": "4c843197330dad418f0db59328ca8dd90b306e57",
+      "files": [
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_event_loop.py"
+      ],
+      "functions": [
+        "ExecutionInput",
+        "run_static_rebalance"
+      ],
+      "change": "Limit regime, limit-up/down and halt/no-open inputs require typed receipts; no-open outcomes are observed after the session event and cannot be backfilled into a pre-open decision.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_event_loop.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "Real exchange/provider typed constraint and halt evidence was unavailable."
+      ]
+    },
+    {
+      "finding_id": "RA4-003",
+      "severity": "HIGH",
+      "status": "CODE_CLOSED_EXTERNAL_EVIDENCE_BLOCKED",
+      "commit_sha": "df733870363764b71afb56e025be763b25bf6316",
+      "files": [
+        "src/quant_system/research/experiments.py",
+        "tests/test_experiment_receipts.py"
+      ],
+      "functions": [
+        "ExperimentAnchorReceipt",
+        "ExperimentLedger.freeze_family",
+        "ExperimentLedger.begin_holdout"
+      ],
+      "change": "A two-phase typed anchor is created after family freeze and before holdout; it commits the canonical ledger head, family identity, preregistration parameters and event count.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_experiment_receipts.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "No independent provider-qualified anchor receipt was available."
+      ]
+    },
+    {
+      "finding_id": "RA4-004",
+      "severity": "HIGH",
+      "status": "CODE_CLOSED_EXTERNAL_EVIDENCE_BLOCKED",
+      "commit_sha": "df733870363764b71afb56e025be763b25bf6316",
+      "files": [
+        "src/quant_system/research/experiments.py",
+        "tests/test_experiment_receipts.py"
+      ],
+      "functions": [
+        "ExperimentLedger",
+        "ExperimentLedger.append",
+        "ExperimentLedger.freeze_family"
+      ],
+      "change": "Experiment events use one canonical data-root ledger with an inter-process file lock; alternate NDJSON paths and fresh-process family splitting are rejected.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_experiment_receipts.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "Historical experiment multiplicity outside the newly enforced canonical ledger cannot be reconstructed."
+      ]
+    },
+    {
+      "finding_id": "RA4-005",
+      "severity": "HIGH",
+      "status": "CODE_CLOSED",
+      "commit_sha": "583db3ae9c46f54773dd4f0ecf62e51f069a8fbb",
+      "files": [
+        "src/quant_system/backtest/event_loop.py",
+        "src/quant_system/research/identity.py",
+        "tests/test_event_loop.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "functions": [
+        "FinalRunReceipt",
+        "CandidateRunConfig",
+        "run_candidate_rebalance"
+      ],
+      "change": "The final-stage identity is derived from the actual complete ordered StagePlan result chain and its final NAV; callers can no longer supply a free completed_final_stage_hash.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_event_loop.py tests/test_research_splits_identity.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    },
+    {
+      "finding_id": "RA4-006",
+      "severity": "HIGH",
+      "status": "CODE_CLOSED",
+      "commit_sha": "903cca3c0d515d64a5f61ddf87b65bc781e828f8",
+      "files": [
+        "src/quant_system/research/splits.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "functions": [
+        "evaluate_split",
+        "SplitEvaluation"
+      ],
+      "change": "Non-overlap inference uses a small-sample Student t distribution, HAC requires a larger sample and records its distribution, and block bootstrap uses a centered empirical null instead of a normal approximation.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_research_splits_identity.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    },
+    {
+      "finding_id": "RA4-007",
+      "severity": "HIGH",
+      "status": "CODE_CLOSED",
+      "commit_sha": "903cca3c0d515d64a5f61ddf87b65bc781e828f8",
+      "files": [
+        "src/quant_system/research/splits.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "functions": [
+        "evaluate_split",
+        "require_adjusted_holdout_for_candidate"
+      ],
+      "change": "Same-session security observations are aggregated into daily portfolio returns; evaluation spans one fold only and rejects cross-fold label overlap.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_research_splits_identity.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    },
+    {
+      "finding_id": "RA4-008",
+      "severity": "HIGH",
+      "status": "CODE_CLOSED_EXTERNAL_EVIDENCE_BLOCKED",
+      "commit_sha": "9ec49225f8e9391793fbbf539bdf12a3e84f1a5b",
+      "files": [
+        "src/quant_system/research/identity.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "functions": [
+        "TransformationReceipt.capture",
+        "TransformationReceipt.replay",
+        "DatasetManifest.capture"
+      ],
+      "change": "Dataset identity now requires a replayable transformation receipt that executes frozen code against committed raw sources, configuration, schema and as-of inputs and verifies deterministic output bytes.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_research_splits_identity.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "No real authoritative raw dataset and production transformation receipt was available; fixtures demonstrate mechanism only."
+      ]
+    },
+    {
+      "finding_id": "RA4-009",
+      "severity": "MEDIUM",
+      "status": "CODE_CLOSED_EXTERNAL_EVIDENCE_BLOCKED",
+      "commit_sha": "7d8d5d0a0a962289d01fa73d268ff200d076c014",
+      "files": [
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_event_loop.py"
+      ],
+      "functions": [
+        "serialize_candidate_run_bundle",
+        "verify_candidate_run_bundle"
+      ],
+      "change": "Run bundle v2 embeds canonical candidate inputs, identities and final portfolio artifacts and replays candidate identity, receipt chains and NAV rather than only rehashing the submitted chain.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_event_loop.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "Replay against real provider-qualified source and execution evidence remains externally blocked."
+      ]
+    },
+    {
+      "finding_id": "RA4-010",
+      "severity": "MEDIUM",
+      "status": "CODE_CLOSED",
+      "commit_sha": "86fadaaa1166fdba7ade2a7ea14082378e061361",
+      "files": [
+        "src/quant_system/data/source_identity.py",
+        "tests/test_source_capture.py"
+      ],
+      "functions": [
+        "TypedSourceParser",
+        "_parser_module_sha256"
+      ],
+      "change": "Typed parser identity commits the complete parser module artifact, including canonicalization helpers.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_source_capture.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    },
+    {
+      "finding_id": "RA4-011",
+      "severity": "MEDIUM",
+      "status": "CODE_CLOSED",
+      "commit_sha": "77c094ebaea5d5b04ac7a767b0322b6ba4c511e2",
+      "files": [
+        "src/quant_system/cli.py",
+        "src/quant_system/config.py",
+        "src/quant_system/data/writer.py",
+        "tests/test_config.py",
+        "tests/test_data_cli.py",
+        "tests/test_data_writer.py"
+      ],
+      "functions": [
+        "WriterSettings",
+        "CanonicalWriter.ensure_target_contract",
+        "CanonicalWriter.write_rows",
+        "_run_data_write"
+      ],
+      "change": "Every writer target has a frozen minimum capture-grade contract; unconfigured targets fail closed and an existing target cannot be downgraded.",
+      "tests": {
+        "command": "/tmp/quant-r4-venv/bin/python -m pytest tests/test_config.py tests/test_data_cli.py tests/test_data_writer.py -q",
+        "result": "PASS"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    }
+  ],
+  "validation": {
+    "p0_full": {
+      "commands": [
+        "/tmp/quant-r4-venv/bin/ruff check .",
+        "/tmp/quant-r4-venv/bin/python -m pytest -q"
+      ],
+      "result": "PASS: Ruff; 264 passed"
+    },
+    "p1_full": {
+      "commands": [
+        "/tmp/quant-r4-venv/bin/ruff check .",
+        "/tmp/quant-r4-venv/bin/python -m pytest -q"
+      ],
+      "result": "PASS: Ruff; 265 passed in 3.48s"
+    },
+    "wheel": {
+      "path": "quant_proj-2.0.0-py3-none-any.whl",
+      "sha256": "098e1362148668be8ce478b651cee7015cc6f41af272f40f21b6ba8716483a67",
+      "commands": [
+        "python3 -m venv /tmp/quant-r4-wheel",
+        "/tmp/quant-r4-wheel/bin/pip install quant_proj-2.0.0-py3-none-any.whl pytest",
+        "/tmp/quant-r4-wheel/bin/pip check",
+        "env -u QUANT_DATA_ROOT -u QUANT_CONFIG PYTHONPATH= /tmp/quant-r4-wheel/bin/quant info",
+        "PYTHONPATH= /tmp/quant-r4-wheel/bin/python -m pytest tests -q --override-ini=pythonpath="
+      ],
+      "result": "PASS: no broken requirements; import resolved from site-packages; UNBOUND_DATA_ROOT; database_exists=false; 265 passed in 3.54s"
+    }
+  },
+  "execution_accounting": {
+    "database_writes": 0,
+    "market_data_provider_requests": 0,
+    "github_requests": "Used only to read/update the existing PR and audit artifacts; not treated as provider evidence.",
+    "fixture_scope": "Fixtures validate mechanisms only and do not close real-data or independent-evidence findings."
+  },
+  "external_evidence": [
+    {
+      "finding_id": "QF-014/EA-001",
+      "status": "BLOCKED_EXTERNAL_EVIDENCE",
+      "reason": "Independent reviewer receipt and Release asset verification are not available to this remediation task."
+    },
+    {
+      "finding_id": "RA4-001/RA4-002/RA4-003/RA4-004/RA4-008/RA4-009",
+      "status": "BLOCKED_EXTERNAL_EVIDENCE",
+      "reason": "No authoritative provider observations, real raw partitions, production transformation receipts, independent anchor or real execution evidence were available. No fixture is used to claim closure."
+    }
+  ]
+}
