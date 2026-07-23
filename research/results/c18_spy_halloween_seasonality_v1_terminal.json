@@ -1,0 +1,56 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C18_SPY_HALLOWEEN_SEASONALITY_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE18",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5052996193",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053070956",
+    "definition_sha256": "6374002b816a256deb8cc60bcd36c64a904e1efde9328d27976301c44b1b0c91",
+    "adapter_sha256": "1d7979b62bd2c051581a4cab262fae4ef380252bcf76b60467b8b47278f9cbea",
+    "runner_sha256": "50295b0d55002de9a3d4787361512eed64741b1bd105ea8f0ed2d0ddadabfd2f",
+    "input_packet_sha256": "e20d59b3dcda61e592292c3b502a88073367d146867c6aa09cea01b48496f4f9",
+    "runtime_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a"
+  },
+  "one_use_validation": {
+    "claim_sha256": "56f0d42aa78c878d7245cc9f84fd04da27b64f2108d99f90f7506147b87122dd",
+    "result_sha256": "f87cd44c0e3c123c7ea2d92857d13decf06c373bfa5684d01646976d7c311a48",
+    "observed_intervals": 28,
+    "gates_passed": 1,
+    "gates_total": 3,
+    "passed_gates": [
+      "strategy_maximum_drawdown_no_worse_than_spy"
+    ],
+    "failed_gates": [
+      "arithmetic_mean_paired_active_return_strictly_positive",
+      "strategy_terminal_net_wealth_strictly_above_spy"
+    ],
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "program_multiplicity": {
+    "cycle18_familywise_alpha": 0.0000003814697265625,
+    "cycle1_to_cycle18_union_bound": 0.0999996185302734375,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "terminal_state": {
+    "retrospective_holdout_opened": false,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "source_switch_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the month window, day offset, cash accrual, cost, comparator, split, filter, trend overlay, source or signal combination."
+}
