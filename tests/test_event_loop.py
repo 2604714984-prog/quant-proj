@@ -285,6 +285,11 @@ def _input(
     a_share_action_types: tuple[str, ...] = (),
 ) -> ExecutionInput:
     timezone_name = execution.exchange_timezone
+    source_available_at = (
+        execution.open_at
+        if execution_price_source_available_at is None
+        else execution_price_source_available_at
+    )
     decision_reference = (
         (10.0 if price is None else float(price))
         if decision_price is None
@@ -297,9 +302,7 @@ def _input(
         "USD" if market == "us" else "CNY",
         _source(
             source_label or f"bar-{symbol}",
-            execution.open_at
-            if execution_price_source_available_at is None
-            else execution_price_source_available_at,
+            source_available_at,
         ),
         _statuses(
             symbol,
@@ -333,6 +336,11 @@ def _input(
         )
         if market == "a_share"
         else None,
+        no_open_observed_at=(
+            source_available_at
+            if execution_price_basis == "confirmed_no_open_event"
+            else None
+        ),
     )
 
 
@@ -696,7 +704,7 @@ def test_execution_price_basis_changes_bound_identity_without_changing_receipts(
     assert first.stage_hash != second.stage_hash
 
 
-def test_confirmed_no_open_halt_accepts_preopen_source_and_binds_identity() -> None:
+def test_confirmed_no_open_halt_requires_post_open_source_and_binds_identity() -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14))
     calendar = _calendar(days, "America/New_York")
     signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
@@ -706,7 +714,7 @@ def test_confirmed_no_open_halt_accepts_preopen_source_and_binds_identity() -> N
     portfolio.start_session(days[0])
     portfolio.buy("ABC", 10, 10, days[0])
     before = deepcopy(portfolio.__dict__)
-    first_row = _input(
+    preopen_row = _input(
         "ABC",
         "us",
         execution,
@@ -717,9 +725,20 @@ def test_confirmed_no_open_halt_accepts_preopen_source_and_binds_identity() -> N
         execution_price_source_available_at=halt_notice_at,
         execution_price_basis="confirmed_no_open_event",
     )
+    first_row = _input(
+        "ABC",
+        "us",
+        execution,
+        price=None,
+        action_types=("trading_halt",),
+        decision_price=10,
+        source_label="halt-notice-v1",
+        execution_price_source_available_at=execution.open_at,
+        execution_price_basis="confirmed_no_open_event",
+    )
     second_row = replace(
         first_row,
-        source=_source("halt-notice-v2", halt_notice_at),
+        source=_source("halt-notice-v2", execution.open_at),
     )
     arguments = {
         "signal_session": days[0],
@@ -727,6 +746,13 @@ def test_confirmed_no_open_halt_accepts_preopen_source_and_binds_identity() -> N
         "target_weights": lambda _: {},
     }
 
+    with pytest.raises(MarketDataError, match="post-event observation time"):
+        _run_static_rebalance(
+            portfolio,
+            calendar,
+            execution_inputs=(preopen_row,),
+            **arguments,
+        )
     first = _run_static_rebalance(
         portfolio,
         calendar,
@@ -752,7 +778,7 @@ def test_confirmed_no_open_event_contract_fails_before_callback() -> None:
     calendar = _calendar(days, "America/New_York")
     signal = calendar.session_on(days[0], as_of=datetime(2026, 7, 13, 22, tzinfo=UTC))
     execution = calendar.session_on(days[1], as_of=signal.close_at)
-    notice_at = execution.open_at - timedelta(hours=1, minutes=30)
+    notice_at = execution.open_at
     portfolio = Portfolio.us(1_000, costs=TransactionCostModel())
     portfolio.start_session(days[0])
     portfolio.buy("ABC", 10, 10, days[0])

@@ -308,6 +308,9 @@ class ExecutionInput:
     limit_regime: LimitRegime | None = None
     adjustment_receipt: AShareAdjustmentReceipt | None = None
     execution_observation_receipt: TypedObservationReceipt | None = None
+    execution_constraints_observation_receipt: TypedObservationReceipt | None = None
+    no_open_observation_receipt: TypedObservationReceipt | None = None
+    no_open_observed_at: datetime | None = None
     decision_observation_receipt: TypedObservationReceipt | None = None
 
 
@@ -1435,6 +1438,38 @@ def _require_candidate_typed_values(
                 "symbol": row.symbol,
             },
         )
+        if row.market == "a_share":
+            require_typed_observation(
+                row.execution_constraints_observation_receipt,
+                source=row.source,
+                observation_kind="a_share_execution_constraints",
+                subject_id=row.symbol,
+                expected_values={
+                    "down_limit": row.down_limit,
+                    "effective_at": row.execution_price_effective_at,
+                    "is_suspended": row.is_suspended,
+                    "limit_regime": row.limit_regime,
+                    "symbol": row.symbol,
+                    "up_limit": row.up_limit,
+                },
+            )
+        if row.execution_price_basis == _NO_OPEN_EVENT_BASIS:
+            require_typed_observation(
+                row.no_open_observation_receipt,
+                source=row.source,
+                observation_kind="market_no_open_event",
+                subject_id=row.symbol,
+                expected_values={
+                    "effective_at": row.execution_price_effective_at,
+                    "event_type": (
+                        "terminal"
+                        if row.terminal_action is not None
+                        else "trading_halt"
+                    ),
+                    "observed_at": row.no_open_observed_at,
+                    "symbol": row.symbol,
+                },
+            )
         if row.decision_price_source is not None:
             require_typed_observation(
                 row.decision_observation_receipt,
@@ -1743,6 +1778,20 @@ def _inputs(
             row.up_limit is not None or row.down_limit is not None
         ):
             raise MarketDataError("no-limit regime cannot carry limit fields")
+        if confirmed_no_open:
+            observed_at = row.no_open_observed_at
+            if (
+                not isinstance(observed_at, datetime)
+                or observed_at.tzinfo is None
+                or observed_at.utcoffset() is None
+                or observed_at.astimezone(timezone.utc) < effective_at
+                or observed_at.astimezone(timezone.utc) != row.source.available_at
+            ):
+                raise MarketDataError(
+                    "confirmed no-open event requires its post-event observation time"
+                )
+        elif row.no_open_observed_at is not None or row.no_open_observation_receipt is not None:
+            raise MarketDataError("no-open evidence is only valid for confirmed no-open events")
         if row.market == "us" and (
             row.is_suspended
             or row.up_limit is not None
