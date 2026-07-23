@@ -15,6 +15,7 @@ from pathlib import Path
 import stat
 from typing import Literal
 from urllib.parse import urlparse
+from urllib.request import Request, urlopen
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 
@@ -30,6 +31,8 @@ _ACTION_TYPES = frozenset(ActionType.__args__)
 _CASH_ACTION_TYPES = frozenset({"cash_dividend", "special_dividend"})
 _SPLIT_ACTION_TYPES = frozenset({"split", "reverse_split"})
 _CAPTURE_TOKEN = object()
+_PROVIDER_CAPTURE_TOKEN = object()
+CaptureLevel = Literal["UNCAPTURED", "GENERIC_CAPTURE", "PROVIDER_QUALIFIED_CAPTURE"]
 
 
 class SourceIdentityError(ValueError):
@@ -96,9 +99,11 @@ def _capture_payload(
     supersedes_revision_id: str | None,
     publication_evidence_sha256: str,
     url_migration_receipt_sha256: str | None,
+    capture_level: CaptureLevel,
 ) -> bytes:
     payload = {
         "available_at": require_aware_utc(available_at, "available_at").isoformat(),
+        "capture_level": capture_level,
         "byte_count": byte_count,
         "content_sha256": require_sha256(content_sha256),
         "provider_id": require_stable_id(provider_id, "provider_id"),
@@ -135,6 +140,7 @@ class SourceIdentity:
     capture_byte_count: int | None = None
     publication_evidence_sha256: str | None = None
     url_migration_receipt_sha256: str | None = None
+    capture_level: CaptureLevel = "UNCAPTURED"
     _capture_token: object | None = field(
         default=None,
         repr=False,
@@ -174,6 +180,12 @@ class SourceIdentity:
         if migration is not None:
             migration = require_sha256(migration, "url_migration_receipt_sha256")
         object.__setattr__(self, "url_migration_receipt_sha256", migration)
+        if self.capture_level not in {
+            "UNCAPTURED",
+            "GENERIC_CAPTURE",
+            "PROVIDER_QUALIFIED_CAPTURE",
+        }:
+            raise SourceIdentityError("unsupported capture_level")
         capture_fields = (
             self.capture_receipt_sha256,
             self.capture_byte_count,
@@ -203,9 +215,15 @@ class SourceIdentity:
                     supersedes_revision_id=supersedes,
                     publication_evidence_sha256=publication_sha,
                     url_migration_receipt_sha256=migration,
+                    capture_level=self.capture_level,
                 )
             ).hexdigest()
-            if self._capture_token is not _CAPTURE_TOKEN or receipt_sha != expected:
+            expected_token = (
+                _PROVIDER_CAPTURE_TOKEN
+                if self.capture_level == "PROVIDER_QUALIFIED_CAPTURE"
+                else _CAPTURE_TOKEN
+            )
+            if self._capture_token is not expected_token or receipt_sha != expected:
                 raise SourceIdentityError(
                     "trusted source identities must come from the capture entrypoint"
                 )
@@ -213,10 +231,16 @@ class SourceIdentity:
             object.__setattr__(self, "publication_evidence_sha256", publication_sha)
         elif self._capture_token is not None:
             raise SourceIdentityError("capture token cannot be supplied without a complete receipt")
+        elif self.capture_level != "UNCAPTURED":
+            raise SourceIdentityError("uncaptured source must use UNCAPTURED capture_level")
 
     @property
     def is_trusted_capture(self) -> bool:
-        return self._capture_token is _CAPTURE_TOKEN
+        return self._capture_token in {_CAPTURE_TOKEN, _PROVIDER_CAPTURE_TOKEN}
+
+    @property
+    def is_provider_qualified_capture(self) -> bool:
+        return self._capture_token is _PROVIDER_CAPTURE_TOKEN
 
 
 @dataclass(frozen=True)
@@ -344,6 +368,7 @@ def _build_capture_receipt(
     subject_id: str,
     supersedes_revision_id: str | None,
     url_migration_receipt_sha256: str | None,
+    capture_level: CaptureLevel = "GENERIC_CAPTURE",
 ) -> SourceCaptureReceipt:
     payload = _capture_payload(
         source_url=source_url,
@@ -358,6 +383,7 @@ def _build_capture_receipt(
         supersedes_revision_id=supersedes_revision_id,
         publication_evidence_sha256=publication_evidence_sha256,
         url_migration_receipt_sha256=url_migration_receipt_sha256,
+        capture_level=capture_level,
     )
     receipt_sha = hashlib.sha256(payload).hexdigest()
     source = SourceIdentity(
@@ -374,7 +400,12 @@ def _build_capture_receipt(
         capture_byte_count=byte_count,
         publication_evidence_sha256=publication_evidence_sha256,
         url_migration_receipt_sha256=url_migration_receipt_sha256,
-        _capture_token=_CAPTURE_TOKEN,
+        capture_level=capture_level,
+        _capture_token=(
+            _PROVIDER_CAPTURE_TOKEN
+            if capture_level == "PROVIDER_QUALIFIED_CAPTURE"
+            else _CAPTURE_TOKEN
+        ),
     )
     return SourceCaptureReceipt(source, byte_count, receipt_sha)
 
@@ -451,6 +482,91 @@ def require_trusted_source(source: SourceIdentity) -> SourceIdentity:
     if not isinstance(source, SourceIdentity) or not source.is_trusted_capture:
         raise SourceIdentityError("candidate-grade source must come from a capture receipt")
     return source
+
+
+def require_provider_qualified_source(source: SourceIdentity) -> SourceIdentity:
+    if (
+        not isinstance(source, SourceIdentity)
+        or not source.is_provider_qualified_capture
+    ):
+        raise SourceIdentityError(
+            "controlled candidate source must come from a provider-qualified adapter"
+        )
+    return source
+
+
+def capture_github_release_asset(
+    *,
+    repository: str,
+    tag: str,
+    asset_name: str,
+) -> tuple[SourceCaptureReceipt, bytes]:
+    """Fetch one GitHub Release asset and derive provenance from GitHub metadata."""
+
+    repository = require_stable_id(repository, "repository")
+    tag = require_stable_id(tag, "tag")
+    asset_name = require_stable_id(asset_name, "asset_name")
+    if repository.count("/") != 1:
+        raise SourceIdentityError("repository must be owner/name")
+    api_url = f"https://api.github.com/repos/{repository}/releases/tags/{tag}"
+    request = Request(
+        api_url,
+        headers={"Accept": "application/vnd.github+json", "User-Agent": "quant-system"},
+    )
+    try:
+        with urlopen(request, timeout=30) as response:  # noqa: S310
+            release_bytes = response.read(16 * 1024 * 1024 + 1)
+        if len(release_bytes) > 16 * 1024 * 1024:
+            raise SourceIdentityError("GitHub release metadata exceeds size limit")
+        release = json.loads(release_bytes.decode("utf-8"))
+        assets = tuple(
+            item
+            for item in release["assets"]
+            if isinstance(item, dict) and item.get("name") == asset_name
+        )
+        if len(assets) != 1:
+            raise SourceIdentityError("GitHub release asset name is absent or ambiguous")
+        asset = assets[0]
+        download_url = require_https_url(asset["browser_download_url"])
+        with urlopen(  # noqa: S310
+            Request(download_url, headers={"User-Agent": "quant-system"}),
+            timeout=60,
+        ) as response:
+            content = response.read(16 * 1024 * 1024 + 1)
+        if len(content) > 16 * 1024 * 1024:
+            raise SourceIdentityError("GitHub release asset exceeds size limit")
+        available_at = require_aware_utc(
+            datetime.fromisoformat(str(asset["updated_at"]).replace("Z", "+00:00")),
+            "asset.updated_at",
+        )
+        retrieved_at = datetime.now(timezone.utc)
+        receipt = _build_capture_receipt(
+            content_sha256=hashlib.sha256(content).hexdigest(),
+            byte_count=len(content),
+            publication_evidence_sha256=hashlib.sha256(release_bytes).hexdigest(),
+            source_url=download_url,
+            available_at=available_at,
+            retrieved_at=retrieved_at,
+            revision_id=f"github-asset-{int(asset['id'])}",
+            source_family_id=f"github-release:{repository}:{tag}:{asset_name}",
+            provider_id="github-releases",
+            subject_id=f"{repository}:{asset_name}",
+            supersedes_revision_id=None,
+            url_migration_receipt_sha256=None,
+            capture_level="PROVIDER_QUALIFIED_CAPTURE",
+        )
+    except (
+        KeyError,
+        TypeError,
+        ValueError,
+        UnicodeDecodeError,
+        json.JSONDecodeError,
+        OSError,
+    ) as exc:
+        if isinstance(exc, SourceIdentityError):
+            raise
+        raise SourceIdentityError("GitHub release response is invalid") from exc
+    return receipt, content
 
 
 @dataclass(frozen=True)
@@ -695,9 +811,11 @@ __all__ = [
     "SourceIdentityError",
     "capture_source_bytes",
     "capture_source_file",
+    "capture_github_release_asset",
     "capture_file_bytes",
     "capture_file_digest",
     "require_trusted_source",
+    "require_provider_qualified_source",
     "select_corporate_action_revision",
     "select_source_revision",
 ]

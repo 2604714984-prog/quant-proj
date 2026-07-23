@@ -3042,7 +3042,7 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
         stage_context=genesis_stage(create_stage_plan((days[0],))),
     )
 
-    assert result.interface_grade == "CONTROLLED_CANDIDATE_INPUT"
+    assert result.interface_grade == "GENERIC_CAPTURE_EXPERIMENT"
     assert result.decision_artifact_sha256 == artifact.artifact_sha256
     assert result.cost_assumptions_sha256 == _cost_assumptions().identity_sha256
     assert result.adverse_final_nav is not None

@@ -724,7 +724,7 @@ def run_candidate_rebalance(
         or holdout_event.split_sha256 != dataset_manifest.split_manifest_sha256
     ):
         raise MarketDataError("holdout evidence does not bind candidate strategy/data/split")
-    _require_candidate_sources(
+    provider_qualified = _require_candidate_sources(
         calendar,
         execution_inputs,
         universe_snapshot,
@@ -798,6 +798,8 @@ def run_candidate_rebalance(
             if cost_assumptions.gross_only
             else "RETROSPECTIVE_RESEARCH_ONLY"
             if "RETROSPECTIVE" in result.execution_evidence_grade
+            else "GENERIC_CAPTURE_EXPERIMENT"
+            if not provider_qualified
             else "CONTROLLED_CANDIDATE_INPUT"
         ),
         decision_artifact_sha256=decision_artifact.artifact_sha256,
@@ -856,28 +858,49 @@ def _require_candidate_sources(
     universe_snapshot: UniverseSnapshotIdentity,
     cutoff: datetime,
     execution_calendar_revision: AcceptedSessionCalendar | None,
-) -> None:
+) -> bool:
+    sources: list[SourceIdentity] = []
     require_trusted_source(calendar.identity.source_identity)
+    sources.append(calendar.identity.source_identity)
     for day in calendar.session_dates:
-        require_trusted_source(calendar.session_on(day, as_of=cutoff).source)
+        source = calendar.session_on(day, as_of=cutoff).source
+        require_trusted_source(source)
+        sources.append(source)
     require_trusted_source(universe_snapshot.source_identity)
+    sources.append(universe_snapshot.source_identity)
     if execution_calendar_revision is not None:
         require_trusted_source(execution_calendar_revision.identity.source_identity)
+        sources.append(execution_calendar_revision.identity.source_identity)
     for row in execution_inputs:
         require_trusted_source(row.source)
+        sources.append(row.source)
         if row.decision_price_source is not None:
             require_trusted_source(row.decision_price_source)
+            sources.append(row.decision_price_source)
         for status in row.status_records:
             require_trusted_source(status.source)
+            sources.append(status.source)
         for action in row.corporate_actions:
             require_trusted_source(action.source)
+            sources.append(action.source)
         if row.capacity is not None:
             require_trusted_source(row.capacity.source)
+            sources.append(row.capacity.source)
         if row.adjustment_receipt is not None:
             require_trusted_source(row.adjustment_receipt.factor_source)
             require_trusted_source(row.adjustment_receipt.action_completeness_source)
+            sources.extend(
+                (
+                    row.adjustment_receipt.factor_source,
+                    row.adjustment_receipt.action_completeness_source,
+                )
+            )
         if row.terminal_action is not None:
             require_trusted_source(row.terminal_action.source)
+            sources.append(row.terminal_action.source)
+    return bool(sources) and all(
+        source.is_provider_qualified_capture for source in sources
+    )
 
 
 def _execution_calendar(

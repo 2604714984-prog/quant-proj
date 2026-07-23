@@ -10,7 +10,9 @@ import quant_system.data.source_identity as source_module
 from quant_system.data import (
     SourceIdentity,
     SourceIdentityError,
+    capture_github_release_asset,
     capture_source_file,
+    require_provider_qualified_source,
     require_trusted_source,
     select_source_revision,
 )
@@ -65,6 +67,9 @@ def test_capture_source_file_hashes_bytes_and_publication_evidence(tmp_path: Pat
     ).hexdigest()
     assert receipt.byte_count == source.stat().st_size
     assert require_trusted_source(receipt.source) is receipt.source
+    assert receipt.source.capture_level == "GENERIC_CAPTURE"
+    with pytest.raises(SourceIdentityError, match="provider-qualified"):
+        require_provider_qualified_source(receipt.source)
     with pytest.raises(SourceIdentityError, match="capture entrypoint"):
         replace(receipt.source, available_at=AVAILABLE + timedelta(seconds=1))
 
@@ -72,6 +77,49 @@ def test_capture_source_file_hashes_bytes_and_publication_evidence(tmp_path: Pat
 def test_manual_source_is_experimental_only() -> None:
     with pytest.raises(SourceIdentityError, match="capture receipt"):
         require_trusted_source(_manual_source("r1", available_at=AVAILABLE))
+
+
+def test_github_release_adapter_derives_provider_metadata(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    release = (
+        b'{"assets":[{"browser_download_url":"https://github.com/o/r/releases/'
+        b'download/v1/data.bin","id":42,"name":"data.bin",'
+        b'"updated_at":"2026-07-22T20:00:00Z"}]}'
+    )
+    responses = iter((release, b"provider asset bytes"))
+
+    class Response:
+        def __init__(self, payload: bytes) -> None:
+            self.payload = payload
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *_args) -> None:
+            return None
+
+        def read(self, _limit: int) -> bytes:
+            return self.payload
+
+    monkeypatch.setattr(
+        source_module,
+        "urlopen",
+        lambda *_args, **_kwargs: Response(next(responses)),
+    )
+
+    receipt, content = capture_github_release_asset(
+        repository="o/r",
+        tag="v1",
+        asset_name="data.bin",
+    )
+
+    assert content == b"provider asset bytes"
+    assert receipt.source.provider_id == "github-releases"
+    assert receipt.source.subject_id == "o/r:data.bin"
+    assert receipt.source.available_at == AVAILABLE
+    assert receipt.source.capture_level == "PROVIDER_QUALIFIED_CAPTURE"
+    assert require_provider_qualified_source(receipt.source) is receipt.source
 
 
 @pytest.mark.parametrize("link_kind", ["symlink", "hardlink"])
