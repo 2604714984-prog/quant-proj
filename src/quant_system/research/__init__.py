@@ -8,10 +8,12 @@ from quant_system.research.identity import (
 )
 from quant_system.research.experiments import (
     ExperimentEvent,
+    ExperimentAnchorReceipt,
     ExperimentLedgerReceipt,
     ExperimentManifest,
     HoldoutResultReceipt,
     capture_holdout_result,
+    capture_family_anchor,
     freeze_experiment_manifest,
     preregister_trial,
     persist_experiment_ledger,
@@ -41,6 +43,7 @@ __all__ = [
     "capture_dataset_manifest",
     "DatasetManifest",
     "ExperimentEvent",
+    "ExperimentAnchorReceipt",
     "ExperimentLedgerReceipt",
     "ExperimentManifest",
     "HoldoutResultReceipt",
@@ -51,6 +54,7 @@ __all__ = [
     "build_split_evaluation_plan",
     "build_split_manifest",
     "capture_holdout_result",
+    "capture_family_anchor",
     "evaluate_split",
     "freeze_experiment_manifest",
     "load_split_manifest",

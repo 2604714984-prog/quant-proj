@@ -45,6 +45,7 @@ from quant_system.markets.us import (
 from quant_system.research.identity import DatasetManifest
 from quant_system.research.experiments import (
     ExperimentEvent,
+    ExperimentAnchorReceipt,
     ExperimentLedgerReceipt,
     ExperimentManifest,
     HoldoutResultReceipt,
@@ -997,6 +998,7 @@ def run_candidate_rebalance(
     experiment_events: tuple[ExperimentEvent, ...],
     experiment_manifest: ExperimentManifest,
     experiment_ledger: ExperimentLedgerReceipt,
+    experiment_anchor: ExperimentAnchorReceipt,
     holdout_event: ExperimentEvent,
     holdout_result_receipt: HoldoutResultReceipt,
     split_evaluation: SplitEvaluation,
@@ -1038,6 +1040,7 @@ def run_candidate_rebalance(
         receipt=holdout_result_receipt,
         manifest=experiment_manifest,
         events=experiment_events,
+        anchor=experiment_anchor,
     )
     require_split_evaluation_for_candidate(split_evaluation)
     if (

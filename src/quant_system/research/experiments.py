@@ -3,21 +3,29 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib
+import fcntl
 import json
 import os
 from pathlib import Path
 import re
-from typing import Literal
+from typing import Iterator, Literal
 
-from quant_system.data import SourceIdentity, require_trusted_source
+from quant_system.data import (
+    SourceIdentity,
+    TypedObservationReceipt,
+    require_trusted_source,
+    require_typed_observation,
+)
 from quant_system.research.splits import SplitEvaluation, SplitEvaluationPlan
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _EVENT_TOKEN = object()
 _HOLDOUT_RESULT_TOKEN = object()
+_ANCHOR_TOKEN = object()
 EventKind = Literal["PREREGISTERED", "HOLDOUT_RESULT"]
 ResultStatus = Literal["PASSED", "FAILED"]
 
@@ -95,7 +103,9 @@ class ExperimentEvent:
         _timestamp(self.preregistered_at, "preregistered_at")
         _sha(self.external_anchor_sha256, "external_anchor_sha256")
         if self.external_anchor_capture_level not in {
+            "UNANCHORED",
             "GENERIC_CAPTURE",
+            "TRANSPORT_CAPTURE",
             "PROVIDER_QUALIFIED_CAPTURE",
         }:
             raise ValueError("external anchor must be a trusted capture")
@@ -227,6 +237,66 @@ class HoldoutResultReceipt:
             raise ValueError("holdout result receipt hash mismatch")
 
 
+@dataclass(frozen=True)
+class ExperimentAnchorReceipt:
+    holdout_id: str
+    multiplicity_family_id: str
+    family_size: int
+    parameter_summary_sha256: str
+    ledger_head_sha256: str
+    ledger_event_count: int
+    frozen_at: datetime
+    source: SourceIdentity
+    observation_receipt: TypedObservationReceipt
+    receipt_sha256: str
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    def __post_init__(self) -> None:
+        if self._token is not _ANCHOR_TOKEN:
+            raise ValueError("experiment anchor must come from capture_family_anchor")
+        _text(self.holdout_id, "holdout_id")
+        _text(self.multiplicity_family_id, "multiplicity_family_id")
+        if type(self.family_size) is not int or self.family_size < 1:
+            raise ValueError("anchor family_size must be positive")
+        _sha(self.parameter_summary_sha256, "parameter_summary_sha256")
+        _sha(self.ledger_head_sha256, "ledger_head_sha256")
+        if type(self.ledger_event_count) is not int or self.ledger_event_count < 1:
+            raise ValueError("anchor ledger_event_count must be positive")
+        frozen_at = _timestamp(self.frozen_at, "frozen_at")
+        require_trusted_source(self.source)
+        require_typed_observation(
+            self.observation_receipt,
+            source=self.source,
+            observation_kind="experiment_anchor",
+            subject_id=self.holdout_id,
+            expected_values={
+                "created_at": self.source.available_at,
+                "family_size": self.family_size,
+                "frozen_at": frozen_at,
+                "holdout_id": self.holdout_id,
+                "ledger_event_count": self.ledger_event_count,
+                "ledger_head_sha256": self.ledger_head_sha256,
+                "multiplicity_family_id": self.multiplicity_family_id,
+                "parameter_summary_sha256": self.parameter_summary_sha256,
+            },
+        )
+        if self.source.available_at <= frozen_at:
+            raise ValueError("anchor must be published after the family freeze")
+        payload = json.dumps(
+            {
+                "holdout_id": self.holdout_id,
+                "ledger_head_sha256": self.ledger_head_sha256,
+                "observation_receipt_sha256": self.observation_receipt.receipt_sha256,
+                "source_capture_receipt_sha256": self.source.capture_receipt_sha256,
+                "version": 1,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+        if hashlib.sha256(payload).hexdigest() != self.receipt_sha256:
+            raise ValueError("experiment anchor receipt hash mismatch")
+
+
 def _holdout_receipt_payload(receipt: HoldoutResultReceipt) -> bytes:
     return json.dumps(
         {
@@ -327,7 +397,6 @@ def preregister_trial(
     multiplicity_family_id: str,
     holdout_id: str,
     preregistered_at: datetime,
-    external_anchor: SourceIdentity,
     alpha: float,
     family_size: int,
 ) -> tuple[ExperimentEvent, ...]:
@@ -345,9 +414,6 @@ def preregister_trial(
         raise ValueError(
             "split evaluation plan must be frozen for this holdout before access"
         )
-    require_trusted_source(external_anchor)
-    if external_anchor.available_at > preregistered:
-        raise ValueError("external anchor must exist before preregistration")
     if any(event.trial_id == trial_id for event in events):
         raise ValueError("trial_id is already present in the append-only chain")
     holdout_events = tuple(event for event in events if event.holdout_id == holdout_id)
@@ -382,7 +448,6 @@ def preregister_trial(
     if family and any(
         event.family_size != family_size
         or event.alpha != alpha
-        or event.external_anchor_sha256 != external_anchor.capture_receipt_sha256
         or event.holdout_id != holdout_id
         or event.split_evaluation_plan_sha256 != split_evaluation_plan.plan_sha256
         or event.candidate_run_config_sha256 != candidate_run_config_sha256
@@ -423,8 +488,8 @@ def preregister_trial(
             ),
             holdout_id=_text(holdout_id, "holdout_id"),
             preregistered_at=preregistered,
-            external_anchor_sha256=external_anchor.capture_receipt_sha256,
-            external_anchor_capture_level=external_anchor.capture_level,
+            external_anchor_sha256="0" * 64,
+            external_anchor_capture_level="UNANCHORED",
             alpha=alpha,
             family_size=family_size,
             prior_event_sha256=prior,
@@ -441,11 +506,29 @@ def preregister_trial(
     )
 
 
+def _family_parameter_summary(events: tuple[ExperimentEvent, ...]) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            tuple(
+                {
+                    "definition_sha256": event.definition_sha256,
+                    "parameters_json": event.parameters_json,
+                    "trial_id": event.trial_id,
+                }
+                for event in sorted(events, key=lambda item: item.trial_id)
+            ),
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+
+
 def record_holdout_family_results(
     events: tuple[ExperimentEvent, ...],
     *,
     receipts: tuple[HoldoutResultReceipt, ...],
     multiplicity_method: str,
+    anchor: ExperimentAnchorReceipt,
 ) -> tuple[ExperimentEvent, ...]:
     _validate_chain(events)
     if multiplicity_method not in {"holm", "bonferroni"}:
@@ -460,6 +543,11 @@ def record_holdout_family_results(
     if len(holdout_ids) != 1:
         raise ValueError("one result batch must cover one holdout_id")
     holdout_id = next(iter(holdout_ids))
+    if not isinstance(anchor, ExperimentAnchorReceipt):
+        raise ValueError("holdout results require a typed family anchor")
+    anchor.__post_init__()
+    if anchor.holdout_id != holdout_id:
+        raise ValueError("family anchor does not bind this holdout")
     preregistrations = tuple(
         event
         for event in events
@@ -475,6 +563,17 @@ def record_holdout_family_results(
         != {receipt.trial_id for receipt in receipts}
     ):
         raise ValueError("holdout result batch must cover the complete frozen family")
+    if (
+        anchor.family_size != family_size
+        or anchor.multiplicity_family_id
+        != preregistrations[0].multiplicity_family_id
+        or anchor.ledger_head_sha256 != preregistrations[-1].event_sha256
+        or anchor.ledger_event_count != len(events)
+        or anchor.parameter_summary_sha256
+        != _family_parameter_summary(preregistrations)
+        or any(receipt.holdout_access_at <= anchor.source.available_at for receipt in receipts)
+    ):
+        raise ValueError("family anchor does not commit the frozen preregistration head")
     if any(
         event.kind == "HOLDOUT_RESULT" and event.holdout_id == holdout_id
         for event in events
@@ -520,8 +619,8 @@ def record_holdout_family_results(
             multiplicity_family_id=trial.multiplicity_family_id,
             holdout_id=trial.holdout_id,
             preregistered_at=trial.preregistered_at,
-            external_anchor_sha256=trial.external_anchor_sha256,
-            external_anchor_capture_level=trial.external_anchor_capture_level,
+            external_anchor_sha256=anchor.receipt_sha256,
+            external_anchor_capture_level=anchor.source.capture_level,
             alpha=trial.alpha,
             family_size=trial.family_size,
             prior_event_sha256=chain[-1].event_sha256,
@@ -546,6 +645,7 @@ def record_holdout_result(
     *,
     receipt: HoldoutResultReceipt,
     multiplicity_method: str,
+    anchor: ExperimentAnchorReceipt,
 ) -> tuple[ExperimentEvent, ...]:
     """Record a single-member family; multi-trial families use the batch entrypoint."""
 
@@ -553,6 +653,7 @@ def record_holdout_result(
         events,
         receipts=(receipt,),
         multiplicity_method=multiplicity_method,
+        anchor=anchor,
     )
 
 
@@ -585,6 +686,7 @@ def require_adjusted_holdout_for_candidate(
     receipt: HoldoutResultReceipt,
     manifest: ExperimentManifest,
     events: tuple[ExperimentEvent, ...],
+    anchor: ExperimentAnchorReceipt,
 ) -> None:
     verify_experiment_manifest(manifest, events)
     if not isinstance(event, ExperimentEvent) or event.kind != "HOLDOUT_RESULT":
@@ -596,6 +698,15 @@ def require_adjusted_holdout_for_candidate(
     if not isinstance(receipt, HoldoutResultReceipt):
         raise ValueError("candidate evidence requires a typed holdout result receipt")
     receipt.__post_init__()
+    if not isinstance(anchor, ExperimentAnchorReceipt):
+        raise ValueError("candidate evidence requires the typed family anchor")
+    anchor.__post_init__()
+    if (
+        anchor.receipt_sha256 != event.external_anchor_sha256
+        or anchor.source.capture_level != event.external_anchor_capture_level
+        or anchor.source.available_at >= receipt.holdout_access_at
+    ):
+        raise ValueError("candidate holdout event does not bind its family anchor")
     if (
         receipt.trial_id != event.trial_id
         or receipt.holdout_id != event.holdout_id
@@ -672,18 +783,34 @@ class ExperimentLedgerReceipt:
 _LEDGER_TOKEN = object()
 
 
+@contextmanager
+def _canonical_ledger_lock(path: Path) -> Iterator[None]:
+    lock_path = path.with_suffix(path.suffix + ".lock")
+    descriptor = os.open(
+        lock_path,
+        os.O_RDWR | os.O_CREAT | getattr(os, "O_CLOEXEC", 0),
+        0o600,
+    )
+    try:
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
+        os.close(descriptor)
+
+
 def persist_experiment_ledger(
-    path: Path,
+    data_root: Path,
     events: tuple[ExperimentEvent, ...],
 ) -> ExperimentLedgerReceipt:
-    """Append new event hashes to a durable ledger without rewriting its prefix."""
+    """Append to the one canonical ledger beneath the configured data root."""
 
     _validate_chain(events)
     if not events:
         raise ValueError("persistent experiment ledger requires at least one event")
-    candidate = path.expanduser().resolve()
+    root = data_root.expanduser().resolve()
+    candidate = root / "research" / "experiment_ledger.ndjson"
     candidate.parent.mkdir(parents=True, exist_ok=True)
-    existing = candidate.read_bytes() if candidate.exists() else b""
     expected_lines = tuple(
         json.dumps(
             {"event_index": event.event_index, "event_sha256": event.event_sha256},
@@ -693,24 +820,86 @@ def persist_experiment_ledger(
         + b"\n"
         for event in events
     )
-    existing_lines = tuple(existing.splitlines(keepends=True))
-    if existing_lines != expected_lines[: len(existing_lines)]:
-        raise ValueError("persistent experiment ledger prefix is missing or changed")
-    if len(existing_lines) > len(expected_lines):
-        raise ValueError("persistent experiment ledger is ahead of supplied chain")
-    flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_CLOEXEC", 0)
-    descriptor = os.open(candidate, flags, 0o600)
-    try:
-        for line in expected_lines[len(existing_lines) :]:
-            os.write(descriptor, line)
-        os.fsync(descriptor)
-    finally:
-        os.close(descriptor)
-    payload = candidate.read_bytes()
+    with _canonical_ledger_lock(candidate):
+        existing = candidate.read_bytes() if candidate.exists() else b""
+        existing_lines = tuple(existing.splitlines(keepends=True))
+        if existing_lines != expected_lines[: len(existing_lines)]:
+            raise ValueError("persistent experiment ledger prefix is missing or changed")
+        if len(existing_lines) > len(expected_lines):
+            raise ValueError("persistent experiment ledger is ahead of supplied chain")
+        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_CLOEXEC", 0)
+        descriptor = os.open(candidate, flags, 0o600)
+        try:
+            for line in expected_lines[len(existing_lines) :]:
+                os.write(descriptor, line)
+            os.fsync(descriptor)
+        finally:
+            os.close(descriptor)
+        payload = candidate.read_bytes()
     return ExperimentLedgerReceipt(
         candidate,
         len(events),
         events[-1].event_sha256,
         hashlib.sha256(payload).hexdigest(),
         _LEDGER_TOKEN,
+    )
+
+
+def capture_family_anchor(
+    events: tuple[ExperimentEvent, ...],
+    *,
+    holdout_id: str,
+    ledger_receipt: ExperimentLedgerReceipt,
+    observation_receipt: TypedObservationReceipt,
+) -> ExperimentAnchorReceipt:
+    """Verify a post-freeze external commitment to the canonical ledger head."""
+
+    _validate_chain(events)
+    if not isinstance(ledger_receipt, ExperimentLedgerReceipt):
+        raise ValueError("family anchor requires the canonical ledger receipt")
+    ledger_receipt.verify_current_bytes()
+    if (
+        ledger_receipt.path.name != "experiment_ledger.ndjson"
+        or ledger_receipt.path.parent.name != "research"
+        or ledger_receipt.event_count != len(events)
+        or ledger_receipt.head_sha256 != events[-1].event_sha256
+    ):
+        raise ValueError("family anchor ledger is not the canonical frozen head")
+    family = tuple(
+        event
+        for event in events
+        if event.kind == "PREREGISTERED" and event.holdout_id == holdout_id
+    )
+    if not family or len(family) != family[0].family_size:
+        raise ValueError("family must be complete before it can be anchored")
+    if not isinstance(observation_receipt, TypedObservationReceipt):
+        raise ValueError("family anchor requires a typed observation")
+    frozen_at = max(event.preregistered_at for event in family)
+    source = observation_receipt.source
+    values = {
+        "holdout_id": _text(holdout_id, "holdout_id"),
+        "multiplicity_family_id": family[0].multiplicity_family_id,
+        "family_size": len(family),
+        "parameter_summary_sha256": _family_parameter_summary(family),
+        "ledger_head_sha256": ledger_receipt.head_sha256,
+        "ledger_event_count": ledger_receipt.event_count,
+        "frozen_at": frozen_at,
+        "source": source,
+        "observation_receipt": observation_receipt,
+    }
+    payload = json.dumps(
+        {
+            "holdout_id": holdout_id,
+            "ledger_head_sha256": ledger_receipt.head_sha256,
+            "observation_receipt_sha256": observation_receipt.receipt_sha256,
+            "source_capture_receipt_sha256": source.capture_receipt_sha256,
+            "version": 1,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    return ExperimentAnchorReceipt(
+        **values,
+        receipt_sha256=hashlib.sha256(payload).hexdigest(),
+        _token=_ANCHOR_TOKEN,
     )

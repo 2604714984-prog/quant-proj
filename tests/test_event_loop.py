@@ -43,6 +43,7 @@ from quant_system.data import (
     CorporateActionIdentity,
     SourceIdentity,
     capture_source_bytes,
+    parse_provider_observation,
     calendar_identity_sha256,
     session_dates_sha256,
     session_rows_sha256,
@@ -63,6 +64,7 @@ from quant_system.markets.universe import (
 from quant_system.markets.us import CorporateActionValuationError
 from quant_system.research.identity import build_dataset_manifest
 from quant_system.research.experiments import (
+    capture_family_anchor,
     capture_holdout_result,
     freeze_experiment_manifest,
     persist_experiment_ledger,
@@ -2825,11 +2827,12 @@ def _dataset_manifest(
 
 
 def _candidate_split_manifest(session: date):
+    observed = tuple(session - timedelta(days=offset) for offset in range(6, 1, -1))
     return build_split_manifest(
-        entity_ids=("AAA", "BBB"),
-        observed_at=(session - timedelta(days=2),) * 2,
-        label_end_at=(session - timedelta(days=1),) * 2,
-        fold_ids=("candidate-a", "candidate-b"),
+        entity_ids=("AAA",) * len(observed),
+        observed_at=observed,
+        label_end_at=observed,
+        fold_ids=("candidate",) * len(observed),
     )
 
 
@@ -2855,6 +2858,7 @@ def _run_candidate_rebalance(
             experiment_events=(),
             experiment_manifest=None,  # type: ignore[arg-type]
             experiment_ledger=None,  # type: ignore[arg-type]
+            experiment_anchor=None,  # type: ignore[arg-type]
             holdout_event=None,  # type: ignore[arg-type]
             holdout_result_receipt=None,  # type: ignore[arg-type]
             split_evaluation=None,  # type: ignore[arg-type]
@@ -2885,7 +2889,7 @@ def _run_candidate_rebalance(
             sample.sample_id: value
             for sample, value in zip(
                 split_manifest.samples,
-                (0.01, 0.02),
+                (0.01, 0.02, 0.015, 0.025, 0.018),
                 strict=True,
             )
         },
@@ -2918,12 +2922,71 @@ def _run_candidate_rebalance(
         multiplicity_family_id=f"family-{artifact.artifact_sha256[:12]}",
         holdout_id=split_plan.holdout_id,
         preregistered_at=decision_at - timedelta(days=1),
-        external_anchor=_captured_source(
-            f"anchor-{artifact.artifact_sha256[:12]}",
-            decision_at - timedelta(days=2),
-        ),
         alpha=0.05,
         family_size=1,
+    )
+    preregistration_ledger = persist_experiment_ledger(
+        tmp_path / f"ledger-{artifact.artifact_sha256}-{evidence_stage_plan_sha256}",
+        events,
+    )
+    anchor_available_at = decision_at - timedelta(hours=12)
+    anchor_values = {
+        "created_at": anchor_available_at.isoformat(),
+        "family_size": 1,
+        "frozen_at": (decision_at - timedelta(days=1)).isoformat(),
+        "holdout_id": split_plan.holdout_id,
+        "ledger_event_count": 1,
+        "ledger_head_sha256": events[-1].event_sha256,
+        "multiplicity_family_id": f"family-{artifact.artifact_sha256[:12]}",
+        "parameter_summary_sha256": hashlib.sha256(
+            json.dumps(
+                (
+                    {
+                        "definition_sha256": artifact.strategy_definition_sha256,
+                        "parameters_json": candidate_run_config.parameters_json,
+                        "trial_id": trial_id,
+                    },
+                ),
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+        ).hexdigest(),
+    }
+    anchor_content = json.dumps(
+        {
+            "schema": "experiment-anchor-v1",
+            "observations": [
+                {
+                    "kind": "experiment_anchor",
+                    "subject_id": split_plan.holdout_id,
+                    "values": anchor_values,
+                }
+            ],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    anchor_source = capture_source_bytes(
+        anchor_content,
+        publication_evidence=b"fixture anchor publication",
+        source_url="https://example.test/experiment-anchor",
+        available_at=anchor_available_at,
+        retrieved_at=anchor_available_at + timedelta(minutes=1),
+        revision_id=f"anchor-{artifact.artifact_sha256[:12]}",
+        source_family_id="fixture-experiment-anchor",
+        provider_id="fixture-provider",
+        subject_id=split_plan.holdout_id,
+    )
+    anchor = capture_family_anchor(
+        events,
+        holdout_id=split_plan.holdout_id,
+        ledger_receipt=preregistration_ledger,
+        observation_receipt=parse_provider_observation(
+            anchor_source,
+            anchor_content,
+            observation_kind="experiment_anchor",
+            subject_id=split_plan.holdout_id,
+        ),
     )
     holdout_receipt = capture_holdout_result(
         trial_id=trial_id,
@@ -2936,14 +2999,11 @@ def _run_candidate_rebalance(
         events,
         receipt=holdout_receipt,
         multiplicity_method="holm",
+        anchor=anchor,
     )
     manifest = freeze_experiment_manifest(events)
     ledger = persist_experiment_ledger(
-        tmp_path
-        / (
-            f"experiment-{artifact.artifact_sha256}-"
-            f"{evidence_stage_plan_sha256}.ndjson"
-        ),
+        tmp_path / f"ledger-{artifact.artifact_sha256}-{evidence_stage_plan_sha256}",
         events,
     )
     return run_candidate_rebalance(
@@ -2952,6 +3012,7 @@ def _run_candidate_rebalance(
         experiment_events=events,
         experiment_manifest=manifest,
         experiment_ledger=ledger,
+        experiment_anchor=anchor,
         holdout_event=events[-1],
         holdout_result_receipt=holdout_receipt,
         candidate_run_config=candidate_run_config,

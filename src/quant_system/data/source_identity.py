@@ -351,7 +351,7 @@ class TypedObservationReceipt:
             raise SourceIdentityError(
                 "TypedObservationReceipt must come from parse_provider_observation"
             )
-        require_provider_qualified_source(self.source)
+        require_trusted_source(self.source)
         schema_id = require_stable_id(self.schema_id, "schema_id")
         kind = require_stable_id(self.observation_kind, "observation_kind")
         subject = require_stable_id(self.subject_id, "subject_id")
@@ -407,11 +407,11 @@ def parse_provider_observation(
     observation_kind: str,
     subject_id: str,
 ) -> TypedObservationReceipt:
-    """Select exactly one typed row from bytes captured by a provider adapter."""
+    """Select one typed row while preserving the capture's evidence grade."""
 
     if not isinstance(receipt, SourceCaptureReceipt):
         raise SourceIdentityError("receipt must be a SourceCaptureReceipt")
-    source = require_provider_qualified_source(receipt.source)
+    source = require_trusted_source(receipt.source)
     if len(content) != receipt.byte_count or hashlib.sha256(content).hexdigest() != (
         source.content_sha256
     ):

@@ -1,10 +1,13 @@
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
+import json
 
 import pytest
 
-from quant_system.data import capture_source_bytes
+from quant_system.data import capture_source_bytes, parse_provider_observation
+import quant_system.research.experiments as experiment_module
 from quant_system.research.experiments import (
+    capture_family_anchor,
     capture_holdout_result,
     freeze_experiment_manifest,
     persist_experiment_ledger,
@@ -24,18 +27,63 @@ UTC = timezone.utc
 PREREGISTERED_AT = datetime(2026, 7, 22, tzinfo=UTC)
 
 
-def _anchor():
-    return capture_source_bytes(
-        b"external preregistration anchor",
+def _anchor(events, tmp_path, *, holdout_id: str = "holdout-001"):
+    ledger = persist_experiment_ledger(tmp_path, events)
+    family = tuple(
+        event
+        for event in events
+        if event.kind == "PREREGISTERED" and event.holdout_id == holdout_id
+    )
+    available_at = PREREGISTERED_AT + timedelta(hours=1)
+    values = {
+        "created_at": available_at.isoformat(),
+        "family_size": len(family),
+        "frozen_at": PREREGISTERED_AT.isoformat(),
+        "holdout_id": holdout_id,
+        "ledger_event_count": len(events),
+        "ledger_head_sha256": events[-1].event_sha256,
+        "multiplicity_family_id": family[0].multiplicity_family_id,
+        "parameter_summary_sha256": experiment_module._family_parameter_summary(
+            family
+        ),
+    }
+    content = json.dumps(
+        {
+            "schema": "experiment-anchor-v1",
+            "observations": [
+                {
+                    "kind": "experiment_anchor",
+                    "subject_id": holdout_id,
+                    "values": values,
+                }
+            ],
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    source_receipt = capture_source_bytes(
+        content,
         publication_evidence=b"published anchor",
         source_url="https://example.test/anchor",
-        available_at=PREREGISTERED_AT - timedelta(days=1),
-        retrieved_at=PREREGISTERED_AT - timedelta(hours=23),
+        available_at=available_at,
+        retrieved_at=available_at + timedelta(minutes=1),
         revision_id="anchor-v1",
         source_family_id="experiment-anchor",
         provider_id="fixture-provider",
-        subject_id="holdout-001",
-    ).source
+        subject_id=holdout_id,
+    )
+    observation = parse_provider_observation(
+        source_receipt,
+        content,
+        observation_kind="experiment_anchor",
+        subject_id=holdout_id,
+    )
+    return capture_family_anchor(
+        events,
+        holdout_id=holdout_id,
+        ledger_receipt=ledger,
+        observation_receipt=observation,
+    )
 
 
 def _evaluation(
@@ -92,7 +140,6 @@ def _preregister(
         multiplicity_family_id=family_id,
         holdout_id=holdout_id,
         preregistered_at=PREREGISTERED_AT,
-        external_anchor=_anchor(),
         alpha=0.05,
         family_size=family_size,
     )
@@ -114,13 +161,15 @@ def _receipt(
     )
 
 
-def test_holdout_family_cannot_extend_after_access() -> None:
+def test_holdout_family_cannot_extend_after_access(tmp_path) -> None:
     events = _preregister()
+    anchor = _anchor(events, tmp_path)
     receipt = _receipt("trial-001", returns=(-0.1, 0.1, -0.1, 0.1, 0.0))
     events = record_holdout_result(
         events,
         receipt=receipt,
         multiplicity_method="holm",
+        anchor=anchor,
     )
     with pytest.raises(ValueError, match="cannot be extended"):
         _preregister(
@@ -142,12 +191,14 @@ def test_same_dataset_split_cannot_be_relabelled_as_a_new_holdout_family() -> No
         )
 
 
-def test_deleting_failed_trial_breaks_frozen_manifest() -> None:
+def test_deleting_failed_trial_breaks_frozen_manifest(tmp_path) -> None:
     events = _preregister()
+    anchor = _anchor(events, tmp_path)
     events = record_holdout_result(
         events,
         receipt=_receipt("trial-001", returns=(-0.1, 0.1, -0.1, 0.1, 0.0)),
         multiplicity_method="holm",
+        anchor=anchor,
     )
     manifest = freeze_experiment_manifest(events)
     with pytest.raises(ValueError, match="manifest is incomplete"):
@@ -156,13 +207,15 @@ def test_deleting_failed_trial_breaks_frozen_manifest() -> None:
         verify_experiment_manifest(manifest, events[1:])
 
 
-def test_candidate_requires_typed_recomputable_holdout_receipt() -> None:
+def test_candidate_requires_typed_recomputable_holdout_receipt(tmp_path) -> None:
     events = _preregister()
+    anchor = _anchor(events, tmp_path)
     receipt = _receipt("trial-001")
     events = record_holdout_result(
         events,
         receipt=receipt,
         multiplicity_method="holm",
+        anchor=anchor,
     )
     result = events[-1]
     require_adjusted_holdout_for_candidate(
@@ -170,6 +223,7 @@ def test_candidate_requires_typed_recomputable_holdout_receipt() -> None:
         receipt=receipt,
         manifest=freeze_experiment_manifest(events),
         events=events,
+        anchor=anchor,
     )
     with pytest.raises(ValueError, match="not derived|does not bind"):
         require_adjusted_holdout_for_candidate(
@@ -177,19 +231,20 @@ def test_candidate_requires_typed_recomputable_holdout_receipt() -> None:
             receipt=replace(receipt, final_stage_hash="e" * 64),
             manifest=freeze_experiment_manifest(events),
             events=events,
+            anchor=anchor,
         )
 
 
 def test_persistent_ledger_detects_deleted_prefix(tmp_path) -> None:
     events = _preregister()
-    receipt = persist_experiment_ledger(tmp_path / "experiment-ledger.ndjson", events)
+    receipt = persist_experiment_ledger(tmp_path, events)
     receipt.verify_current_bytes()
     receipt.path.write_bytes(b"")
     with pytest.raises(ValueError, match="bytes changed"):
         receipt.verify_current_bytes()
 
 
-def test_complete_family_is_recorded_atomically_with_computed_holm_values() -> None:
+def test_complete_family_is_recorded_atomically_with_computed_holm_values(tmp_path) -> None:
     events = _preregister(
         "trial-a",
         family_id="family-002",
@@ -204,11 +259,13 @@ def test_complete_family_is_recorded_atomically_with_computed_holm_values() -> N
         family_size=2,
         definition_sha256="e" * 64,
     )
+    anchor = _anchor(events, tmp_path, holdout_id="holdout-002")
     with pytest.raises(ValueError, match="complete frozen family"):
         record_holdout_result(
             events,
             receipt=_receipt("trial-a", holdout_id="holdout-002"),
             multiplicity_method="holm",
+            anchor=anchor,
         )
     receipts = (
         _receipt("trial-a", holdout_id="holdout-002"),
@@ -222,6 +279,7 @@ def test_complete_family_is_recorded_atomically_with_computed_holm_values() -> N
         events,
         receipts=receipts,
         multiplicity_method="holm",
+        anchor=anchor,
     )
     results = completed[-2:]
     assert {event.trial_id for event in results} == {"trial-a", "trial-b"}
