@@ -1,0 +1,66 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C26_REAL_GDP_GROWTH_ACCELERATION_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE26",
+  "classification": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053694205",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053747895",
+    "preoutcome_commit": "1cfe7cea6756595897dffe7ae84ac27b2bb372e7",
+    "definition_sha256": "04399a38af6b5bd2c3b6db3362f67432b9805cd59a98d2b55c52b21ea78625ca",
+    "adapter_sha256": "e006f76b174a70fcd20f3125da49dcf934b56e277b1cfacd11fc6bbd7063ccf0",
+    "runner_sha256": "2d78c15fa94c87daf17c43db04e2aac68cc21b5ab75f818fdf709eef98926bbe",
+    "input_packet_sha256": "e94a5fea778474b0289a647b854fd446267c9092765ca2f0a6e02dbc11f7b7cf"
+  },
+  "one_use_validation": {
+    "claim_sha256": "93b9215d99b2c7465689e7e34149fb5d4894ec693df2c0007abbd0671ca7788d",
+    "result_sha256": "a794a1f74945af56c0ef4c013db842bb609cc7508b8d6e30a2fae04eca1d5d50",
+    "observed_intervals": 28,
+    "gates_passed": 3,
+    "gates_total": 3,
+    "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_PASS_HOLDOUT_UNLOCKED"
+  },
+  "one_use_holdout": {
+    "claim_sha256": "6d0e9ea4784b1c365da29bba34554f052644b9ee4ca6a5dba1545eaad648ad01",
+    "result_sha256": "c03cb7cbc53882e6b21795ead735f3ba0b9a9f15b680bfd90a3b615e5a821206",
+    "observed_intervals": 34,
+    "gates_passed": 1,
+    "gates_total": 5,
+    "passed_gates": [
+      "exactly_34_paired_intervals"
+    ],
+    "failed_gates": [
+      "centered_null_one_sided_p_at_most_0_000000011920928955078125",
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator",
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator",
+      "uncentered_type7_0_000000011920928955078125_lower_bound_strictly_positive"
+    ],
+    "classification": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "program_multiplicity": {
+    "cycle26_familywise_alpha": 0.000000001490116119384765625,
+    "cycle1_to_cycle26_union_bound": 0.099999998509883880615234375,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "diagnostic_label_limitation": "The committed adapter inherited C23 alpha text in two holdout gate names. The calculations compared p-value and lower-bound quantile against the frozen C26 PROGRAM_ALPHA, so the false decision is unaffected; the stale labels are preserved here exactly and the closed lineage will not be repaired or rerun.",
+  "warehouse_integrity": {
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "method_limitation": "Quarterly real-GDP growth is broad, lagged and revisable, and the frozen three-month bootstrap block is a dependence assumption rather than proof of complete coverage.",
+  "terminal_state": {
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the GDP series, acceleration direction, vintage rule, quarter comparison, threshold, transform, target mapping, comparator, cost, split, bootstrap, source or signal combination."
+}
