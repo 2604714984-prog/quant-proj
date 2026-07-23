@@ -1,0 +1,170 @@
+{
+  "schema_version": "c56-momentum-value-leadership-prereg-v1",
+  "research_id": "C56_MOMENTUM_VALUE_LEADERSHIP_ROTATION_SPY_QQQ_V1",
+  "mechanism_id": "C56_MOMENTUM_VALUE_LEADERSHIP_ROTATION_SPY_QQQ",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_EPOCH10_C55_C57",
+  "status": "PREREGISTERED_INPUT_MATERIALIZED_CODE_READY",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+  "selection_without_outcomes": {
+    "economic_reason": "strict prior-month MTUM total-return leadership over VTV indicates winner-factor leadership and selects QQQ; equal or weaker momentum leadership selects SPY",
+    "price_return_nav_sharpe_or_drawdown_used_for_selection": false,
+    "parameter_grid": false,
+    "variant_count": 1,
+    "independent_mechanism_statement": "the momentum-versus-value factor leadership signal is not an own-price QQQ momentum retry; correlated style ancestry with closed growth/value lines is disclosed",
+    "closed_cycles_1_through_55_remain_closed": true
+  },
+  "program_multiplicity": {
+    "epoch10_familywise_alpha": 0.05,
+    "epoch10_mechanism_count": 3,
+    "fixed_order": [
+      "C55_QUALITY_VALUE_LEADERSHIP_ROTATION_SPY_QQQ_V1",
+      "C56_MOMENTUM_VALUE_LEADERSHIP_ROTATION_SPY_QQQ_V1",
+      "C57_IPO_RISK_APPETITE_ROTATION_SPY_QQQ_V1"
+    ],
+    "sole_primary_alpha": 0.016666666666666666,
+    "method": "Bonferroni across exactly the three frozen Epoch 10 mechanisms",
+    "alpha_recycling": false,
+    "lifetime_fwer_claim": false,
+    "formal_outcome_lanes": 1
+  },
+  "signal": {
+    "source": "fixed Yahoo public chart responses for MTUM and VTV, used only as retrospective-secondary signal identities",
+    "frequency": "monthly decisions",
+    "formula": "for execution month M, compare MTUM and VTV adjusted total returns from the last common accepted XNYS close in M-2 to the last common accepted XNYS close in M-1",
+    "target_rule": "strict MTUM outperformance over VTV means QQQ weight 1.0; equal or underperformance means SPY weight 1.0",
+    "availability_rule": "the M-1 adjusted closes are conservatively available at 20:00 America/New_York after the accepted close and before the frozen 20:05 decision",
+    "missing_rule": "fail closed; no interpolation, alternate lookback, threshold, source blend, sector substitution, absolute trend filter, volatility filter, persistence or smoothing",
+    "ancestry_limitation": "Yahoo current adjusted history is retrospective-secondary rather than historical-vintage primary evidence; its role is fixed before outcomes and it does not replace execution or corporate-action identities"
+  },
+  "timing_and_account": {
+    "signal_freeze": "20:05 America/New_York after the last accepted XNYS close of the prior calendar month",
+    "target_submission": "09:00 America/New_York on the next accepted XNYS session",
+    "execution": "that accepted session official open",
+    "holding": "until the following monthly accepted execution open",
+    "decision_price": "raw preceding-session close for each asset, available before target submission",
+    "initial_capital_usd": 40000.0,
+    "whole_shares": true,
+    "leverage": false,
+    "shorting": false,
+    "cash_return": 0.0,
+    "one_way_slippage_bps": 10.0,
+    "commission": 0.0,
+    "comparator": "50/50 SPY/QQQ rebalanced at identical monthly opens under identical whole-share, cost, calendar, lifecycle and corporate-action accounting"
+  },
+  "splits": {
+    "validation": {
+      "baseline_execution": "2021-01-04",
+      "first_holding_execution": "2021-02-01",
+      "terminal_execution": "2023-06-01",
+      "complete_intervals": 28
+    },
+    "retrospective_holdout": {
+      "baseline_execution": "2023-07-03",
+      "first_holding_execution": "2023-08-01",
+      "terminal_execution": "2026-06-01",
+      "complete_intervals": 34,
+      "sealed_until_validation_pass": true
+    },
+    "cross_boundary_rule": "no signal or portfolio state carries across splits"
+  },
+  "state_support_before_outcomes": {
+    "accepted": {
+      "validation": {
+        "complete_intervals": 28,
+        "spy_intervals": 14,
+        "qqq_intervals": 14,
+        "spy_to_qqq": 6,
+        "qqq_to_spy": 6
+      },
+      "retrospective_holdout": {
+        "complete_intervals": 34,
+        "spy_intervals": 15,
+        "qqq_intervals": 19,
+        "spy_to_qqq": 8,
+        "qqq_to_spy": 7
+      }
+    },
+    "minimums": "20 intervals, four of each state, and two transitions in each direction per split",
+    "independent_local_read_only_recompute": true,
+    "strategy_outcomes_opened": false
+  },
+  "validation": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "arithmetic mean paired monthly active return strictly positive",
+      "strategy maximum drawdown no worse than the 50/50 comparator"
+    ],
+    "decision_rule": "all three gates must pass",
+    "failure_rule": "holdout remains unopened and the lineage closes permanently"
+  },
+  "holdout_if_validation_passes": {
+    "gates": [
+      "strategy terminal net wealth strictly above the 50/50 comparator",
+      "strategy maximum drawdown no worse than the 50/50 comparator",
+      "exactly 34 paired intervals",
+      "centered-null one-sided p-value at most 0.016666666666666666",
+      "uncentered type-7 0.016666666666666666 lower bound strictly positive"
+    ],
+    "bootstrap": {
+      "method": "paired circular moving-block bootstrap over monthly active returns",
+      "block_length_months": 3,
+      "resamples": 100000,
+      "rng": "Python random.Random",
+      "seed": 5600101,
+      "start_index": "floor(random()*N)",
+      "wrapping": "circular modulo N",
+      "p_value": "(1 + centered-null means at least observed mean)/(100000 + 1)",
+      "quantile": "linear type-7",
+      "limitation": "the three-month block is an outcome-blind dependence assumption, not proof of complete serial-dependence coverage"
+    }
+  },
+  "source_identities": {
+    "input_packet_path": "/home/rongyu/workspace/quant-data/staging/c56_momentum_value_leadership_rotation_spy_qqq_v1/full_input_packet.json",
+    "input_packet_sha256": "58a0e298e332b761ebedf4c1a6cefdc5b988c78f0685be96b532de03388d7a82",
+    "materialization_receipt_path": "/home/rongyu/workspace/quant-data/staging/c56_momentum_value_leadership_rotation_spy_qqq_v1/full_materialization_receipt.json",
+    "materialization_receipt_sha256": "999e5a43e99a3049d4726211ae518e4ae6f6b5ce77988c7c2a5426694ea5050b",
+    "yahoo_fetch_receipt_sha256": "b494419c911d18bbd86349802760b6fd2f55258e031cd2bbd407e73e961f31be",
+    "mtum_raw_response_sha256": "8c469aaa9b114f14c6662f3515a642ca5a07db8762befc26ddccc0b8ef641191",
+    "vtv_raw_response_sha256": "618387cccc6299f7d0759b59145dbf7ca884f34b362149245497cdfb54689438",
+    "reused_market_scaffold_sha256": "fa42bea9f2421a725c416c8588842341b9439c9796527f2021bb6b2312e2a242",
+    "validation_spy_bundle_sha256": "499157cd45b6402aabb8f786ae7e60f9c4bb55992e60bab8ff03f1104baa5b8a",
+    "holdout_spy_bundle_sha256": "ff4b02932079ad013da05dbffcf2dd6e25af8592450e5b09e4a2f00d9f61f8d4",
+    "shared_core_commit": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "shared_core_source_file_count": 23,
+    "shared_core_source_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "universe_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e",
+    "adapter_sha256": "2804c2be285da0da9cf752a8349470f66f4858e4f88bcc7599a60144a1e7a078",
+    "runner_role": "branch-only removable one-use research adapter; not shared infrastructure"
+  },
+  "one_use": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c56_momentum_value_leadership_rotation_spy_qqq_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c56_momentum_value_leadership_rotation_spy_qqq_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c56_momentum_value_leadership_rotation_spy_qqq_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c56_momentum_value_leadership_rotation_spy_qqq_v1_holdout/result.json",
+    "claim_before_runtime_bundle_capture": true,
+    "claim_and_result_mode": "0600",
+    "rerun_after_any_claim": false
+  },
+  "terminal_rules": {
+    "validation_fail": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "holdout_fail": "RETROSPECTIVE_SECONDARY_HOLDOUT_FAIL",
+    "historical_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "input_error_after_claim": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "strategy_candidate_available": false,
+    "parameter_repair": false,
+    "rerun": false
+  },
+  "boundaries": {
+    "provider_or_network_call": false,
+    "database_write": false,
+    "external_review_requested": false,
+    "prospective_forward_access": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
