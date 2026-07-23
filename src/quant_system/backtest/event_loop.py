@@ -652,11 +652,9 @@ def run_candidate_rebalance(
         "max_positions": max_positions,
         "stage_context": stage_context,
     }
-    base_portfolio = portfolio
-    if cost_assumptions.gross_only:
-        base_portfolio = deepcopy(portfolio)
-        base_portfolio.costs = cost_assumptions.base.transaction_cost_model()
-        base_portfolio.a_share_stamp_tax_schedule = False
+    base_portfolio = deepcopy(portfolio)
+    base_portfolio.costs = cost_assumptions.base.transaction_cost_model()
+    base_portfolio.a_share_stamp_tax_schedule = False
     result = run_static_rebalance(
         base_portfolio,
         calendar,
@@ -665,6 +663,7 @@ def run_candidate_rebalance(
     )
     adverse_portfolio = deepcopy(base_portfolio)
     adverse_portfolio.costs = cost_assumptions.adverse.transaction_cost_model()
+    adverse_portfolio.a_share_stamp_tax_schedule = False
     adverse = run_static_rebalance(
         adverse_portfolio,
         calendar,

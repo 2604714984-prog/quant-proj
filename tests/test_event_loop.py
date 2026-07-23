@@ -9,6 +9,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+import quant_system.backtest.event_loop as event_loop_module
 from quant_system.backtest import (
     CapacityObservation,
     CapacityPolicy,
@@ -2404,6 +2405,7 @@ def _cost_assumptions(
     *,
     spread_bps: float = 2.0,
     gross_only: bool = False,
+    adverse_regulatory_fee: float | None = None,
 ) -> ExecutionCostAssumptions:
     policy = CapacityPolicy(0.1, 0.1, "CNY")
     regulatory_fee = 0.0 if gross_only else 0.0005
@@ -2420,7 +2422,11 @@ def _cost_assumptions(
         0.0,
         spread_bps * 2,
         3.0 if spread_bps else 0.0,
-        regulatory_fee,
+        (
+            regulatory_fee
+            if adverse_regulatory_fee is None
+            else adverse_regulatory_fee
+        ),
         1.0,
     )
     return ExecutionCostAssumptions(
@@ -2870,7 +2876,10 @@ def test_candidate_cost_and_capacity_evidence_is_mandatory(tmp_path: Path) -> No
     assert portfolio.__dict__ == before
 
 
-def test_cost_assumptions_change_candidate_identity_and_gross_grade(tmp_path: Path) -> None:
+def test_cost_assumptions_change_candidate_identity_and_gross_grade(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     days = (date(2026, 7, 13), date(2026, 7, 14))
     calendar = _controlled_calendar(days)
     decision_at = calendar.session_on(
@@ -2906,16 +2915,32 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(tmp_path: Pa
         "stage_context": genesis_stage(create_stage_plan((days[0],))),
     }
 
+    observed_cost_models = []
+    real_run_static = event_loop_module.run_static_rebalance
+
+    def recording_run_static(portfolio, calendar, **kwargs):
+        observed_cost_models.append(
+            (portfolio.a_share_stamp_tax_schedule, portfolio.costs.sell_tax_rate)
+        )
+        return real_run_static(portfolio, calendar, **kwargs)
+
+    monkeypatch.setattr(event_loop_module, "run_static_rebalance", recording_run_static)
     base = run_candidate_rebalance(
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
         calendar,
-        cost_assumptions=_cost_assumptions(spread_bps=2),
+        cost_assumptions=_cost_assumptions(
+            spread_bps=2,
+            adverse_regulatory_fee=0.001,
+        ),
         **arguments,
     )
     stressed = run_candidate_rebalance(
         Portfolio.a_share(100_000, costs=TransactionCostModel()),
         calendar,
-        cost_assumptions=_cost_assumptions(spread_bps=4),
+        cost_assumptions=_cost_assumptions(
+            spread_bps=4,
+            adverse_regulatory_fee=0.001,
+        ),
         **arguments,
     )
     gross = run_candidate_rebalance(
@@ -2929,6 +2954,14 @@ def test_cost_assumptions_change_candidate_identity_and_gross_grade(tmp_path: Pa
     assert base.cost_assumptions_sha256 != stressed.cost_assumptions_sha256
     assert gross.interface_grade == "GROSS_ONLY_EXPERIMENT"
     assert gross.strategy_candidate_available is False
+    assert observed_cost_models == [
+        (False, 0.0005),
+        (False, 0.001),
+        (False, 0.0005),
+        (False, 0.001),
+        (False, 0.0),
+        (False, 0.0),
+    ]
 
 
 def test_candidate_rejects_partition_manifest_drift_before_mutation(tmp_path: Path) -> None:
