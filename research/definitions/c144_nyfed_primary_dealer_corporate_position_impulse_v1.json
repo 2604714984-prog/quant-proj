@@ -1,0 +1,137 @@
+{
+  "schema_version": "c144-nyfed-primary-dealer-position-impulse-prereg-v1",
+  "research_id": "C144_NYFED_PRIMARY_DEALER_CORPORATE_POSITION_IMPULSE_ROTATION_SPY_QQQ_V1",
+  "mechanism_id": "C144_NYFED_PRIMARY_DEALER_CORPORATE_POSITION_IMPULSE_ROTATION_SPY_QQQ",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_EPOCH88_C144",
+  "status": "PREREGISTERED_NOT_EXECUTED",
+  "market": "US",
+  "economic_hypothesis": {
+    "null": "the frozen weekly change in primary-dealer corporate-security positions does not improve net weekly SPY/QQQ rotation over the frozen comparators",
+    "alternative": "rising primary-dealer corporate-security positions identify stronger balance-sheet risk absorption and credit intermediation in which QQQ is preferred; otherwise broad SPY is preferred",
+    "independent_mechanism_statement": "the signal uses only official New York Fed Primary Dealer Statistics and is distinct from closed price-volume, FINRA short-sale, CFTC positioning, margin-debit, HYG-leadership, funding-spread, options-sentiment, Treasury-auction and real-yield lineages",
+    "proxy_limitation": "dealer corporate-security positions are an intermediary balance-sheet proxy rather than direct equity demand, can be revised, and the frozen four-week inference block is an outcome-blind design assumption rather than proof of sufficient dependence coverage"
+  },
+  "universe": {
+    "symbols": [
+      "SPY",
+      "QQQ"
+    ],
+    "currency": "USD",
+    "initial_capital": 40000.0,
+    "whole_shares": true,
+    "residual_cash_return": 0.0,
+    "expected_inclusion_rule_sha256": "89483ee34a4b87fcdb728889dc31c7dc7222f85b3071ff7a97c65148e1b6402e"
+  },
+  "signal": {
+    "source": "Federal Reserve Bank of New York official Primary Dealer Statistics PDPOSCS-TOT observations",
+    "frequency": "weekly",
+    "decision_time": "09:00 America/New_York on the first accepted XNYS session of each week",
+    "latest_allowed_observation": "the latest as-of-Wednesday observation whose following-Thursday release precedes the decision",
+    "current_measure": "current PDPOSCS-TOT value minus the immediately previous weekly value",
+    "threshold": "zero USD millions",
+    "target_rule": "a strictly positive position impulse selects QQQ at weight 1.0; otherwise selects SPY at weight 1.0",
+    "missing_rule": "missing or duplicate weekly observation, nonfinite value, unavailable publication identity, calendar mismatch or insufficient anchors invalidates the interval; no interpolation, alternate source, threshold, smoothing, persistence, source blend or direction repair"
+  },
+  "execution": {
+    "entry": "next accepted XNYS open after the preceding accepted signal session; the frozen 09:00 decision must precede that open",
+    "holding": "until the following weekly accepted execution open",
+    "one_way_cost_bps": 10.0,
+    "decision_price_basis": "previous accepted-session raw close, known before the 09:00 decision",
+    "fill_price_basis": "retrospective raw daily-bar open",
+    "corporate_actions": "accepted SPY and QQQ cash distributions and split identities are processed by the shared portfolio core"
+  },
+  "comparator": {
+    "primary": "weekly rebalanced 50/50 SPY/QQQ target notional under identical cost, whole-share, cash, calendar, lifecycle and corporate-action rules",
+    "secondary": "weekly rebalanced SPY-only under identical rules"
+  },
+  "splits": {
+    "validation": {
+      "execution_start": "2021-01-04",
+      "execution_end": "2023-06-30",
+      "paired_intervals": 129
+    },
+    "retrospective_holdout": {
+      "execution_start": "2023-07-03",
+      "execution_end": "2026-06-30",
+      "paired_intervals": 156,
+      "sealed_until_validation_pass": true
+    },
+    "prospective_forward": "not opened or authorized"
+  },
+  "state_support": {
+    "minimum_intervals_each_split": 100,
+    "minimum_spy_states_each_split": 24,
+    "minimum_qqq_states_each_split": 24,
+    "accepted_observed_support": {
+      "validation": {
+        "intervals": 129,
+        "qqq_states": 65,
+        "spy_states": 64
+      },
+      "retrospective_holdout": {
+        "intervals": 156,
+        "qqq_states": 83,
+        "spy_states": 73
+      }
+    }
+  },
+  "validation_gates": [
+    "strategy terminal net wealth strictly above the 50/50 comparator",
+    "strategy terminal net wealth strictly above SPY-only",
+    "arithmetic mean paired active return versus the 50/50 comparator strictly positive",
+    "strategy maximum drawdown no worse than the 50/50 comparator"
+  ],
+  "holdout_gates": [
+    "all four validation-form gates evaluated on the holdout",
+    "exactly 156 paired weekly intervals",
+    "centered-null one-sided paired bootstrap p-value at most 0.05",
+    "uncentered type-7 5% bootstrap lower bound on mean active return strictly positive"
+  ],
+  "inference": {
+    "method": "paired circular moving-block bootstrap over weekly active returns versus the 50/50 comparator",
+    "block_length_weeks": 4,
+    "resamples": 100000,
+    "seed": 14400101,
+    "quantile": "type-7 linearly interpolated fifth percentile",
+    "limitation": "the prospectively frozen four-week block is an outcome-blind dependence assumption, not proof of statistical sufficiency"
+  },
+  "program_multiplicity": {
+    "sole_primary_alpha": 0.05,
+    "non_recycled": true,
+    "no_outcome_dependent_reordering": true
+  },
+  "source_identities": {
+    "adapter_sha256": "8e2d58f30822e1f1e1c9d858788439b3300a4cd0224002573b98e07f9c159897",
+    "signal_input_path": "/home/rongyu/workspace/quant-data/staging/c144_nyfed_primary_dealer_corporate_position_impulse_rotation_spy_qqq_v1/signal_input_packet.json",
+    "signal_input_sha256": "18c49b116878fce77590485a6be3432db97182fb24ec76f73acdf6e91e61d93c",
+    "signal_source_rows_sha256": "1af26fdea10677c4928e747988f9065853f10258a7e7868a9a7e1fb8eff776f5",
+    "signal_receipt_sha256": "9c8e2ffb2a0eed2caca442615d21e082898d30861e2ad994cd32de9169ffcd4d",
+    "runtime_receipt_sha256": "7e03588802563f71a198b983353e35412d5a6d315aa6277ee73efddabe445ba4",
+    "validation_runtime_bundle_sha256": "906975645f9b49a63b02674e45b816b5fc7d75f743cb825f6a93d90be18142af",
+    "holdout_runtime_bundle_sha256": "ebf74260507ea4af09c5d4e88f992e46c0d6150e4224ceeaf4621d4862ad2032",
+    "central_database_sha256": "f87722ecf19f9813bb161e365b0e5aa5069ef3d4a16471ad712abb131d7e9fdd",
+    "shared_core_sha256": "46ae2fe342a40034b9caacb6cc48a182947a49da9d874de31a1fdb60be0b9a80",
+    "shared_core_file_count": 23
+  },
+  "one_use_paths": {
+    "validation_claim": "/home/rongyu/workspace/quant-data/private_results/c144_nyfed_primary_dealer_corporate_position_impulse_rotation_spy_qqq_v1_validation/claim.json",
+    "validation_result": "/home/rongyu/workspace/quant-data/private_results/c144_nyfed_primary_dealer_corporate_position_impulse_rotation_spy_qqq_v1_validation/result.json",
+    "holdout_claim": "/home/rongyu/workspace/quant-data/private_results/c144_nyfed_primary_dealer_corporate_position_impulse_rotation_spy_qqq_v1_holdout/claim.json",
+    "holdout_result": "/home/rongyu/workspace/quant-data/private_results/c144_nyfed_primary_dealer_corporate_position_impulse_rotation_spy_qqq_v1_holdout/result.json"
+  },
+  "stop_rules": {
+    "validation_failure": "permanently close the lineage without holdout access",
+    "validation_pass": "unlock exactly one retrospective holdout execution",
+    "holdout_failure": "permanently close the lineage",
+    "holdout_pass": "stop at RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "forbidden": "no tuning, rerun, threshold or window change, alternate source, source blending, new comparator, changed holding period or post-outcome repair"
+  },
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "rerun_authorized": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
