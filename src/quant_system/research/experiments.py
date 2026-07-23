@@ -14,7 +14,7 @@ import re
 from typing import Literal
 
 from quant_system.data import SourceIdentity, require_trusted_source
-from quant_system.research.splits import SplitEvaluation
+from quant_system.research.splits import SplitEvaluation, SplitEvaluationPlan
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _EVENT_TOKEN = object()
@@ -322,7 +322,7 @@ def preregister_trial(
     dataset_sha256: str,
     split_sha256: str,
     stage_plan_sha256: str,
-    split_evaluation_plan_sha256: str,
+    split_evaluation_plan: SplitEvaluationPlan,
     candidate_run_config_sha256: str,
     parameters: Mapping[str, object],
     multiplicity_family_id: str,
@@ -334,6 +334,18 @@ def preregister_trial(
 ) -> tuple[ExperimentEvent, ...]:
     _validate_chain(events)
     preregistered = _timestamp(preregistered_at, "preregistered_at")
+    if not isinstance(split_evaluation_plan, SplitEvaluationPlan):
+        raise TypeError("split_evaluation_plan must be a controlled plan")
+    split_evaluation_plan.__post_init__()
+    if (
+        split_evaluation_plan.preregistered_at.astimezone(timezone.utc)
+        != preregistered
+        or split_evaluation_plan.holdout_id != holdout_id
+        or split_evaluation_plan.manifest_sha256 != split_sha256
+    ):
+        raise ValueError(
+            "split evaluation plan must be frozen for this holdout before access"
+        )
     require_trusted_source(external_anchor)
     if external_anchor.available_at > preregistered:
         raise ValueError("external anchor must exist before preregistration")
@@ -347,6 +359,19 @@ def preregister_trial(
         for event in holdout_events
     ):
         raise ValueError("one holdout_id must use one frozen multiplicity family")
+    split_scope = tuple(
+        event
+        for event in events
+        if event.kind == "PREREGISTERED"
+        and event.dataset_sha256 == dataset_sha256
+        and event.split_sha256 == split_sha256
+    )
+    if any(
+        event.holdout_id != holdout_id
+        or event.multiplicity_family_id != multiplicity_family_id
+        for event in split_scope
+    ):
+        raise ValueError("one frozen dataset split must use one holdout family")
     family = tuple(
         event
         for event in events
@@ -360,7 +385,7 @@ def preregister_trial(
         or event.alpha != alpha
         or event.external_anchor_sha256 != external_anchor.capture_receipt_sha256
         or event.holdout_id != holdout_id
-        or event.split_evaluation_plan_sha256 != split_evaluation_plan_sha256
+        or event.split_evaluation_plan_sha256 != split_evaluation_plan.plan_sha256
         or event.candidate_run_config_sha256 != candidate_run_config_sha256
         for event in family
     ):
@@ -385,7 +410,7 @@ def preregister_trial(
             split_sha256=_sha(split_sha256, "split_sha256"),
             stage_plan_sha256=_sha(stage_plan_sha256, "stage_plan_sha256"),
             split_evaluation_plan_sha256=_sha(
-                split_evaluation_plan_sha256,
+                split_evaluation_plan.plan_sha256,
                 "split_evaluation_plan_sha256",
             ),
             candidate_run_config_sha256=_sha(

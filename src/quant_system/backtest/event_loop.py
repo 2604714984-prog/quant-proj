@@ -1016,6 +1016,12 @@ def run_candidate_rebalance(
         dataset_manifest.verify_identity()
     except ValueError as exc:
         raise MarketDataError("dataset manifest semantic identity mismatch") from exc
+    if decision_artifact.dataset_identity_sha256 != dataset_manifest.identity_sha256:
+        raise MarketDataError(
+            "decision artifact dataset identity must match the dataset manifest"
+        )
+    if decision_artifact.split_identity_sha256 != dataset_manifest.split_manifest_sha256:
+        raise MarketDataError("decision artifact split identity must match the dataset manifest")
     if not isinstance(cost_assumptions, ExecutionCostAssumptions):
         raise TypeError("cost_assumptions must be ExecutionCostAssumptions")
     if not isinstance(candidate_run_config, CandidateRunConfig):

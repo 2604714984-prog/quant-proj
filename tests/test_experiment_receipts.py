@@ -78,9 +78,9 @@ def _preregister(
         trial_id=trial_id,
         definition_sha256=definition_sha256,
         dataset_sha256="b" * 64,
-        split_sha256="c" * 64,
+        split_sha256=plan.manifest_sha256,
         stage_plan_sha256="9" * 64,
-        split_evaluation_plan_sha256=plan.plan_sha256,
+        split_evaluation_plan=plan,
         candidate_run_config_sha256="8" * 64,
         parameters={"holding_days": 5, "threshold": 0.2},
         multiplicity_family_id=family_id,
@@ -115,6 +115,18 @@ def test_holdout_family_cannot_extend_after_access() -> None:
         _preregister(
             "trial-002",
             events=events,
+            definition_sha256="e" * 64,
+        )
+
+
+def test_same_dataset_split_cannot_be_relabelled_as_a_new_holdout_family() -> None:
+    events = _preregister()
+    with pytest.raises(ValueError, match="one holdout family"):
+        _preregister(
+            "trial-002",
+            events=events,
+            family_id="family-002",
+            holdout_id="holdout-002",
             definition_sha256="e" * 64,
         )
 

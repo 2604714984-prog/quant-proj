@@ -2814,9 +2814,14 @@ def _run_candidate_rebalance(
     **kwargs,
 ):
     artifact = kwargs["decision_artifact"]
-    if not isinstance(artifact, DecisionArtifact) or not isinstance(
-        kwargs["cost_assumptions"],
-        ExecutionCostAssumptions,
+    if (
+        not isinstance(artifact, DecisionArtifact)
+        or not isinstance(kwargs["cost_assumptions"], ExecutionCostAssumptions)
+        or not isinstance(kwargs["universe_materialization"], UniverseMaterialization)
+        or artifact.dataset_identity_sha256
+        != kwargs["dataset_manifest"].identity_sha256
+        or artifact.split_identity_sha256
+        != kwargs["dataset_manifest"].split_manifest_sha256
     ):
         return run_candidate_rebalance(
             portfolio,
@@ -2881,7 +2886,7 @@ def _run_candidate_rebalance(
         dataset_sha256=artifact.dataset_identity_sha256,
         split_sha256=artifact.split_identity_sha256,
         stage_plan_sha256=evidence_stage_plan_sha256,
-        split_evaluation_plan_sha256=split_plan.plan_sha256,
+        split_evaluation_plan=split_plan,
         candidate_run_config_sha256=candidate_run_config.config_sha256,
         parameters=json.loads(candidate_run_config.parameters_json),
         multiplicity_family_id=f"family-{artifact.artifact_sha256[:12]}",
