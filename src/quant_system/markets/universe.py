@@ -257,7 +257,6 @@ def materialize_universe_partition(
     *,
     source_identity: SourceIdentity,
     symbol_field: str,
-    inclusion_decisions: Mapping[str, str | None],
     records_by_symbol: Mapping[str, tuple[StatusEvidence, ...]],
     inclusion_rule_path: Path,
     market: UniverseMarket,
@@ -265,7 +264,7 @@ def materialize_universe_partition(
     session: AcceptedSession,
     decision_at: datetime,
 ) -> UniverseMaterialization:
-    """Materialize every symbol from one captured JSON-array source partition."""
+    """Execute one frozen lifecycle rule across a complete captured partition."""
 
     cutoff = require_aware_datetime(decision_at, "decision_at")
     if not isinstance(calendar_identity, CalendarIdentity):
@@ -299,30 +298,29 @@ def materialize_universe_partition(
     source_symbols = tuple(sorted(symbols))
     if len(set(source_symbols)) != len(source_symbols):
         raise MarketDataError("source partition symbols must be unique")
-    if tuple(sorted(inclusion_decisions)) != source_symbols:
-        raise MarketDataError("inclusion decisions must cover every source partition symbol")
     if tuple(sorted(records_by_symbol)) != source_symbols:
         raise MarketDataError("lifecycle records must cover every source partition symbol")
+    rule_bytes = capture_file_bytes(inclusion_rule_path)
+    try:
+        rule = json.loads(rule_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise MarketDataError("inclusion rule must be UTF-8 JSON") from exc
+    if rule != {"include": "lifecycle_eligible", "version": 1}:
+        raise MarketDataError("unsupported controlled universe inclusion rule")
+    evaluated: dict[str, UniverseDecision] = {}
     for symbol in source_symbols:
-        lifecycle_decision = evaluate_universe(
+        evaluated[symbol] = evaluate_universe(
             symbol,
             session,
             cutoff,
             records_by_symbol[symbol],
             market=market,
         )
-        exclusion_reason = inclusion_decisions[symbol]
-        if not lifecycle_decision.eligible and exclusion_reason is None:
-            raise MarketDataError("lifecycle-ineligible symbols cannot be included")
-        if not lifecycle_decision.eligible and not all(
-            reason in str(exclusion_reason) for reason in lifecycle_decision.reasons
-        ):
-            raise MarketDataError("exclusion reason must preserve lifecycle failure reasons")
     entries = tuple(
         UniverseMaterializationEntry(
             symbol,
-            inclusion_decisions[symbol] is None,
-            inclusion_decisions[symbol],
+            evaluated[symbol].eligible,
+            None if evaluated[symbol].eligible else ",".join(evaluated[symbol].reasons),
         )
         for symbol in source_symbols
     )
@@ -336,7 +334,7 @@ def materialize_universe_partition(
         records_by_symbol,
         market=market,
     )
-    rule_sha = capture_file_digest(inclusion_rule_path)[0]
+    rule_sha = hashlib.sha256(rule_bytes).hexdigest()
     provisional = object.__new__(UniverseMaterialization)
     provisional_values = {
         "entries": entries,

@@ -2651,8 +2651,6 @@ def _controlled_materialization(
     execution: AcceptedSession,
     decision_at: datetime,
     rows: tuple[ExecutionInput, ...],
-    *,
-    inclusion_decisions: dict[str, str | None] | None = None,
 ) -> UniverseMaterialization:
     partition_path = tmp_path / "universe.json"
     partition_bytes = json.dumps(
@@ -2661,8 +2659,11 @@ def _controlled_materialization(
         separators=(",", ":"),
     ).encode("utf-8")
     partition_path.write_bytes(partition_bytes)
-    rule_path = tmp_path / "universe_rule.py"
-    rule_path.write_text("INCLUDE = 'lifecycle-eligible'\n", encoding="utf-8")
+    rule_path = tmp_path / "universe_rule.json"
+    rule_path.write_text(
+        '{"include":"lifecycle_eligible","version":1}\n',
+        encoding="utf-8",
+    )
     partition_source = capture_source_bytes(
         partition_bytes,
         publication_evidence=b"fixture publication receipt",
@@ -2678,11 +2679,6 @@ def _controlled_materialization(
         partition_path,
         source_identity=partition_source,
         symbol_field="symbol",
-        inclusion_decisions=(
-            {row.symbol: None for row in rows}
-            if inclusion_decisions is None
-            else inclusion_decisions
-        ),
         records_by_symbol={row.symbol: row.status_records for row in rows},
         inclusion_rule_path=rule_path,
         market="a_share",
@@ -3354,7 +3350,6 @@ def test_universe_materialization_requires_complete_source_partition(tmp_path: P
         execution,
         decision_at,
         (active, delisted),
-        inclusion_decisions={"AAA": None, "DEAD": "delisted"},
     )
 
     assert materialization.members == ("AAA",)
@@ -3362,15 +3357,13 @@ def test_universe_materialization_requires_complete_source_partition(tmp_path: P
         ("AAA", None),
         ("DEAD", "delisted"),
     )
-    with pytest.raises(MarketDataError, match="cover every source partition symbol"):
+    with pytest.raises(MarketDataError, match="lifecycle records must cover"):
         materialize_universe_partition(
             materialization._source_partition_path,
             source_identity=materialization.snapshot.source_identity,
             symbol_field="symbol",
-            inclusion_decisions={"AAA": None},
             records_by_symbol={
                 active.symbol: active.status_records,
-                delisted.symbol: delisted.status_records,
             },
             inclusion_rule_path=materialization._inclusion_rule_path,
             market="a_share",
