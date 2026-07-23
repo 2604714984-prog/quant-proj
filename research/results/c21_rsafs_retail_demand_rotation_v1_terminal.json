@@ -1,0 +1,61 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C21_RSAFS_RETAIL_DEMAND_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE21",
+  "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053327830",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053406207",
+    "preoutcome_commit": "99a36fe6b22cf51bd902545890d519796f958c9c",
+    "definition_sha256": "e14bbcdf7edb6934fc525e703f3f044a83218447b8efa370e93215d837315001",
+    "adapter_sha256": "99d70bf4a3e9cb09ffa72714bed06e5fee0d4420a3bd193b90f1ab5be0c53ce1",
+    "runner_sha256": "91e3aa911a6b0c5edb6d6aa164219fa11e9fa785648dc011a248ad4fe0dd62b1",
+    "input_packet_sha256": "4c4cbfe348573950455a5046f57c869a9e638c2dc996435a5cfb75b93eadcb7d"
+  },
+  "one_use_validation": {
+    "claim_sha256": "5f000657ab92115185dea60bf831fe3395161a7da9d6417d205e43670519f45c",
+    "result_sha256": "70ad3e11ca68d42a88d21e3b1a169e6842664f24e54f3b436f8729e202c7d453",
+    "observed_intervals": 28,
+    "gates_passed": 1,
+    "gates_total": 3,
+    "passed_gates": [
+      "strategy_maximum_drawdown_no_worse_than_50_50_comparator"
+    ],
+    "failed_gates": [
+      "arithmetic_mean_paired_active_return_strictly_positive",
+      "strategy_terminal_net_wealth_strictly_above_50_50_comparator"
+    ],
+    "classification": "RETROSPECTIVE_SECONDARY_VALIDATION_FAIL",
+    "local_read_only_result_acceptance": "VALID"
+  },
+  "holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "sealed_reason": "validation did not pass all three frozen gates"
+  },
+  "program_multiplicity": {
+    "cycle21_familywise_alpha": 0.0000000476837158203125,
+    "cycle1_to_cycle21_union_bound": 0.0999999523162841796875,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "method_limitation": "RSAFS is nominal and may reflect both real demand and prices; the validation failure cannot be repaired by adding an inflation adjustment after outcomes were opened.",
+  "terminal_state": {
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not rerun or rescue this lineage by changing the RSAFS direction, vintage rule, reference-month pairing, transform, inflation treatment, threshold, smoothing, target mapping, comparator, cost, split, source or signal combination."
+}
