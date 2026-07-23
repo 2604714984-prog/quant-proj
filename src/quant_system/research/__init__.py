@@ -2,9 +2,11 @@
 
 from quant_system.research.identity import (
     DatasetManifest,
+    TransformationReceipt,
     build_dataset_manifest,
     capture_dataset_manifest,
     dataset_identity_sha256,
+    execute_transformation,
 )
 from quant_system.research.experiments import (
     ExperimentEvent,
@@ -44,6 +46,7 @@ __all__ = [
     "build_dataset_manifest",
     "capture_dataset_manifest",
     "DatasetManifest",
+    "TransformationReceipt",
     "ExperimentEvent",
     "ExperimentAnchorReceipt",
     "ExperimentLedgerReceipt",
@@ -60,6 +63,7 @@ __all__ = [
     "capture_family_anchor",
     "capture_final_run_receipt",
     "evaluate_split",
+    "execute_transformation",
     "freeze_experiment_manifest",
     "load_split_manifest",
     "preregister_trial",

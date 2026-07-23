@@ -1,12 +1,15 @@
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
+import json
 
 import pytest
 
+from quant_system.data import capture_source_bytes
 from quant_system.research.identity import (
     build_dataset_manifest,
     capture_dataset_manifest,
     dataset_identity_sha256,
+    execute_transformation,
 )
 from quant_system.research.splits import (
     SplitManifest,
@@ -402,3 +405,63 @@ def test_captured_dataset_manifest_revalidates_all_semantic_bytes(tmp_path) -> N
     paths["cost"].write_text('{"identity":"cost-v2"}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="cost_policy_sha256"):
         manifest.verify_identity()
+
+
+def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None:
+    as_of = datetime(2026, 1, 2, 12, tzinfo=timezone.utc)
+    raw_rows = [
+        {
+            "close": 10.5,
+            "source_available_at": "2026-01-02T10:00:00+00:00",
+            "symbol": "AAA",
+        }
+    ]
+    raw_bytes = json.dumps(raw_rows, sort_keys=True, separators=(",", ":")).encode()
+    raw_path = tmp_path / "raw.json"
+    raw_path.write_bytes(raw_bytes)
+    source = capture_source_bytes(
+        raw_bytes,
+        publication_evidence=b"fixture publication",
+        source_url="https://example.test/raw",
+        available_at=datetime(2026, 1, 2, 10, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 1, 2, 10, 1, tzinfo=timezone.utc),
+        revision_id="raw-v1",
+        source_family_id="raw-family",
+        provider_id="fixture-provider",
+        subject_id="AAA",
+    ).source
+    program = tmp_path / "transform.py"
+    program.write_text(
+        "import argparse,json\n"
+        "p=argparse.ArgumentParser();p.add_argument('--config');"
+        "p.add_argument('--output');p.add_argument('raw',nargs='+');a=p.parse_args()\n"
+        "rows=[]\n"
+        "for path in a.raw: rows.extend(json.load(open(path,encoding='utf-8')))\n"
+        "with open(a.output,'w',encoding='utf-8') as out:\n"
+        "  for row in sorted(rows,key=lambda x:x['symbol']):\n"
+        "    out.write(json.dumps(row,sort_keys=True,separators=(',',':'))+'\\n')\n",
+        encoding="utf-8",
+    )
+    config = tmp_path / "transform.json"
+    config.write_text('{"version":1}\n', encoding="utf-8")
+    output = tmp_path / "partition.jsonl"
+    receipt = execute_transformation(
+        raw_paths=(raw_path,),
+        raw_sources=(source,),
+        program_path=program,
+        config_path=config,
+        output_path=output,
+        schema=(
+            ("symbol", "VARCHAR"),
+            ("close", "DOUBLE"),
+            ("source_available_at", "TIMESTAMP"),
+        ),
+        dataset_as_of=as_of,
+        executed_at=as_of,
+    )
+    assert receipt.row_count == 1
+    assert receipt.is_authoritative is False
+    receipt.verify()
+    output.write_text('{"symbol":"TAMPERED"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="output partition bytes changed"):
+        receipt.verify()

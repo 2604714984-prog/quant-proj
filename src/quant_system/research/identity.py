@@ -4,7 +4,11 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import subprocess
+import sys
+import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
 from dataclasses import field
@@ -17,6 +21,7 @@ from quant_system.data.source_identity import (
     capture_file_digest,
     require_aware_utc,
     require_provider_qualified_source,
+    require_trusted_source,
 )
 from quant_system.research.splits import (
     SplitManifest,
@@ -29,6 +34,213 @@ _SHA256 = re.compile(r"[0-9a-f]{64}")
 _DATASET_MANIFEST_TOKEN = object()
 _CAPTURED_SEMANTICS_TOKEN = object()
 _VERIFIED_SPLIT_TOKEN = object()
+_TRANSFORMATION_TOKEN = object()
+
+
+@dataclass(frozen=True)
+class TransformationReceipt:
+    raw_sources: tuple[SourceIdentity, ...]
+    program_sha256: str
+    config_sha256: str
+    schema: tuple[tuple[str, str], ...]
+    row_count: int
+    output_partition_sha256: str
+    dataset_as_of: datetime
+    executed_at: datetime
+    receipt_sha256: str
+    _program_path: Path = field(repr=False, compare=False)
+    _config_path: Path = field(repr=False, compare=False)
+    _raw_paths: tuple[Path, ...] = field(repr=False, compare=False)
+    _output_path: Path = field(repr=False, compare=False)
+    _token: object | None = field(default=None, repr=False, compare=False)
+
+    @property
+    def is_authoritative(self) -> bool:
+        return bool(self.raw_sources) and all(
+            source.is_provider_qualified_capture for source in self.raw_sources
+        )
+
+    def verify(self) -> None:
+        if self._token is not _TRANSFORMATION_TOKEN:
+            raise ValueError("TransformationReceipt must come from execute_transformation")
+        if len(self.raw_sources) != len(self._raw_paths) or not self.raw_sources:
+            raise ValueError("transformation raw source coverage is incomplete")
+        for source, path in zip(self.raw_sources, self._raw_paths, strict=True):
+            require_trusted_source(source)
+            if (
+                capture_file_digest(path)[0] != source.content_sha256
+                or source.available_at > self.dataset_as_of
+            ):
+                raise ValueError("transformation raw source bytes or PIT time changed")
+        if capture_file_digest(self._program_path)[0] != self.program_sha256:
+            raise ValueError("transformation program bytes changed")
+        if capture_file_digest(self._config_path)[0] != self.config_sha256:
+            raise ValueError("transformation config bytes changed")
+        if capture_file_digest(self._output_path)[0] != self.output_partition_sha256:
+            raise ValueError("transformation output partition bytes changed")
+        with tempfile.TemporaryDirectory(prefix="quant-transform-verify-") as directory:
+            replay = Path(directory) / "partition.jsonl"
+            _run_transformation(
+                self._program_path,
+                self._config_path,
+                self._raw_paths,
+                replay,
+            )
+            row_count = _validate_partition(replay, self.schema, self.dataset_as_of)
+            if (
+                row_count != self.row_count
+                or capture_file_digest(replay)[0] != self.output_partition_sha256
+            ):
+                raise ValueError("transformation replay does not reproduce the partition")
+        payload = _transformation_payload(self)
+        if hashlib.sha256(payload).hexdigest() != self.receipt_sha256:
+            raise ValueError("transformation receipt hash mismatch")
+
+
+def _transformation_payload(receipt: TransformationReceipt) -> bytes:
+    return json.dumps(
+        {
+            "config_sha256": receipt.config_sha256,
+            "dataset_as_of": receipt.dataset_as_of.isoformat(),
+            "executed_at": receipt.executed_at.isoformat(),
+            "output_partition_sha256": receipt.output_partition_sha256,
+            "program_sha256": receipt.program_sha256,
+            "raw_source_receipt_sha256s": tuple(
+                source.capture_receipt_sha256 for source in receipt.raw_sources
+            ),
+            "row_count": receipt.row_count,
+            "schema": receipt.schema,
+            "version": 1,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def _run_transformation(
+    program_path: Path,
+    config_path: Path,
+    raw_paths: tuple[Path, ...],
+    output_path: Path,
+) -> None:
+    command = [
+        sys.executable,
+        str(program_path),
+        "--config",
+        str(config_path),
+        "--output",
+        str(output_path),
+        *(str(path) for path in raw_paths),
+    ]
+    completed = subprocess.run(  # noqa: S603
+        command,
+        check=False,
+        capture_output=True,
+        timeout=120,
+    )
+    if completed.returncode != 0 or not output_path.is_file():
+        raise ValueError("transformation program did not produce its declared partition")
+
+
+def _validate_partition(
+    path: Path,
+    schema: tuple[tuple[str, str], ...],
+    dataset_as_of: datetime,
+) -> int:
+    expected = {name for name, _ in schema}
+    rows = 0
+    for line in path.read_text(encoding="utf-8").splitlines():
+        try:
+            row = json.loads(line)
+        except json.JSONDecodeError as exc:
+            raise ValueError("transformation output must be JSON Lines") from exc
+        if type(row) is not dict or set(row) != expected:
+            raise ValueError("transformation output does not match the declared schema")
+        for name, value in row.items():
+            if name.endswith("available_at"):
+                observed = require_aware_utc(
+                    datetime.fromisoformat(str(value)),
+                    name,
+                )
+                if observed > dataset_as_of:
+                    raise ValueError("transformation output contains post-as-of evidence")
+        rows += 1
+    if rows < 1:
+        raise ValueError("transformation output partition must not be empty")
+    return rows
+
+
+def execute_transformation(
+    *,
+    raw_paths: Sequence[Path],
+    raw_sources: Sequence[SourceIdentity],
+    program_path: Path,
+    config_path: Path,
+    output_path: Path,
+    schema: Sequence[tuple[str, str]],
+    dataset_as_of: datetime,
+    executed_at: datetime,
+) -> TransformationReceipt:
+    """Execute one frozen program and retain a replayable lineage receipt."""
+
+    frozen_raw_paths = tuple(raw_paths)
+    frozen_sources = tuple(raw_sources)
+    frozen_schema = tuple(schema)
+    as_of = require_aware_utc(dataset_as_of, "dataset_as_of")
+    executed = require_aware_utc(executed_at, "executed_at")
+    if output_path.exists():
+        raise ValueError("transformation output path must not already exist")
+    if len(frozen_raw_paths) != len(frozen_sources) or not frozen_sources:
+        raise ValueError("raw paths and source receipts must have one nonempty length")
+    for path, source in zip(frozen_raw_paths, frozen_sources, strict=True):
+        require_trusted_source(source)
+        if capture_file_digest(path)[0] != source.content_sha256:
+            raise ValueError("raw source receipt does not bind its bytes")
+        if source.available_at > as_of:
+            raise ValueError("raw source was unavailable at dataset_as_of")
+    program_sha = capture_file_digest(program_path)[0]
+    config_sha = capture_file_digest(config_path)[0]
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(
+        prefix="quant-transform-",
+        dir=output_path.parent,
+    ) as directory:
+        generated = Path(directory) / "partition.jsonl"
+        _run_transformation(
+            program_path,
+            config_path,
+            frozen_raw_paths,
+            generated,
+        )
+        row_count = _validate_partition(generated, frozen_schema, as_of)
+        output_sha = capture_file_digest(generated)[0]
+        os.replace(generated, output_path)
+    values = {
+        "raw_sources": frozen_sources,
+        "program_sha256": program_sha,
+        "config_sha256": config_sha,
+        "schema": frozen_schema,
+        "row_count": row_count,
+        "output_partition_sha256": output_sha,
+        "dataset_as_of": as_of,
+        "executed_at": executed,
+        "_program_path": program_path,
+        "_config_path": config_path,
+        "_raw_paths": frozen_raw_paths,
+        "_output_path": output_path,
+    }
+    provisional = object.__new__(TransformationReceipt)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    receipt = TransformationReceipt(
+        **values,
+        receipt_sha256=hashlib.sha256(
+            _transformation_payload(provisional)
+        ).hexdigest(),
+        _token=_TRANSFORMATION_TOKEN,
+    )
+    receipt.verify()
+    return receipt
 
 
 @dataclass(frozen=True)
@@ -50,6 +262,7 @@ class DatasetManifest:
     partition_sources: tuple[SourceIdentity, ...] = ()
     partition_parser_sha256s: tuple[str, ...] = ()
     schema_sha256: str | None = None
+    transformation_receipts: tuple[TransformationReceipt, ...] = ()
     _token: object | None = field(default=None, repr=False, compare=False, hash=False)
     _semantic_paths: tuple[tuple[str, Path], ...] = field(
         default=(),
@@ -102,8 +315,10 @@ class DatasetManifest:
     def has_pit_partitions(self) -> bool:
         return (
             self.dataset_as_of is not None
-            and len(self.partition_sources) == len(self.partition_sha256s)
-            and len(self.partition_parser_sha256s) == len(self.partition_sha256s)
+            and len(self.transformation_receipts) == len(self.partition_sha256s)
+            and all(
+                receipt.is_authoritative for receipt in self.transformation_receipts
+            )
             and self.schema_sha256 is not None
         )
 
@@ -135,6 +350,9 @@ class DatasetManifest:
             ),
             partition_parser_sha256s=self.partition_parser_sha256s,
             schema_sha256=self.schema_sha256,
+            transformation_receipt_sha256s=tuple(
+                receipt.receipt_sha256 for receipt in self.transformation_receipts
+            ),
         )
         if observed != self.identity_sha256:
             raise ValueError("dataset manifest semantic identity mismatch")
@@ -170,27 +388,16 @@ class DatasetManifest:
                     raise ValueError("canonical split manifest no longer matches dataset")
         if self.has_pit_partitions:
             assert self.dataset_as_of is not None
-            for digest, source in zip(
+            for digest, receipt in zip(
                 self.partition_sha256s,
-                self.partition_sources,
+                self.transformation_receipts,
                 strict=True,
             ):
-                require_provider_qualified_source(source)
-                if source.content_sha256 != digest:
-                    raise ValueError("partition source bytes do not match partition hash")
-                if source.available_at > self.dataset_as_of:
-                    raise ValueError("partition source was unavailable at dataset_as_of")
-            if len(self._partition_parser_paths) != len(self.partition_parser_sha256s):
-                raise ValueError("partition parser path coverage is incomplete")
-            if any(
-                capture_file_digest(path)[0] != digest
-                for path, digest in zip(
-                    self._partition_parser_paths,
-                    self.partition_parser_sha256s,
-                    strict=True,
-                )
-            ):
-                raise ValueError("partition parser bytes no longer match manifest")
+                receipt.verify()
+                if receipt.output_partition_sha256 != digest:
+                    raise ValueError(
+                        "transformation receipt does not bind partition bytes"
+                    )
 
 
 def _canonical_timestamp(value: date | datetime) -> str:
@@ -223,6 +430,7 @@ def dataset_identity_sha256(
     partition_available_ats: Sequence[datetime] = (),
     partition_parser_sha256s: Sequence[str] = (),
     schema_sha256: str | None = None,
+    transformation_receipt_sha256s: Sequence[str] = (),
 ) -> str:
     """Hash exact partitions and every dataset-semantic artifact."""
 
@@ -299,13 +507,29 @@ def dataset_identity_sha256(
     pit_receipts = tuple(partition_source_receipt_sha256s)
     pit_available = tuple(partition_available_ats)
     pit_parsers = tuple(partition_parser_sha256s)
-    if any((dataset_as_of is not None, pit_receipts, pit_available, pit_parsers, schema_sha256)):
+    transformations = tuple(transformation_receipt_sha256s)
+    if any(
+        (
+            dataset_as_of is not None,
+            pit_receipts,
+            pit_available,
+            pit_parsers,
+            schema_sha256,
+            transformations,
+        )
+    ):
         if (
             dataset_as_of is None
             or schema_sha256 is None
-            or len(pit_receipts) != len(frozen_partitions)
-            or len(pit_available) != len(frozen_partitions)
-            or len(pit_parsers) != len(frozen_partitions)
+            or (
+                not transformations
+                and (
+                    len(pit_receipts) != len(frozen_partitions)
+                    or len(pit_available) != len(frozen_partitions)
+                    or len(pit_parsers) != len(frozen_partitions)
+                )
+            )
+            or (transformations and len(transformations) != len(frozen_partitions))
         ):
             raise ValueError("PIT partition identity fields must cover every partition")
         as_of = require_aware_utc(dataset_as_of, "dataset_as_of")
@@ -319,6 +543,7 @@ def dataset_identity_sha256(
             ("partition_source_receipt_sha256s", pit_receipts),
             ("partition_parser_sha256s", pit_parsers),
             ("schema_sha256", (schema_sha256,)),
+            ("transformation_receipt_sha256s", transformations),
         ):
             if any(_SHA256.fullmatch(value) is None for value in values):
                 raise ValueError(f"{label} must contain lowercase SHA-256 values")
@@ -334,6 +559,9 @@ def dataset_identity_sha256(
                 "version": 3,
             }
         )
+        if transformations:
+            payload["transformation_receipt_sha256s"] = transformations
+            payload["version"] = 4
     encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=True)
     return hashlib.sha256(encoded.encode("utf-8")).hexdigest()
 
@@ -344,8 +572,15 @@ def build_dataset_manifest(
     """Build an immutable dataset receipt from validated semantic identities."""
 
     identity_inputs = {
-        key: value for key, value in inputs.items() if key != "partition_sources"
+        key: value
+        for key, value in inputs.items()
+        if key not in {"partition_sources", "transformation_receipts"}
     }
+    if inputs.get("transformation_receipts"):
+        identity_inputs["transformation_receipt_sha256s"] = tuple(
+            receipt.receipt_sha256
+            for receipt in inputs["transformation_receipts"]  # type: ignore[union-attr]
+        )
     identity = dataset_identity_sha256(**identity_inputs)  # type: ignore[arg-type]
     return DatasetManifest(
         dates=tuple(inputs["dates"]),  # type: ignore[arg-type]
@@ -367,6 +602,9 @@ def build_dataset_manifest(
             inputs.get("partition_parser_sha256s", ())
         ),  # type: ignore[arg-type]
         schema_sha256=inputs.get("schema_sha256"),  # type: ignore[arg-type]
+        transformation_receipts=tuple(
+            inputs.get("transformation_receipts", ())
+        ),  # type: ignore[arg-type]
         _token=_DATASET_MANIFEST_TOKEN,
     )
 
@@ -389,6 +627,7 @@ def capture_dataset_manifest(
     partition_sources: Sequence[SourceIdentity] = (),
     partition_parser_paths: Sequence[Path] = (),
     dataset_as_of: datetime | None = None,
+    transformation_receipts: Sequence[TransformationReceipt] = (),
 ) -> DatasetManifest:
     """Capture all dataset-semantic and partition bytes into a revalidated manifest."""
 
@@ -420,8 +659,40 @@ def capture_dataset_manifest(
     )
     frozen_sources = tuple(partition_sources)
     frozen_parser_paths = tuple(partition_parser_paths)
+    frozen_transformations = tuple(transformation_receipts)
     pit_inputs: dict[str, object] = {}
-    if any((frozen_sources, frozen_parser_paths, dataset_as_of is not None)):
+    if frozen_transformations:
+        if (
+            dataset_as_of is None
+            or len(frozen_transformations) != len(frozen_partitions)
+        ):
+            raise ValueError(
+                "transformation receipts must cover every partition and dataset_as_of"
+            )
+        as_of = require_aware_utc(dataset_as_of, "dataset_as_of")
+        for digest, receipt in zip(
+            partition_hashes,
+            frozen_transformations,
+            strict=True,
+        ):
+            if not isinstance(receipt, TransformationReceipt):
+                raise TypeError("invalid transformation receipt")
+            receipt.verify()
+            if (
+                receipt.output_partition_sha256 != digest
+                or receipt.dataset_as_of != as_of
+                or receipt.schema != tuple(schema)
+            ):
+                raise ValueError(
+                    "transformation receipt does not bind partition, schema, or as-of"
+                )
+        canonical_schema = json.dumps(tuple(schema), separators=(",", ":")).encode()
+        pit_inputs = {
+            "dataset_as_of": as_of,
+            "transformation_receipts": frozen_transformations,
+            "schema_sha256": hashlib.sha256(canonical_schema).hexdigest(),
+        }
+    elif any((frozen_sources, frozen_parser_paths, dataset_as_of is not None)):
         if (
             dataset_as_of is None
             or len(frozen_sources) != len(frozen_partitions)
