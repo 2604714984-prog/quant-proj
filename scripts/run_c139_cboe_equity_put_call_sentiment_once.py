@@ -1222,7 +1222,7 @@ def execute_stage(stage: str) -> dict[str, Any]:
         definition.get("research_id") != RESEARCH_ID
         or definition.get("program_multiplicity", {}).get("sole_primary_alpha") != PROGRAM_ALPHA
         or definition.get("source_identities", {}).get("adapter_sha256") != ADAPTER_SHA256
-        or definition.get("expected_inclusion_rule_sha256")
+        or definition.get("universe", {}).get("expected_inclusion_rule_sha256")
         != INCLUSION_RULE_SHA256
         or definition.get("boundaries", {}).get("strategy_candidate_available") is not False
     ):
