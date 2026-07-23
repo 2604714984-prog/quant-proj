@@ -43,12 +43,11 @@ def _normalized_float(value: object, *, label: str) -> float:
 
 
 @dataclass(frozen=True)
-class RetryDecision:
-    """A pre-open decision to retry an exit, which can never carry a price."""
+class RetryInstruction:
+    """A pre-open instruction to attempt an exit, carrying no observed outcome."""
 
     decision_at: datetime
     requested_session: date
-    reason: str
 
     def __post_init__(self) -> None:
         object.__setattr__(
@@ -57,9 +56,33 @@ class RetryDecision:
             require_aware_datetime(self.decision_at, "decision_at"),
         )
         require_date(self.requested_session, "requested_session")
+
+
+@dataclass(frozen=True)
+class NoFillEvent:
+    """A post-open observation that explains why an instructed exit did not fill."""
+
+    observed_at: datetime
+    effective_at: datetime
+    reason: str
+    source: SourceIdentity
+
+    def __post_init__(self) -> None:
+        observed_at = require_aware_datetime(self.observed_at, "observed_at")
+        effective_at = require_aware_datetime(self.effective_at, "effective_at")
         reason = require_nonempty_text(self.reason, "reason")
         if reason not in BLOCKED_EXIT_REASONS:
-            raise MarketDataError("retry decision requires a recognized blocked-exit reason")
+            raise MarketDataError("no-fill event requires a recognized blocked-exit reason")
+        try:
+            require_trusted_source(self.source)
+        except ValueError as exc:
+            raise MarketDataError("no-fill event requires a trusted source capture") from exc
+        if observed_at < effective_at:
+            raise MarketDataError("no-fill event cannot be observed before its market event")
+        if self.source.available_at > observed_at:
+            raise MarketDataError("no-fill source was unavailable at observed_at")
+        object.__setattr__(self, "observed_at", observed_at)
+        object.__setattr__(self, "effective_at", effective_at)
         object.__setattr__(self, "reason", reason)
 
 
@@ -121,7 +144,8 @@ class BlockedExitOrder:
     shares: float
     requested_session: date
     calendar: AcceptedSessionCalendar
-    retry_decisions: tuple[RetryDecision, ...] = ()
+    retry_instructions: tuple[RetryInstruction, ...] = ()
+    no_fill_events: tuple[NoFillEvent, ...] = ()
     fill_event: FillEvent | None = None
     executed_session: date | None = None
     execution_price: float | None = None
@@ -142,24 +166,37 @@ class BlockedExitOrder:
             raise MarketDataError("calendar must be an AcceptedSessionCalendar")
         if self.requested_session not in self.calendar.session_dates:
             raise MarketDataError("requested_session must be present in the accepted calendar")
-        if type(self.retry_decisions) is not tuple:
-            raise MarketDataError("retry_decisions must be an immutable tuple")
-        if any(not isinstance(item, RetryDecision) for item in self.retry_decisions):
-            raise MarketDataError("retry_decisions must contain only RetryDecision values")
+        if type(self.retry_instructions) is not tuple:
+            raise MarketDataError("retry_instructions must be an immutable tuple")
+        if any(not isinstance(item, RetryInstruction) for item in self.retry_instructions):
+            raise MarketDataError(
+                "retry_instructions must contain only RetryInstruction values"
+            )
+        if type(self.no_fill_events) is not tuple or any(
+            not isinstance(item, NoFillEvent) for item in self.no_fill_events
+        ):
+            raise MarketDataError("no_fill_events must contain only NoFillEvent values")
+        if len(self.retry_instructions) != len(self.no_fill_events):
+            raise ValueError("every retry instruction requires one post-open no-fill event")
 
         previous_session: date | None = None
-        for decision in self.retry_decisions:
-            accepted = _accepted_retry_session(self, decision)
+        for instruction, event in zip(
+            self.retry_instructions,
+            self.no_fill_events,
+            strict=True,
+        ):
+            accepted = _accepted_retry_session(self, instruction)
             if previous_session is None:
                 if accepted.session_date != self.requested_session:
                     raise ValueError("the first retry must use the requested session")
             else:
                 expected = self.calendar.next_session(
                     previous_session,
-                    as_of=decision.decision_at,
+                    as_of=instruction.decision_at,
                 )
                 if accepted != expected:
-                    raise ValueError("retry decisions must use consecutive accepted sessions")
+                    raise ValueError("retry instructions must use consecutive accepted sessions")
+            _validate_no_fill_event(self, accepted, event)
             previous_session = accepted.session_date
 
         if self.fill_event is None:
@@ -182,10 +219,10 @@ class BlockedExitOrder:
             )
             expected_date = (
                 self.calendar.next_session(
-                    self.retry_decisions[-1].requested_session,
+                    self.retry_instructions[-1].requested_session,
                     as_of=self.fill_event.execution_at,
                 ).session_date
-                if self.retry_decisions
+                if self.retry_instructions
                 else self.requested_session
             )
             if self.executed_session != expected_date:
@@ -196,8 +233,8 @@ class BlockedExitOrder:
                 raise ValueError("fill source subject must match order symbol")
             if self.execution_price != self.fill_event.price:
                 raise ValueError("execution price must match fill event")
-            if self.delay_sessions != len(self.retry_decisions):
-                raise ValueError("delay_sessions must equal preceding retry decisions")
+            if self.delay_sessions != len(self.retry_instructions):
+                raise ValueError("delay_sessions must equal preceding retry instructions")
             if self.evidence_grade != self.fill_event.evidence_grade:
                 raise ValueError("evidence grade must match fill event basis")
 
@@ -208,25 +245,38 @@ class BlockedExitOrder:
 
 def _accepted_retry_session(
     order: BlockedExitOrder,
-    decision: RetryDecision,
+    instruction: RetryInstruction,
 ) -> AcceptedSession:
     accepted = order.calendar.session_on(
-        decision.requested_session,
-        as_of=decision.decision_at,
+        instruction.requested_session,
+        as_of=instruction.decision_at,
     )
-    if decision.decision_at >= accepted.open_at:
-        raise MarketDataError("retry decision must be strictly before requested-session open")
-    if accepted.source.available_at > decision.decision_at:
+    if instruction.decision_at >= accepted.open_at:
+        raise MarketDataError("retry instruction must be strictly before requested-session open")
+    if accepted.source.available_at > instruction.decision_at:
         raise MarketDataError("requested-session source was unavailable at decision_at")
     return accepted
+
+
+def _validate_no_fill_event(
+    order: BlockedExitOrder,
+    accepted: AcceptedSession,
+    event: NoFillEvent,
+) -> None:
+    if event.effective_at != accepted.open_at:
+        raise MarketDataError("no-fill effective_at must equal accepted-session open")
+    if event.observed_at < accepted.open_at:
+        raise MarketDataError("no-fill event cannot be submitted before session open")
+    if event.source.subject_id != order.symbol:
+        raise MarketDataError("no-fill source subject must match order symbol")
 
 
 def _expected_fill_session(order: BlockedExitOrder, fill_event: FillEvent) -> AcceptedSession:
     if not order.pending:
         raise ValueError("completed exit cannot be advanced")
-    if order.retry_decisions:
+    if order.retry_instructions:
         expected = order.calendar.next_session(
-            order.retry_decisions[-1].requested_session,
+            order.retry_instructions[-1].requested_session,
             as_of=fill_event.execution_at,
         )
     else:
@@ -246,27 +296,32 @@ def _expected_fill_session(order: BlockedExitOrder, fill_event: FillEvent) -> Ac
 def advance_blocked_exit(
     order: BlockedExitOrder,
     *,
-    decision: RetryDecision,
+    instruction: RetryInstruction,
+    no_fill_event: NoFillEvent,
 ) -> BlockedExitOrder:
-    """Record one price-free pre-open retry on the next accepted session."""
+    """Record a pre-open instruction and its distinct post-open no-fill event."""
 
-    if not isinstance(decision, RetryDecision):
-        raise TypeError("decision must be a RetryDecision")
+    if not isinstance(instruction, RetryInstruction):
+        raise TypeError("instruction must be a RetryInstruction")
+    if not isinstance(no_fill_event, NoFillEvent):
+        raise TypeError("no_fill_event must be a NoFillEvent")
     if not order.pending:
         raise ValueError("completed exit cannot be advanced")
-    accepted = _accepted_retry_session(order, decision)
-    if order.retry_decisions:
+    accepted = _accepted_retry_session(order, instruction)
+    if order.retry_instructions:
         expected = order.calendar.next_session(
-            order.retry_decisions[-1].requested_session,
-            as_of=decision.decision_at,
+            order.retry_instructions[-1].requested_session,
+            as_of=instruction.decision_at,
         )
         if accepted != expected:
-            raise ValueError("retry decisions must use consecutive accepted sessions")
+            raise ValueError("retry instructions must use consecutive accepted sessions")
     elif accepted.session_date != order.requested_session:
         raise ValueError("the first retry must use the requested session")
+    _validate_no_fill_event(order, accepted, no_fill_event)
     return replace(
         order,
-        retry_decisions=order.retry_decisions + (decision,),
+        retry_instructions=order.retry_instructions + (instruction,),
+        no_fill_events=order.no_fill_events + (no_fill_event,),
     )
 
 
@@ -299,7 +354,7 @@ def execute_ready_blocked_exit(
         fill_event=fill_event,
         executed_session=accepted.session_date,
         execution_price=fill_event.price,
-        delay_sessions=len(order.retry_decisions),
+        delay_sessions=len(order.retry_instructions),
         evidence_grade=fill_event.evidence_grade,
     )
     trade = portfolio.sell(

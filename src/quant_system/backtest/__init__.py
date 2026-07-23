@@ -3,7 +3,8 @@
 from .blocked_orders import (
     BlockedExitOrder,
     FillEvent,
-    RetryDecision,
+    NoFillEvent,
+    RetryInstruction,
     advance_blocked_exit,
     execute_ready_blocked_exit,
 )
@@ -45,8 +46,9 @@ __all__ = [
     "ExecutionCostAssumptions",
     "ExecutionReceipt",
     "FillEvent",
+    "NoFillEvent",
     "Portfolio",
-    "RetryDecision",
+    "RetryInstruction",
     "StageContext",
     "StagePlan",
     "StaticRebalanceResult",

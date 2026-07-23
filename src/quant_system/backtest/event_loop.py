@@ -46,7 +46,8 @@ from quant_system.research.identity import DatasetManifest
 from .blocked_orders import (
     BLOCKED_EXIT_REASONS,
     BlockedExitOrder,
-    RetryDecision,
+    NoFillEvent,
+    RetryInstruction,
     advance_blocked_exit,
 )
 from .capacity import CapacityObservation, CapacityPolicy, assess_capacity
@@ -857,19 +858,21 @@ def blocked_exit_from_receipt(
     receipt: ExecutionReceipt,
     context: DecisionContext,
     calendar: AcceptedSessionCalendar,
+    *,
+    no_fill_event: NoFillEvent,
 ) -> BlockedExitOrder:
-    """Turn a market-blocked sell into the existing multi-session retry object."""
+    """Bind a blocked receipt to separate pre-open intent and post-open evidence."""
     if receipt.side != "sell" or receipt.filled_shares or receipt.reason not in BLOCKED_EXIT_REASONS:
         raise ValueError("receipt is not a retryable market-blocked exit")
     order = BlockedExitOrder(receipt.symbol, receipt.requested_shares,
                              context.execution_session.session_date, calendar)
     return advance_blocked_exit(
         order,
-        decision=RetryDecision(
+        instruction=RetryInstruction(
             decision_at=context.decision_at,
             requested_session=context.execution_session.session_date,
-            reason=receipt.reason,
         ),
+        no_fill_event=no_fill_event,
     )
 
 

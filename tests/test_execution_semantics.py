@@ -7,7 +7,8 @@ import pytest
 from quant_system.backtest.blocked_orders import (
     BlockedExitOrder,
     FillEvent,
-    RetryDecision,
+    NoFillEvent,
+    RetryInstruction,
     advance_blocked_exit,
     execute_ready_blocked_exit,
 )
@@ -416,7 +417,8 @@ def _order_snapshot(order: BlockedExitOrder) -> object:
             order.shares,
             order.requested_session,
             order.calendar.session_dates,
-            order.retry_decisions,
+            order.retry_instructions,
+            order.no_fill_events,
             order.fill_event,
             order.executed_session,
             order.execution_price,
@@ -485,6 +487,34 @@ def _fill_event(
     )
 
 
+def _no_fill_event(
+    order: BlockedExitOrder,
+    session: date,
+    reason: str,
+) -> NoFillEvent:
+    accepted = order.calendar.session_on(
+        session,
+        as_of=datetime(2026, 7, 16, tzinfo=UTC),
+    )
+    source = capture_source_bytes(
+        f"{session}:{reason}".encode(),
+        publication_evidence=b"fixture publication receipt",
+        source_url="https://example.test/no-fill-event",
+        available_at=accepted.open_at,
+        retrieved_at=accepted.open_at + timedelta(microseconds=1),
+        revision_id=f"no-fill-{session}-{reason}",
+        source_family_id="no-fill-event",
+        provider_id="fixture-provider",
+        subject_id=order.symbol,
+    ).source
+    return NoFillEvent(
+        observed_at=accepted.open_at,
+        effective_at=accepted.open_at,
+        reason=reason,
+        source=source,
+    )
+
+
 def test_blocked_exit_retries_require_an_immutable_typed_tuple() -> None:
     with pytest.raises(MarketDataError, match="immutable tuple"):
         BlockedExitOrder(
@@ -492,16 +522,16 @@ def test_blocked_exit_retries_require_an_immutable_typed_tuple() -> None:
             100,
             date(2026, 7, 13),
             _calendar(),
-            retry_decisions=[],  # type: ignore[arg-type]
+            retry_instructions=[],  # type: ignore[arg-type]
         )
 
-    with pytest.raises(MarketDataError, match="only RetryDecision"):
+    with pytest.raises(MarketDataError, match="only RetryInstruction"):
         BlockedExitOrder(
             "000001.SZ",
             100,
             date(2026, 7, 13),
             _calendar(),
-            retry_decisions=(object(),),  # type: ignore[arg-type]
+            retry_instructions=(object(),),  # type: ignore[arg-type]
         )
 
     calendar = _calendar()
@@ -509,18 +539,18 @@ def test_blocked_exit_retries_require_an_immutable_typed_tuple() -> None:
         date(2026, 7, 13),
         as_of=datetime(2026, 7, 13, tzinfo=UTC),
     )
-    valid = RetryDecision(
+    valid = RetryInstruction(
         session.open_at - timedelta(microseconds=1),
         session.session_date,
-        "suspended",
     )
-    assert BlockedExitOrder(
-        "000001.SZ",
-        100,
-        date(2026, 7, 13),
-        calendar,
-        retry_decisions=(valid,),
-    ).retry_decisions == (valid,)
+    order = BlockedExitOrder("000001.SZ", 100, date(2026, 7, 13), calendar)
+    advanced = advance_blocked_exit(
+        order,
+        instruction=valid,
+        no_fill_event=_no_fill_event(order, session.session_date, "suspended"),
+    )
+    assert advanced.retry_instructions == (valid,)
+    assert advanced.no_fill_events[0].reason == "suspended"
 
 
 def test_retry_decision_requires_decision_strictly_before_session_open() -> None:
@@ -529,10 +559,9 @@ def test_retry_decision_requires_decision_strictly_before_session_open() -> None
         date(2026, 7, 13),
         as_of=datetime(2026, 7, 13, tzinfo=UTC),
     )
-    accepted = RetryDecision(
+    accepted = RetryInstruction(
         session.open_at - timedelta(microseconds=1),
         session.session_date,
-        "suspended",
     )
     assert accepted.decision_at == session.open_at - timedelta(microseconds=1)
 
@@ -543,8 +572,36 @@ def test_retry_decision_requires_decision_strictly_before_session_open() -> None
         with pytest.raises(MarketDataError, match="strictly before"):
             advance_blocked_exit(
                 _blocked_order(),
-                decision=RetryDecision(decision_at, session.session_date, "suspended"),
+                instruction=RetryInstruction(decision_at, session.session_date),
+                no_fill_event=_no_fill_event(
+                    _blocked_order(),
+                    session.session_date,
+                    "suspended",
+                ),
             )
+
+
+def test_no_fill_outcome_is_post_open_and_never_carried_by_instruction() -> None:
+    order = _blocked_order()
+    session = order.calendar.session_on(
+        order.requested_session,
+        as_of=datetime(2026, 7, 15, tzinfo=UTC),
+    )
+    instruction = RetryInstruction(
+        session.open_at - timedelta(microseconds=1),
+        session.session_date,
+    )
+    event = _no_fill_event(order, session.session_date, "suspended")
+
+    assert not hasattr(instruction, "reason")
+    assert event.observed_at == session.open_at
+    with pytest.raises(MarketDataError, match="cannot be observed before"):
+        NoFillEvent(
+            observed_at=session.open_at - timedelta(microseconds=1),
+            effective_at=session.open_at,
+            reason="suspended",
+            source=event.source,
+        )
 
 
 def test_blocked_exit_normalizes_stateful_numbers_once_before_sale() -> None:
@@ -640,16 +697,20 @@ def test_blocked_exit_records_consecutive_sessions_and_sells_before_completion()
     order = _blocked_order()
     order = advance_blocked_exit(
         order,
-        decision=RetryDecision(
+        instruction=RetryInstruction(
             _decision_time(order, date(2026, 7, 13)),
             date(2026, 7, 13),
-            "suspended",
         ),
+        no_fill_event=_no_fill_event(order, date(2026, 7, 13), "suspended"),
     )
     order = advance_blocked_exit(
         order,
-        decision=RetryDecision(
+        instruction=RetryInstruction(
             _decision_time(order, date(2026, 7, 14)),
+            date(2026, 7, 14),
+        ),
+        no_fill_event=_no_fill_event(
+            order,
             date(2026, 7, 14),
             "limit_down_sell_rejected",
         ),
@@ -668,9 +729,13 @@ def test_blocked_exit_records_consecutive_sessions_and_sells_before_completion()
     assert order.pending is False
     assert order.delay_sessions == 2
     assert order.executed_session == date(2026, 7, 15)
-    assert tuple(item.requested_session for item in order.retry_decisions) == (
+    assert tuple(item.requested_session for item in order.retry_instructions) == (
         date(2026, 7, 13),
         date(2026, 7, 14),
+    )
+    assert tuple(item.reason for item in order.no_fill_events) == (
+        "suspended",
+        "limit_down_sell_rejected",
     )
     assert order.fill_event is not None
     assert order.fill_event.effective_at.date() == date(2026, 7, 15)
@@ -684,8 +749,12 @@ def test_blocked_exit_rejects_skipped_sessions_and_completion_without_sale() -> 
     with pytest.raises(MarketDataError, match="recognized.*reason"):
         advance_blocked_exit(
             terminal,
-            decision=RetryDecision(
+            instruction=RetryInstruction(
                 _decision_time(terminal, date(2026, 7, 13)),
+                date(2026, 7, 13),
+            ),
+            no_fill_event=_no_fill_event(
+                terminal,
                 date(2026, 7, 13),
                 "confirmed_terminal_action",
             ),
@@ -694,25 +763,26 @@ def test_blocked_exit_rejects_skipped_sessions_and_completion_without_sale() -> 
     order = _blocked_order()
     order = advance_blocked_exit(
         order,
-        decision=RetryDecision(
+        instruction=RetryInstruction(
             _decision_time(order, date(2026, 7, 13)),
             date(2026, 7, 13),
-            "suspended",
         ),
+        no_fill_event=_no_fill_event(order, date(2026, 7, 13), "suspended"),
     )
     with pytest.raises(ValueError, match="consecutive"):
         advance_blocked_exit(
             order,
-            decision=RetryDecision(
+            instruction=RetryInstruction(
                 _decision_time(order, date(2026, 7, 15)),
                 date(2026, 7, 15),
-                "confirmed_halt",
             ),
+            no_fill_event=_no_fill_event(order, date(2026, 7, 15), "confirmed_halt"),
         )
-    with pytest.raises(TypeError, match="RetryDecision"):
+    with pytest.raises(TypeError, match="RetryInstruction"):
         advance_blocked_exit(
             order,
-            decision=FillDecision(True, 9.9, "filled"),  # type: ignore[arg-type]
+            instruction=FillDecision(True, 9.9, "filled"),  # type: ignore[arg-type]
+            no_fill_event=_no_fill_event(order, date(2026, 7, 14), "suspended"),
         )
 
 

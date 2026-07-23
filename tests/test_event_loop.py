@@ -17,6 +17,7 @@ from quant_system.backtest import (
     CostStressCase,
     ExecutionInput,
     ExecutionCostAssumptions,
+    NoFillEvent,
     Portfolio,
     StageContext,
     TerminalAction,
@@ -1114,8 +1115,23 @@ def test_capacity_and_suspension_leave_blocked_exit_held_and_convertible() -> No
     )
     assert result.receipts[0].reason == "suspended"
     assert result.portfolio.positions["AAA"].shares == 100
-    blocked = blocked_exit_from_receipt(result.receipts[0], result.context, calendar)
-    assert blocked.pending and len(blocked.retry_decisions) == 1
+    blocked = blocked_exit_from_receipt(
+        result.receipts[0],
+        result.context,
+        calendar,
+        no_fill_event=NoFillEvent(
+            observed_at=execution.open_at,
+            effective_at=execution.open_at,
+            reason="suspended",
+            source=_captured_source(
+                "blocked-AAA",
+                execution.open_at,
+                subject_id="AAA",
+            ),
+        ),
+    )
+    assert blocked.pending and len(blocked.retry_instructions) == 1
+    assert blocked.no_fill_events[0].observed_at == execution.open_at
 
     observation = CapacityObservation(
         "AAA",
@@ -2297,7 +2313,12 @@ def test_universe_snapshot_source_is_causal_and_changes_input_identity() -> None
         )
 
 
-def _captured_source(label: str, available_at: datetime) -> SourceIdentity:
+def _captured_source(
+    label: str,
+    available_at: datetime,
+    *,
+    subject_id: str = "fixture-subject",
+) -> SourceIdentity:
     return capture_source_bytes(
         label.encode(),
         publication_evidence=f"published:{label}".encode(),
@@ -2307,7 +2328,7 @@ def _captured_source(label: str, available_at: datetime) -> SourceIdentity:
         revision_id=label,
         source_family_id="captured-fixture-v1",
         provider_id="fixture-provider",
-        subject_id="fixture-subject",
+        subject_id=subject_id,
     ).source
 
 
