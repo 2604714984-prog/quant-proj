@@ -1,0 +1,73 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C29_STLFSI4_WEEKLY_STRESS_CHANGE_ROTATION_SPY_QQQ_V1",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE29",
+  "created_at": "2026-07-23T04:45:12.891241Z",
+  "classification": "INPUT_BLOCKED_CLAIM_CONSUMED_RUNNER_ADJACENT_ZIP_ASSERTION",
+  "evidence_class": "RETROSPECTIVE_SECONDARY_ONLY",
+  "frozen_identities": {
+    "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5054202672",
+    "preoutcome_identity": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5054466059",
+    "preoutcome_commit": "1213251e0f256b0be155ccc19f14b1b32fab26f5",
+    "preoutcome_tree": "dc0cf071849dc73f8ee245ce55a24accb8e9f50d",
+    "definition_sha256": "99dcf9f76c6e9b855af1df44f04a9551fcd26dd9189dd4e062fcd40bcf803092",
+    "adapter_sha256": "fbbd285306a480c2f3090f07f330197c0fdc07f4dc80b25bc7c2b50b98fd27f9",
+    "runner_sha256": "64fe56a310a80894c4480a5a5e8f3ce1d6492394566c505ce4cdb7bfb0d394ef",
+    "signal_packet_sha256": "b22195f8b097afb4b2a6690ee0ca13065b5844f7d5c29e4a55652e23a437b3bb",
+    "signal_receipt_sha256": "9214ce9de3218ca3f0d03f8913accc6fc8e1fa5a9ebbffbac6f856e2479277b9",
+    "runtime_packet_sha256": "15a654f3002f5d83b5907fc23b4ec0e1e8d8022174d9a29479f80c0ca110cb84",
+    "runtime_receipt_sha256": "5c5153ce963d370ddea20347dbec989670259ee5dfb5b986967464fd4f5c9645"
+  },
+  "one_use_validation": {
+    "claimed_at": "2026-07-23T12:41:54.480076+08:00",
+    "claim_sha256": "bfb6d3177f94950897c1ff1287e3ebc4c210eee303036d70402086e616a61842",
+    "result_sha256": "d0d5632b9c00500b333ff801b34d53419cc3b238500f07acca2ce8e40267a860",
+    "classification": "INPUT_BLOCKED_CLAIM_CONSUMED",
+    "decision": null,
+    "observed_intervals_persisted": 0,
+    "aggregate_metrics_persisted_or_published": false,
+    "outcomes_entered_process_memory_before_failure": true,
+    "error_type": "ValueError",
+    "error_message": "zip() argument 2 is shorter than argument 1",
+    "local_read_only_result_acceptance": "VALID_AS_FAIL_CLOSED_EXECUTION_EVIDENCE"
+  },
+  "mechanical_root_cause": {
+    "location": "scripts/run_c29_stlfsi4_weekly_stress_change_rotation_once.py:826 and :830",
+    "defect": "the runner paired each NAV sequence with its one-element-shorter suffix using zip(..., strict=True); adjacent-return construction therefore always raises after simulation",
+    "research_interpretation": "no validation gate decision exists; this is a consumed one-use implementation failure, not a strategy pass or fail",
+    "repair_and_rerun_authorized": false,
+    "future_control": "future independent runners must test adjacent NAV return construction with a nonconstant synthetic path before a one-use claim"
+  },
+  "one_use_holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false,
+    "reason": "validation produced no accepted gate decision and the one-use validation identity is consumed"
+  },
+  "program_multiplicity": {
+    "cycle29_familywise_alpha": 0.000000000186264514923095703125,
+    "cycle1_to_cycle29_union_bound": 0.099999999813735485076904296875,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "sha256_observed_after_closeout": "e086835cfeddc615a879db2923718339b3fbc65acb352c8a9863bb7e8f396ef5",
+    "database_opened_by_validation": false,
+    "database_write": false
+  },
+  "terminal_state": {
+    "lineage_closed_permanently": true,
+    "validation_gate_decision_available": false,
+    "retrospective_holdout_opened": false,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "source_switch_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "Do not repair or rerun this lineage, reuse its validation identity, open its holdout, or rescue it by changing the STLFSI4 lag, threshold, target mapping, timing, comparator, cost, split, bootstrap, source, or signal combination."
+}
