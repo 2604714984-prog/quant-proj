@@ -1,0 +1,61 @@
+{
+  "schema_version": "compact-terminal-research-record-v1",
+  "research_id": "C22_CPI_DISINFLATION_SPY_QQQ_ROTATION_DATA_COMPLETION_V2",
+  "program_family_id": "ISSUE119_US_NEAR_TERM_MECHANISMS_CYCLE22",
+  "predecessor": "C12_CPI_DISINFLATION_SPY_QQQ_ROTATION_V1",
+  "classification": "INPUT_BLOCKED_OFFICIAL_CPI_OBSERVATION_UNAVAILABLE",
+  "evidence_class": "OFFICIAL_INPUT_IDENTITY_NEGATIVE_EVIDENCE",
+  "outcome_blind_freeze": "https://github.com/2604714984-prog/quant-proj/issues/119#issuecomment-5053429645",
+  "input_qualification": {
+    "status": "FAIL_CLOSED",
+    "official_series_id": "CPIAUCNS",
+    "official_source": "U.S. Bureau of Labor Statistics CPI-U distributed through FRED/ALFRED real-time-period history",
+    "official_endpoint": "https://alfred.stlouisfed.org/series/downloaddata?seid=CPIAUCNS",
+    "official_form_page_sha256": "05017d5ba5e99c687e4afc661986f4760a32f11197630282575e6455cb11267b",
+    "official_response_sha256": "41f0583170985be7ce332d5139cc221710a1bb77bd7b8fc887a0a20b747b689f",
+    "acquisition_receipt_sha256": "a62a2c730d6f0d0b9fd3ce1c6a32589a60846e7356b8ef296b38952e7e3a2851",
+    "archive_rows": 87,
+    "numeric_rows": 86,
+    "blocking_observation": {
+      "reference_month": "2025-10-01",
+      "realtime_start_date": "2025-12-18",
+      "value": null
+    },
+    "affected_frozen_split": "retrospective_holdout",
+    "reason": "the official ALFRED real-time archive independently preserves the same missing October 2025 CPI-U observation as the direct BLS response; the frozen signal cannot be computed",
+    "proxy_interpolation_skip_or_source_blend_allowed": false
+  },
+  "validation": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false
+  },
+  "holdout": {
+    "opened": false,
+    "claim_exists": false,
+    "result_exists": false
+  },
+  "program_multiplicity": {
+    "cycle22_familywise_alpha": 0.00000002384185791015625,
+    "cycle1_to_cycle22_union_bound": 0.09999997615814208984375,
+    "alpha_consumed": true,
+    "alpha_recycled": false
+  },
+  "warehouse_integrity": {
+    "sha256_after": "ceee6a1a23e3412d0c00d23b9c21fdaf5343bf1fb8211d4a7cc2fc7dcb3dd85a",
+    "wal_absent": true,
+    "database_write": false
+  },
+  "terminal_state": {
+    "strategy_outcomes_opened": false,
+    "rerun_authorized": false,
+    "parameter_repair_authorized": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "permanent_closure": "C12 and C22 remain closed. Do not invent, interpolate, proxy, skip or blend the unavailable October 2025 observation, and do not rerun the CPI mechanism."
+}
