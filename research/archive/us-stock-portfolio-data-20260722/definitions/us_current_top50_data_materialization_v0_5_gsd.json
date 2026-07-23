@@ -1,0 +1,60 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_5_GSD",
+  "date": "2026-07-23",
+  "priority": "CANONICAL_DATA_FIRST_THEN_ONE_FROZEN_DISCOVERY",
+  "mechanical_transport_correction": {
+    "prior_identity": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_4_GSD",
+    "prior_input_blocked_and_all_bytes_remain_terminal": true,
+    "only_change": "Use the same pinned global-stock-data Yahoo chart endpoint and parsing semantics with explicit UTC period1/period2 instead of range=max.",
+    "endpoint": "https://query2.finance.yahoo.com/v8/finance/chart/{symbol}",
+    "params": {"period1": 1420070400, "period2": 1784764800, "interval": "1d", "events": "div,splits", "includeAdjustedClose": "true"},
+    "period_identity": {"period1_inclusive": "2015-01-01T00:00:00Z", "period2_exclusive": "2026-07-23T00:00:00Z", "expected_latest_complete_session": "2026-07-22"},
+    "gate": "HTTP 200, chart result present, raw OHLCV plus adjclose present, meta.dataGranularity exactly 1d, dates within the frozen interval, at least 252 complete sessions where listing history permits.",
+    "chunking": "Forbidden unless this single explicit-period request mechanically fails due a documented Yahoo length limit; no chunking is preregistered otherwise."
+  },
+  "preserved_v0_4_core_bytes": [
+    ["research/definitions/us_current_top50_data_materialization_v0_4_gsd.json", "42d702a1551002f7cae3ae1eb1c6b63b8a2e8ac705c45960fa901f9426c9dbc2"],
+    ["scripts/run_us_current_top50_data_materialization_v0_4_gsd.py", "1105baa8558a29c507395f671beabc8cabce94c9f77edc6d2aaa9adfe35d7094"],
+    ["tests/test_us_current_top50_data_materialization_v0_4_gsd.py", "085f62ea2b879d7ba9362fd1be6c65a8008e47b26c99ab4ab76e354be54546d8"],
+    ["research/results/us_current_top50_data_materialization_v0_4_gsd_input_blocked_20260723.json", "30aa1f9ab8ddf1cc16b2bdefa711b8ae9f936e0051c8e29b0ad22561f3945227"]
+  ],
+  "preserved_v0_4_staging_sha256": {
+    "prices/yahoo/BRK-A.json": "7b8e6f9d507925c7ad4c2f105af6fa2b4c56f3ee2c95a65fb3cd80a71de7eb2d",
+    "prices/yahoo/BRK-A.json.metadata.json": "7ee225aca31335c8f71033c0b7a2381d0397f035dd5ba8ae4d68ad99d1495c02",
+    "prices/yahoo/BRK-B.json": "5973fc77f4abec32b5f4474a8b764c9533b56eea7df16dd8cb33c3eadcabaa3a",
+    "prices/yahoo/BRK-B.json.metadata.json": "dd2e427aedf66fa3d48c6e822d1f7674d48415ba111f4f166d719dcf50c90142",
+    "smoke_blocked.json": "8925608ef68d0a1dc05c82ff04f371cb82d9e38d776056e9c0f53b23d2ce79ef",
+    "universe/raw_52_identity.json": "4c8b8547daf43b744f7fbcc3633b9302d33740e4e34ffb70f12e67eb33a5ceb7"
+  },
+  "inherited_input_contract": {
+    "pinned_repository": "https://github.com/simonlin1212/global-stock-data.git@d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "license": "Apache-2.0",
+    "raw_universe": "Frozen Eastmoney total-market-cap response gives exactly 52 security lines and 50 normalized companies.",
+    "multi_class": "Before broader materialization, for each of two duplicated companies choose higher median raw close times volume over latest 60 complete common explicit-period Yahoo daily sessions; exact tie uses ascending ticker.",
+    "final_universe": "Exactly 50 companies and 50 selected stock lines; current-universe survivorship/look-ahead bias is explicit.",
+    "price_scope": "Exactly final 50 plus SPY and XLG from 2015-01-01 through 2026-07-22; Stooq cross-check only, no fusion or third source.",
+    "crosscheck": "Every canonical symbol must have at least 98% overlapping raw closes within 0.5%; no unresolved canonical symbol."
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows with existing lock and transaction",
+    "tables": [["us_equity_research.us_security_metadata_research", ["snapshot_id", "symbol"]], ["us_equity_research.us_daily_total_return_research", ["snapshot_id", "symbol", "trade_date"]]],
+    "publication": "Validate all 52 symbols in staging, isolated-copy append/replay/conflict test, exact backup, then one bounded canonical publication; no partial symbol publication.",
+    "schema_migration_or_new_table": false,
+    "postwrite": "Exact append receipt plus symbol/date/row counts, duplicates, nonfinite, coverage, source hashes, DB identity/SHA, WAL and openers."
+  },
+  "strategy_after_central_ready": {
+    "maximum_runs": 1,
+    "signal": "adj_close[t-21] / adj_close[t-252] - 1",
+    "formation_execution": "Month-end formation, next-session close execution.",
+    "selection": "Top10, hold through rank15, equal 10%, long-only, no leverage.",
+    "minimum_monthly_qualified": 30,
+    "costs_bps_one_way": {"base": 15, "stress": 30},
+    "benchmark": "Same-date qualified current-Top50 equal weight; SPY/XLG diagnostic only.",
+    "pass_gates": "Base CAGR excess >1pp; Sharpe >= benchmark; MDD shortfall <=5pp; stress excess >0; turnover <=200%; at least two positive relative subperiods among 2016-2019, 2020-2022, 2023-latest.",
+    "tuning_rerun_validation_holdout": false
+  },
+  "terminal_results": ["DISCOVERY_PASS", "DISCOVERY_FAIL", "INPUT_BLOCKED"],
+  "boundaries": {"strategy_candidate_available": false, "recommendation": false, "paper": false, "broker": false, "live": false, "auto": false, "commit_or_push": false, "central_lineage_update": false},
+  "forbidden": ["StockAnalysis", "Playwright", "SEC or N-PORT", "new provider", "full-market canonical fill", "source fusion", "strategy change or rerun"]
+}

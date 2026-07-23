@@ -1,0 +1,76 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_5_GSD",
+  "result": "INPUT_BLOCKED",
+  "terminal": true,
+  "date": "2026-07-23",
+  "successful_input_gates": {
+    "raw_candidate_security_lines": 52,
+    "normalized_companies": 50,
+    "multiclass_groups": 2,
+    "multiclass_daily_granularity": "1d",
+    "multiclass_common_sessions": 60,
+    "final_selected_stock_lines": 50,
+    "raw_52_identity_sha256": "4c8b8547daf43b744f7fbcc3633b9302d33740e4e34ffb70f12e67eb33a5ceb7",
+    "class_selection_sha256": "93935c1dad9b562810031193bc48ebab5f183ff4fe0d7bfa6300aeaa408068bf",
+    "final_50_identity_sha256": "b7d74d1d92fef41b2d685397d4f369be5379c6cf774bed7681fbe882cb5f036f"
+  },
+  "mechanical_failure": {
+    "gate": "Five-symbol Yahoo/Stooq raw-close smoke cross-check",
+    "provider": "Stooq",
+    "request_http_status": 200,
+    "response_content_type": "text/html",
+    "response_bytes": 796,
+    "response_lines": 3,
+    "response_identity": "JavaScript browser-verification challenge rather than CSV price history",
+    "raw_sha256": "39cb5819acc5a7da8ddda288ce3019c8027898309b85e3ec2397f72ce5cd74dc",
+    "required": "At least 60 Stooq daily rows and at least 98% overlapping raw closes within 0.5% for every canonical symbol.",
+    "reason": "The sole frozen cross-check provider did not return mechanical price data. Solving or bypassing its verification challenge is outside the authorized route; no third provider or source fusion is allowed."
+  },
+  "transport_correction_evidence": {
+    "yahoo_explicit_period_succeeded": true,
+    "params": {"period1": 1420070400, "period2": 1784764800, "interval": "1d", "events": "div,splits", "includeAdjustedClose": "true"},
+    "all_five_frozen_yahoo_responses_data_granularity": "1d",
+    "first_smoke_yahoo_sha256": "984f117783bcf327e3fba37950bdb63f17dcb674554c79f70ed1efa6e4ae767b"
+  },
+  "requests": {
+    "new_universe_requests": 0,
+    "yahoo_chart_requests": 5,
+    "stooq_requests": 1,
+    "five_symbol_smoke_completed": false,
+    "broader_52_symbol_materialization_started": false
+  },
+  "milestones": {
+    "data_contract_frozen": true,
+    "raw_52_identity_frozen": true,
+    "class_selection_frozen": true,
+    "final_50_identity_frozen": true,
+    "smoke": "SMOKE_FAIL",
+    "central_data_ready": false,
+    "discovery_result_opened": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows",
+    "writer_invoked": false,
+    "isolated_copy_writer_test_started": false,
+    "backup_created": false,
+    "append_receipt": null,
+    "unchanged": true,
+    "device": 2096,
+    "inode": 814783,
+    "size": 4676136960,
+    "mtime": "2026-07-22 17:40:49.253648663 +0800",
+    "sha256_before_and_after": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "wal": "ABSENT",
+    "openers": 0
+  },
+  "formal_discovery": {"run_count": 0, "outcomes_accessed": false, "chart_created": false},
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "commit_or_push": false,
+  "central_lineage_updated": false
+}

@@ -1,0 +1,59 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_7_GSD",
+  "date": "2026-07-23",
+  "priority": "CANONICAL_DATA_FIRST_THEN_ONE_FROZEN_DISCOVERY",
+  "new_listing_correction": {
+    "prior_identity": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_6_GSD",
+    "prior_input_blocked_and_all_bytes_remain_terminal": true,
+    "only_change": "Permit genuine 20-59-session post-listing histories under a separate cross-check branch; preserve every available row and never pre-IPO fill, replace, or remove the member.",
+    "long_branch": "If total valid Yahoo sessions >=60: compare latest at most 120 common complete Yahoo/Sina sessions; require common sessions >=60 and pass ratio strictly >0.98 within 0.5%.",
+    "short_branch": "If total valid Yahoo sessions is 20-59: compare every available common complete Yahoo/Sina session; require common sessions >=20 and pass ratio strictly >0.98 within 0.5%; set short_history=true and record first_date and row_count.",
+    "fail_closed": "Yahoo sessions <20 or common cross-check sessions <20 is INPUT_BLOCKED.",
+    "strategy_eligibility": "A symbol is eligible at a formation only when the required t, t-21, and t-252 adjusted-close sessions exist; short-history names remain ineligible until sufficient history. Monthly qualified count remains >=30."
+  },
+  "preserved_v0_6": {
+    "contract_sha256": "44ae57d4a7c76d7f55317ba8baf564178787dae94def14cb144cbf4c18e2e84c",
+    "script_sha256": "e885d684fbb72a41b3140ed8ac9de8adce5e5e38be1bae3bbb9f393718c0dff2",
+    "test_sha256": "3f1c458ad4ebbdb7c35dfc164621a29c85489b56d1ca597d4cdc4cadbacc6756",
+    "result_sha256": "311ff145a313292c8a203d29c4ea4a55c643cc3040147c59aae3ac06d59f45b4",
+    "staging_manifest_sha256": "d0e8c619559842ce1167b7fb6fa9d014dd9c42060024878c26aa3e2e21e6bb55",
+    "staging_manifest_file_count": 39
+  },
+  "frozen_inputs": {
+    "repository": "https://github.com/simonlin1212/global-stock-data.git@d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "license": "Apache-2.0",
+    "universe": "Exactly frozen current 50 companies and 50 liquidity-selected stock lines plus SPY/XLG diagnostics.",
+    "universe_identity_sha256": "b7d74d1d92fef41b2d685397d4f369be5379c6cf774bed7681fbe882cb5f036f",
+    "known_bias": "Current-universe survivorship/look-ahead bias; not PIT.",
+    "current_list_output": false
+  },
+  "data_sources": {
+    "canonical": "Pinned GSD Yahoo chart explicit UTC period1=1420070400, period2=1784764800, interval=1d, events=div,splits, includeAdjustedClose=true; raw OHLCV plus adjclose.",
+    "crosscheck_only": "Pinned GSD us_stock_kline_sina, uppercase standard ticker, num=120, Referer=https://finance.sina.com.cn/.",
+    "stooq": false,
+    "row_fusion": false,
+    "third_source": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows with existing lock and DuckDB transaction",
+    "tables": [["us_equity_research.us_security_metadata_research", ["snapshot_id", "symbol"]], ["us_equity_research.us_daily_total_return_research", ["snapshot_id", "symbol", "trade_date"]]],
+    "publication": "Acquire and validate all 52 symbols in staging; isolated-copy append/replay-idempotency/conflict test; exact backup; then one bounded canonical publication with no partial symbol writes.",
+    "schema_migration_or_new_table": false,
+    "postwrite": "Exact receipt plus symbol/date/row counts, duplicates, nonfinite, coverage including short-history first_date/row_count, Yahoo hashes, DB identity/SHA, WAL and openers."
+  },
+  "strategy_after_central_ready": {
+    "maximum_runs": 1,
+    "signal": "adj_close[t-21] / adj_close[t-252] - 1",
+    "formation_execution": "Month-end formation, next-session close execution.",
+    "selection": "Top10, hold through rank15, equal 10%, long-only, no leverage.",
+    "minimum_monthly_qualified": 30,
+    "costs_bps_one_way": {"base": 15, "stress": 30},
+    "benchmark": "Same-date qualified current-Top50 equal weight; SPY/XLG diagnostic only.",
+    "pass_gates": "Base CAGR excess >1pp; Sharpe >= benchmark; MDD shortfall <=5pp; stress excess >0; turnover <=200%; at least two positive relative subperiods among 2016-2019, 2020-2022, 2023-latest.",
+    "tuning_rerun_validation_holdout": false
+  },
+  "terminal_results": ["DISCOVERY_PASS", "DISCOVERY_FAIL", "INPUT_BLOCKED"],
+  "boundaries": {"strategy_candidate_available": false, "recommendation": false, "paper": false, "broker": false, "live": false, "auto": false, "commit_or_push": false, "central_lineage_update": false},
+  "forbidden": ["pre-IPO fill", "member replacement or removal", "Stooq", "StockAnalysis", "Playwright", "SEC/N-PORT", "source fusion", "strategy change or rerun"]
+}

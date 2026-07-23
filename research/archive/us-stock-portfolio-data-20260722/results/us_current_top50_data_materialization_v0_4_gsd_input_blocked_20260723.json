@@ -1,0 +1,64 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_4_GSD",
+  "result": "INPUT_BLOCKED",
+  "terminal": true,
+  "date": "2026-07-23",
+  "mechanical_failure": {
+    "gate": "60 complete common Yahoo daily sessions for pre-materialization multi-class selection",
+    "source_function": "Pinned global-stock-data stock_kline_yahoo(interval='1d', range_='max')",
+    "candidate_identity": {"security_lines": 52, "companies": 50, "multiclass_companies": 2},
+    "first_group_responses": [
+      {"requested_interval": "1d", "returned_data_granularity": "3mo", "parsed_rows": 168, "first_date": "1984-12-01", "last_date": "2026-07-22", "raw_sha256": "7b8e6f9d507925c7ad4c2f105af6fa2b4c56f3ee2c95a65fb3cd80a71de7eb2d"},
+      {"requested_interval": "1d", "returned_data_granularity": "1mo", "parsed_rows": 363, "first_date": "1996-06-01", "last_date": "2026-07-22", "raw_sha256": "5973fc77f4abec32b5f4474a8b764c9533b56eea7df16dd8cb33c3eadcabaa3a"}
+    ],
+    "reason": "Yahoo auto-downsampled the pinned range=max requests to monthly or quarterly data, so 60 complete common daily sessions and 2015-present canonical daily coverage cannot be established under the frozen transport.",
+    "closed_action": "No parameter change, chunked request, provider addition, class choice, or broader price acquisition was made after observing the failure."
+  },
+  "frozen_inputs": {
+    "raw_52_identity_path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_data_materialization_v0_4_gsd/universe/raw_52_identity.json",
+    "raw_52_identity_sha256": "4c8b8547daf43b744f7fbcc3633b9302d33740e4e34ffb70f12e67eb33a5ceb7",
+    "pinned_repository": "https://github.com/simonlin1212/global-stock-data.git",
+    "pinned_commit": "d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "license": "Apache-2.0"
+  },
+  "milestones": {
+    "data_contract_frozen": true,
+    "raw_52_identity_frozen": true,
+    "class_selection_frozen": false,
+    "smoke": "SMOKE_FAIL",
+    "central_data_ready": false,
+    "discovery_result_opened": false
+  },
+  "requests": {
+    "new_universe_requests": 0,
+    "yahoo_chart_requests": 2,
+    "stooq_requests": 0,
+    "five_symbol_smoke_started": false,
+    "broader_price_materialization_started": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows",
+    "writer_invoked": false,
+    "isolated_copy_writer_test_started": false,
+    "backup_created": false,
+    "append_receipt": null,
+    "unchanged": true,
+    "device": 2096,
+    "inode": 814783,
+    "size": 4676136960,
+    "mtime": "2026-07-22 17:40:49.253648663 +0800",
+    "sha256_before_and_after": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "wal": "ABSENT",
+    "openers": 0
+  },
+  "formal_discovery": {"run_count": 0, "outcomes_accessed": false, "chart_created": false},
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "commit_or_push": false,
+  "central_lineage_updated": false
+}

@@ -1,0 +1,33 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD",
+  "date": "2026-07-23",
+  "priority": "ALL_REAL_POST_LISTING_YAHOO_ROWS_CANONICAL_THEN_QUALIFIED_ONLY_DISCOVERY",
+  "mechanical_correction": {
+    "prior_identity": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_8_GSD",
+    "prior_input_blocked_and_all_bytes_remain_terminal": true,
+    "reason": "V0.8 incorrectly imposed a 20-row canonical floor despite the user's explicit instruction to materialize every real post-listing Yahoo row.",
+    "only_change": "A valid 1-19-session Yahoo daily history is canonical-preservable but automatically crosscheck_status=UNRESOLVED due insufficient history, regardless of apparent agreement; it remains strategy-ineligible and counts toward the global unresolved limit.",
+    "zero_valid_yahoo_rows": "INPUT_BLOCKED because no canonical history exists.",
+    "global_unresolved_gate": "More than 5 unresolved symbols is INPUT_BLOCKED; 5 or fewer may publish.",
+    "no_preipo_fill_replacement_fusion_or_threshold_change": true
+  },
+  "preserved_v0_8": {
+    "contract_sha256": "0d00eea614d345b2d350a34e3be5236c506dbaf17730c0c26b431a355b4e8aee",
+    "script_sha256": "77e6b56d7ef44571cf01662d6b69db8a42386f45117aa144a3d838362a54bd82",
+    "test_sha256": "7fa66103eddc83ef5cd26b22cad4c285cd27bcb26046cee8acec462116b7fa58",
+    "result_sha256": "43014d497c91e58e642960eeeebadd6b7d489dd501f86715e92e7c510994203b",
+    "staging_manifest_sha256": "b67a2920ca849bbfc9789d96afb7498217d29508f601aaf658b8e9a8425bbfe7",
+    "staging_manifest_file_count": 47
+  },
+  "inherited": {
+    "repository": "https://github.com/simonlin1212/global-stock-data.git@d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "universe": "Frozen 50 companies and 50 stock lines plus SPY/XLG, identity SHA256 b7d74d1d92fef41b2d685397d4f369be5379c6cf774bed7681fbe882cb5f036f.",
+    "canonical": "Yahoo explicit-period daily raw OHLCV plus adjclose, every real post-listing row.",
+    "crosscheck": "Pinned Sina num=120; no fusion. >=60 histories need >=60 common and >98%; 20-59 histories need >=20 common and >98%; 1-19 histories are UNRESOLVED.",
+    "marking": "Existing metadata quality_status/description and bar quality_status/conflict_flags_json only; no schema migration.",
+    "publication": "Full 52-symbol staging, unresolved<=5, isolated-copy append/replay/conflict rejection, exact backup, one bounded central two-table publication and receipt.",
+    "strategy": "Only QUALIFIED stock lines with t-252 availability; same 12-1/top10/rank15/cost/benchmark/PASS gates; one run."
+  },
+  "terminal_results": ["DISCOVERY_PASS", "DISCOVERY_FAIL", "INPUT_BLOCKED"],
+  "boundaries": {"strategy_candidate_available": false, "recommendation": false, "paper": false, "broker": false, "live": false, "auto": false, "commit_or_push": false, "central_lineage_update": false}
+}

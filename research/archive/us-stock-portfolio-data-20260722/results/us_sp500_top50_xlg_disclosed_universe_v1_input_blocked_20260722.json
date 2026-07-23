@@ -1,0 +1,227 @@
+{
+  "research_id": "US_SP500_TOP50_XLG_DISCLOSED_UNIVERSE_V1",
+  "date": "2026-07-22",
+  "market": "US_EQUITIES",
+  "phase": "outcome_free_input_route_feasibility",
+  "status": "INPUT_BLOCKED",
+  "result_contract_status": "blocked-on-data",
+  "current": true,
+  "strategy_candidate_available": false,
+  "data_route_feasible": false,
+  "canonical_data_ready": false,
+  "materialization_started": false,
+  "alpha_preregistered": false,
+  "validation_opened": false,
+  "holdout_opened": false,
+  "return_computation": false,
+  "factor_computation": false,
+  "portfolio_computation": false,
+  "current_constituents_emitted": false,
+  "investment_recommendation": false,
+  "universe_identity": {
+    "identity": "US_SP500_TOP50_XLG_DISCLOSED_UNIVERSE_V1",
+    "contract_path": "/home/rongyu/workspace/quant-proj/research/definitions/us_sp500_top50_xlg_disclosed_universe_v1.json",
+    "contract_sha256": "1ad3e8c9d3fc7983646391fcec4b2669fc7ba2c78573899d4bf72ba44a7b3977",
+    "company_scope": "S&P 500 Top 50 companies identified only from then-public XLG disclosures",
+    "maximum_stock_lines_after_multiclass_collapse": 50,
+    "fund_weights_used_as_portfolio_weights": false,
+    "multi_class_rule": "Higher median dollar volume over the 60 complete sessions strictly before formation; missing or conflicting input fails closed."
+  },
+  "prior_identity_preserved": {
+    "identity": "US_DYNAMIC_PIT_TOP50_TOTAL_MARKET_CAP_COMMON_STOCK_V1",
+    "result_path": "/home/rongyu/workspace/quant-proj/research/results/us_stock_top50_input_blocked_20260722.json",
+    "sha256_before": "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877",
+    "sha256_after": "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877",
+    "result": "INPUT_BLOCKED",
+    "modified": false,
+    "inherited_or_relabelled": false
+  },
+  "frozen_input_rules": {
+    "index_membership": "Annual June reconstitution from S&P 500 by float-adjusted market capitalization subject to the published buffer; an S&P 500 deletion is removed concurrently and not replaced before the next annual reconstitution.",
+    "fund_identity": {
+      "ticker": "XLG",
+      "registrant_cik": "0001209466",
+      "series_id": "S000060793",
+      "contract_id": "C000197609"
+    },
+    "report_date_is_available_at": false,
+    "required_available_at": "Exact SEC accepted_at or an equivalent official publication timestamp bound to exact holdings bytes.",
+    "effective_rule": "First complete XNYS session open strictly after accepted_at or qualified publication timestamp.",
+    "earliest_allowed_history": "Not before the first qualified public disclosure and never before September 2019.",
+    "four_snapshot_selectors": [
+      "EARLIEST_QUALIFIED",
+      "MID_2022_MAX_REPORT_DATE_LE_2022_06_30",
+      "START_2025_MAX_REPORT_DATE_LE_2025_01_31",
+      "LATEST_COMPLETE_PUBLIC"
+    ]
+  },
+  "route_result": {
+    "unique_decision": "INPUT_BLOCKED",
+    "qualified_snapshot_count": 0,
+    "required_snapshot_count": 4,
+    "usable_interval": null,
+    "sec": {
+      "route": "SEC_EDGAR_NPORT_XML",
+      "initial_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=C000197609&type=NPORT-P&count=100&output=atom",
+      "request_count": 1,
+      "http_status": 403,
+      "response_title": "SEC.gov | Your Request Originates from an Undeclared Automated Tool",
+      "raw_byte_count": 4819,
+      "raw_sha256": "a6434fecbf108c7f76f7e8138b8a054e69fff029eb42e7aa1d120a620eed8238",
+      "user_agent": "quant-proj-research/2.0 (+https://github.com/2604714984-prog/quant-proj)",
+      "user_agent_changed": false,
+      "retry_count": 0,
+      "anti_abuse_bypass": false,
+      "decision": "ACCESS_BLOCKED_AND_ROUTE_CLOSED"
+    },
+    "invesco": {
+      "route": "INVESCO_OFFICIAL_HOLDINGS",
+      "fallback_condition_satisfied": true,
+      "request_count": 2,
+      "retry_count": 0,
+      "page": {
+        "url": "https://www.invesco.com/us/financial-products/etfs/holdings?audienceType=Investor&ticker=XLG",
+        "http_status": 200,
+        "content_type": "text/html;charset=utf-8",
+        "raw_byte_count": 562969,
+        "raw_sha256": "16e1fc222600d1d739bc8177eaeb73c2d7d1a1abd3fd61d58036bf3b108a7271"
+      },
+      "download": {
+        "url": "https://www.invesco.com/us/financial-products/etfs/holdings/main/holdings/0?action=download&audienceType=Investor&ticker=XLG",
+        "http_status": 200,
+        "content_type": "text/html;charset=utf-8",
+        "actual_format": "html",
+        "raw_byte_count": 387714,
+        "raw_sha256": "2135045a0b0983c58966e1aae607337f17e5ec951379183217adace82e7b5ca6"
+      },
+      "historical_holdings_archive_markers": 0,
+      "publication_timestamp_markers": 0,
+      "qualified_historical_snapshots": 0,
+      "unknown_parameter_guessing": false,
+      "decision": "QUALITY_FAIL_AND_ROUTE_CLOSED"
+    }
+  },
+  "mechanical_gates": {
+    "pass_count": 4,
+    "total_count": 10,
+    "gates": [
+      {
+        "gate": "new_contract_identity",
+        "status": "PASS"
+      },
+      {
+        "gate": "prior_input_blocked_bytes_preserved",
+        "status": "PASS"
+      },
+      {
+        "gate": "sec_access_200_without_identity_change",
+        "status": "FAIL",
+        "evidence": "HTTP 403 on the first and only SEC request"
+      },
+      {
+        "gate": "four_cross_period_snapshots",
+        "status": "FAIL",
+        "evidence": "0 qualified of 4 required"
+      },
+      {
+        "gate": "exact_accepted_at_or_equivalent_publication_timestamp",
+        "status": "FAIL",
+        "evidence": "No qualified holdings document was obtained; Invesco exposed no byte-bound publication timestamp"
+      },
+      {
+        "gate": "series_and_contract_identity",
+        "status": "NOT_OBSERVED_INPUT_BLOCKED"
+      },
+      {
+        "gate": "cusip_name_security_type_and_company_count",
+        "status": "NOT_OBSERVED_INPUT_BLOCKED"
+      },
+      {
+        "gate": "multiclass_60_session_collapse",
+        "status": "NOT_OBSERVED_INPUT_BLOCKED"
+      },
+      {
+        "gate": "no_outcome_or_portfolio_access",
+        "status": "PASS"
+      },
+      {
+        "gate": "canonical_database_unchanged",
+        "status": "PASS"
+      }
+    ]
+  },
+  "decisive_failures": [
+    {
+      "id": "SEC_ACCESS_403",
+      "reason": "The frozen SEC contract-level Atom request returned HTTP 403 before any filing enumeration. The route was stopped without retry, identity-header modification, credential, proxy manipulation, or anti-abuse bypass."
+    },
+    {
+      "id": "INVESCO_NO_TIMESTAMPED_HISTORICAL_ARCHIVE",
+      "reason": "Both frozen Invesco URLs returned generic HTML. The nominal download URL did not return a holdings file, exposed no historical archive identity, and exposed no publication timestamp bound to exact historical holdings bytes."
+    },
+    {
+      "id": "FOUR_SNAPSHOT_IDENTITY_UNOBSERVED",
+      "reason": "Without either official route, accepted_at, series/contract, CUSIP/name/type, 50-company/51-line behavior, revisions, cash/derivative exclusion and next-session effectiveness cannot be validated for any of the four frozen periods."
+    }
+  ],
+  "source_evidence": {
+    "staging_root": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/xlg_disclosed_v1",
+    "smoke_result_path": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/xlg_disclosed_v1/smoke_result.json",
+    "smoke_result_sha256": "ef2fcbd3aa79b94c6b1dbc9c9c057b384c530bdbbfb54fff0de12ebb57095ba3",
+    "manifest_path": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/xlg_disclosed_v1/source_manifest.json",
+    "manifest_sha256": "9dda1dd2f8cf7c5f548f1ab77553c942e8a1c588ef0dd8e690a78561fb7ac782",
+    "raw_document_count": 3,
+    "network_requests": 3,
+    "network_retries": 0,
+    "source_terms": [
+      "https://www.sec.gov/privacy",
+      "https://www.sec.gov/developer",
+      "https://www.invesco.com/us/en/terms-of-use.html"
+    ]
+  },
+  "canonical_database": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "before": {
+      "device_hex": "830",
+      "inode": 814783,
+      "size_bytes": 4676136960,
+      "mtime": "2026-07-22 17:40:49.253648663 +0800",
+      "ctime": "2026-07-22 17:40:49.253648663 +0800",
+      "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+      "wal_present": false,
+      "openers": 0
+    },
+    "after": {
+      "device_hex": "830",
+      "inode": 814783,
+      "size_bytes": 4676136960,
+      "mtime": "2026-07-22 17:40:49.253648663 +0800",
+      "ctime": "2026-07-22 17:40:49.253648663 +0800",
+      "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+      "wal_present": false,
+      "openers": 0
+    },
+    "opened_by_smoke": false,
+    "write_attempted": false,
+    "unchanged": true
+  },
+  "implementation": {
+    "script_path": "/home/rongyu/workspace/quant-proj/scripts/smoke_us_xlg_disclosed_universe.py",
+    "script_sha256": "95b70c2199caad0bcf53cd7097bc593a278fbb44488c627214483a4c10ea8c2c",
+    "test_path": "/home/rongyu/workspace/quant-proj/tests/test_us_xlg_disclosed_universe_smoke.py",
+    "test_sha256": "3651f8ed8e28c94cb4952239a7cae5d3a92111c59552aef3ab518c4ff5ff4649",
+    "focused_validation": "Ruff passed; 6 passed in 0.20s",
+    "broader_validation": "68 passed in 2.33s",
+    "network_replay_rule": "Do not replay the closed routes automatically. Re-execution against the same staging directory must reuse hash-validated raw bytes."
+  },
+  "repository": {
+    "worktree": "/home/rongyu/workspace/quant-proj",
+    "branch": "research/us-stock-portfolio-data-20260722",
+    "head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "tree": "06a78207779775abd165768b10b9b343749752d4",
+    "committed": false,
+    "pushed": false
+  },
+  "resume_condition": "Only a user-supplied or newly accessible official route that exposes the four exact historical XLG holdings snapshots with byte-bound accepted_at/publication timestamps can reopen this identity. Do not retry the closed URLs or substitute current holdings.",
+  "boundary_result": "INPUT_BLOCKED_NO_CENTRAL_WRITE_NO_MATERIALIZATION_NO_OUTCOME_ACCESS"
+}

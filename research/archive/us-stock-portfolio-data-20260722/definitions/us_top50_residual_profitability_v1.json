@@ -1,0 +1,48 @@
+{
+  "date": "2026-07-23",
+  "phase": "FROZEN_SEQUENTIAL_DISCOVERY",
+  "input": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "frozen_database": "/home/rongyu/workspace/quant-data/backups/quant_research.before_tushare_completion_20260723_6b29e56e8ccc.duckdb",
+    "database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "qualified_identity_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "qualified_stocks": 46,
+    "survivorship_bias": true
+  },
+  "residual_momentum": {
+    "identity": "US_TOP50_MARKET_RESIDUAL_MOMENTUM_V1",
+    "formation": "month-end close",
+    "beta_window": "504 daily returns ending t-253; OLS stock return on intercept and SPY return; minimum 450 paired observations",
+    "signal_window": "daily returns t-252 through t-21 inclusive; frozen alpha and beta; minimum 220 paired observations",
+    "score": "mean(residual)/sample_std(residual)*sqrt(252), finite positive std",
+    "selection": "Top10; retain through rank15; ascending symbol tie-break; equal 10%",
+    "benchmark": "same-date residual-eligible qualified stocks equal weight",
+    "execution": "next-session close; target applies afterward",
+    "costs_bps_one_way": {"base": 15, "stress": 30},
+    "subperiods": ["2018-2019", "2020-2022", "2023-latest"],
+    "gates": {"cagr_excess_strict_min": 0.01, "sharpe_margin_min": 0.05, "drawdown_shortfall_max": 0.05, "stress_excess_strict_positive": true, "annual_turnover_max": 2.0, "positive_subperiods_min": 2},
+    "maximum_runs": 1,
+    "variants_or_repairs": false
+  },
+  "profitability_contingency": {
+    "execute_only_if_residual_fails": true,
+    "identity": "US_TOP50_GROSS_PROFITABILITY_V1",
+    "providers": ["global-stock-data@d52a8a0013363577bceb28ca876c88fe6c1a5aeb Eastmoney", "SEC companyfacts/submissions only if compliant route is needed and available"],
+    "required_fields": ["symbol_company_identity", "fiscal_period_end", "form_report_type", "announcement_or_accepted_at", "retrieved_at", "source_url", "source_document_sha256", "revenue", "cost_of_revenue_or_explicit_gross_profit", "total_assets", "currency", "revision_identity"],
+    "pit_rule": "latest revision publicly available at formation; minimum two trading sessions after announcement/accepted_at",
+    "gross_profit": "explicit gross profit or same-period/currency/consolidation revenue minus cost of revenue",
+    "ineligible": "banks, insurers, or issuers lacking comparable cost of revenue; no imputation",
+    "smoke_companies": 5,
+    "coverage_gate": "at least 30 companies with four consecutive PIT quarters for at least 70% of eligible formation dates",
+    "strategy": "TTM gross profit/latest positive finite total assets; quarterly; Top15; retain through rank20; ascending symbol tie-break; equal weight; next-session close",
+    "costs_and_gates": "same as residual momentum",
+    "maximum_runs": 1,
+    "variants_or_repairs": false
+  },
+  "after_pass_only": {
+    "retrospective": "calendar years, frozen subperiods, monthly excess moving-block bootstrap length 3, seed 20260723, 10000 resamples",
+    "pit_universe": "maximum two public free sources; no current-universe backfill",
+    "forward": "after 2026-07-22; minimum 6 and target 12 complete month-ends; research-only"
+  },
+  "boundaries": {"strategy_candidate_available": false, "current_holdings_output": false, "recommendation": false, "paper": false, "broker": false, "live": false, "auto": false, "commit_or_push": false, "central_lineage_update": false}
+}

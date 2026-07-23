@@ -1,0 +1,67 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_6_GSD",
+  "result": "INPUT_BLOCKED",
+  "terminal": true,
+  "date": "2026-07-23",
+  "successful_gates": {
+    "frozen_companies": 50,
+    "frozen_stock_lines": 50,
+    "diagnostic_lines": 2,
+    "universe_identity_sha256": "b7d74d1d92fef41b2d685397d4f369be5379c6cf774bed7681fbe882cb5f036f",
+    "five_symbol_smoke": "SMOKE_PASS",
+    "smoke_result_sha256": "d94bbc1894dc626e3bd18f6b53e6cff66c2027e0a18c962381b77cbc47207a9d",
+    "smoke_crosscheck_provider": "Pinned global-stock-data Sina US daily K-line",
+    "stooq_requests": 0
+  },
+  "mechanical_failure": {
+    "gate": "At least 60 common complete Yahoo/Sina daily sessions for every final canonical symbol",
+    "failed_member_identity": "One frozen newly listed ordinary-stock line; identity withheld from chat/current-list output but retained in frozen universe bytes.",
+    "yahoo_http_status": 200,
+    "yahoo_data_granularity": "1d",
+    "available_complete_daily_sessions": 27,
+    "required_common_sessions": 60,
+    "raw_yahoo_sha256": "250106539c60dae312798890602bf4f4adb3acd5f7d5fbcbb04670f98c04720f",
+    "reason": "A 27-session listing can have at most 27 common sessions, so the frozen 60-session cross-check is mathematically impossible without prohibited pre-IPO fill, subjective substitution, or a contract change.",
+    "broader_acquisition_stopped_before_next_symbol": true
+  },
+  "requests": {
+    "five_symbol_smoke_yahoo": 5,
+    "five_symbol_smoke_sina": 5,
+    "additional_materialization_yahoo_before_failure": 4,
+    "additional_materialization_sina_before_failure": 3,
+    "stooq": 0,
+    "full_52_symbol_acquisition_completed": false
+  },
+  "milestones": {
+    "data_contract_frozen": true,
+    "smoke": "SMOKE_PASS",
+    "full_staging_validation": "FAIL",
+    "central_data_ready": false,
+    "discovery_result_opened": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows",
+    "writer_invoked": false,
+    "isolated_copy_writer_test_started": false,
+    "backup_created": false,
+    "append_receipt": null,
+    "unchanged": true,
+    "device": 2096,
+    "inode": 814783,
+    "size": 4676136960,
+    "mtime": "2026-07-22 17:40:49.253648663 +0800",
+    "sha256_before_and_after": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "wal": "ABSENT",
+    "openers": 0
+  },
+  "formal_discovery": {"run_count": 0, "outcomes_accessed": false, "chart_created": false},
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "commit_or_push": false,
+  "central_lineage_updated": false
+}

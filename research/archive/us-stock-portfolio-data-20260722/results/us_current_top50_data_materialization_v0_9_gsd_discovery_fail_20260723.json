@@ -1,0 +1,69 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD",
+  "result": "DISCOVERY_FAIL",
+  "terminal": true,
+  "date": "2026-07-23",
+  "failure_gate": "Net Sharpe must be at least the qualified current-Top50 equal-weight benchmark.",
+  "formal_run": {
+    "run_count": 1,
+    "evaluation": ["2016-02-01", "2026-07-22"],
+    "contract_sha256": "70acce4fbefe84703f1ce0f5af447e720365f0fc2384ca43803c642247294dcd",
+    "script_sha256": "47c6df9674db3be180163dbf1be2e2e36bf9ff2269ca3415564bd037af34ada2",
+    "db_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "marker_sha256": "19298ceb9fb6732e5b9ae6262a87aa03b17057eec88e57c7b6cccbdb416c8c03",
+    "staging_result_sha256": "44795f896f8a197621189cdda0299eb6e20eca2cc7beb63df7fc8db4043ba28d"
+  },
+  "metrics": {
+    "strategy_base": {"cagr": 0.3744662083561068, "volatility": 0.28472249335552124, "sharpe": 1.2621528517050105, "max_drawdown": -0.32426289898908756},
+    "benchmark_base": {"cagr": 0.2890136515539843, "volatility": 0.19701377568831055, "sharpe": 1.3899190249996958, "max_drawdown": -0.31601905666122587},
+    "strategy_stress": {"cagr": 0.3675974110431335, "volatility": 0.2847289203915322, "sharpe": 1.24400712887364, "max_drawdown": -0.3242998713877733},
+    "benchmark_stress": {"cagr": 0.2876765961994878, "volatility": 0.19700995346862987, "sharpe": 1.3839396030327569, "max_drawdown": -0.31606456921308757},
+    "base_annualized_excess": 0.0854525568021225,
+    "stress_annualized_excess": 0.07992081484364566,
+    "annual_turnover": 1.6682723284498189
+  },
+  "gates": {
+    "base_cagr_excess_gt_1pp": true,
+    "net_sharpe_at_least_benchmark": false,
+    "max_drawdown_shortfall_within_5pp": true,
+    "stress_annualized_excess_positive": true,
+    "annual_turnover_at_most_200pct": true,
+    "at_least_two_positive_relative_subperiods": true
+  },
+  "subperiod_relative_positive": {"2016-2019": true, "2020-2022": true, "2023-latest": true},
+  "central_data": {
+    "status": "CENTRAL_DATA_READY",
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "stock_metadata_count": 50,
+    "price_symbol_count": 52,
+    "bar_rows": 141192,
+    "qualified_stock_count": 46,
+    "unresolved_count": 4,
+    "duplicate_keys": 0,
+    "nonfinite_close_or_adj_close": 0,
+    "date_range": ["2015-01-02", "2026-07-22"],
+    "backup_sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "post_append_db_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "receipt_sha256": "5c378f2b039d5eca4ce6c28ce6d0dbe41d6893313640b0bacaf22edd59aa9a1c",
+    "wal": "ABSENT",
+    "openers": 0
+  },
+  "chart": {
+    "path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_data_materialization_v0_9_gsd/discovery_equity_drawdown.svg",
+    "sha256": "40a005c029e0b10401845316467c2e026021ca1f98a2661850ab84d3230e2fa4"
+  },
+  "limitations": {
+    "current_universe_survivorship_bias": true,
+    "pit_universe": false,
+    "validation_or_holdout": false,
+    "current_holdings_output": false
+  },
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "commit_or_push": false,
+  "central_lineage_updated": false
+}

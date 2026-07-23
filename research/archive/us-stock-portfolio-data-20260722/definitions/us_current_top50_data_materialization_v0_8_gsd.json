@@ -1,0 +1,67 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_8_GSD",
+  "date": "2026-07-23",
+  "priority": "PRESERVE_CANONICAL_DATA_THEN_ONE_QUALIFIED_ONLY_DISCOVERY",
+  "unresolved_policy": {
+    "prior_identity": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_7_GSD",
+    "prior_input_blocked_and_all_bytes_remain_terminal": true,
+    "canonical_and_strategy_qualification_are_separate": true,
+    "crosscheck_threshold_unchanged": "Strictly greater than 98% of compared raw closes within 0.5%.",
+    "unresolved_handling": "Preserve every Yahoo canonical row unchanged; preserve Sina raw evidence separately; set schema-compatible quality/provenance flags to UNRESOLVED; exclude the symbol from strategy qualification.",
+    "global_gate": "More than 5 unresolved symbols is INPUT_BLOCKED; 5 or fewer may publish canonical data.",
+    "bounded_inspections": "At most 3 exact conflict inspections total; no row deletion, fusion, threshold relaxation, member replacement, or pre-IPO fill.",
+    "known_conflict": {"yahoo_rows": 27, "sina_rows": 26, "common": 26, "within_tolerance": 25, "pass_ratio": 0.9615384615384616, "worst_relative_difference": 0.04752229628170679}
+  },
+  "preserved_v0_7": {
+    "contract_sha256": "9ea0395dc4528a2ec0bc30b1e5230893c6b228cd316ebfbb56ab9403c33176a3",
+    "script_sha256": "5b777d293f7c74771cf644bf53f77534c09b406d2a468b01780c4a6a51419208",
+    "test_sha256": "639a458ccfecdfd8c1f50a5fbed3ca1d9d35a4947d67d33f14363bce15d955b8",
+    "result_sha256": "9998d11b17070336e634e25721434a958f65bee032f50340d17aae6aa403e210",
+    "staging_manifest_sha256": "5df3f6137a111a2a2200b1527c0cc005a2807ad9c62a1f1f05a45e91703dc295",
+    "staging_manifest_file_count": 41
+  },
+  "frozen_inputs": {
+    "repository": "https://github.com/simonlin1212/global-stock-data.git@d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "license": "Apache-2.0",
+    "universe": "Exactly frozen current 50 companies and 50 selected stock lines plus SPY/XLG.",
+    "universe_identity_sha256": "b7d74d1d92fef41b2d685397d4f369be5379c6cf774bed7681fbe882cb5f036f",
+    "known_bias": "Current-universe survivorship/look-ahead bias; not PIT.",
+    "current_list_output": false
+  },
+  "data_sources": {
+    "canonical": "Pinned GSD Yahoo chart explicit-period daily raw OHLCV and adjclose, 2015-01-01 through 2026-07-22.",
+    "crosscheck_only": "Pinned GSD Sina US daily K-line num=120.",
+    "short_history": "20-59 Yahoo rows is preserved and flagged; fewer than 20 fails closed.",
+    "row_fusion": false,
+    "stooq_or_third_source": false
+  },
+  "schema_compatible_marking": {
+    "bars_qualified_quality_status": "RESEARCH_CANONICAL_CROSSCHECK_QUALIFIED",
+    "bars_unresolved_quality_status": "RESEARCH_CANONICAL_CROSSCHECK_UNRESOLVED",
+    "bars_conflict_flags_json": "Exact status, common count, pass ratio, short_history, first_date, row_count, and conflict date/Yahoo close/Sina close/relative difference.",
+    "security_metadata": "All 50 stock lines are stored; quality_status and description distinguish QUALIFIED versus UNRESOLVED.",
+    "schema_migration_or_new_table": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows with existing lock and DuckDB transaction",
+    "tables": [["us_equity_research.us_security_metadata_research", ["snapshot_id", "symbol"]], ["us_equity_research.us_daily_total_return_research", ["snapshot_id", "symbol", "trade_date"]]],
+    "publication": "Acquire and validate all 52 Yahoo canonical histories first; isolated-copy append/replay-idempotency and deliberate same-key/different-value conflict rejection; exact backup; then one bounded two-table publication with no partial symbol loop writes.",
+    "postwrite": "Exact receipt plus 50 metadata lines, 52 price symbols, row/date counts, unresolved count, duplicates, nonfinite, coverage, Yahoo hashes, DB identity/SHA, WAL and openers."
+  },
+  "strategy_after_central_ready": {
+    "input": "Only stock lines with crosscheck_status QUALIFIED; UNRESOLVED excluded. Short-history additionally remains ineligible until t-252 exists.",
+    "maximum_runs": 1,
+    "signal": "adj_close[t-21] / adj_close[t-252] - 1",
+    "formation_execution": "Month-end formation, next-session close execution.",
+    "selection": "Top10, hold through rank15, equal 10%, long-only, no leverage.",
+    "minimum_monthly_qualified": 30,
+    "costs_bps_one_way": {"base": 15, "stress": 30},
+    "benchmark": "Same-date crosscheck-qualified current-Top50 equal weight; SPY/XLG diagnostic only.",
+    "pass_gates": "Base CAGR excess >1pp; Sharpe >= benchmark; MDD shortfall <=5pp; stress excess >0; turnover <=200%; at least two positive relative subperiods among 2016-2019, 2020-2022, 2023-latest.",
+    "tuning_rerun_validation_holdout": false
+  },
+  "terminal_results": ["DISCOVERY_PASS", "DISCOVERY_FAIL", "INPUT_BLOCKED"],
+  "boundaries": {"strategy_candidate_available": false, "recommendation": false, "paper": false, "broker": false, "live": false, "auto": false, "commit_or_push": false, "central_lineage_update": false},
+  "forbidden": ["delete or modify discrepant rows", "source fusion", "pre-IPO fill", "member replacement", "threshold relaxation", "Stooq", "provider addition", "strategy change or rerun"]
+}

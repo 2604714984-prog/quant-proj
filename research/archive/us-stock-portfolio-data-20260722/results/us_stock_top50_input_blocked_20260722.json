@@ -1,0 +1,229 @@
+{
+  "research_id": "US_STOCK_TOP50_PORTFOLIO_DATA_V2_20260722",
+  "date": "2026-07-22",
+  "phase": "data_qualification_before_preregistration",
+  "status": "INPUT_BLOCKED",
+  "current": true,
+  "strategy_candidate_available": false,
+  "canonical_data_ready": false,
+  "prereg_frozen": false,
+  "validation_opened": false,
+  "holdout_opened": false,
+  "portfolio_computed": false,
+  "current_constituents_computed": false,
+  "current_constituents_emitted": false,
+  "investment_recommendation": false,
+  "universe_identity": {
+    "identity": "US_DYNAMIC_PIT_TOP50_TOTAL_MARKET_CAP_COMMON_STOCK_V1",
+    "rank_count": 50,
+    "market_cap_basis": "TOTAL_MARKET_CAP",
+    "rank_unit": "security share class",
+    "adr_policy": "EXCLUDE",
+    "current_constituent_backfill": "FORBIDDEN",
+    "survivor_only_universe": "FORBIDDEN",
+    "contract_path": "/home/rongyu/workspace/quant-proj/research/definitions/us_stock_top50_data_contract_v2.json",
+    "contract_sha256": "ebd3c4aa7a250befa5e3327daed1c7def9cd19ef26005e2612300456e851263c",
+    "preregistration_rule": "If data later qualifies, this exact identity must be copied into PREREG_FROZEN. Any change to count, metric, rank unit, eligibility, ADR policy, PIT cutoff, or tie rule creates a new research identity."
+  },
+  "market_cap_basis_decision": {
+    "selected": "TOTAL_MARKET_CAP",
+    "formula": "prior completed XNYS-session unadjusted close times latest eligible class-level shares outstanding, adjusted once for intervening stock actions",
+    "free_float_rejected": true,
+    "evidence": "No identified free no-auth source supplies a survivor-aware, class-level, historically timestamped free-float-share series. SEC EntityPublicFloat is an issuer cover-page market-value fact measured at an earlier date and cannot be allocated to tradable share classes without invention.",
+    "issuer_level_share_allocation": "FORBIDDEN"
+  },
+  "pit_membership_plan": {
+    "step_1": "Reconstruct every historical ticker era, including inactive, acquired, bankrupt, renamed and delisted securities, and bind it to issuer CIK plus permanent share-class identity.",
+    "step_2": "At each later preregistered formation open, apply only classifications public before that open: XNYS/XNAS/XASE, common stock, US-registered issuer, non-ADR, non-fund, non-preferred, non-warrant, non-OTC, non-test, and non-SPAC-shell.",
+    "step_3": "Combine the prior completed session unadjusted close with the latest class-level shares fact whose exact accession acceptance timestamp had become eligible; apply stock actions exactly once.",
+    "step_4": "Rank the eligible security share classes by unrounded total market cap descending and retain exactly 50, with a permanent security identifier as deterministic tie-breaker.",
+    "fail_closed": "Any missing class identity, shares observation, available_at, eligibility evidence, rank-50 boundary, or terminal value blocks that formation timestamp."
+  },
+  "usable_coverage": {
+    "qualified_start_date": null,
+    "candidate_price_start": "2011-01-03",
+    "candidate_price_end": "2026-07-21",
+    "qualified_intervals": [],
+    "uncovered_intervals": [
+      {
+        "interval": "before 2011-01-03",
+        "reason": "No candidate primary-price coverage."
+      },
+      {
+        "interval": "2011-01-03 through 2026-07-21",
+        "reason": "No joint survivor-aware class identity, class-level PIT shares, PIT eligibility, source availability and terminal-value path."
+      },
+      {
+        "interval": "after 2026-07-21",
+        "reason": "Outside the pinned candidate-source snapshot."
+      }
+    ]
+  },
+  "decisive_blockers": [
+    {
+      "id": "HISTORICAL_SHARE_CLASS_IDENTITY",
+      "evidence": "The candidate lifecycle source has ticker-era metadata but no permanent security/share-class identifier or authoritative historical ticker-to-CIK mapping. The bounded SEC current ticker file route did not produce usable data and in any event is not a historical effective-dated map.",
+      "required_to_close": "Primary-source historical ticker-era to CIK and permanent share-class mapping with availability evidence and explicit ticker-reuse handling."
+    },
+    {
+      "id": "PIT_CLASS_LEVEL_SHARES",
+      "evidence": "The candidate market source has no shares or market cap. The official SEC frame route did not produce usable WSL responses, and entity-level shares cannot be allocated across dual classes.",
+      "required_to_close": "Class-level shares outstanding observations with exact accepted_at or equivalent publication timestamps for every plausible rank-50 boundary security."
+    },
+    {
+      "id": "TERMINAL_VALUE_AND_LIFECYCLE",
+      "evidence": "The pinned candidate tables contain no merger cash, delisting return, bankruptcy recovery, or terminal-value field; required inactive crosschecks were unavailable from the independent chart route.",
+      "required_to_close": "Qualified, identity-linked, available-at-aware terminal consideration or recovery for every held exit. Zero and last-close substitution remain forbidden."
+    },
+    {
+      "id": "CORPORATE_ACTION_CONFLICT",
+      "evidence": "The 47-security smoke found a DWDP 2019-04-03 split row with 0.00000/0.00000 factors and eight PG dividend amount discrepancies under the frozen source check.",
+      "required_to_close": "A qualified authoritative action source and deterministic conflict quarantine; no post-result tolerance change under this research identity."
+    },
+    {
+      "id": "SOURCE_AVAILABLE_AT",
+      "evidence": "Pinned market rows expose event dates but no provider publication timestamp or historical vintage. Exact SEC accession acceptance times were not obtained from the closed official route.",
+      "required_to_close": "Explicit provider available_at where claimed, plus conservative next-session research eligibility for market rows without mislabeling retrieval time."
+    },
+    {
+      "id": "OFFICIAL_SOURCE_ACCESS",
+      "evidence": "Nine bounded official SEC requests from WSL returned HTTP 403 with raw response bytes and SHA256 preserved. The route was closed immediately without retrying, changing identity headers, or bypassing SEC anti-abuse controls.",
+      "required_to_close": "A later externally changed access state or another compliant free source that satisfies the same identity and PIT contract; no automatic retry."
+    }
+  ],
+  "source_route_decisions": [
+    {
+      "provider": "post-no-preference/stocks on DoltHub",
+      "snapshot": "t83d0tqifiqnkg2qdm45e7ktcfdq5cbe",
+      "license": "CC-BY-SA-4.0",
+      "decision": "CLOSED_FOR_CANONICAL_USE",
+      "reason": "Useful raw-price coverage and 100/100 passing recent close comparisons do not overcome action, identity, terminal-value, shares and availability gaps."
+    },
+    {
+      "provider": "Yahoo public chart endpoint",
+      "decision": "CLOSED_AFTER_BOUNDED_CROSSCHECK",
+      "reason": "Small active-symbol price/action crosscheck only; required inactive histories were not usable and it is not the canonical identity/PIT route."
+    },
+    {
+      "provider": "SEC data.sec.gov and sec.gov files",
+      "decision": "CLOSED_AFTER_FIRST_BOUNDED_WSL_SMOKE",
+      "reason": "9 of 9 bounded requests returned HTTP 403. No retry, credential, browser relay, header-identity change, or anti-abuse bypass was attempted."
+    }
+  ],
+  "smoke_evidence": {
+    "price_action_contract": {
+      "contract_path": "/home/rongyu/workspace/quant-proj/research/definitions/us_stock_portfolio_data_contract_v1.json",
+      "contract_sha256": "2ca2f33b364a2e88c16a8d07128cad2dc9ef43fa7170faa0c1b55ee2d9dacd48",
+      "result_path": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/smoke_v2/smoke_result.json",
+      "result_sha256": "d4ea05d4c3b038e765de07a552d95bef0fc276353e9535895bac050933ca03d3",
+      "manifest_path": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/smoke_v2/source_manifest.json",
+      "manifest_sha256": "e1c510d40af1dfb634989672504a24afc541577fffccc0fbe09bb9a3f00ed64d",
+      "status": "SMOKE_FAIL",
+      "counts": {
+        "symbols": 47,
+        "metadata_rows": 47,
+        "recent_close_comparisons": 100,
+        "recent_close_failures": 0,
+        "named_split_checks": 4,
+        "named_split_failures": 0,
+        "dividend_checks": 101,
+        "dividend_failures": 8,
+        "invalid_split_factor_rows": 1,
+        "independent_chart_successes": 36,
+        "independent_chart_failures": 11
+      }
+    },
+    "top50_pit_contract": {
+      "result_path": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/top50_pit_v1/smoke_result.json",
+      "result_sha256": "68550941801854a5b68672747f139ab193c97f825e3c370cfa92e8e8743a2b59",
+      "manifest_path": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/top50_pit_v1/source_manifest.json",
+      "manifest_sha256": "2fada0100233644fc6fa803172d3068144c08c010e9fae801894d131034346fb",
+      "status": "SMOKE_FAIL",
+      "requested_official_documents": 9,
+      "successful_official_documents": 0,
+      "http_403_documents": 9,
+      "raw_bytes_and_hashes_preserved": true
+    }
+  },
+  "non_decisive_or_invalidated_observations": [
+    {
+      "observation": "The v1 exact last_seen terminal-tail query returned zero rows.",
+      "adjudication": "Not used as a decisive blocker because the source last_seen values were Sunday lifecycle snapshots rather than trade dates. Independent terminal-value absence remains decisive."
+    },
+    {
+      "observation": "Two independent-chart OHLCV rows contained invalid required values.",
+      "adjudication": "Preserved as smoke evidence but not needed for INPUT_BLOCKED because the identity, shares, terminal and availability blockers independently fail."
+    },
+    {
+      "observation": "PG dividend differences were at most sub-cent rounding differences.",
+      "adjudication": "The frozen check failed and is not retuned after observation; the final block does not depend on this gate alone."
+    }
+  ],
+  "canonical_database": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "before": {
+      "device_hex": "830",
+      "inode": 814783,
+      "size_bytes": 4676136960,
+      "mtime": "2026-07-22 17:40:49.253648663 +0800",
+      "ctime": "2026-07-22 17:40:49.253648663 +0800",
+      "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+      "wal_present": false,
+      "openers": 0
+    },
+    "after": {
+      "device_hex": "830",
+      "inode": 814783,
+      "size_bytes": 4676136960,
+      "mtime": "2026-07-22 17:40:49.253648663 +0800",
+      "ctime": "2026-07-22 17:40:49.253648663 +0800",
+      "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+      "wal_present": false,
+      "openers": 0
+    },
+    "opened_by_smoke_scripts": false,
+    "write_attempted": false,
+    "unchanged": true
+  },
+  "canonical_writer": {
+    "entry": "/home/rongyu/workspace/quant-proj/.venv/bin/quant data append --schema <schema> --table <table> --keys <keys> --input <json_or_jsonl> --batch-id <id> --source-sha256 <sha256> --execute",
+    "implementation": "/home/rongyu/workspace/quant-proj/src/quant_system/data/writer.py::append_rows",
+    "identified_and_tested": true,
+    "executed": false,
+    "reason_not_executed": "Blocking smoke gates require fail-closed unchanged canonical DB."
+  },
+  "verification": {
+    "scripts": [
+      {
+        "path": "/home/rongyu/workspace/quant-proj/scripts/smoke_us_stock_data.py",
+        "sha256": "a836770a398b1792750bdfb50b18db11d8bf7f59b0777a4b5f12d069df272f88"
+      },
+      {
+        "path": "/home/rongyu/workspace/quant-proj/scripts/smoke_us_top50_pit.py",
+        "sha256": "f054cbace5252b307b5e938aba6ad6109da0bf8357ea9be8ef0436b59aac7008"
+      }
+    ],
+    "test_file": {
+      "path": "/home/rongyu/workspace/quant-proj/tests/test_us_stock_top50_smoke.py",
+      "sha256": "3e70a00213e048a6705b9321bd21696bbdc8fb1f54c54e5bbf7fda8a660e147a"
+    },
+    "commands": [
+      ".venv/bin/ruff check scripts/smoke_us_stock_data.py scripts/smoke_us_top50_pit.py tests/test_us_stock_top50_smoke.py",
+      ".venv/bin/pytest -q tests/test_us_stock_top50_smoke.py",
+      ".venv/bin/pytest -q tests/test_data_writer.py tests/test_data_cli.py tests/test_markets_us.py tests/test_us_stock_top50_smoke.py"
+    ],
+    "result": "62 passed in 2.25s; Ruff passed",
+    "network_replay_policy": "Do not replay the closed sources automatically. Existing staged raw bytes and manifests are the reproducibility inputs for this result."
+  },
+  "repository": {
+    "worktree": "/home/rongyu/workspace/quant-proj",
+    "branch": "research/us-stock-portfolio-data-20260722",
+    "head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "tree": "06a78207779775abd165768b10b9b343749752d4",
+    "committed": false,
+    "pushed": false,
+    "pull_request_opened": false
+  },
+  "resume_condition": "Resume data work only with a compliant free source or changed official-source access state that can satisfy historical share-class identity, PIT class-level shares, eligibility, terminal recovery and available-at gates. A changed Top-50 definition requires a new research identity.",
+  "boundary_result": "INPUT_BLOCKED_NO_CANONICAL_WRITE_NO_PREREG_NO_VALIDATION_NO_HOLDOUT"
+}

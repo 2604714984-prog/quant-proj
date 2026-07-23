@@ -1,0 +1,45 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_8_GSD",
+  "result": "INPUT_BLOCKED",
+  "terminal": true,
+  "date": "2026-07-23",
+  "mechanical_failure": {
+    "gate": "V0.8 adapter minimum 20 Yahoo rows",
+    "failed_member_identity": "One legitimate frozen newly listed ordinary-stock line; retained in frozen identity and not emitted as a current recommendation/list.",
+    "yahoo_http_status": 200,
+    "yahoo_data_granularity": "1d",
+    "available_post_listing_rows": 9,
+    "first_date": "2026-07-10",
+    "last_date": "2026-07-22",
+    "raw_yahoo_sha256": "615024ffbac619454052794bd5f4d2b9ded55c5ab157e28acd1b9f73ea952981",
+    "reason": "The V0.8 implementation inherited a 20-row floor that conflicts with the user's higher-priority instruction to materialize every real post-listing Yahoo row. V0.8 is therefore closed without altering its frozen contract; the correction requires a new identity."
+  },
+  "successful_gates": {
+    "five_symbol_smoke": "SMOKE_PASS",
+    "smoke_result_sha256": "b4ea97066d94a6165eb8b4cb4db1a223a601e0f33c348009dac970975a86024a",
+    "known_27_row_conflict_classified_unresolved": true,
+    "stooq_requests": 0
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer_invoked": false,
+    "isolated_copy_writer_test_started": false,
+    "backup_created": false,
+    "append_receipt": null,
+    "unchanged": true,
+    "device": 2096,
+    "inode": 814783,
+    "size": 4676136960,
+    "sha256_before_and_after": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "wal": "ABSENT",
+    "openers": 0
+  },
+  "formal_discovery": {"run_count": 0, "outcomes_accessed": false},
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "commit_or_push": false
+}

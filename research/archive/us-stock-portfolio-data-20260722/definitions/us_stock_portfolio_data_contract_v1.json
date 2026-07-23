@@ -1,0 +1,264 @@
+{
+  "research_id": "US_STOCK_PORTFOLIO_DATA_V1_20260722",
+  "date": "2026-07-22",
+  "market": "US_EQUITIES",
+  "phase": "data_contract_and_source_smoke",
+  "status": "current",
+  "strategy_candidate_available": false,
+  "repository_snapshot": {
+    "worktree": "/home/rongyu/workspace/quant-proj",
+    "base_branch": "v2-main",
+    "work_branch": "research/us-stock-portfolio-data-20260722",
+    "base_head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "base_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "base_dirty": false
+  },
+  "canonical_database_snapshot": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "size_bytes": 4676136960,
+    "device_hex": "830",
+    "inode": 814783,
+    "mode": "0600",
+    "wal_present": false,
+    "openers_observed": 0,
+    "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "database_write_before_contract_freeze": false
+  },
+  "prior_lineage": {
+    "canonical_legacy_index_path": "/home/rongyu/workspace/strategy_work/reports/planning/strategy_research_lineage_index_20260711.json",
+    "canonical_legacy_index_present": false,
+    "current_git_evidence": {
+      "survivor_readiness_commit": "ec3027b73fb74947c3173776fd7b383cad3f3814",
+      "survivor_readiness_status": "DATA_BLOCKED_SURVIVOR_OR_TERMINAL_VALUE",
+      "sec_readiness_commit": "a19182e7fbe3eff5a5a48faff187205d40680340",
+      "sec_readiness_status": "FIELD_OR_AMENDMENT_IDENTITY_BLOCKED",
+      "mechanism_falsification_commit": "5fd7a9c36932e9b16f553016e505dc3005d4c23f",
+      "closed_stock_family": "STK_08_POST_BREAKOUT_PERSISTENCE"
+    }
+  },
+  "measured_us_data_gaps": {
+    "current_symbol_master": {
+      "rows": 6000,
+      "symbols": 6000,
+      "listed": 6000,
+      "inactive": 0,
+      "delisted": 0,
+      "survivor_aware": false
+    },
+    "broad_raw_bars": {
+      "rows": 559959,
+      "symbols": 270,
+      "min_date": "2018-01-02",
+      "max_date": "2026-07-06",
+      "available_at_nonnull": 0,
+      "canonical_eligible_rows": 0,
+      "corporate_actions_included": false
+    },
+    "adjusted_total_return_bars": {
+      "rows": 20737,
+      "symbols": 3,
+      "security_type": "ETF_ONLY",
+      "available_at_nonnull": 0,
+      "pit_qualified": false
+    },
+    "corporate_actions": {
+      "rows": 224,
+      "symbols": 2,
+      "security_type": "ETF_ONLY",
+      "declaration_date_nonnull": 0,
+      "available_at_nonnull": 0,
+      "merger_or_delist_recovery_coverage": 0
+    },
+    "historical_shares_outstanding_or_market_cap_rows": 0,
+    "pit_industry_rows": 0,
+    "pit_fundamental_rows": 0,
+    "canonical_us_trade_calendar_rows": 0,
+    "research_expected_xnys_sessions": {
+      "rows": 2137,
+      "min_date": "2018-01-02",
+      "max_date": "2026-07-06",
+      "source_contract_status": "CODE_ONLY_NOT_MATERIALIZED"
+    }
+  },
+  "minimum_data_contract": {
+    "scope": "Only fields required to qualify one simple monthly-or-slower long-only price-based cross-sectional family; shares, market cap, PIT industry and fundamentals remain explicit deferred gaps.",
+    "security_unit": "One ticker-era common-share record. Ticker eras are never stitched across mergers, symbol changes, or ticker reuse without an independently sourced identity mapping.",
+    "required_logical_entities": {
+      "security_lifecycle": [
+        "symbol",
+        "security_name",
+        "listing_exchange",
+        "is_etf",
+        "is_test_issue",
+        "first_observed_trade_date",
+        "last_observed_trade_date",
+        "lifecycle_status",
+        "identity_conflict_status",
+        "source_snapshot_id",
+        "source_sha256",
+        "retrieved_at"
+      ],
+      "daily_bar": [
+        "symbol",
+        "trade_date",
+        "open",
+        "high",
+        "low",
+        "close",
+        "volume",
+        "price_adjustment_status",
+        "source_snapshot_id",
+        "source_sha256",
+        "retrieved_at",
+        "research_eligible_at",
+        "availability_basis",
+        "row_sha256",
+        "quality_status"
+      ],
+      "corporate_action": [
+        "symbol",
+        "event_type",
+        "ex_date",
+        "cash_amount",
+        "split_to_factor",
+        "split_for_factor",
+        "merger_or_delist_recovery",
+        "source_snapshot_id",
+        "source_sha256",
+        "retrieved_at",
+        "research_eligible_at",
+        "availability_basis",
+        "row_sha256",
+        "quality_status"
+      ],
+      "calendar": [
+        "calendar_contract_id",
+        "session_date",
+        "timezone",
+        "source_document_set_sha256",
+        "quality_status"
+      ]
+    },
+    "availability_rule": {
+      "provider_publication_timestamp_required_when_claimed": true,
+      "provider_available_at_must_not_be_invented": true,
+      "historical_snapshot_retrieved_at_is_not_historical_available_at": true,
+      "daily_bar_research_eligibility": "No row may be used before the next verified XNYS session open after trade_date. This is a conservative research eligibility rule and must not be labeled as a provider publication timestamp.",
+      "corporate_action_research_eligibility": "Use no earlier than the later of a qualified provider availability timestamp and the next verified XNYS session open after ex_date; if provider availability is absent, the action is retrospective-only and cannot form a signal.",
+      "sec_fact_research_eligibility": "Exact SEC accepted timestamp for the accession, never filing_date alone."
+    },
+    "return_rule": {
+      "no_double_counting": "Use raw/split-consistent closes plus explicit cash distributions, or use a verified total-return series, never both.",
+      "split_rule": "Splits change share count and price scale but not portfolio value.",
+      "delisting_rule": "Never delete a failed security. Use an independently sourced terminal cash/recovery value; if absent, stop with INPUT_BLOCKED rather than substitute zero or last close.",
+      "ticker_change_rule": "Close the old ticker era and open a new ticker era; no stitching without independent identity evidence."
+    },
+    "existing_canonical_targets_only": {
+      "source_documents": {
+        "table": "us_equity_research.us_total_return_source_documents_research",
+        "natural_keys": ["snapshot_id", "document_id"]
+      },
+      "security_metadata": {
+        "table": "us_equity_research.us_security_metadata_research",
+        "natural_keys": ["snapshot_id", "symbol"]
+      },
+      "daily_bars": {
+        "table": "us_equity_research.us_daily_total_return_research",
+        "natural_keys": ["snapshot_id", "symbol", "trade_date"]
+      },
+      "corporate_actions": {
+        "table": "us_equity_research.us_corporate_actions_research",
+        "natural_keys": ["snapshot_id", "row_sha256"]
+      },
+      "calendar_reuse": "us_equity_research.s2_us_expected_sessions_research"
+    },
+    "writer_entry": "/home/rongyu/workspace/quant-proj/.venv/bin/quant data append --schema <schema> --table <table> --keys <keys> --input <json_or_jsonl> --batch-id <id> --source-sha256 <sha256> --execute",
+    "writer_guards": [
+      "pinned regular-file database identity",
+      "fcntl single-writer lock",
+      "exact target column order",
+      "finite floating values",
+      "unique non-null natural keys",
+      "natural-key conflict rollback",
+      "atomic DuckDB transaction",
+      "batch and source SHA binding",
+      "idempotent exact replay"
+    ],
+    "schema_change_allowed": false,
+    "permanent_secondary_store_allowed": false
+  },
+  "source_critical_path": {
+    "primary": {
+      "provider": "post-no-preference/stocks on DoltHub",
+      "endpoint": "https://www.dolthub.com/api/v1alpha1/post-no-preference/stocks/<commit>",
+      "pinned_commit": "t83d0tqifiqnkg2qdm45e7ktcfdq5cbe",
+      "commit_date": "2026-07-22 05:30:37.494",
+      "license": "CC-BY-SA-4.0",
+      "tables": ["symbol", "ohlcv", "dividend", "split"],
+      "snapshot_counts": {
+        "symbol": 23796,
+        "ohlcv": 28580116,
+        "dividend": 491004,
+        "split": 3903,
+        "min_date": "2011-01-03",
+        "max_date": "2026-07-21"
+      },
+      "known_limitations_to_test": [
+        "No permanent security or share-class identifier",
+        "No explicit delisting return, merger cash, bankruptcy recovery, or ticker-history table",
+        "No source publication timestamp per market row",
+        "OHLC adjustment convention is not declared in table schema",
+        "Community-maintained rather than exchange-official"
+      ]
+    },
+    "official_identity_and_pit_crosscheck": {
+      "provider": "SEC EDGAR data.sec.gov",
+      "endpoints": [
+        "https://data.sec.gov/submissions/CIK##########.json",
+        "https://data.sec.gov/api/xbrl/companyfacts/CIK##########.json"
+      ],
+      "use": "Former names, filing/accession identity, accepted timestamps, and bounded shares-outstanding/fundamental PIT checks; never treated as a survivor-aware price source."
+    },
+    "independent_price_action_crosscheck": {
+      "provider": "Yahoo Finance public historical chart data",
+      "endpoint": "https://query1.finance.yahoo.com/v8/finance/chart/<symbol>",
+      "use": "Small smoke crosscheck only; route closes immediately on access, terms, shape, or consistency failure."
+    }
+  },
+  "smoke_cohort": {
+    "symbols": [
+      "AAPL", "AMGN", "AMZN", "AXP", "BA", "CAT", "CELG", "CRM", "CSCO", "CVX", "DIS", "DOW", "DWDP", "FRC", "GE", "GS", "HD", "HON", "IBM", "INTC", "JNJ", "JPM", "KO", "MCD", "META", "MMM", "MRK", "MSFT", "NKE", "NVDA", "PFE", "PG", "RTN", "SHW", "SIVB", "TRV", "TWTR", "UNH", "UTX", "V", "VMW", "VZ", "WBA", "WMT", "XLNX", "XOM", "ATVI"
+    ],
+    "count": 47,
+    "required_cases": {
+      "currently_trading_common_stock": ["AAPL", "MSFT", "JPM", "KO", "XOM"],
+      "historically_delisted_or_acquired": ["ATVI", "CELG", "DWDP", "FRC", "RTN", "SIVB", "TWTR", "UTX", "VMW", "XLNX"],
+      "split": ["AAPL", "NVDA", "WMT"],
+      "cash_dividend": ["KO", "PG", "XOM"],
+      "rename_or_merger": ["META", "DWDP", "RTN", "UTX", "ATVI", "VMW", "XLNX"],
+      "distress_or_bank_failure": ["FRC", "SIVB"]
+    }
+  },
+  "smoke_gates": {
+    "source_snapshot_identity": "Every response binds provider, exact URL/query, retrieved_at, raw byte count, SHA256, and pinned Dolt commit.",
+    "coverage": "All 47 symbols must have an explicit metadata result or an explicit quarantined absence; every required delisted/acquired case must have at least 252 bars or a documented terminal-source failure.",
+    "uniqueness": "Zero duplicate symbol-date bars and zero duplicate symbol-ex-date actions after parsing.",
+    "finite_and_ohlc": "All required numeric values finite and nonnegative; high >= max(open, close, low), low <= min(open, close, high), volume >= 0.",
+    "corporate_actions": "Known split and dividend cases must be present and price/action arithmetic must be internally consistent; merger/delist recovery absence is blocking, not imputed.",
+    "pit": "No historical retrieved_at may masquerade as historical provider available_at; SEC facts require accepted timestamps; daily bars are lagged to next verified session for research eligibility.",
+    "conflict_isolation": "Cross-source discrepancies above frozen tolerance are quarantined and excluded rather than overwritten.",
+    "cross_source": "For at least 15 symbols and 20 overlapping dates, independent raw close values must agree within max(0.01 USD, 10 bp); split ratios and dividend ex-dates must match exactly for named action cases.",
+    "calendar": "XNYS sessions must cover the research interval with no duplicate dates and must match all observed full-session dates; unresolved closure or half-day identity is blocking.",
+    "rollback": "Writer dry-run and synthetic-copy conflict/idempotency tests must pass before central execution.",
+    "unchanged_database_on_failure": "If any blocking gate fails, canonical DB device/inode/size/mtime/SHA256 and WAL absence must remain identical to the pre-smoke snapshot."
+  },
+  "forbidden_until_preregistration": [
+    "strategy return calculation",
+    "factor ranking",
+    "portfolio construction",
+    "validation or holdout access",
+    "parameter search",
+    "current stock recommendation or executable ranking"
+  ],
+  "boundary_result": "DATA_CONTRACT_FROZEN_NO_CENTRAL_WRITE_NO_OUTCOME_ACCESS"
+}

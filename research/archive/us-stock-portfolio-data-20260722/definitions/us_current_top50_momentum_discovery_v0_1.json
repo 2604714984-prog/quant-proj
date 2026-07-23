@@ -1,0 +1,125 @@
+{
+  "execution_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0_1",
+  "research_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0_1",
+  "date": "2026-07-23",
+  "phase": "FULL_SAMPLE_DISCOVERY",
+  "proof_level": "LOWER_GRADE_CURRENT_UNIVERSE_DISCOVERY_NOT_PIT",
+  "supersession": {
+    "supersedes_for_future_execution_only": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0",
+    "v0_result_remains_terminal_and_unchanged": true,
+    "changed_boundary": "StockAnalysis current XLG holdings is accepted directly without official count or top-holdings cross-check."
+  },
+  "preserved_bytes": [
+    ["research/definitions/us_current_top50_momentum_discovery_v0.json", "a4b1126132fd8492cd1d2560a9e76b8c8485ce3282d0b109727db6dc8475f663"],
+    ["scripts/run_us_current_top50_momentum_discovery_v0.py", "0df8309fc26417d0c927a5b573f10f324924873ad50916bcf2524cdecef9ba73"],
+    ["tests/test_us_current_top50_momentum_discovery_v0.py", "586da9838c0006700f07161e31485abdeb4abf73d150213b5ed838cdcac80d37"],
+    ["research/results/us_current_top50_momentum_discovery_v0_input_blocked_20260722.json", "d1995e946caabd9542309da636807a43166b74b44a2adcae7375cdcf55fc244e"],
+    ["research/results/us_stock_top50_input_blocked_20260722.json", "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877"],
+    ["research/results/us_sp500_top50_xlg_disclosed_universe_v1_input_blocked_20260722.json", "f7da25e80b6f9aefaab59b74086fcd98f9f8d16265bdfa1b26f7461cf93d58a6"],
+    ["research/results/sec_nport_bulk_zip_v1_smoke_2025q1_input_blocked_20260722.json", "fd401efa9ddcc404fd3e919eae0f83eb24cf4e2a2f8c2a90915f038e419823dd"]
+  ],
+  "research_question": "Using the execution-date StockAnalysis current XLG holdings snapshot as a fixed historical pool, does the single frozen 12-1 momentum portfolio justify later strict PIT validation?",
+  "known_limitations": [
+    "Current-universe constituents are backfilled through history, creating explicit survivorship and look-ahead universe bias.",
+    "StockAnalysis is a maintained public secondary source and receives no official cross-check in V0.1.",
+    "Yahoo adjusted history is current-retrieval retrospective data and is not represented as PIT.",
+    "This is one full-sample discovery with no validation, holdout, alpha, p-value, or recommendation claim."
+  ],
+  "universe": {
+    "provider": "StockAnalysis.com",
+    "url": "https://stockanalysis.com/etf/xlg/holdings/",
+    "request_count": 1,
+    "official_source_requests": 0,
+    "fallback_or_additional_universe_sources": 0,
+    "parser": "Select the single HTML table containing Symbol, Company or Name, and Weight headers; normalize dot tickers to dash tickers; require 50 or 51 eligible security rows and exactly 50 normalized companies.",
+    "company_grouping": "Uppercase issuer name, remove punctuation, and remove only a terminal Class A, B, or C suffix; any other ambiguity fails closed.",
+    "instrument_filter": "Ordinary stock lines only; exclude cash, funds, preferred stock, warrants, rights, and derivatives.",
+    "multi_class_rule": "For multiple ordinary lines of one company, retain the higher median raw-close times volume over their latest 60 complete common Yahoo sessions; ties or insufficient history fail closed.",
+    "maximum_final_stock_lines": 50,
+    "snapshot_identity": "Freeze raw response bytes, URL, retrieved_at, SHA256, parsed rows, and final post-class-selection identity before the formal run.",
+    "current_rank_or_holding_output_allowed": false
+  },
+  "price_data": {
+    "download_start": "2015-01-01",
+    "evaluation_start": "2016-01-01",
+    "evaluation_end": "Latest complete trading session in the frozen primary history.",
+    "maximum_final_symbols": 52,
+    "primary": "Yahoo public chart raw OHLCV plus adjusted close",
+    "crosscheck": "Stooq daily raw close",
+    "fixed_order": "For each frozen symbol, Yahoo then Stooq; never choose by outcomes.",
+    "raw_close_gate": "At least 98% of overlapping observations must be within 0.5% per symbol.",
+    "unresolved_symbol_rule": "Quarantine an unresolved symbol; more than 5 unresolved symbols is INPUT_BLOCKED.",
+    "bounded_corporate_action_or_outlier_inspections": 3,
+    "source_fusion": false,
+    "third_price_source": false,
+    "pre_ipo_fill": false,
+    "long_gap_forward_fill": false
+  },
+  "smoke": {
+    "symbols": ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"],
+    "order": "StockAnalysis universe first, then Yahoo and Stooq per symbol.",
+    "failure_result": "INPUT_BLOCKED"
+  },
+  "strategy": {
+    "signal": "adj_close[t-21] / adj_close[t-252] - 1",
+    "formation": "Month-end close",
+    "execution": "Next trading-session close; new weights apply to subsequent close-to-close returns.",
+    "minimum_monthly_qualified_names": 30,
+    "selection": "Top 10 by descending signal; retain prior holdings while rank is 15 or better; symbol ascending breaks ties.",
+    "weights": "10% per selected stock",
+    "long_only": true,
+    "leverage": false,
+    "base_one_way_cost_bps": 15,
+    "stress_one_way_cost_bps": 30,
+    "annual_turnover": "Exclude initial entry; annualize one half of subsequent absolute stock-weight changes."
+  },
+  "benchmark": {
+    "primary": "Same-date equal weight of all contemporaneously qualified, non-quarantined fixed-current-universe stock lines, with identical execution and cost conventions.",
+    "diagnostic_only": ["XLG", "SPY"]
+  },
+  "pass_gates": {
+    "base_cost_cagr_excess_strictly_greater_than": 0.01,
+    "net_sharpe_at_least_benchmark": true,
+    "max_drawdown_shortfall_max": 0.05,
+    "stress_cost_annualized_excess_strictly_positive": true,
+    "annual_turnover_max": 2.0,
+    "positive_relative_subperiods_min": 2,
+    "subperiods": ["2016-2019", "2020-2022", "2023-latest"]
+  },
+  "formal_run": {
+    "maximum_count": 1,
+    "validation_or_holdout": false,
+    "parameter_or_specification_repair": false,
+    "variant_or_second_strategy": false,
+    "outcomes_open_only_after_contract_universe_price_db_and_code_hashes_are_frozen": true
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows with existing writer lock and DuckDB transaction",
+    "tables": [
+      ["us_equity_research.us_security_metadata_research", ["snapshot_id", "symbol"]],
+      ["us_equity_research.us_daily_total_return_research", ["snapshot_id", "symbol", "trade_date"]]
+    ],
+    "schema_migration_or_new_table": false,
+    "prewrite": "isolated-copy append, exact replay idempotency, conflict rejection, verified backup",
+    "postwrite": "DB/WAL, duplicate keys, nonfinite prices, coverage, source hashes, and receipts"
+  },
+  "terminal_results": ["DISCOVERY_PASS", "DISCOVERY_FAIL", "INPUT_BLOCKED"],
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "recommendation": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false,
+    "commit_or_push": false,
+    "central_lineage_update": false
+  },
+  "forbidden": [
+    "Invesco or any official universe request",
+    "SEC or N-PORT",
+    "historical constituent reconstruction",
+    "fundamentals, industry, valuation, news, or ML",
+    "optimizer, third source, source fusion, second strategy, intraday, options, or hedges"
+  ]
+}

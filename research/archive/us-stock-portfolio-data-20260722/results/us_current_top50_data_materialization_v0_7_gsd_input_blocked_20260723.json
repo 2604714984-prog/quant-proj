@@ -1,0 +1,71 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_7_GSD",
+  "result": "INPUT_BLOCKED",
+  "terminal": true,
+  "date": "2026-07-23",
+  "successful_gates": {
+    "frozen_companies": 50,
+    "frozen_stock_lines": 50,
+    "diagnostic_lines": 2,
+    "universe_identity_sha256": "b7d74d1d92fef41b2d685397d4f369be5379c6cf774bed7681fbe882cb5f036f",
+    "five_symbol_smoke": "SMOKE_PASS",
+    "smoke_result_sha256": "23184fec1e2f762419a02eed0697e45cbb670e9119305759abd3a07ec4606b48",
+    "short_history_branch_activated": true,
+    "short_history_yahoo_rows": 27,
+    "short_history_first_date": "2026-06-12",
+    "stooq_requests": 0
+  },
+  "mechanical_failure": {
+    "gate": "Short-history Yahoo/Sina raw-close agreement strictly greater than 98% within 0.5%",
+    "failed_member_identity": "One frozen newly listed ordinary-stock line; retained in frozen identity and not emitted as a current recommendation/list.",
+    "yahoo_rows": 27,
+    "sina_rows": 26,
+    "common_complete_sessions": 26,
+    "sessions_within_0_5_percent": 25,
+    "pass_ratio": 0.9615384615384616,
+    "required_pass_ratio_strictly_greater_than": 0.98,
+    "worst_relative_difference": 0.04752229628170679,
+    "yahoo_raw_sha256": "3b5461f4ab54cf2c1d16aad7d781f222e1d2292e3506e7be5bcce10442ef74f8",
+    "sina_raw_sha256": "0e471becc1546755bb0624e8c6db5951801888dc24dc844a40bc36f223900e96",
+    "reason": "One of 26 common sessions fails the 0.5% tolerance, making the pass ratio 25/26. Excluding the observation, fusing sources, replacing the member, or changing the threshold is forbidden.",
+    "full_staging_validation_completed": false
+  },
+  "requests": {
+    "yahoo_raw_responses": 9,
+    "sina_raw_responses": 9,
+    "stooq": 0,
+    "remaining_symbols_not_requested_after_fail_closed": true
+  },
+  "milestones": {
+    "data_contract_frozen": true,
+    "smoke": "SMOKE_PASS",
+    "full_staging_validation": "FAIL",
+    "central_data_ready": false,
+    "discovery_result_opened": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows",
+    "writer_invoked": false,
+    "isolated_copy_writer_test_started": false,
+    "backup_created": false,
+    "append_receipt": null,
+    "unchanged": true,
+    "device": 2096,
+    "inode": 814783,
+    "size": 4676136960,
+    "mtime": "2026-07-22 17:40:49.253648663 +0800",
+    "sha256_before_and_after": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "wal": "ABSENT",
+    "openers": 0
+  },
+  "formal_discovery": {"run_count": 0, "outcomes_accessed": false, "chart_created": false},
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "commit_or_push": false,
+  "central_lineage_updated": false
+}

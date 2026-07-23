@@ -1,0 +1,143 @@
+{
+  "execution_id": "SEC_NPORT_BULK_ZIP_V1_SMOKE_2025Q1",
+  "research_identity": "US_SP500_TOP50_XLG_DISCLOSED_UNIVERSE_V1",
+  "result": "INPUT_BLOCKED",
+  "result_is_terminal_for_this_exact_route": true,
+  "result_recorded_at": "2026-07-22T14:56:11.271103+00:00",
+  "mechanical_failure": {
+    "gate": "OFFICIAL_DATA_PAGE_MUST_RESOLVE_EXACTLY_ONE_2025_Q1_SEC_ZIP_URL",
+    "failure": "The single frozen WSL GET to the official SEC Form N-PORT data-set page returned HTTP 403.",
+    "consequence": "No page bytes were available to parse, so no ZIP URL was guessed or inferred and no ZIP GET was attempted.",
+    "closed_url": "https://www.sec.gov/data-research/sec-markets-data/form-n-port-data-sets",
+    "resolved_zip_url": null,
+    "zip_url_closed": null,
+    "reason_zip_url_is_null": "The frozen contract requires parsing the official page before freezing a ZIP URL; the page access gate failed."
+  },
+  "frozen_contract": {
+    "path": "research/definitions/sec_nport_bulk_zip_v1_smoke_2025q1.json",
+    "sha256": "23fd3dcb235fdd58e390f5a737359e4cf3f1afcfdd444e7e8aadf695e7d2d761",
+    "outcome_access_allowed": false,
+    "other_source_fallback_allowed": false,
+    "automatic_retries": 0,
+    "maximum_zip_bytes": 838860800
+  },
+  "network_evidence": {
+    "execution_environment": "WSL Ubuntu-24.04",
+    "requested_url": "https://www.sec.gov/data-research/sec-markets-data/form-n-port-data-sets",
+    "retrieved_at": "2026-07-22T14:56:06.288611+00:00",
+    "http_status": 403,
+    "final_url": "https://www.sec.gov/data-research/sec-markets-data/form-n-port-data-sets",
+    "content_length": 1924,
+    "content_type": "text/html",
+    "server": "AkamaiGHost",
+    "response_date": "Wed, 22 Jul 2026 14:56:10 GMT",
+    "request_user_agent": "quant-proj-research/2.0 (+https://github.com/2604714984-prog/quant-proj)",
+    "landing_page_get_attempt_count": 1,
+    "zip_get_attempt_count": 0,
+    "retry_count": 0,
+    "user_agent_identity_changed": false,
+    "response_body_downloaded": false,
+    "response_body_sha256": null,
+    "source_switched": false
+  },
+  "quality_gates": {
+    "official_page_accessible": false,
+    "exact_2025_q1_zip_url_parsed_and_frozen": false,
+    "official_zip_downloaded_with_stable_sha256": false,
+    "zip_manifest_validated_before_extraction": false,
+    "xlg_series_s000060793_uniquely_located": false,
+    "xlg_contract_c000197609_uniquely_located": false,
+    "at_least_one_public_historical_snapshot_extracted": false,
+    "holding_identity_fields_qualified": false,
+    "report_date_and_accepted_public_time_distinguished": false,
+    "duplicate_accession_holding_key_check_completed": false,
+    "revision_rule_mechanically_executable": false,
+    "central_database_byte_identity_unchanged": true,
+    "prior_terminal_results_byte_identity_unchanged": true
+  },
+  "not_assessed_due_to_upstream_failure": [
+    "SEC N-PORT relation schema in the 2025 Q1 ZIP",
+    "XLG accession, report period, filing date, accepted_at, or public dissemination time",
+    "CUSIP, issuer, asset category, balance, value, and currency coverage",
+    "ordinary-equity company count and security-line count",
+    "cash and derivative distinction",
+    "amendment or revision resolution"
+  ],
+  "task_start_repository_snapshot": {
+    "worktree": "/home/rongyu/workspace/quant-proj",
+    "branch": "research/us-stock-portfolio-data-20260722",
+    "head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "tree": "06a78207779775abd165768b10b9b343749752d4",
+    "tracked_changes": 0,
+    "existing_untracked_file_count": 10
+  },
+  "preserved_prior_results": [
+    {
+      "path": "research/results/us_stock_top50_input_blocked_20260722.json",
+      "sha256_before": "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877",
+      "sha256_after": "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877",
+      "byte_count_before_and_after": 13299,
+      "inode_before_and_after": 814235
+    },
+    {
+      "path": "research/results/us_sp500_top50_xlg_disclosed_universe_v1_input_blocked_20260722.json",
+      "sha256_before": "f7da25e80b6f9aefaab59b74086fcd98f9f8d16265bdfa1b26f7461cf93d58a6",
+      "sha256_after": "f7da25e80b6f9aefaab59b74086fcd98f9f8d16265bdfa1b26f7461cf93d58a6",
+      "byte_count_before_and_after": 10168,
+      "inode_before_and_after": 814270
+    }
+  ],
+  "canonical_database": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "device_hex_before_and_after": "830",
+    "inode_before_and_after": 814783,
+    "mode_octal_before_and_after": "600",
+    "size_before_and_after": 4676136960,
+    "mtime_ns_before_and_after": 1784713249253648663,
+    "sha256_before_and_after": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "wal_before_and_after": null,
+    "openers_before_and_after": [],
+    "database_connection_opened": false,
+    "write_attempted": false,
+    "writer_or_lock_entry_invoked": false
+  },
+  "staging_artifacts": [
+    {
+      "path": "/home/rongyu/workspace/quant-data/staging/sec_nport_bulk_zip_v1_smoke_2025q1/preflight_state.json",
+      "sha256": "5679c6bab7bebd544540e3d00817b088690de49ae115af8acc3c79863c3f58c0",
+      "byte_count": 2246
+    },
+    {
+      "path": "/home/rongyu/workspace/quant-data/staging/sec_nport_bulk_zip_v1_smoke_2025q1/raw/sec_form_n_port_data_sets.html.metadata.json",
+      "sha256": "4a2814f1e952b9112dae90bf5785635ce9d2020656877f1805bcc848525dd30c",
+      "byte_count": 1028
+    },
+    {
+      "path": "/home/rongyu/workspace/quant-data/staging/sec_nport_bulk_zip_v1_smoke_2025q1/postflight_state.json",
+      "sha256": "a4d6abd79816d85ad181046a3b9120a1e96fec37815bdd7648fe5e9e30aa78d6",
+      "byte_count": 2246
+    },
+    {
+      "path": "/home/rongyu/workspace/quant-data/staging/sec_nport_bulk_zip_v1_smoke_2025q1/smoke_evidence.json",
+      "sha256": "b98c0428cc2ca6be229584099324a63b7e8b178a93166f1b7151ac076d36bceb",
+      "byte_count": 981
+    }
+  ],
+  "verification": {
+    "focused_pytest": "10 passed",
+    "ruff": "passed",
+    "network_tests_in_unit_suite": false,
+    "central_database_unchanged": true
+  },
+  "research_boundaries": {
+    "returns_accessed": false,
+    "factor_accessed": false,
+    "portfolio_constructed": false,
+    "validation_opened": false,
+    "holdout_opened": false,
+    "current_executable_stock_list_output": false,
+    "strategy_candidate_available": false,
+    "broker_order_paper_live_auto_enabled": false
+  },
+  "next_action_under_this_execution": "STOP. This exact page-resolved SEC bulk route is closed. Do not retry, mutate identity headers, guess a ZIP URL, or switch sources under this execution identity."
+}

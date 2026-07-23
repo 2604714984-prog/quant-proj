@@ -1,0 +1,181 @@
+{
+  "research_id": "US_SP500_TOP50_XLG_DISCLOSED_UNIVERSE_V1",
+  "date": "2026-07-22",
+  "market": "US_EQUITIES",
+  "phase": "outcome_free_input_route_feasibility",
+  "status": "current",
+  "strategy_candidate_available": false,
+  "independent_identity": true,
+  "prior_identity_preservation": {
+    "research_identity": "US_DYNAMIC_PIT_TOP50_TOTAL_MARKET_CAP_COMMON_STOCK_V1",
+    "result_path": "/home/rongyu/workspace/quant-proj/research/results/us_stock_top50_input_blocked_20260722.json",
+    "result_sha256": "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877",
+    "result": "INPUT_BLOCKED",
+    "modified_by_this_recovery": false,
+    "inherited_as_new_result": false
+  },
+  "repository_snapshot": {
+    "worktree": "/home/rongyu/workspace/quant-proj",
+    "branch": "research/us-stock-portfolio-data-20260722",
+    "head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "tree": "06a78207779775abd165768b10b9b343749752d4"
+  },
+  "canonical_database_snapshot": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "device_hex": "830",
+    "inode": 814783,
+    "size_bytes": 4676136960,
+    "mtime": "2026-07-22 17:40:49.253648663 +0800",
+    "ctime": "2026-07-22 17:40:49.253648663 +0800",
+    "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "wal_present": false,
+    "write_allowed": false
+  },
+  "universe_identity": {
+    "identity": "US_SP500_TOP50_XLG_DISCLOSED_UNIVERSE_V1",
+    "company_scope": "Companies disclosed by XLG as holdings that identify the S&P 500 Top 50 membership then publicly available; XLG weights are never portfolio weights.",
+    "index_definition": "At annual reconstitution, select 50 of the largest S&P 500 companies by float-adjusted market capitalization subject to the published selection buffer.",
+    "annual_reconstitution": "After the close of the third Friday in June using the last business day of May as reference date.",
+    "inter_reconstitution_deletion": "A company dropped from the S&P 500 is concurrently removed and is not replaced until the next annual reconstitution.",
+    "maximum_selectable_stock_lines": 50,
+    "fund_weight_use": "IDENTITY_ONLY_NOT_PORTFOLIO_WEIGHT",
+    "current_holdings_backfill": "FORBIDDEN",
+    "future_disclosure_backfill": "FORBIDDEN"
+  },
+  "official_identity": {
+    "fund": "Invesco S&P 500 Top 50 ETF",
+    "ticker": "XLG",
+    "registrant_cik": "0001209466",
+    "series_id": "S000060793",
+    "contract_id": "C000197609",
+    "known_accession_anchor": "0001752724-25-076857",
+    "known_accession_index": "https://www.sec.gov/Archives/edgar/data/1209466/0001752724-25-076857-index.htm"
+  },
+  "pit_disclosure_rule": {
+    "report_date_is_available_at": false,
+    "sec_primary_available_at": "Exact EDGAR accepted timestamp for the accession.",
+    "invesco_fallback_available_at": "An explicit official publication timestamp bound to the exact holdings bytes; an as-of date, report date, HTTP retrieval time, or page crawl date is insufficient.",
+    "effective_at": "The open of the first complete XNYS session strictly after accepted_at or qualified official publication timestamp.",
+    "revision_rule": "Preserve every accession. For the same series, contract and report date, select the latest public amendment whose exact accepted_at precedes the formation cutoff; unresolved conflicting revisions fail closed.",
+    "minimum_history": "No formation may precede the first complete XNYS session after the first qualified public N-PORT disclosure. The route may not claim coverage before September 2019."
+  },
+  "four_snapshot_smoke": {
+    "count": 4,
+    "selectors_frozen_before_source_access": [
+      {
+        "id": "EARLIEST_QUALIFIED",
+        "selection": "Minimum report period on or after 2019-09-01 with a public NPORT-P or NPORT-P/A accession for the exact series and contract, complete holdings, and exact accepted_at."
+      },
+      {
+        "id": "MID_2022",
+        "selection": "Maximum report period not later than 2022-06-30 for the exact series and contract."
+      },
+      {
+        "id": "START_2025",
+        "selection": "Maximum report period not later than 2025-01-31 for the exact series and contract."
+      },
+      {
+        "id": "LATEST_COMPLETE_PUBLIC",
+        "selection": "Maximum report period whose exact accession and complete holdings were publicly available before smoke retrieved_at."
+      }
+    ],
+    "required_per_snapshot": [
+      "accession_number",
+      "filing_form",
+      "report_date",
+      "accepted_at",
+      "effective_at_next_complete_xnys_session",
+      "series_id",
+      "contract_id",
+      "registrant_cik",
+      "holding_name",
+      "security_title_or_type",
+      "cusip",
+      "ticker_when_disclosed",
+      "raw_document_sha256",
+      "revision_identity"
+    ]
+  },
+  "holding_classification": {
+    "company_identity": "Normalized six-character CUSIP issuer number plus normalized issuer name. Missing CUSIP, issuer-number collision, or name conflict fails the snapshot.",
+    "included_security": "Exchange-traded common equity security line only, with disclosed CUSIP and name and no unresolved instrument-type conflict.",
+    "excluded": [
+      "cash and cash equivalents",
+      "repurchase agreements",
+      "derivatives",
+      "fund shares",
+      "preferred shares",
+      "warrants and rights",
+      "unidentified or non-common instruments"
+    ],
+    "expected_company_count": "Normally 50; fewer is allowed only with primary evidence that an S&P 500 deletion occurred after annual reconstitution and the no-replacement rule applies.",
+    "security_line_count": "May be 51 when a company has multiple common-share-class lines. More than 51 or an unexplained company/line count fails closed.",
+    "duplicate_key": [
+      "accession_number",
+      "series_id",
+      "contract_id",
+      "cusip",
+      "security_title_or_type"
+    ]
+  },
+  "multi_class_collapse": {
+    "rule": "For each disclosed company with multiple eligible common-share lines, keep the line with the higher median daily dollar volume over the 60 complete trading sessions strictly before formation effective_at.",
+    "dollar_volume": "Unadjusted close multiplied by reported volume for each complete session.",
+    "tie_break": "No discretionary tie-break. Equal median values, fewer than 60 complete sessions, missing price/volume, corporate-action identity conflict, or unresolved company mapping makes that formation INPUT_BLOCKED.",
+    "future_information": "FORBIDDEN",
+    "fund_weight_tie_break": "FORBIDDEN"
+  },
+  "source_access_plan": {
+    "sec": {
+      "attempts": 1,
+      "meaning": "One script invocation with a fixed bounded request graph; each URL is fetched at most once and the graph stops immediately on HTTP 403 or transport failure.",
+      "unchanged_user_agent": "quant-proj-research/2.0 (+https://github.com/2604714984-prog/quant-proj)",
+      "initial_url": "https://www.sec.gov/cgi-bin/browse-edgar?action=getcompany&CIK=C000197609&type=NPORT-P&count=100&output=atom",
+      "conditional_requests_if_initial_200": "At most four selected same-origin filing index pages and their four primary NPORT XML documents, derived only from the frozen selectors; maximum total SEC documents is nine.",
+      "request_spacing_seconds": 1.1,
+      "retry_count": 0,
+      "header_identity_change": false,
+      "anti_abuse_bypass": false,
+      "bulk_zip_allowed": false
+    },
+    "invesco_fallback": {
+      "condition": "SEC initial route returns HTTP 403 or transport failure.",
+      "attempts": 1,
+      "page_url": "https://www.invesco.com/us/financial-products/etfs/holdings?audienceType=Investor&ticker=XLG",
+      "download_url": "https://www.invesco.com/us/financial-products/etfs/holdings/main/holdings/0?action=download&audienceType=Investor&ticker=XLG",
+      "pass_requirement": "The official route must expose all four frozen historical snapshots plus an explicit publication timestamp bound to each exact holdings document. Current-only holdings or as-of dates alone fail.",
+      "retry_count": 0,
+      "unknown_parameter_guessing": false
+    }
+  },
+  "route_gates": {
+    "source_identity": "Exact official URLs, retrieved_at, raw bytes, SHA256, HTTP status, content type, terms/license reference and route identity are recorded.",
+    "four_snapshots": "Exactly four selectors resolve without using future data.",
+    "filing_identity": "Every SEC snapshot matches CIK 0001209466, series S000060793 and contract C000197609.",
+    "availability": "Every snapshot has exact accepted_at or equivalent official publication timestamp and a mechanically determined later complete XNYS effective session.",
+    "holdings_integrity": "CUSIP, name and common-security type are present; duplicate/revision conflicts are isolated; cash and derivatives are excluded.",
+    "company_count": "Fifty companies are present unless a primary no-replacement deletion explains a lower count; at most 51 eligible security lines before the frozen multi-class collapse.",
+    "multi_class": "Every multi-class company collapses to one line using only the frozen trailing-60-session dollar-volume rule.",
+    "no_outcomes": "No return, signal, factor, strategy rank, portfolio weight, benchmark result, validation or holdout is accessed.",
+    "unchanged_database": "The canonical DuckDB identity, size, timestamps, SHA256 and WAL absence remain identical."
+  },
+  "decision_rule": {
+    "DATA_ROUTE_FEASIBLE": "All route gates pass for all four snapshots and a precise contiguous usable disclosure interval can be stated.",
+    "INPUT_BLOCKED": "SEC is 403 and Invesco lacks equivalent timestamped historical snapshots, or any required identity, availability, count, revision, instrument or multi-class gate fails.",
+    "partial_pass": "FORBIDDEN",
+    "silent_fallback_to_prior_universe": "FORBIDDEN"
+  },
+  "forbidden_actions": [
+    "central database write",
+    "bulk materialization",
+    "factor or return calculation",
+    "portfolio construction",
+    "alpha preregistration",
+    "validation",
+    "holdout access",
+    "current stock recommendation",
+    "current executable ranking",
+    "use of XLG holding weights as portfolio weights"
+  ],
+  "boundary_result": "NEW_IDENTITY_FROZEN_OUTCOME_FREE_INPUT_SMOKE_ONLY_NO_CENTRAL_WRITE"
+}

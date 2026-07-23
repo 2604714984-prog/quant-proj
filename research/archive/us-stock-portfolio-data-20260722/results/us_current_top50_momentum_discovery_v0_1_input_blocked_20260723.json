@@ -1,0 +1,150 @@
+{
+  "research_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0_1",
+  "execution_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0_1",
+  "date": "2026-07-23",
+  "market": "US_EQUITY",
+  "phase": "FULL_SAMPLE_DISCOVERY_INPUT_SMOKE",
+  "status": "blocked-on-data",
+  "result": "INPUT_BLOCKED",
+  "proof_level": "LOWER_GRADE_CURRENT_UNIVERSE_DISCOVERY_NOT_PIT",
+  "strategy_candidate_available": false,
+  "terminal_for_this_exact_identity": true,
+  "supersession": {
+    "v0_result_remains_terminal_and_byte_unchanged": true,
+    "v0_1_changed_only_the_universe_source_boundary": true,
+    "v0_reinterpreted": false
+  },
+  "decisive_failure": {
+    "gate": "STOCKANALYSIS_CURRENT_XLG_UNIVERSE_MUST_RETURN_MACHINE_READABLE_HTTP_200",
+    "reason": "The single frozen WSL request returned HTTP 403 and a Cloudflare challenge page rather than current XLG holdings.",
+    "consequence": "No universe rows could be frozen, so the five-symbol price smoke, central materialization, and formal discovery were not authorized.",
+    "anti_bot_bypass_attempted": false,
+    "alternate_endpoint_attempted": false,
+    "additional_source_attempted": false
+  },
+  "contract": {
+    "path": "research/definitions/us_current_top50_momentum_discovery_v0_1.json",
+    "sha256": "d8e728a6ab927dd628c2c449575137fc4cb679d32656d79621974de524c10e43",
+    "changed_after_freeze": false
+  },
+  "repository": {
+    "worktree": "/home/rongyu/workspace/quant-proj",
+    "branch": "research/us-stock-portfolio-data-20260722",
+    "head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "tree": "06a78207779775abd165768b10b9b343749752d4",
+    "preexisting_dirty_state_preserved": true,
+    "commit_created": false,
+    "push_performed": false
+  },
+  "source_attempts": {
+    "stockanalysis": {
+      "url": "https://stockanalysis.com/etf/xlg/holdings/",
+      "retrieved_at": "2026-07-22T16:22:18.926464+00:00",
+      "http_status": 403,
+      "content_type": "text/html; charset=UTF-8",
+      "byte_count": 5608,
+      "raw_sha256": "ead6297145e61e7f32b73052a3d55916e0bb4339a425af56a7d5cdbc738f9836",
+      "response_title": "Just a moment...",
+      "response_class": "Cloudflare challenge",
+      "request_count": 1,
+      "retry_count": 0,
+      "parsed_security_rows": 0
+    },
+    "official_universe_requests": 0,
+    "alternate_stockanalysis_endpoint_requests": 0,
+    "yahoo_price_requests": 0,
+    "stooq_price_requests": 0,
+    "third_price_source_requests": 0,
+    "sec_or_nport_requests": 0
+  },
+  "milestones": {
+    "DATA_CONTRACT_FROZEN": true,
+    "SMOKE_PASS": false,
+    "SMOKE_FAIL": true,
+    "CENTRAL_DATA_READY": false,
+    "DISCOVERY_RESULT": "INPUT_BLOCKED"
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer_entry": "quant_system.data.writer.append_rows",
+    "isolated_copy_test_invoked": false,
+    "backup_created": false,
+    "writer_invoked": false,
+    "append_receipt": null,
+    "before_and_after": {
+      "device_hex": "830",
+      "inode": 814783,
+      "mode_octal": "600",
+      "size_bytes": 4676136960,
+      "mtime": "2026-07-22 17:40:49.253648663 +0800",
+      "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+      "wal": null,
+      "openers": 0
+    },
+    "unchanged": true
+  },
+  "preserved_bytes": [
+    ["research/definitions/us_current_top50_momentum_discovery_v0.json", "a4b1126132fd8492cd1d2560a9e76b8c8485ce3282d0b109727db6dc8475f663"],
+    ["scripts/run_us_current_top50_momentum_discovery_v0.py", "0df8309fc26417d0c927a5b573f10f324924873ad50916bcf2524cdecef9ba73"],
+    ["tests/test_us_current_top50_momentum_discovery_v0.py", "586da9838c0006700f07161e31485abdeb4abf73d150213b5ed838cdcac80d37"],
+    ["research/results/us_current_top50_momentum_discovery_v0_input_blocked_20260722.json", "d1995e946caabd9542309da636807a43166b74b44a2adcae7375cdcf55fc244e"],
+    ["research/results/us_stock_top50_input_blocked_20260722.json", "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877"],
+    ["research/results/us_sp500_top50_xlg_disclosed_universe_v1_input_blocked_20260722.json", "f7da25e80b6f9aefaab59b74086fcd98f9f8d16265bdfa1b26f7461cf93d58a6"],
+    ["research/results/sec_nport_bulk_zip_v1_smoke_2025q1_input_blocked_20260722.json", "fd401efa9ddcc404fd3e919eae0f83eb24cf4e2a2f8c2a90915f038e419823dd"]
+  ],
+  "artifacts": {
+    "adapter": {
+      "path": "scripts/run_us_current_top50_momentum_discovery_v0_1.py",
+      "sha256": "181fd72340adde5203764a29cf672b9df3aef623001a1f8b7605bdb1b0de898a"
+    },
+    "reused_engine": {
+      "path": "scripts/run_us_current_top50_momentum_discovery_v0.py",
+      "sha256": "0df8309fc26417d0c927a5b573f10f324924873ad50916bcf2524cdecef9ba73"
+    },
+    "test": {
+      "path": "tests/test_us_current_top50_momentum_discovery_v0_1.py",
+      "sha256": "173e57abcd837575cf8f1f348886227711b55675e8fe0f94cf33c8a6a18a6ba3"
+    },
+    "raw_response": {
+      "path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_momentum_discovery_v0_1/universe/stockanalysis_xlg_holdings.html",
+      "sha256": "ead6297145e61e7f32b73052a3d55916e0bb4339a425af56a7d5cdbc738f9836"
+    },
+    "response_metadata": {
+      "path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_momentum_discovery_v0_1/universe/stockanalysis_xlg_holdings.html.metadata.json",
+      "sha256": "a7c899bb7f5b37c8909f39d3e8fe07bb52444d0cae5fda56982c860a4bc4316c"
+    },
+    "smoke_failure": {
+      "path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_momentum_discovery_v0_1/smoke_blocked.json",
+      "sha256": "5888c68b4ee421fe7023ffe417270847ad9832b44775211699376bc90e3bc109"
+    }
+  },
+  "formal_discovery": {
+    "run_count": 0,
+    "outcomes_opened": false,
+    "metrics": null,
+    "chart": null,
+    "current_rankings_or_holdings_output": false
+  },
+  "verification": {
+    "ruff": "PASS",
+    "focused_tests": "6 passed",
+    "json_validation": "PASS"
+  },
+  "boundaries": {
+    "current_universe_survivorship_bias_acknowledged": true,
+    "strategy_candidate_available": false,
+    "recommendation": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false,
+    "central_lineage_updated": false
+  },
+  "unresolved_evidence_gaps": [
+    "No machine-readable current StockAnalysis XLG holdings snapshot.",
+    "No frozen 50-company universe or final security-list identity.",
+    "No Yahoo/Stooq price smoke or cross-source comparison.",
+    "No central materialization and no discovery outcome."
+  ],
+  "next_action": "None under V0.1. Do not retry the challenge, change endpoint or headers, add a universe source, access prices, or open outcomes."
+}

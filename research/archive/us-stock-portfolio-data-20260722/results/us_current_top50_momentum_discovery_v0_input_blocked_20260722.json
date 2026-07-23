@@ -1,0 +1,150 @@
+{
+  "research_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0",
+  "execution_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0",
+  "date": "2026-07-22",
+  "market": "US_EQUITY",
+  "phase": "FULL_SAMPLE_DISCOVERY_INPUT_SMOKE",
+  "status": "blocked-on-data",
+  "result": "INPUT_BLOCKED",
+  "proof_level": "DISCOVERY_ONLY_NOT_PIT",
+  "strategy_candidate_available": false,
+  "terminal_for_this_exact_identity": true,
+  "decisive_failure": {
+    "gate": "OFFICIAL_CURRENT_UNIVERSE_STATIC_IDENTITY_AND_HOLDINGS_GATE",
+    "reason": "The single frozen Invesco holdings API request returned HTTP 500 with a 117-byte error object and exposed no holding count, top holdings, or security rows.",
+    "consequence": "The pre-named maintained fallback could not be used because the contract requires official count/top-holdings/identity fields for static cross-checking before fallback acceptance.",
+    "failed_before_price_access": true
+  },
+  "contract": {
+    "path": "research/definitions/us_current_top50_momentum_discovery_v0.json",
+    "sha256": "a4b1126132fd8492cd1d2560a9e76b8c8485ce3282d0b109727db6dc8475f663",
+    "changed_after_freeze": false
+  },
+  "repository": {
+    "worktree": "/home/rongyu/workspace/quant-proj",
+    "branch": "research/us-stock-portfolio-data-20260722",
+    "head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "tree": "06a78207779775abd165768b10b9b343749752d4",
+    "preexisting_dirty_state_preserved": true,
+    "commit_created": false,
+    "push_performed": false
+  },
+  "source_attempts": {
+    "universe_official": {
+      "provider": "Invesco",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V233/holdings/fund?idType=cusip",
+      "retrieved_at": "2026-07-22T16:02:42.667318+00:00",
+      "http_status": 500,
+      "content_type": "text/plain;charset=UTF-8",
+      "byte_count": 117,
+      "raw_sha256": "2f25ffe2ae9f90f36350964d4634bfb1c190a83f4b372657bcdba90586d7773e",
+      "retry_count": 0,
+      "response_shape": "error object only",
+      "holding_rows": 0
+    },
+    "universe_fallback": {
+      "provider": "StockAnalysis.com",
+      "request_count": 0,
+      "reason_not_requested": "Official static count/top-holdings evidence was absent, so the frozen fallback precondition failed."
+    },
+    "yahoo_price_requests": 0,
+    "stooq_price_requests": 0,
+    "third_price_source_requests": 0,
+    "sec_or_nport_requests": 0
+  },
+  "smoke": {
+    "status": "SMOKE_FAIL",
+    "planned_representative_symbols": 5,
+    "price_symbols_requested": 0,
+    "central_write_allowed_after_smoke": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "schema_inspection": {
+      "existing_security_table": "us_equity_research.us_security_metadata_research",
+      "existing_price_table": "us_equity_research.us_daily_total_return_research",
+      "migration_needed": false,
+      "writer_entry": "quant_system.data.writer.append_rows"
+    },
+    "writer_invoked": false,
+    "isolated_copy_writer_test_invoked": false,
+    "backup_created": false,
+    "append_receipt": null,
+    "before_and_after": {
+      "device_hex": "830",
+      "inode": 814783,
+      "mode_octal": "600",
+      "size_bytes": 4676136960,
+      "mtime": "2026-07-22 17:40:49.253648663 +0800",
+      "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+      "wal": null,
+      "openers": 0
+    },
+    "unchanged": true
+  },
+  "preserved_terminal_evidence": [
+    {
+      "path": "research/results/us_stock_top50_input_blocked_20260722.json",
+      "sha256_before_and_after": "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877"
+    },
+    {
+      "path": "research/results/us_sp500_top50_xlg_disclosed_universe_v1_input_blocked_20260722.json",
+      "sha256_before_and_after": "f7da25e80b6f9aefaab59b74086fcd98f9f8d16265bdfa1b26f7461cf93d58a6"
+    },
+    {
+      "path": "research/results/sec_nport_bulk_zip_v1_smoke_2025q1_input_blocked_20260722.json",
+      "sha256_before_and_after": "fd401efa9ddcc404fd3e919eae0f83eb24cf4e2a2f8c2a90915f038e419823dd"
+    }
+  ],
+  "artifacts": {
+    "script": {
+      "path": "scripts/run_us_current_top50_momentum_discovery_v0.py",
+      "sha256": "0df8309fc26417d0c927a5b573f10f324924873ad50916bcf2524cdecef9ba73",
+      "logical_loc": 478
+    },
+    "test": {
+      "path": "tests/test_us_current_top50_momentum_discovery_v0.py",
+      "sha256": "586da9838c0006700f07161e31485abdeb4abf73d150213b5ed838cdcac80d37"
+    },
+    "official_raw": {
+      "path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_momentum_discovery_v0/universe/invesco_xlg_holdings.json",
+      "sha256": "2f25ffe2ae9f90f36350964d4634bfb1c190a83f4b372657bcdba90586d7773e"
+    },
+    "official_metadata": {
+      "path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_momentum_discovery_v0/universe/invesco_xlg_holdings.json.metadata.json",
+      "sha256": "72d3c1be27f6781b0dcea70fdf5725d12e48a8905f1724773aedf5538e61d8f7"
+    },
+    "smoke_failure": {
+      "path": "/home/rongyu/workspace/quant-data/staging/us_current_top50_momentum_discovery_v0/smoke_blocked.json",
+      "sha256": "d282dcae809d6f6ed38dd524b81191fabfbc5c090c8948b08f6608b41949902a"
+    }
+  },
+  "formal_discovery": {
+    "run_count": 0,
+    "outcomes_opened": false,
+    "metrics": null,
+    "chart": null,
+    "current_rankings_or_holdings_output": false
+  },
+  "verification": {
+    "ruff": "PASS",
+    "focused_tests": "9 passed",
+    "json_validation": "PASS"
+  },
+  "boundaries": {
+    "current_universe_survivorship_bias_acknowledged": true,
+    "recommendation": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false,
+    "central_lineage_updated": false
+  },
+  "unresolved_evidence_gaps": [
+    "No qualified current 50-company holdings snapshot.",
+    "No official count/top-holdings fields for fallback cross-check.",
+    "No price smoke or cross-source close comparison.",
+    "No central materialization and no discovery result."
+  ],
+  "next_action": "None under this frozen identity. Do not retry, change the official endpoint, relax the fallback precondition, add a source, or open outcomes."
+}

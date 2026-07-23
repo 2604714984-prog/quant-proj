@@ -1,0 +1,101 @@
+{
+  "research_id": "US_TOP50_RESIDUAL_PROFITABILITY_V1_20260723",
+  "date": "2026-07-23",
+  "market": "US_EQUITIES",
+  "phase": "SEQUENTIAL_DISCOVERY_THEN_PIT_DATA_QUALIFICATION",
+  "overall_result": "PROFITABILITY_DATA_INPUT_BLOCKED",
+  "current": true,
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "input": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "qualified_stocks": 46,
+    "frozen_database_path": "/home/rongyu/workspace/quant-data/backups/quant_research.before_tushare_completion_20260723_6b29e56e8ccc.duckdb",
+    "frozen_database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "survivorship_bias": true
+  },
+  "residual_momentum": {
+    "identity": "US_TOP50_MARKET_RESIDUAL_MOMENTUM_V1",
+    "result": "DISCOVERY_FAIL",
+    "formal_run_count": 1,
+    "result_sha256": "6577204dff1dbd507a8bd0b79e5cbc318fc7002ddf85beab84165f901551be06",
+    "marker_sha256": "4e26419cb3813971c6f390bf614f3d07e58b30e5ceecc7399c7ce5ec52f8a611",
+    "chart_sha256": "0bbb706beb518ebe54c33498d65342c326acc84e506de3974ef886158a23ed1b",
+    "evaluation": ["2018-02-01", "2026-07-22"],
+    "passed_gates": ["cagr_excess", "sharpe", "drawdown", "stress_excess", "subperiods"],
+    "failed_gates": ["turnover"],
+    "annual_turnover": 2.0866190816827457,
+    "permanently_closed": true
+  },
+  "profitability_data": {
+    "identity": "US_TOP50_GROSS_PROFITABILITY_V1",
+    "result": "PROFITABILITY_DATA_INPUT_BLOCKED",
+    "strategy_formal_run_count": 0,
+    "strategy_outcomes_accessed": false,
+    "canonical_materialization_started": false,
+    "new_table_created": false,
+    "eastmoney": {
+      "repository_commit": "d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+      "request_count": 4,
+      "retry_count": 0,
+      "completed_companies": 1,
+      "partial_companies": 1,
+      "planned_companies": 5,
+      "decisive_failures": [
+        "Available AAPL statement rows expose report dates and report types but no announcement, publication, disclosure, or accepted timestamp.",
+        "WMT.N balance-sheet response returned Eastmoney code 9201 with no data."
+      ],
+      "partial_smoke_result_sha256": "a2ffa515f55a8ee7a1b239827b96d8b10c77dfb19108735b9e4021a66610ba45"
+    },
+    "sec": {
+      "route": "companyfacts preflight",
+      "request_count": 1,
+      "retry_count": 0,
+      "http_status": 403,
+      "response_bytes": 4819,
+      "raw_sha256": "db176cdae39f5eb2b70d159322e9289426cd4ae74f928e27a16dbf5f3aee9677",
+      "preflight_result_sha256": "157be3ea43f0d2577912e1199b0aa19d423c5ae3d6b3afd44b59513f04c3a3ee",
+      "user_agent_changed": false,
+      "anti_abuse_bypass": false
+    },
+    "blocking_gates": ["public_announcement_or_accepted_at", "comparable_total_assets_coverage", "second_provider_access"],
+    "reason_for_early_stop": "The required PIT timestamp route failed before the five-company smoke could qualify; continuing value acquisition could not cure this upstream identity failure."
+  },
+  "pit_validation": "NOT_STARTED_NO_DISCOVERY_PASS",
+  "forward_status": "NOT_STARTED_NO_DISCOVERY_PASS",
+  "strategy_search_status": "STOPPED_AFTER_RESIDUAL_FAIL_AND_PROFITABILITY_DATA_BLOCK",
+  "central_database": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writes_by_this_execution": false,
+    "pit_table_count_after": 0,
+    "wal_after": "ABSENT",
+    "openers_after": 1,
+    "external_opener_pid_after": 3748955,
+    "observed_start_sha256": "7c916e9d55bef4845676405d2329bc3837fc138810040e1bf0bbb881a888352c",
+    "observed_end_sha256": "ad628357a80128459d2733a46c1325316ac231531327c672d52d653f3932053b",
+    "subsequent_observation": {
+      "observed_at": "2026-07-23T02:18:23.709424916+08:00",
+      "sha256": "e3658ed51366cdcf8c3dfed06da44ee9cc40a753ba625bec5b6cd7e28ef6743b",
+      "note": "Main DB remained actively mutable by unrelated A-share writer; no formal result used this file."
+    },
+    "byte_unchanged": false,
+    "concurrent_unrelated_writes": true,
+    "formal_strategy_input_isolated_from_main_db_changes": true
+  },
+  "artifacts": {
+    "contract_sha256": "137a489a4722a9fac6ec7fbf9eeb2bd0918f14c1c2032c37fe6d9661d9a42982",
+    "residual_script_sha256": "3ee812217df9167e6a2d7896929b7db11e1e0dd7ae0b8205ff08cd9a3ee06fb5",
+    "residual_test_sha256": "97861f508e315f91aef800a814e2e86021da10863568faabf9593079721a0240",
+    "acquisition_script_sha256": "d07564d5eb7e0f679a55555f6a239f00c86cf4ce984c063d77fc7fad2302a1ae",
+    "acquisition_test_sha256": "5d40858e55bba649f16307231ffb968024ac65d7d490d1689c880263a1499d23"
+  },
+  "preserved_prior_result": {
+    "path": "research/results/us_top50_strategy_followups_v1_discovery_fail_20260723.json",
+    "sha256": "3c71670dcc5f9dbc074763ab16e90d700d27c9704fea083fdf88ebab25f05a7a",
+    "modified": false
+  }
+}

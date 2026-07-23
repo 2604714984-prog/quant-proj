@@ -1,0 +1,82 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_6_GSD",
+  "date": "2026-07-23",
+  "priority": "CANONICAL_DATA_FIRST_THEN_ONE_FROZEN_DISCOVERY",
+  "source_correction": {
+    "prior_identity": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_5_GSD",
+    "prior_input_blocked_and_all_bytes_remain_terminal": true,
+    "stooq_route_closed_without_retry_or_bypass": true,
+    "canonical": "Pinned global-stock-data Yahoo chart explicit-period daily raw OHLCV plus adjusted close.",
+    "crosscheck": "Pinned global-stock-data us_stock_kline_sina endpoint/code only.",
+    "sina_url": "https://stock.finance.sina.com.cn/usstock/api/jsonp.php/var/US_MinKService.getDailyK",
+    "sina_params": {"symbol": "uppercase standard ticker", "num": 120},
+    "sina_headers": {"Referer": "https://finance.sina.com.cn/"},
+    "crosscheck_window": "Latest at most 120 common complete daily sessions, minimum 60.",
+    "gate": "At least 98% of common raw closes within 0.5% for every smoke and canonical symbol.",
+    "row_fusion": false
+  },
+  "preserved_v0_5_core_bytes": [
+    ["research/definitions/us_current_top50_data_materialization_v0_5_gsd.json", "2f72bc5bf1ee20123795a75ddb61580e7c61ff4c267874d339bd3e28c33ccbaa"],
+    ["scripts/run_us_current_top50_data_materialization_v0_5_gsd.py", "d1c1f949d08b3ef5f827fc757cbb78cebe4f8ba2b70fd8d2ab453c2cfe334f31"],
+    ["tests/test_us_current_top50_data_materialization_v0_5_gsd.py", "f143aa53f352f65d43ff70cadf64b3b450b59ee41b9cd55f55aa4f3f3886e5a1"],
+    ["research/results/us_current_top50_data_materialization_v0_5_gsd_input_blocked_20260723.json", "208c9c7144933cedf29131f148a195e7e82f046242475fffc56a701bb963f6fb"]
+  ],
+  "preserved_v0_5_staging": {
+    "prices/stooq/AAPL.csv": "39cb5819acc5a7da8ddda288ce3019c8027898309b85e3ec2397f72ce5cd74dc",
+    "prices/stooq/AAPL.csv.metadata.json": "08f5706f25916f0f29acda86e6987e2779d5e617f04e8c9286bed60945b9f78f",
+    "prices/yahoo/AAPL.json": "984f117783bcf327e3fba37950bdb63f17dcb674554c79f70ed1efa6e4ae767b",
+    "prices/yahoo/AAPL.json.metadata.json": "11443c57e438b78801c4f3244449e505b0fb7909c04447e191eae68a303b4c67",
+    "prices/yahoo/BRK-A.json": "77e73fc4fe1b8045d395c2560836e5cad6e828611479d5c8422b93af18a1b4df",
+    "prices/yahoo/BRK-A.json.metadata.json": "14a4f605916b0d95556a37da04ba1f2e6ea3743e9b0e938cc3bff400d3fff2e8",
+    "prices/yahoo/BRK-B.json": "c6b059334affc689efb9d5da0cf0564e993b2d20d56304af15a071e7277b397f",
+    "prices/yahoo/BRK-B.json.metadata.json": "993c049fbc86d7a2bfb5653ae778e0c0b671c35c8fbf692c197c1d39983ee3ba",
+    "prices/yahoo/GOOG.json": "f982d5c1c328e43cbb607e9bd2ac39c5ea9116e0408c582ada88f0e76a46a3d9",
+    "prices/yahoo/GOOG.json.metadata.json": "9584eb72eb54b8d7ad61546eebe3eb366dad32d30e2436a22338f6ede0250e44",
+    "prices/yahoo/GOOGL.json": "2a826475d61b8eeff1185831ae99e8164b5a15ea67772a946efcd90aa3861f92",
+    "prices/yahoo/GOOGL.json.metadata.json": "1d934bdcbbb638d7c67ad845979fb8ccdd25c662110120f3c88475cceeccaed6",
+    "smoke_blocked.json": "51e27c31a737e195e3d1cd73afa6d2479f6b184766fa76b865f16709c9acf61d",
+    "universe/class_selection.json": "93935c1dad9b562810031193bc48ebab5f183ff4fe0d7bfa6300aeaa408068bf",
+    "universe/frozen_rows.json": "b7d74d1d92fef41b2d685397d4f369be5379c6cf774bed7681fbe882cb5f036f",
+    "universe/raw_52_identity.json": "4c8b8547daf43b744f7fbcc3633b9302d33740e4e34ffb70f12e67eb33a5ceb7"
+  },
+  "frozen_universe": {
+    "source_repository": "https://github.com/simonlin1212/global-stock-data.git@d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "license": "Apache-2.0",
+    "raw_candidate_lines": 52,
+    "companies": 50,
+    "selected_stock_lines": 50,
+    "identity_sha256": "b7d74d1d92fef41b2d685397d4f369be5379c6cf774bed7681fbe882cb5f036f",
+    "selection_evidence_sha256": "93935c1dad9b562810031193bc48ebab5f183ff4fe0d7bfa6300aeaa408068bf",
+    "known_bias": "Execution-date current universe fixed backward through history; not PIT.",
+    "current_list_output": false
+  },
+  "yahoo_canonical": {
+    "endpoint": "https://query2.finance.yahoo.com/v8/finance/chart/{symbol}",
+    "params": {"period1": 1420070400, "period2": 1784764800, "interval": "1d", "events": "div,splits", "includeAdjustedClose": "true"},
+    "date_range": "2015-01-01 through 2026-07-22",
+    "symbols": "Exactly frozen 50 stock lines plus SPY and XLG.",
+    "response_gate": "HTTP 200, dataGranularity=1d, complete raw OHLCV and adjclose, finite positive close/adjclose, no pre-IPO or long-gap fill."
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows with existing lock and transaction",
+    "tables": [["us_equity_research.us_security_metadata_research", ["snapshot_id", "symbol"]], ["us_equity_research.us_daily_total_return_research", ["snapshot_id", "symbol", "trade_date"]]],
+    "publication": "Acquire and validate all 52 symbols in staging; isolated-copy append/replay/conflict test; exact backup; then one bounded canonical publication with no partial symbol writes.",
+    "schema_migration_or_new_table": false,
+    "postwrite": "Receipt plus exact symbol/date/row counts, duplicates, nonfinite, coverage, Yahoo hashes, before/after DB identity/SHA256, WAL and openers."
+  },
+  "strategy_after_central_ready": {
+    "maximum_runs": 1,
+    "signal": "adj_close[t-21] / adj_close[t-252] - 1",
+    "formation_execution": "Month-end formation, next-session close execution.",
+    "selection": "Top10, hold through rank15, equal 10%, long-only, no leverage.",
+    "minimum_monthly_qualified": 30,
+    "costs_bps_one_way": {"base": 15, "stress": 30},
+    "benchmark": "Same-date qualified current-Top50 equal weight; SPY/XLG diagnostic only.",
+    "pass_gates": "Base CAGR excess >1pp; Sharpe >= benchmark; MDD shortfall <=5pp; stress excess >0; turnover <=200%; at least two positive relative subperiods among 2016-2019, 2020-2022, 2023-latest.",
+    "tuning_rerun_validation_holdout": false
+  },
+  "terminal_results": ["DISCOVERY_PASS", "DISCOVERY_FAIL", "INPUT_BLOCKED"],
+  "boundaries": {"strategy_candidate_available": false, "recommendation": false, "paper": false, "broker": false, "live": false, "auto": false, "commit_or_push": false, "central_lineage_update": false},
+  "forbidden": ["Stooq access", "StockAnalysis", "Playwright", "SEC or N-PORT", "provider outside pinned repo", "source fusion", "strategy change or rerun"]
+}

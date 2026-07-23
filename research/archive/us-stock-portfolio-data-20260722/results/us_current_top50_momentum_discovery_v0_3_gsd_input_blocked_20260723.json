@@ -1,0 +1,78 @@
+{
+  "execution_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0_3_GSD",
+  "result": "INPUT_BLOCKED",
+  "terminal": true,
+  "date": "2026-07-23",
+  "mechanical_failure": {
+    "gate": "frozen current Top-50 universe identity",
+    "primary_function": "global-stock-data yahoo_quote_summary('XLG', ['topHoldings'])",
+    "primary_http_status": 200,
+    "primary_returned_security_lines": 10,
+    "primary_required_security_lines": [50, 51],
+    "fallback_function_endpoint": "global-stock-data market_stock_list / Eastmoney push2 clist ranked by explicit total market cap f20",
+    "fallback_http_statuses": [200, 200],
+    "fallback_markets": ["m:105", "m:106"],
+    "fallback_candidate_security_lines": 52,
+    "fallback_companies": 50,
+    "fallback_multiclass_companies": 2,
+    "frozen_candidate_line_maximum": 51,
+    "reason": "The pinned repository cannot produce the frozen 50-company universe within the preregistered 50-or-51 candidate-line identity. Choosing a class after seeing these values or changing the maximum would create a new research identity."
+  },
+  "pinned_source": {
+    "repository": "https://github.com/simonlin1212/global-stock-data.git",
+    "commit": "d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "tree": "5f5d1389277acc78f06cd6051a27cb8fdcd41e7a",
+    "skill_sha256": "39005851f179f74d970caccfb775bcffb9dd64d2ccedacca5c611fc4ebf101a8",
+    "license": "Apache-2.0",
+    "license_sha256": "199bab40163ad21135c2c4d5db43bffdadb14ed80762b048f04931cc48700bbf",
+    "manifest": "/home/rongyu/workspace/quant-data/staging/us_current_top50_momentum_discovery_v0_3_gsd/source_manifest.json"
+  },
+  "raw_inputs": {
+    "yahoo_xlg_top_holdings_sha256": "59b0c33a080951fdce285bfb4dff985d830831c432cc2b66c85f9a1460013eb8",
+    "eastmoney_m105_sha256": "df436ee7cc748c62644035492d6693c23f30a164868a25ea364aec7dc6177072",
+    "eastmoney_m106_sha256": "5b1490432512761917d555b0c04095b4c3f17646b919670d6cfc07f5d7aa8ec6",
+    "price_files": 0,
+    "yahoo_chart_requests": 0,
+    "stooq_requests": 0
+  },
+  "milestones": {
+    "data_contract_frozen": true,
+    "smoke": "SMOKE_FAIL",
+    "central_data_ready": false,
+    "discovery_result_opened": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows",
+    "writer_invoked": false,
+    "isolated_copy_writer_test_started": false,
+    "backup_created": false,
+    "append_receipt": null,
+    "unchanged": true,
+    "device": 2096,
+    "inode": 814783,
+    "size": 4676136960,
+    "mtime": "2026-07-22 17:40:49.253648663 +0800",
+    "sha256_before_and_after": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "wal": "ABSENT",
+    "openers": 0
+  },
+  "formal_discovery": {
+    "run_count": 0,
+    "outcomes_accessed": false,
+    "chart_created": false
+  },
+  "v0_2": {
+    "playwright_started": false,
+    "stockanalysis_requested": false,
+    "preserved_bytes": true
+  },
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "commit_or_push": false,
+  "central_lineage_updated": false
+}

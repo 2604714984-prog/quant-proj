@@ -1,0 +1,55 @@
+{
+  "date": "2026-07-23",
+  "phase": "FROZEN_SEQUENTIAL_FULL_SAMPLE_DISCOVERY",
+  "input": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "qualified_identity": "/home/rongyu/workspace/quant-data/staging/us_current_top50_data_materialization_v0_9_gsd/qualified_identity.json",
+    "qualified_identity_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "qualified_stocks": 46,
+    "v0_result_sha256": "844e6e603f0dc380b6f0f4c5d92cc4ca0c35a8cd210beed63c39bd3f134bcacd",
+    "read_only": true,
+    "survivorship_bias": true
+  },
+  "diagnostic": {
+    "identity": "US_TOP50_V0_RISK_ATTRIBUTION_DIAGNOSTIC_V1",
+    "outcome_diagnostic_only": true,
+    "fields": ["monthly_series_hashes", "annualized_vol", "downside_vol", "beta", "correlation", "worst_10_months", "equal_weight_concentration", "component_risk_contributions", "turnover_and_cost_drag", "high_vs_low_benchmark_vol_regimes"],
+    "cannot_change_strategy_formula": true
+  },
+  "v1": {
+    "identity": "US_TOP50_VOL_MANAGED_MOMENTUM_V1",
+    "signal": "adj_close[t-21]/adj_close[t-252]-1",
+    "formation_execution": "month-end close formation; next-session close execution; target applies to subsequent close-to-close returns",
+    "selection": "Top10; retain prior holdings through rank15; ascending ticker tie-break; equal stock weights before scaling",
+    "risk_estimator": "latest 63 complete daily adjusted-close returns through formation; sample covariance; annualized sqrt(w' Sigma w * 252)",
+    "benchmark_vol": "same 63-day window and same-date qualified current-Top50 equal weight",
+    "gross_exposure": "min(1.0, benchmark_vol/selected_portfolio_vol); no leverage; no floor; residual cash return zero",
+    "costs_bps_one_way": {"base": 15, "stress": 30},
+    "evaluation": "same as V0",
+    "gates": {"sharpe_margin_min": 0.05, "cagr_excess_min_strict": 0.01, "max_drawdown_shortfall_max": 0.02, "stress_excess_strict_positive": true, "annual_turnover_max": 2.0, "positive_subperiods_min": 2, "median_gross_exposure_min": 0.5},
+    "maximum_runs": 1,
+    "repairs_or_variants": false
+  },
+  "contingency": {
+    "execute_only_if_v1_discovery_fail": true,
+    "identity": "US_TOP50_MOMENTUM_LOWVOL_COMPOSITE_V1",
+    "momentum_rank": "cross-sectional percentile of 12-1 momentum, higher better",
+    "lowvol_rank": "cross-sectional percentile of negative trailing 126-session realized volatility, higher better",
+    "composite": "0.5*momentum_rank+0.5*lowvol_rank",
+    "selection": "Top15; retain prior holdings through rank20; ascending ticker tie-break; equal 1/15; long-only; no leverage or cash overlay",
+    "timing_cost_benchmark": "same as V1",
+    "gates": "same seven gates; median gross exposure mechanically 1.0 and reported",
+    "maximum_runs": 1,
+    "stop_after_failure": true,
+    "repairs_or_third_family": false
+  },
+  "after_pass_only": {
+    "robustness": "calendar years, frozen subperiods, 3-month chronological moving-block bootstrap, seed 20260723, 10000 resamples; no promotion",
+    "pit": "bounded maximum two free public sources; true historical Top50 market-cap membership, delistings, share classes; staging first; no current-list backfill or schema migration",
+    "pit_blocked_status": "PIT_VALIDATION_INPUT_BLOCKED",
+    "forward": "research-only protocol after 2026-07-22; freeze each future month-end Top50 before returns; minimum 6, target 12 month-ends; current status FORWARD_PREREGISTERED_NOT_EXECUTED"
+  },
+  "boundaries": {"strategy_candidate_available": false, "current_holdings_output": false, "recommendation": false, "paper": false, "broker": false, "live": false, "auto": false, "commit_or_push": false, "central_lineage_update": false}
+}

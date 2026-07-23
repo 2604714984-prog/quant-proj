@@ -1,0 +1,189 @@
+{
+  "execution_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0",
+  "research_id": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0",
+  "phase": "FULL_SAMPLE_DISCOVERY",
+  "frozen_on": "2026-07-22",
+  "proof_level": "DISCOVERY_ONLY_NOT_PIT",
+  "research_question": "Using the execution-date current S&P 500 Top 50 company snapshot as a fixed historical pool, does one frozen 12-1 momentum portfolio justify later strict PIT validation?",
+  "null_hypothesis": "The frozen momentum portfolio fails at least one mechanical discovery gate versus the contemporaneous qualified fixed-current-universe equal-weight benchmark.",
+  "known_biases": [
+    "The current constituent snapshot is backfilled over history and therefore has explicit survivorship and look-ahead universe bias.",
+    "Yahoo adjusted history is retrieved currently and is not represented as historically point-in-time available.",
+    "This is one full-sample discovery with no validation, holdout, alpha, p-value, or inference claim."
+  ],
+  "preserved_terminal_evidence": [
+    {
+      "path": "research/results/us_stock_top50_input_blocked_20260722.json",
+      "sha256": "36d0581465ea37d26d695bfaa4e1ca1efbc190880b44148058cd30ba712d0877"
+    },
+    {
+      "path": "research/results/us_sp500_top50_xlg_disclosed_universe_v1_input_blocked_20260722.json",
+      "sha256": "f7da25e80b6f9aefaab59b74086fcd98f9f8d16265bdfa1b26f7461cf93d58a6"
+    },
+    {
+      "path": "research/results/sec_nport_bulk_zip_v1_smoke_2025q1_input_blocked_20260722.json",
+      "sha256": "fd401efa9ddcc404fd3e919eae0f83eb24cf4e2a2f8c2a90915f038e419823dd"
+    }
+  ],
+  "universe": {
+    "identity": "Execution-date current S&P 500 Top 50 companies disclosed through XLG, frozen once and backfilled unchanged over the full discovery history.",
+    "official_primary": {
+      "provider": "Invesco",
+      "url": "https://dng-api.invesco.com/cache/v1/accounts/en_US/shareclasses/46137V233/holdings/fund?idType=cusip",
+      "identity_derivation": "The exact API template, locale, CUSIP 46137V233, and idType=cusip are disclosed in the same-day official XLG page bytes.",
+      "supporting_official_page_sha256": "16e1fc222600d1d739bc8177eaeb73c2d7d1a1abd3fd61d58036bf3b108a7271",
+      "supporting_official_page_retrieved_at": "2026-07-22T14:01:43.543173+00:00"
+    },
+    "maintained_public_fallback": {
+      "provider": "StockAnalysis.com",
+      "url": "https://stockanalysis.com/etf/xlg/holdings/",
+      "allowed_only_if": "The official response is HTTP 200 and exposes fund identity, holding count, and at least five top holding symbols/weights but is not fully machine-readable."
+    },
+    "fallback_count": 1,
+    "static_crosscheck": {
+      "fund_identity_must_match": "Invesco S&P 500 Top 50 ETF / XLG",
+      "company_count": 50,
+      "ordinary_security_line_count_allowed": [50, 51],
+      "top_five_symbol_order_must_match": true,
+      "top_five_absolute_weight_difference_max": 0.001
+    },
+    "instrument_filter": "US-listed ordinary common-stock lines only; exclude cash, derivatives, funds, preferred shares, warrants, rights, and non-equity rows.",
+    "company_grouping": "Normalize official issuer name by case/punctuation and remove only a terminal Class A/B/C share-class suffix; any other ambiguous grouping fails closed.",
+    "multi_class_rule": "For a company with multiple ordinary lines, retain the line with higher median raw-close times volume over the latest 60 complete common Yahoo sessions as of the frozen snapshot; ties or fewer than 60 common sessions fail closed.",
+    "maximum_selected_stock_lines": 50,
+    "current_stock_identity_output_allowed": false
+  },
+  "prices": {
+    "download_start": "2015-01-01",
+    "evaluation_start": "2016-01-01",
+    "evaluation_end": "Latest complete session common to primary and cross-check data, no later than the last completed New York trading date at retrieval.",
+    "maximum_symbols": 52,
+    "primary": {
+      "provider": "Yahoo public chart",
+      "url_template": "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}?period1={period1}&period2={period2}&interval=1d&events=div%2Csplits&includeAdjustedClose=true",
+      "semantics": "Yahoo raw OHLC/volume plus current-retrieval adjusted close; adjusted fields are retrospective discovery data, not PIT."
+    },
+    "crosscheck": {
+      "provider": "Stooq",
+      "url_template": "https://stooq.com/q/d/l/?s={symbol}.us&d1=20150101&d2={end_yyyymmdd}&i=d",
+      "semantics": "Raw daily close used only for the frozen level cross-check; never fused into primary history."
+    },
+    "transport_order": [
+      "Yahoo primary for one symbol",
+      "Stooq cross-check for the same symbol",
+      "advance to next frozen symbol"
+    ],
+    "no_third_price_source": true,
+    "no_source_fusion": true,
+    "no_pre_ipo_fill": true,
+    "no_long_gap_forward_fill": true,
+    "crosscheck_gate": "For each qualified symbol, at least 98% of overlapping raw-close observations must have absolute relative difference <=0.5%; unresolved symbols are quarantined and more than 5 unresolved symbols yields INPUT_BLOCKED.",
+    "bounded_outlier_inspections": 3
+  },
+  "smoke": {
+    "symbols": ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"],
+    "must_precede_full_materialization": true,
+    "failure_result": "INPUT_BLOCKED"
+  },
+  "signal_and_portfolio": {
+    "signal": "adj_close[t-21] / adj_close[t-252] - 1",
+    "formation": "Last available primary session of each calendar month after close.",
+    "execution": "Next primary session close; new weights apply to subsequent close-to-close returns.",
+    "qualification": "At formation, a symbol needs current and lagged adjusted closes at t-21 and t-252 and an execution-date adjusted close; each evaluation month requires at least 30 qualified stock lines.",
+    "ranking": "Descending signal with symbol ascending as the outcome-independent tie-break.",
+    "selection": "Retain existing holdings ranked 1 through 15, then fill by rank until exactly 10 names are held.",
+    "target_stock_count": 10,
+    "target_weight_each": 0.10,
+    "long_only": true,
+    "leverage": false,
+    "base_one_way_cost_bps": 15,
+    "stress_one_way_cost_bps": 30,
+    "trade_notional": "Sum absolute stock-weight changes from drifted pre-trade weights to targets; cost equals one-way bps times trade notional.",
+    "annual_turnover": "Exclude initial entry; annualized one-way turnover is one half of subsequent absolute stock-weight changes divided by elapsed years."
+  },
+  "benchmark": {
+    "primary": "At each strategy formation, equal weight all contemporaneously qualified, non-quarantined lines from the frozen current-company pool; rebalance at the same next-session close.",
+    "costs": "Apply the same base and stress one-way cost conventions as the strategy.",
+    "diagnostic_only": ["XLG", "SPY"]
+  },
+  "metrics": {
+    "cagr": "Geometric annual growth over actual elapsed days from the first common execution.",
+    "volatility": "Sample standard deviation of daily net returns times sqrt(252).",
+    "sharpe": "Mean daily net return divided by sample standard deviation times sqrt(252), zero risk-free rate.",
+    "max_drawdown": "Minimum equity divided by prior running maximum minus one.",
+    "subperiod_relative_sign": "Sign of geometric strategy base-net return minus benchmark base-net return within each frozen calendar segment."
+  },
+  "discovery_pass_gates": {
+    "base_cost_cagr_excess_min": 0.01,
+    "net_sharpe_not_below_benchmark": true,
+    "max_drawdown_shortfall_max": 0.05,
+    "stress_cost_annualized_excess_strictly_positive": true,
+    "annual_turnover_max": 2.0,
+    "positive_relative_subperiods_min": 2,
+    "subperiods": ["2016-2019", "2020-2022", "2023-latest"]
+  },
+  "formal_run": {
+    "maximum_count": 1,
+    "parameter_repair_allowed": false,
+    "variant_allowed": false,
+    "validation_or_holdout": false,
+    "outcome_may_be_opened_only_after": [
+      "contract SHA256 frozen",
+      "universe bytes and identity frozen",
+      "all price source bytes and source identities frozen",
+      "central database snapshot frozen",
+      "script SHA256 frozen",
+      "smoke and central data gates passed"
+    ]
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer_entry": "quant_system.data.writer.append_rows through the existing transaction and .writer.lock protocol",
+    "targets": [
+      {
+        "table": "us_equity_research.us_security_metadata_research",
+        "natural_keys": ["snapshot_id", "symbol"]
+      },
+      {
+        "table": "us_equity_research.us_daily_total_return_research",
+        "natural_keys": ["snapshot_id", "symbol", "trade_date"]
+      }
+    ],
+    "schema_migration_allowed": false,
+    "prewrite_sequence": [
+      "isolated-copy append",
+      "exact replay idempotency",
+      "conflicting replay rejection with unchanged copy",
+      "backup and SHA256 verification",
+      "existing writer lock and transaction append"
+    ],
+    "postwrite_checks": [
+      "database and WAL identity",
+      "duplicate natural keys",
+      "nonfinite values",
+      "coverage",
+      "source-document hashes",
+      "exact idempotent replay receipt"
+    ],
+    "fail_closed": "If existing tables cannot carry the frozen rows or any write gate fails, do not migrate; return INPUT_BLOCKED and keep the canonical database unchanged."
+  },
+  "terminal_results": ["DISCOVERY_PASS", "DISCOVERY_FAIL", "INPUT_BLOCKED"],
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "recommendation_or_current_picks_output": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false,
+    "commit_or_push": false,
+    "central_lineage_update": false
+  },
+  "forbidden": [
+    "SEC or N-PORT",
+    "historical constituent reconstruction",
+    "full-market shares or market-cap reconstruction",
+    "delisting completion",
+    "fundamentals, industry, valuation, news, or ML",
+    "optimizer, intraday data, options, hedges, second strategy, parameter search, or third price source"
+  ]
+}

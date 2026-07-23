@@ -1,0 +1,60 @@
+{
+  "execution_identity": "US_TOP50_STRATEGY_FOLLOWUPS_V1_20260723",
+  "overall_result": "DISCOVERY_FAIL",
+  "strategy_candidate_available": false,
+  "recommendation": false,
+  "paper": false,
+  "broker": false,
+  "live": false,
+  "auto": false,
+  "baseline": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "qualified_stocks": 46,
+    "expected_db_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "frozen_input_path": "/home/rongyu/workspace/quant-data/backups/quant_research.before_tushare_completion_20260723_6b29e56e8ccc.duckdb",
+    "frozen_input_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84"
+  },
+  "risk_diagnostic": {
+    "status": "READY",
+    "artifact_sha256": "5a45b504f3293cf3cb7bd5ec4a7e82316f986e6d192f17a5917b269598e654f1",
+    "v0_reconciliation_passed": true,
+    "diagnosis": [
+      "concentration",
+      "market_beta",
+      "volatility_clustering"
+    ]
+  },
+  "v1": {
+    "identity": "US_TOP50_VOL_MANAGED_MOMENTUM_V1",
+    "result": "DISCOVERY_FAIL",
+    "result_sha256": "1980ab4b1dd3b55aa12a8399e399a60670d20782e8f25352081e985bb24e3ec4",
+    "chart_sha256": "97a78a827af790fb3f0cba0214cf5d7ebc558b0ac49383bd87c5ee03281b782a",
+    "formal_run_count": 1,
+    "passed_gates": ["drawdown", "turnover", "median_gross"],
+    "failed_gates": ["sharpe", "cagr_excess", "stress_excess", "subperiods"]
+  },
+  "backup": {
+    "identity": "US_TOP50_MOMENTUM_LOWVOL_COMPOSITE_V1",
+    "result": "DISCOVERY_FAIL",
+    "result_sha256": "df2dc55ae1107c704707b4c8bbb188c2740c486f28ec55f0d23d5f97047deb82",
+    "chart_sha256": "8ad02ec6b21c4b47daba797ae0ab4b85b9239acbd34943a0422dcc00c4b199f9",
+    "formal_run_count": 1,
+    "passed_gates": ["drawdown", "turnover", "median_gross"],
+    "failed_gates": ["sharpe", "cagr_excess", "stress_excess", "subperiods"]
+  },
+  "pit_validation": "NOT_STARTED_NO_DISCOVERY_PASS",
+  "forward_status": "NOT_STARTED_NO_DISCOVERY_PASS",
+  "strategy_search_status": "STOPPED_AFTER_AUTHORIZED_BACKUP_FAIL",
+  "central_db_observation": {
+    "writes_by_this_execution": false,
+    "baseline_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "observed_post_sha256": "9bd4d8c2abfcb3bf9a1f7eac0ff8c43692317c006f294a9754c917718e9b1993",
+    "byte_unchanged": false,
+    "cause_evidence": "concurrent external A-share completion process PID 3748955; formal strategy runs used the pre-existing exact-hash frozen backup"
+  },
+  "frozen_artifacts": {
+    "contract_sha256": "77c5834dd3ce353d258cb700b9c881ea556a06545b2ba8608c5a207b50dc3281",
+    "script_sha256": "58c62fee0b443bc63c428e219b7a13aa56b904264882a7fa49a73a73ccd713fb",
+    "test_sha256": "7bb918ea2dc94c49877e16730e0fadda5f82adc1b8fd53d5dea0aed1046486a6"
+  }
+}

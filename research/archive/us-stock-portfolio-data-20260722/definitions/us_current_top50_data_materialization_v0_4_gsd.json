@@ -1,0 +1,73 @@
+{
+  "execution_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_4_GSD",
+  "date": "2026-07-23",
+  "priority": "CANONICAL_DATA_FIRST_THEN_ONE_FROZEN_DISCOVERY",
+  "proof_level": "CURRENT_UNIVERSE_SURVIVORSHIP_BIASED_NOT_PIT",
+  "mechanical_correction": {
+    "prior_identity": "US_CURRENT_TOP50_MOMENTUM_DISCOVERY_V0_3_GSD",
+    "prior_input_blocked_and_bytes_remain_terminal": true,
+    "only_change": "Raw pre-selection capacity is exactly/at most 52 security lines for exactly 50 companies; select one line per duplicated company before broad materialization.",
+    "raw_candidate_gate": "Exactly 52 eligible security lines and exactly 50 normalized companies; more than 52 or any other company count is INPUT_BLOCKED.",
+    "class_selection": "For each duplicated company, compare median raw close times volume across the latest 60 complete common Yahoo sessions. Higher median wins; exact median tie uses ascending ticker.",
+    "selection_evidence": "Freeze raw 52-line identity, grouping, each Yahoo raw response URL/retrieved_at/SHA256, 60 common dates, liquidity medians, and final 50-line identity before broader price acquisition."
+  },
+  "preserved_v0_3_bytes": [
+    ["research/definitions/us_current_top50_momentum_discovery_v0_3_gsd.json", "6ff104e67479cdcee23eec6116b35b55468320d7ca1e8d10264f5f7a830a86b7"],
+    ["scripts/run_us_current_top50_momentum_discovery_v0_3_gsd.py", "b375dececddd66be1474dac672d5e2d17cf3cdb60315614e01038e0b314cf667"],
+    ["tests/test_us_current_top50_momentum_discovery_v0_3_gsd.py", "4371247878bfcea365620429ed48f04e066eb210c7fb84872c7bcae46d015fd0"],
+    ["research/results/us_current_top50_momentum_discovery_v0_3_gsd_input_blocked_20260723.json", "34c13b5aaa8538d51822ea8ffb7fd2e234676b171d3ab71d9ba9a25b90beceb3"],
+    ["/home/rongyu/workspace/quant-data/staging/us_current_top50_momentum_discovery_v0_3_gsd/source_manifest.json", "4a283ae7a526a72fc4477213c3fded4ad3ceb6ab650946dad9ecc420d72a5d9e"]
+  ],
+  "source_adapter": {
+    "repository": "https://github.com/simonlin1212/global-stock-data.git",
+    "commit": "d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "tree": "5f5d1389277acc78f06cd6051a27cb8fdcd41e7a",
+    "skill_sha256": "39005851f179f74d970caccfb775bcffb9dd64d2ccedacca5c611fc4ebf101a8",
+    "license": "Apache-2.0",
+    "universe_route": "Reuse the exact frozen V0.3 Yahoo topHoldings and Eastmoney m:105/m:106 f20 response bytes; no new universe request.",
+    "price_route": "Pinned stock_kline_yahoo query2 chart interval=1d range=max raw response; Stooq raw-close cross-check only."
+  },
+  "universe": {
+    "company_ranking": "Merge pinned Eastmoney m:105 and m:106 lines by explicit total market cap f20 descending with ascending ticker tie-break, accumulating exactly the first 50 normalized companies and all their candidate share classes present in the frozen responses.",
+    "instrument_scope": "US NASDAQ/NYSE stock markets m:105 and m:106 only; m:107 ETF/other excluded.",
+    "raw_security_lines": 52,
+    "companies": 50,
+    "final_stock_lines": 50,
+    "current_rank_or_holding_output_allowed": false,
+    "known_bias": "Execution-date current universe fixed backward through history."
+  },
+  "prices": {
+    "canonical_symbols": "Exactly 50 selected stock lines plus SPY and XLG, maximum and exact count 52.",
+    "date_range": "2015-01-01 through latest complete session.",
+    "primary_semantics": "Yahoo raw OHLCV and adjusted close; current-retrieval retrospective adjustment, not PIT.",
+    "crosscheck_gate": "For every canonical symbol, at least 98% overlapping raw closes within 0.5%; no unresolved canonical symbol, no row fusion.",
+    "smoke_symbols": ["AAPL", "MSFT", "NVDA", "AMZN", "GOOGL"],
+    "third_source": false,
+    "pre_ipo_or_long_gap_fill": false
+  },
+  "central_data": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "writer": "quant_system.data.writer.append_rows with existing lock and DuckDB transaction",
+    "tables": [["us_equity_research.us_security_metadata_research", ["snapshot_id", "symbol"]], ["us_equity_research.us_daily_total_return_research", ["snapshot_id", "symbol", "trade_date"]]],
+    "publication": "Acquire and validate all 52 symbols in staging; isolated-copy append/replay-idempotency/conflict test; exact pre-write backup; then one bounded canonical publication, never symbol-by-symbol.",
+    "existing_rows": "Append only missing conflict-free natural-key identities and prove exact replay idempotency.",
+    "schema_migration_or_new_table": false,
+    "postwrite": "Receipt with exact symbol/date/row counts, duplicates, nonfinite values, coverage, source hashes, before/after DB identity and SHA256, WAL, openers."
+  },
+  "strategy_after_central_ready": {
+    "maximum_runs": 1,
+    "signal": "adj_close[t-21] / adj_close[t-252] - 1",
+    "formation_execution": "Month-end formation, next-session close execution.",
+    "selection": "Top10, hold through rank15, equal 10%, long-only, no leverage.",
+    "minimum_monthly_qualified_names": 30,
+    "base_one_way_cost_bps": 15,
+    "stress_one_way_cost_bps": 30,
+    "benchmark": "Same-date qualified current-Top50 equal weight; SPY/XLG diagnostic only.",
+    "pass_gates": "Base CAGR excess >1pp; Sharpe >= benchmark; MDD shortfall <=5pp; stress annualized excess >0; turnover <=200%; at least two positive relative subperiods among 2016-2019, 2020-2022, 2023-latest.",
+    "validation_or_holdout": false,
+    "tuning_or_rerun": false
+  },
+  "terminal_results": ["DISCOVERY_PASS", "DISCOVERY_FAIL", "INPUT_BLOCKED"],
+  "boundaries": {"strategy_candidate_available": false, "recommendation": false, "paper": false, "broker": false, "live": false, "auto": false, "commit_or_push": false, "central_lineage_update": false},
+  "forbidden": ["StockAnalysis", "Playwright", "SEC or N-PORT", "new provider", "full US market canonical fill", "historical members", "fundamentals, industry, valuation, news, ML, optimizer, second strategy"]
+}

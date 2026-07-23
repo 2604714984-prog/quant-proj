@@ -1,0 +1,231 @@
+{
+  "research_id": "US_STOCK_TOP50_PORTFOLIO_DATA_V2_20260722",
+  "date": "2026-07-22",
+  "market": "US_EQUITIES",
+  "phase": "data_contract_and_source_qualification",
+  "status": "current",
+  "strategy_candidate_available": false,
+  "base_contract": {
+    "path": "/home/rongyu/workspace/quant-proj/research/definitions/us_stock_portfolio_data_contract_v1.json",
+    "sha256": "2ca2f33b364a2e88c16a8d07128cad2dc9ef43fa7170faa0c1b55ee2d9dacd48",
+    "composition_rule": "All v1 integrity, lineage, writer, return, calendar, rollback, and no-outcome rules remain binding unless this v2 contract explicitly narrows them.",
+    "supersession_reason": "The user subsequently froze the selectable universe to a dynamic historical point-in-time top 50. This changes research identity and cannot modify v1 in place."
+  },
+  "repository_snapshot": {
+    "worktree": "/home/rongyu/workspace/quant-proj",
+    "work_branch": "research/us-stock-portfolio-data-20260722",
+    "base_head": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+    "base_tree": "06a78207779775abd165768b10b9b343749752d4"
+  },
+  "canonical_database_snapshot": {
+    "path": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "device_hex": "830",
+    "inode": 814783,
+    "size_bytes": 4676136960,
+    "sha256": "513e5417650dbc4876537a9ad75e36695e28cb4f408a93201a72b970b2cd979c",
+    "write_before_v2_freeze": false
+  },
+  "universe_identity": {
+    "identity": "US_DYNAMIC_PIT_TOP50_TOTAL_MARKET_CAP_COMMON_STOCK_V1",
+    "selection_scope": "At every portfolio formation timestamp, only the 50 highest-ranked eligible US common-stock securities may be considered by a later preregistered strategy.",
+    "rank_count": 50,
+    "dynamic_history_required": true,
+    "current_constituent_backfill_forbidden": true,
+    "current_or_2026_07_22_top50_list_forbidden": true,
+    "rank_unit": "security share class, not issuer aggregate",
+    "metric": {
+      "selected": "TOTAL_MARKET_CAP",
+      "formula": "prior completed XNYS-session unadjusted close multiplied by the latest independently identified share-class shares outstanding that had become eligible before formation",
+      "currency": "USD",
+      "descending": true,
+      "free_float_not_selected_reason": "The identified free no-auth sources do not provide a survivor-aware, class-level, historically timestamped free-float-share series. SEC EntityPublicFloat is an issuer cover-page disclosure measured at an earlier date, generally annual, and is not a class-level historical free-float-share series. It therefore cannot support the required formation-time security ranking without an invented allocation.",
+      "issuer_level_shares_substitution_forbidden": true,
+      "stale_current_shares_substitution_forbidden": true
+    },
+    "formation_availability_rule": {
+      "price": "Use the unadjusted close from the last fully completed verified XNYS session before formation. It becomes research-eligible at the next verified session open and is not labeled as provider available_at.",
+      "shares": "Use a share-class observation only after the exact SEC accession acceptance timestamp or an equally strong source publication timestamp. Filing date alone is insufficient. Corporate actions effective after the observation must be applied exactly once before multiplying by price.",
+      "security_eligibility": "Every exchange, instrument-type, issuer-domicile, ADR, shell-company, and lifecycle fact must itself have been public before formation.",
+      "membership_available_at": "The maximum eligible timestamp across price, shares, security identity, instrument classification, exchange, lifecycle, and corporate-action inputs.",
+      "open_formation_rule": "For a portfolio formed at an XNYS open, no input with membership_available_at at or after that open may be used."
+    },
+    "eligible_security_filter": {
+      "exchanges": [
+        "XNYS",
+        "XNAS",
+        "XASE"
+      ],
+      "included": [
+        "US-registered issuer voting common stock",
+        "US-registered issuer non-voting common stock when the share class is independently identified"
+      ],
+      "excluded": [
+        "ETF",
+        "ETN",
+        "mutual fund",
+        "closed-end fund",
+        "preferred stock",
+        "warrant",
+        "right",
+        "unit",
+        "convertible instrument",
+        "SPAC shell before a completed qualifying business combination",
+        "OTC security",
+        "test issue",
+        "when-issued or next-shares placeholder",
+        "security with unresolved class or lifecycle identity"
+      ],
+      "ambiguous_instrument_action": "quarantine; do not substitute another security"
+    },
+    "adr_policy": {
+      "included": false,
+      "rule": "Exclude ADRs, depositary shares, and common shares of non-US registered foreign private issuers.",
+      "evidence_required": "PIT filing-form history, issuer jurisdiction/registration evidence, and share-class security title; a present-day name string alone is insufficient.",
+      "ambiguous_case_action": "quarantine"
+    },
+    "tie_and_boundary_rule": {
+      "primary": "unrounded total market cap descending",
+      "secondary": "permanent security identifier ascending",
+      "requirement": "If a permanent security identifier is unavailable or the rank-50 boundary is unresolved, that formation timestamp is INPUT_BLOCKED.",
+      "fewer_than_50": "INPUT_BLOCKED; never pad with a current constituent or discretionary replacement"
+    }
+  },
+  "pit_membership_reconstruction": {
+    "candidate_population": "All historical ticker eras observed in the qualified source over the research interval, including inactive, acquired, bankrupt, renamed, and delisted securities; never only symbols trading today.",
+    "security_identity": "Map each ticker era to issuer CIK and an independently identified common-stock share class. Ticker reuse, merger succession, and class changes create a new era unless primary evidence proves continuity.",
+    "market_cap_input": "For each formation timestamp, combine the prior-session unadjusted close with the latest eligible class-level shares outstanding, adjusted once for qualifying splits and stock distributions between the share observation and price date.",
+    "ranking": "Apply the PIT eligibility filter first, then rank all remaining securities and retain exactly ranks 1 through 50.",
+    "survivor_rule": "A later acquisition, bankruptcy, delisting, or name change never removes an earlier valid security-era observation.",
+    "terminal_rule": "A held security that exits requires independently sourced merger consideration, delisting return, or recovery value. Missing terminal value blocks the affected evaluation; zero and last-close substitution are forbidden.",
+    "audit_fields": [
+      "formation_timestamp",
+      "security_id",
+      "issuer_cik",
+      "ticker_era",
+      "share_class_title",
+      "exchange_mic",
+      "price_date",
+      "unadjusted_close",
+      "price_eligible_at",
+      "shares_outstanding",
+      "shares_observation_date",
+      "shares_accepted_at",
+      "corporate_action_multiplier",
+      "total_market_cap_usd",
+      "eligibility_evidence_sha256",
+      "rank",
+      "membership_available_at",
+      "quality_status"
+    ]
+  },
+  "minimum_data_scope": {
+    "in_scope": [
+      "survivor-aware ticker-era and permanent share-class identity for plausible historical Top-50 candidates and required edge cases",
+      "unadjusted OHLCV needed for prior-close capitalization and later return accounting",
+      "class-level shares outstanding with exact source availability",
+      "splits, stock distributions, cash distributions, merger consideration, delisting and recovery events",
+      "PIT exchange, common-stock, ADR, issuer-registration, SPAC-shell and lifecycle classification",
+      "verified XNYS sessions",
+      "Top-50 membership evidence at each later preregistered formation timestamp"
+    ],
+    "deferred": [
+      "full-market fundamentals unrelated to the first strategy",
+      "full-market industry history until a later preregistration actually requires an industry constraint",
+      "intraday data",
+      "options, analyst estimates and alternative data"
+    ],
+    "permanent_secondary_store_allowed": false,
+    "canonical_target_only": "/home/rongyu/workspace/quant-data/quant_research.duckdb"
+  },
+  "source_plan": {
+    "prices_and_lifecycle_candidate": "Pinned post-no-preference/stocks Dolt commit, subject to v1 smoke failures and never canonical until all blocking gates close.",
+    "shares_and_pit_filings": "SEC companyfacts/companyconcept facts joined to exact accession acceptance timestamps from SEC submissions; XBRL frames may be used only for coverage smoke because frames return a last-filed fact per entity.",
+    "share_class_identity": "SEC filing cover-page and primary filing evidence; issuer-level EntityCommonStockSharesOutstanding cannot be allocated across classes without primary evidence.",
+    "terminal_events": "Primary merger filings, bankruptcy filings, exchange notices, or another qualified free source with explicit terms and publication identity.",
+    "free_float_assessment": "SEC EntityPublicFloat may be audited as a crosscheck but is not accepted as the dynamic class-level ranking input."
+  },
+  "usable_coverage_at_freeze": {
+    "qualified_start_date": null,
+    "status": "NO_QUALIFIED_TOP50_FORMATION_DATE",
+    "candidate_price_interval": {
+      "start": "2011-01-03",
+      "end": "2026-07-21",
+      "qualified": false
+    },
+    "uncovered_intervals": [
+      {
+        "interval": "before 2011-01-03",
+        "reason": "The primary candidate bar source has no coverage."
+      },
+      {
+        "interval": "2011-01-03 through 2026-07-21",
+        "reason": "No qualified survivor-aware class-level shares, permanent security identity, PIT instrument/ADR filter, or complete terminal-value path has yet been established."
+      },
+      {
+        "interval": "after 2026-07-21",
+        "reason": "Not part of the frozen source snapshot."
+      }
+    ]
+  },
+  "inherited_source_smoke": {
+    "staging_result_path": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/smoke_v2/smoke_result.json",
+    "result_sha256": "d4ea05d4c3b038e765de07a552d95bef0fc276353e9535895bac050933ca03d3",
+    "manifest_path": "/home/rongyu/workspace/quant-data/staging/us_stock_portfolio_20260722/smoke_v2/source_manifest.json",
+    "manifest_sha256": "e1c510d40af1dfb634989672504a24afc541577fffccc0fbe09bb9a3f00ed64d",
+    "status": "SMOKE_FAIL",
+    "passed": [
+      "47 of 47 explicit metadata rows",
+      "zero duplicate Yahoo symbol-date keys",
+      "100 of 100 recent raw-close comparisons within the frozen tolerance",
+      "4 of 4 named split crosschecks"
+    ],
+    "blocking": [
+      "two crosscheck rows with invalid required OHLCV values",
+      "eight dividend amount discrepancies under the frozen exact source check",
+      "one zero-over-zero DWDP split factor",
+      "no merger, delisting, bankruptcy-recovery or terminal-value field",
+      "no provider publication timestamp or historical vintage on the primary market rows",
+      "the independent chart route returned no usable history for the required inactive terminal cases"
+    ],
+    "central_database_opened": false,
+    "central_database_write": false
+  },
+  "gates_before_any_canonical_write": [
+    "At least one contiguous interval has mechanically reproducible dynamic PIT Top-50 membership.",
+    "Every rank-50 boundary has qualified security identity, class-level shares, prior close, eligibility status and deterministic tie-breaking.",
+    "No current constituent list or current shares observation enters an earlier formation.",
+    "The v1 uniqueness, finite-value, corporate-action, conflict, calendar, rollback, writer and unchanged-DB gates all pass.",
+    "A writer dry-run and isolated-copy idempotency/conflict test passes before the existing append writer is executed."
+  ],
+  "stop_rules": {
+    "missing_historical_top50": "INPUT_BLOCKED",
+    "ambiguous_rank_50_boundary": "INPUT_BLOCKED",
+    "missing_class_level_shares": "INPUT_BLOCKED",
+    "missing_terminal_value": "INPUT_BLOCKED",
+    "source_smoke_failure": "SMOKE_FAIL with canonical DB unchanged",
+    "fallback_to_current_top50": "forbidden",
+    "fallback_to_survivor_only_symbols": "forbidden"
+  },
+  "preregistration_binding": {
+    "required_identity": "US_DYNAMIC_PIT_TOP50_TOTAL_MARKET_CAP_COMMON_STOCK_V1",
+    "changes_requiring_new_research_identity": [
+      "rank count other than 50",
+      "free-float rather than total market cap or another ranking metric",
+      "issuer-level rather than share-class ranking",
+      "different exchange or instrument eligibility",
+      "ADR inclusion",
+      "different PIT availability or tie-breaking rule"
+    ],
+    "no_strategy_preregistration_until_data_qualified": true
+  },
+  "forbidden_until_preregistration": [
+    "strategy return calculation",
+    "factor ranking",
+    "portfolio construction",
+    "validation or holdout access",
+    "parameter search",
+    "current Top-50 output",
+    "current stock recommendation or executable ranking"
+  ],
+  "boundary_result": "DATA_CONTRACT_FROZEN_V2_DYNAMIC_TOP50_NO_CENTRAL_WRITE_NO_OUTCOME_ACCESS"
+}
