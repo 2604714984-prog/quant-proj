@@ -1,0 +1,219 @@
+{
+  "audit_date": "2026-07-23",
+  "repository": "2604714984-prog/quant-proj",
+  "pull_request": 126,
+  "base_sha": "35b3246e40f8315e2bbef847d995a3b6d3a3b4fc",
+  "previous_reviewed_head": "e38977f0f4448479a3b7ec979928248b745fca48",
+  "audited_head": "62300cdff8e300a43c0fc54b0fba2df0e456511f",
+  "github_actions_merge_ref": "26aa7217d45bc19663a9e85502644c37556ded6f",
+  "evidence_repository": "2604714984-prog/a-share-canonical-evidence-data-room",
+  "evidence_repository_sha": "de38f03466a58b9c786ed35e2cc38abff3e9b0fe",
+  "verdict": {
+    "external_audit_verdict": "CONDITIONAL_PASS_EXPERIMENTAL_ONLY",
+    "lightweight_architecture": true,
+    "fail_closed_default": true,
+    "experimental_research_infrastructure": true,
+    "capital_grade_research_process": false,
+    "pr_if_claimed_full_remediation": "REQUEST_CHANGES"
+  },
+  "authorization": {
+    "strategy_candidate_available": false,
+    "recommendation_authorized": false,
+    "paper_trading_authorized": false,
+    "live_trading_authorized": false,
+    "automatic_execution_authorized": false
+  },
+  "ci_evidence": {
+    "workflow_run_id": 29985872527,
+    "status": "completed",
+    "conclusion": "success",
+    "observed_steps": [
+      "wheel build",
+      "wheel install",
+      "pip check",
+      "quant info outside checkout",
+      "ruff",
+      "pytest"
+    ],
+    "source_258_count_independently_extracted": false,
+    "installed_wheel_258_count_independently_extracted": false,
+    "wheel_sha256_claim": "0f1d1922e33d9435b46cd9cb35c64492c18ce8a0a4d3d21355720ec06118723a",
+    "wheel_sha256_independently_verified": false,
+    "local_tests_rerun": false,
+    "local_rerun_blocker": "audit environment could not resolve github.com"
+  },
+  "accepted_remediation": [
+    "weights are computed from frozen declarative strategy artifacts",
+    "universe inclusion is produced by a fixed lifecycle rule over the complete partition",
+    "A-share raw split, dividend and terminal economics affect portfolio accounting",
+    "base and adverse transaction-cost cases enter actual simulations",
+    "retry intent is separated from post-open no-fill evidence",
+    "package and active settings hashes are internally computed",
+    "persistent experiment ledger, multiplicity checks, HAC/bootstrap and stage identities are integrated",
+    "generic, retrospective and gross-only evidence is explicitly downgraded",
+    "authorization remains false"
+  ],
+  "findings": [
+    {
+      "id": "RA3-001",
+      "severity": "HIGH",
+      "title": "Provider-qualified source bytes are not bound to typed business values",
+      "affected": [
+        "data/source_identity.py::capture_github_release_asset",
+        "backtest/event_loop.py::ExecutionInput",
+        "backtest/event_loop.py::_require_candidate_sources",
+        "markets/universe.py::StatusEvidence",
+        "backtest/capacity.py::CapacityObservation",
+        "data/calendar.py::AcceptedSession",
+        "data/source_identity.py::CorporateActionIdentity"
+      ],
+      "impact": "A provider receipt can be attached to manually constructed values that do not match provider bytes.",
+      "minimum_fix": "Introduce typed parser receipts generated from exact provider bytes; candidate objects must be produced from those receipts.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-002",
+      "severity": "HIGH",
+      "title": "SplitManifest can be manually forged",
+      "affected": [
+        "research/splits.py::SplitManifest",
+        "research/splits.py::build_split_manifest",
+        "research/splits.py::evaluate_split",
+        "research/identity.py::capture_dataset_manifest",
+        "backtest/event_loop.py::run_candidate_rebalance"
+      ],
+      "impact": "Samples, folds and label horizons can be changed while reusing the expected manifest digest.",
+      "minimum_fix": "Add controlled construction, canonical serialization, verified loading and hash recomputation before evaluation.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-003",
+      "severity": "HIGH",
+      "title": "Multiplicity families can be split or extended after holdout access",
+      "affected": [
+        "research/experiments.py::preregister_trial",
+        "research/experiments.py::record_holdout_result",
+        "research/experiments.py::require_adjusted_holdout_for_candidate",
+        "research/experiments.py::persist_experiment_ledger"
+      ],
+      "impact": "The total number of attempts against one holdout can be understated despite correct within-family adjustment.",
+      "minimum_fix": "Derive a stable holdout_id, allow one frozen family per holdout, prohibit additions after access and verify a real anchor receipt.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-004",
+      "severity": "HIGH",
+      "title": "Holdout p-values and result SHA are not bound to SplitEvaluation and the final stage chain",
+      "affected": [
+        "research/experiments.py::record_holdout_result",
+        "research/experiments.py::require_adjusted_holdout_for_candidate",
+        "research/splits.py::evaluate_split",
+        "backtest/event_loop.py::run_candidate_rebalance"
+      ],
+      "impact": "A favorable raw p-value can be supplied independently of the frozen returns and final backtest result.",
+      "minimum_fix": "Create a HoldoutResultReceipt that internally derives p-value and result identity from final stage hash, returns and SplitEvaluation.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-005",
+      "severity": "HIGH",
+      "title": "HAC/bootstrap sample order and estimator parameters are not preregistered",
+      "affected": [
+        "research/splits.py::build_split_manifest",
+        "research/splits.py::evaluate_split",
+        "research/experiments.py::ExperimentEvent.parameters_json",
+        "backtest/event_loop.py::run_candidate_rebalance"
+      ],
+      "impact": "Sample subset/order, bandwidth or block length can be selected after viewing holdout returns.",
+      "minimum_fix": "Freeze a SplitEvaluationPlan before holdout access and evaluate a sample_id-to-return mapping in canonical temporal order.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-006",
+      "severity": "HIGH",
+      "title": "Dataset partitions lack PIT source receipts",
+      "affected": [
+        "research/identity.py::DatasetManifest",
+        "research/identity.py::capture_dataset_manifest",
+        "backtest/event_loop.py::run_candidate_rebalance"
+      ],
+      "impact": "A fixed local partition can still contain future revisions or data unavailable at dataset as-of.",
+      "minimum_fix": "Bind every source snapshot and partition to provider qualification, available_at, parser/schema identity and dataset as-of.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-007",
+      "severity": "HIGH",
+      "title": "Critical receipts cannot be stably reloaded across processes",
+      "affected": [
+        "data/source_identity.py::SourceIdentity",
+        "backtest/event_loop.py::DecisionArtifact",
+        "markets/universe.py::UniverseMaterialization",
+        "research/identity.py::DatasetManifest",
+        "research/splits.py::SplitEvaluation",
+        "research/experiments.py::persist_experiment_ledger"
+      ],
+      "impact": "The system is deterministic inside one process but cannot yet prove cross-day or cross-machine replay of the same stage hash.",
+      "minimum_fix": "Add canonical run-bundle serialization and verified loaders; separate stable source identity from acquisition audit time.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-008",
+      "severity": "HIGH",
+      "title": "Adjusted A-share prices can enter the cash/share accounting engine",
+      "affected": [
+        "markets/a_share.py::AShareAdjustmentReceipt",
+        "backtest/event_loop.py::_require_a_share_adjustment_receipt",
+        "backtest/event_loop.py::_decision_price",
+        "backtest/event_loop.py::_fill",
+        "backtest/event_loop.py::_marks"
+      ],
+      "impact": "QFQ/HFQ/total-return values can be treated as executable cash units without factor conversion.",
+      "minimum_fix": "Keep the portfolio and execution engine raw-price-only; adjusted series remain feature inputs unless explicit unit conversion is implemented.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-009",
+      "severity": "MEDIUM",
+      "title": "Execution calendar revision rows are not individually provider-qualified",
+      "minimum_fix": "Include every revision session row source in candidate provider qualification.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-010",
+      "severity": "MEDIUM",
+      "title": "A retry instruction is not required to follow the previous no-fill observed_at",
+      "minimum_fix": "Require instruction N+1 decision_at to be later than no-fill event N observed_at.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-011",
+      "severity": "MEDIUM",
+      "title": "Canonical ingest lineage omits capture_level and owner remains a caller label",
+      "minimum_fix": "Persist capture_level, enforce a target minimum grade and derive canonical owner from controlled configuration.",
+      "status": "OPEN"
+    },
+    {
+      "id": "RA3-012",
+      "severity": "MEDIUM",
+      "title": "Run parameters and final stage completion are not fully reconciled with preregistration",
+      "minimum_fix": "Add a CandidateRunConfig receipt and only permit a holdout result for the final stage of the preregistered plan.",
+      "status": "OPEN"
+    }
+  ],
+  "minimum_closeout_architecture": [
+    "TypedObservationReceipt",
+    "canonical SplitManifest and SplitEvaluationPlan",
+    "HoldoutResultReceipt",
+    "one canonical experiment ledger and AnchorReceipt",
+    "canonical run bundle and verified loaders",
+    "raw-only A-share portfolio and execution prices"
+  ],
+  "external_evidence_pending": [
+    "real provider-qualified PIT typed values",
+    "real frozen dataset, universe, returns and corporate-action artifacts",
+    "calibrated transaction-cost and liquidity evidence",
+    "independent preregistration anchor receipt",
+    "QF-014 independent reviewer receipt"
+  ]
+}
