@@ -3,6 +3,7 @@
 from quant_system.research.identity import (
     DatasetManifest,
     build_dataset_manifest,
+    capture_dataset_manifest,
     dataset_identity_sha256,
 )
 from quant_system.research.experiments import (
@@ -30,6 +31,7 @@ from quant_system.research.splits import (
 __all__ = [
     "dataset_identity_sha256",
     "build_dataset_manifest",
+    "capture_dataset_manifest",
     "DatasetManifest",
     "ExperimentEvent",
     "ExperimentLedgerReceipt",

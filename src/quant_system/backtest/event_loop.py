@@ -789,6 +789,7 @@ def run_candidate_rebalance(
             decision_artifact.strategy_adapter_source,
         )
     )
+    provider_qualified = provider_qualified and dataset_manifest.has_captured_semantics
     common = {
         "signal_session": signal_session,
         "decision_at": cutoff,

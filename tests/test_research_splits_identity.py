@@ -3,7 +3,11 @@ from datetime import date, datetime, timedelta, timezone
 
 import pytest
 
-from quant_system.research.identity import build_dataset_manifest, dataset_identity_sha256
+from quant_system.research.identity import (
+    build_dataset_manifest,
+    capture_dataset_manifest,
+    dataset_identity_sha256,
+)
 from quant_system.research.splits import (
     build_split_manifest,
     evaluate_split,
@@ -250,3 +254,40 @@ def test_dataset_manifest_exposes_bound_semantic_identities() -> None:
     manifest.verify_identity()
     with pytest.raises(ValueError, match="semantic identity mismatch"):
         replace(manifest, cost_policy_sha256="b" * 64).verify_identity()
+
+
+def test_captured_dataset_manifest_revalidates_all_semantic_bytes(tmp_path) -> None:
+    names = (
+        "feature",
+        "label",
+        "split",
+        "calendar",
+        "action",
+        "cost",
+        "partition",
+    )
+    paths = {}
+    for name in names:
+        path = tmp_path / f"{name}.json"
+        path.write_text(f'{{"identity":"{name}-v1"}}\n', encoding="utf-8")
+        paths[name] = path
+    manifest = capture_dataset_manifest(
+        dates=(date(2026, 1, 2),),
+        frequency="1d-close",
+        schema=(("symbol", "VARCHAR"), ("close", "DOUBLE")),
+        source_snapshot_sha256s=("2" * 64,),
+        universe_snapshot_sha256="4" * 64,
+        feature_code_path=paths["feature"],
+        label_code_path=paths["label"],
+        split_manifest_path=paths["split"],
+        calendar_policy_path=paths["calendar"],
+        action_policy_path=paths["action"],
+        cost_policy_path=paths["cost"],
+        partition_paths=(paths["partition"],),
+    )
+
+    assert manifest.has_captured_semantics is True
+    manifest.verify_identity()
+    paths["cost"].write_text('{"identity":"cost-v2"}\n', encoding="utf-8")
+    with pytest.raises(ValueError, match="cost_policy_sha256"):
+        manifest.verify_identity()

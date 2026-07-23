@@ -9,10 +9,14 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 from dataclasses import field
 from datetime import date, datetime, timezone
+from pathlib import Path
+
+from quant_system.data.source_identity import capture_file_digest
 
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
 _DATASET_MANIFEST_TOKEN = object()
+_CAPTURED_SEMANTICS_TOKEN = object()
 
 
 @dataclass(frozen=True)
@@ -31,10 +35,34 @@ class DatasetManifest:
     partition_sha256s: tuple[str, ...]
     identity_sha256: str
     _token: object | None = field(default=None, repr=False, compare=False, hash=False)
+    _semantic_paths: tuple[tuple[str, Path], ...] = field(
+        default=(),
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _partition_paths: tuple[Path, ...] = field(
+        default=(),
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+    _captured_semantics_token: object | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
 
     def __post_init__(self) -> None:
         if self._token is not _DATASET_MANIFEST_TOKEN:
             raise ValueError("DatasetManifest must be created by build_dataset_manifest")
+        if self._captured_semantics_token not in {None, _CAPTURED_SEMANTICS_TOKEN}:
+            raise ValueError("dataset semantic capture token is invalid")
+
+    @property
+    def has_captured_semantics(self) -> bool:
+        return self._captured_semantics_token is _CAPTURED_SEMANTICS_TOKEN
 
     def verify_identity(self) -> None:
         observed = dataset_identity_sha256(
@@ -53,6 +81,29 @@ class DatasetManifest:
         )
         if observed != self.identity_sha256:
             raise ValueError("dataset manifest semantic identity mismatch")
+        if self.has_captured_semantics:
+            expected = {
+                "feature_code_sha256": self.feature_code_sha256,
+                "label_code_sha256": self.label_code_sha256,
+                "split_manifest_sha256": self.split_manifest_sha256,
+                "calendar_policy_sha256": self.calendar_policy_sha256,
+                "action_policy_sha256": self.action_policy_sha256,
+                "cost_policy_sha256": self.cost_policy_sha256,
+            }
+            if dict(self._semantic_paths).keys() != expected.keys():
+                raise ValueError("dataset semantic path coverage is incomplete")
+            for field_name, path in self._semantic_paths:
+                if capture_file_digest(path)[0] != expected[field_name]:
+                    raise ValueError(f"{field_name} no longer matches captured bytes")
+            if len(self._partition_paths) != len(self.partition_sha256s) or any(
+                capture_file_digest(path)[0] != digest
+                for path, digest in zip(
+                    self._partition_paths,
+                    self.partition_sha256s,
+                    strict=True,
+                )
+            ):
+                raise ValueError("dataset partition bytes no longer match manifest")
 
 
 def _canonical_timestamp(value: date | datetime) -> str:
@@ -178,4 +229,59 @@ def build_dataset_manifest(
         partition_sha256s=tuple(inputs["partition_sha256s"]),  # type: ignore[arg-type]
         identity_sha256=identity,
         _token=_DATASET_MANIFEST_TOKEN,
+    )
+
+
+def capture_dataset_manifest(
+    *,
+    dates: Sequence[date | datetime],
+    frequency: str,
+    schema: Sequence[tuple[str, str]],
+    source_snapshot_sha256s: Sequence[str],
+    universe_snapshot_sha256: str,
+    feature_code_path: Path,
+    label_code_path: Path,
+    split_manifest_path: Path,
+    calendar_policy_path: Path,
+    action_policy_path: Path,
+    cost_policy_path: Path,
+    partition_paths: Sequence[Path],
+) -> DatasetManifest:
+    """Capture all dataset-semantic and partition bytes into a revalidated manifest."""
+
+    semantic_paths = (
+        ("feature_code_sha256", feature_code_path),
+        ("label_code_sha256", label_code_path),
+        ("split_manifest_sha256", split_manifest_path),
+        ("calendar_policy_sha256", calendar_policy_path),
+        ("action_policy_sha256", action_policy_path),
+        ("cost_policy_sha256", cost_policy_path),
+    )
+    hashes = {
+        field_name: capture_file_digest(path)[0]
+        for field_name, path in semantic_paths
+    }
+    frozen_partitions = tuple(partition_paths)
+    manifest = build_dataset_manifest(
+        dates=dates,
+        frequency=frequency,
+        schema=schema,
+        source_snapshot_sha256s=source_snapshot_sha256s,
+        universe_snapshot_sha256=universe_snapshot_sha256,
+        partition_sha256s=tuple(
+            capture_file_digest(path)[0] for path in frozen_partitions
+        ),
+        **hashes,
+    )
+    values = {
+        name: getattr(manifest, name)
+        for name in manifest.__dataclass_fields__
+        if not name.startswith("_")
+    }
+    return DatasetManifest(
+        **values,
+        _token=_DATASET_MANIFEST_TOKEN,
+        _semantic_paths=semantic_paths,
+        _partition_paths=frozen_partitions,
+        _captured_semantics_token=_CAPTURED_SEMANTICS_TOKEN,
     )
