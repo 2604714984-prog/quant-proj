@@ -120,7 +120,11 @@ def _evaluation(
         preregistered_at=PREREGISTERED_AT,
     )
     return_artifact, final_run_receipt = controlled_return_fixture(
-        dict(zip(observed, returns, strict=True))
+        dict(zip(observed, returns, strict=True)),
+        contributors_by_session={
+            session: (f"S{index}",)
+            for index, session in enumerate(observed)
+        },
     )
     evaluation = evaluate_split(
         manifest,

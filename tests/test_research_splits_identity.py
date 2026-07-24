@@ -136,8 +136,8 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
     selected = tuple(sample.sample_id for sample in manifest.samples)
     return_artifact, _ = controlled_return_fixture(
         {
-            observation: (day % 7 - 2) / 100
-            for day, observation in enumerate(observations)
+            date(2026, 1, 1) + timedelta(days=day): (day % 7 - 2) / 100
+            for day in range(40)
         }
     )
     assert len(manifest.samples) == 35
@@ -176,6 +176,27 @@ def test_panel_split_manifest_flags_five_day_overlap_with_stable_ids() -> None:
     assert len(corrected.returns_sha256) == 64
     assert len(corrected.estimator_sha256) == 64
     assert corrected.inference_distribution == "hac_asymptotic_normal_min_n_30"
+    shorter_manifest = build_split_manifest(
+        entity_ids=("AAA",) * len(observations),
+        observed_at=observations,
+        label_end_at=tuple(value + timedelta(days=4) for value in observations),
+        fold_ids=("test-1",) * len(observations),
+    )
+    shorter = evaluate_split(
+        shorter_manifest,
+        plan=build_split_evaluation_plan(
+            shorter_manifest,
+            holdout_id="holdout-shorter-horizon",
+            selected_sample_ids=tuple(
+                sample.sample_id for sample in shorter_manifest.samples
+            ),
+            method="hac",
+            hac_bandwidth=2,
+            preregistered_at=datetime(2025, 12, 31, tzinfo=timezone.utc),
+        ),
+        return_artifact=return_artifact,
+    )
+    assert shorter.returns_sha256 != corrected.returns_sha256
     tampered_observation = replace(
         return_artifact.observations[0],
         net_return=return_artifact.observations[0].net_return + 0.5,
@@ -248,7 +269,8 @@ def test_daily_portfolio_unit_binds_nav_returns_and_rejects_cross_fold_or_small_
         preregistered_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
     )
     return_artifact, _ = controlled_return_fixture(
-        {day: 0.01 * (index + 1) for index, day in enumerate(days)}
+        {day: 0.01 * (index + 1) for index, day in enumerate(days)},
+        contributors=("AAA", "BBB"),
     )
     evaluation = evaluate_split(
         manifest,
@@ -259,6 +281,15 @@ def test_daily_portfolio_unit_binds_nav_returns_and_rejects_cross_fold_or_small_
     assert evaluation.nominal_n == 5
     assert evaluation.inference_distribution == "student_t_df_4"
     assert 0 <= evaluation.raw_pvalue <= 1
+    mismatched_artifact, _ = controlled_return_fixture(
+        {day: 0.01 * (index + 1) for index, day in enumerate(days)}
+    )
+    with pytest.raises(ValueError, match="contributor set"):
+        evaluate_split(
+            manifest,
+            plan=plan,
+            return_artifact=mismatched_artifact,
+        )
 
     too_small = build_split_manifest(
         entity_ids=("AAA", "AAA"),

@@ -86,6 +86,8 @@ class SplitEvaluationPlan:
 class ReturnObservation:
     signal_session: date
     session: date
+    contributors: tuple[str, ...]
+    aggregate_receipt_sha256: str
     initial_nav: float
     final_nav: float
     net_external_cashflow: float
@@ -120,6 +122,17 @@ class ReturnArtifact:
                 raise ValueError(
                     "return artifact execution session must follow signal session"
                 )
+            if (
+                not observation.contributors
+                or observation.contributors
+                != tuple(sorted(set(observation.contributors)))
+            ):
+                raise ValueError("return contributors must be nonempty, sorted, and unique")
+            if (
+                not isinstance(observation.aggregate_receipt_sha256, str)
+                or len(observation.aggregate_receipt_sha256) != 64
+            ):
+                raise ValueError("return aggregate receipt SHA is invalid")
             for digest in (
                 observation.input_identity_sha256,
                 observation.initial_portfolio_sha256,
@@ -235,6 +248,25 @@ def capture_return_artifact(
             ReturnObservation(
                 signal_session=signal_session,
                 session=execution_session,
+                contributors=tuple(
+                    symbol
+                    for symbol, weight in result.target_weights
+                    if weight != 0
+                ),
+                aggregate_receipt_sha256=hashlib.sha256(
+                    json.dumps(
+                        {
+                            "controlled_stage_receipt_sha256": (
+                                result.receipt_sha256
+                            ),
+                            "execution_session": execution_session.isoformat(),
+                            "signal_session": signal_session.isoformat(),
+                            "target_weights": result.target_weights,
+                        },
+                        sort_keys=True,
+                        separators=(",", ":"),
+                    ).encode()
+                ).hexdigest(),
                 initial_nav=initial_nav,
                 final_nav=final_nav,
                 net_external_cashflow=net_external_cashflow,
@@ -605,27 +637,59 @@ def evaluate_split(
     )
     if method == "non_overlapping" and overlapping:
         raise ValueError("non-overlapping evaluation selected overlapping labels")
-    selected_dates = {
-        (
+    observations_by_date = {
+        observation.session: observation
+        for observation in return_artifact.observations
+    }
+    intervals: dict[tuple[date, date], set[str]] = defaultdict(set)
+    for sample in selected_samples:
+        start = (
             sample.observed_at.date()
             if isinstance(sample.observed_at, datetime)
             else sample.observed_at
         )
-        for sample in selected_samples
-    }
-    artifact_by_date = {
-        observation.session: observation.net_return
-        for observation in return_artifact.observations
-    }
-    if selected_dates != set(artifact_by_date):
-        raise ValueError(
-            "ReturnArtifact sessions must exactly cover preregistered sample dates"
+        end = (
+            sample.label_end_at.date()
+            if isinstance(sample.label_end_at, datetime)
+            else sample.label_end_at
         )
-    temporal_returns = tuple(
-        (session.isoformat(), artifact_by_date[session])
-        for session in sorted(selected_dates)
-    )
-    values = tuple(value for _, value in temporal_returns)
+        intervals[(start, end)].add(sample.entity_id)
+    temporal_returns = []
+    for (start, end), contributors in sorted(intervals.items()):
+        horizon = tuple(
+            observation
+            for session, observation in sorted(observations_by_date.items())
+            if start <= session <= end
+        )
+        if (
+            not horizon
+            or horizon[0].session != start
+            or horizon[-1].session != end
+        ):
+            raise ValueError(
+                "ReturnArtifact does not cover the complete label horizon"
+            )
+        expected_contributors = tuple(sorted(contributors))
+        if any(
+            observation.contributors != expected_contributors
+            for observation in horizon
+        ):
+            raise ValueError(
+                "ReturnArtifact contributor set differs from selected samples"
+            )
+        compounded = math.prod(1 + observation.net_return for observation in horizon) - 1
+        temporal_returns.append(
+            {
+                "aggregate_receipt_sha256s": tuple(
+                    observation.aggregate_receipt_sha256 for observation in horizon
+                ),
+                "compound_net_return": compounded,
+                "contributors": expected_contributors,
+                "end_session": end.isoformat(),
+                "start_session": start.isoformat(),
+            }
+        )
+    values = tuple(item["compound_net_return"] for item in temporal_returns)
     minimum_n = {"non_overlapping": 5, "hac": 30, "block_bootstrap": 20}[method]
     if len(values) < minimum_n:
         raise ValueError(f"{method} requires at least {minimum_n} daily portfolio returns")
@@ -720,7 +784,13 @@ def evaluate_split(
         inference_distribution = "centered_moving_block_empirical"
     if standard_error <= 0 or not math.isfinite(standard_error):
         raise ValueError("evaluation standard error must be positive and finite")
-    returns_sha = return_artifact.returns_sha256
+    returns_sha = hashlib.sha256(
+        json.dumps(
+            temporal_returns,
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
     estimator_sha = hashlib.sha256(
         json.dumps(estimator, sort_keys=True, separators=(",", ":")).encode()
     ).hexdigest()

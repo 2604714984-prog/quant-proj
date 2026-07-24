@@ -883,6 +883,7 @@ class ControlledStageResult(StaticRebalanceResult):
             or replayed.target_weights != self.target_weights
             or replayed.receipts != self.receipts
             or replayed.input_identity_hash != self.input_identity_hash
+            or replayed.target_weights != self.target_weights
             or replayed.input_artifact_json != self.input_artifact_json
             or replayed.receipt_hashes != self.receipt_hashes
             or expected_stage_hash != self.stage_hash
@@ -936,6 +937,7 @@ class ControlledStageReceipt:
     replay_artifact_json: str
     input_artifact_json: str
     input_identity_hash: str
+    target_weights: tuple[tuple[str, float], ...]
     receipt_payloads: tuple[str, ...]
     receipt_hashes: tuple[str, ...]
     execution_stage_hash: str
@@ -1043,6 +1045,7 @@ def capture_controlled_stage_receipt(
         "replay_artifact_json": result.replay_artifact_json,
         "input_artifact_json": result.input_artifact_json,
         "input_identity_hash": result.input_identity_hash,
+        "target_weights": result.target_weights,
         "receipt_payloads": tuple(
             json.dumps(asdict(item), sort_keys=True, separators=(",", ":"))
             for item in result.receipts
@@ -1104,6 +1107,13 @@ def load_controlled_stage_receipt(payload: bytes) -> ControlledStageReceipt:
         if type(values.get(name)) is not list:
             raise ValueError(f"controlled stage receipt {name} must be an array")
         values[name] = tuple(values[name])
+    if type(values.get("target_weights")) is not list:
+        raise ValueError("controlled stage receipt target_weights must be an array")
+    values["target_weights"] = tuple(
+        (str(item[0]), float(item[1]))
+        for item in values["target_weights"]
+        if type(item) is list and len(item) == 2
+    )
     try:
         for name in ("stage_session", "signal_session", "execution_session"):
             values[name] = date.fromisoformat(values[name])

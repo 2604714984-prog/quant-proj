@@ -19,6 +19,9 @@ from quant_system.research.splits import ReturnArtifact, ReturnObservation
 
 def controlled_return_fixture(
     returns_by_session: dict[date, float],
+    *,
+    contributors: tuple[str, ...] = ("AAA",),
+    contributors_by_session: dict[date, tuple[str, ...]] | None = None,
 ) -> tuple[ReturnArtifact, FinalRunReceipt]:
     """Build synthetic economics for split/estimator unit tests."""
 
@@ -31,6 +34,11 @@ def controlled_return_fixture(
     transitions = []
     stage_hashes = []
     for index, session in enumerate(sessions):
+        session_contributors = (
+            contributors
+            if contributors_by_session is None
+            else contributors_by_session[session]
+        )
         initial_nav = nav
         nav *= 1 + returns_by_session[session]
         initial_sha = hashlib.sha256(
@@ -51,6 +59,10 @@ def controlled_return_fixture(
             ReturnObservation(
                 signal_session=session - timedelta(days=1),
                 session=session,
+                contributors=session_contributors,
+                aggregate_receipt_sha256=hashlib.sha256(
+                    f"synthetic-aggregate|{index}|{session_contributors}".encode()
+                ).hexdigest(),
                 initial_nav=initial_nav,
                 final_nav=nav,
                 net_external_cashflow=0.0,
