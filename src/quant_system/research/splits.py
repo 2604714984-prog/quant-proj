@@ -84,6 +84,7 @@ class SplitEvaluationPlan:
 
 @dataclass(frozen=True)
 class ReturnObservation:
+    signal_session: date
     session: date
     initial_nav: float
     final_nav: float
@@ -115,6 +116,10 @@ class ReturnArtifact:
         ):
             raise ValueError("return artifact sessions must be unique and chronological")
         for observation in self.observations:
+            if observation.signal_session >= observation.session:
+                raise ValueError(
+                    "return artifact execution session must follow signal session"
+                )
             for digest in (
                 observation.input_identity_sha256,
                 observation.initial_portfolio_sha256,
@@ -162,6 +167,7 @@ def _return_artifact_payload(artifact: ReturnArtifact) -> bytes:
             "observations": tuple(
                 {
                     **observation.__dict__,
+                    "signal_session": observation.signal_session.isoformat(),
                     "session": observation.session.isoformat(),
                 }
                 for observation in artifact.observations
@@ -209,8 +215,14 @@ def capture_return_artifact(
     observations: list[ReturnObservation] = []
     for result in results:
         result.verify_controlled_result()
-        if result.context.execution_session.session_date != result.stage_session:
-            raise ValueError("return artifact stage and execution sessions differ")
+        signal_session = result.context.signal_session.session_date
+        execution_session = result.context.execution_session.session_date
+        if signal_session != result.stage_session:
+            raise ValueError("return artifact stage must bind its signal session")
+        if execution_session <= signal_session:
+            raise ValueError(
+                "return artifact execution session must follow signal session"
+            )
         initial_nav = _portfolio_nav_from_artifact(result.initial_portfolio_json)
         final_nav = _portfolio_nav_from_artifact(result.final_portfolio_json)
         if abs(final_nav - float(result.final_nav)) > 1e-12:
@@ -221,7 +233,8 @@ def capture_return_artifact(
             raise ValueError("return artifact initial NAV must be positive")
         observations.append(
             ReturnObservation(
-                session=result.context.execution_session.session_date,
+                signal_session=signal_session,
+                session=execution_session,
                 initial_nav=initial_nav,
                 final_nav=final_nav,
                 net_external_cashflow=net_external_cashflow,

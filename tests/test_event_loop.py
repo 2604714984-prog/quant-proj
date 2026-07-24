@@ -34,6 +34,7 @@ from quant_system.backtest import (
     next_stage,
     replay_candidate_run_bundle,
     run_candidate_rebalance,
+    run_controlled_stage,
     run_static_rebalance,
     serialize_candidate_run_bundle,
 )
@@ -66,6 +67,7 @@ from quant_system.markets.us import CorporateActionValuationError
 from quant_system.research.identity import build_dataset_manifest
 from quant_system.research.experiments import (
     capture_family_anchor,
+    capture_final_run_receipt,
     capture_holdout_result,
     freeze_experiment_manifest,
     persist_experiment_ledger,
@@ -75,6 +77,7 @@ from quant_system.research.experiments import (
 from quant_system.research.splits import (
     build_split_evaluation_plan,
     build_split_manifest,
+    capture_return_artifact,
     evaluate_split,
 )
 from tests.controlled_result_fixtures import controlled_return_fixture
@@ -2552,6 +2555,7 @@ def _controlled_input(
     execution: AcceptedSession,
     *,
     observed_session: AcceptedSession | None = None,
+    price: float = 10.0,
 ) -> ExecutionInput:
     zone = ZoneInfo(execution.exchange_timezone)
     observed_day = execution.session_date - timedelta(days=1)
@@ -2584,11 +2588,11 @@ def _controlled_input(
     return ExecutionInput(
         symbol=symbol,
         market="a_share",
-        open_price=10.0,
+        open_price=price,
         currency="CNY",
         source=_captured_source("execution-open", execution.open_at),
         status_records=statuses,
-        decision_price=10.0,
+        decision_price=price,
         decision_price_source=_captured_source(
             "decision-close",
             datetime(2000, 1, 1, tzinfo=UTC),
@@ -2755,6 +2759,102 @@ def _controlled_materialization(
         session=execution,
         decision_at=decision_at,
     )
+
+
+def test_real_controlled_multistage_chain_produces_return_artifact(
+    tmp_path: Path,
+) -> None:
+    days = tuple(date(2026, 7, 6) + timedelta(days=index) for index in range(6))
+    prices = (10.0, 11.0, 10.5, 12.0, 11.5)
+    calendar = _controlled_calendar(days)
+    stage_plan = create_stage_plan(days[:5])
+    stage_context = genesis_stage(stage_plan)
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    results = []
+
+    for index, (signal_session, price) in enumerate(
+        zip(stage_plan.sessions, prices, strict=True)
+    ):
+        execution = calendar.next_session(
+            signal_session,
+            as_of=datetime(2026, 7, 20, tzinfo=UTC),
+        )
+        decision_at = execution.open_at - timedelta(microseconds=1)
+        row = _controlled_input(
+            "AAA",
+            execution,
+            observed_session=calendar.session_on(
+                signal_session,
+                as_of=decision_at,
+            ),
+            price=price,
+        )
+        stage_directory = tmp_path / f"real-stage-{index}"
+        stage_directory.mkdir()
+        materialization = _controlled_materialization(
+            stage_directory,
+            calendar,
+            execution,
+            decision_at,
+            (row,),
+        )
+        artifact = _captured_decision_artifact(
+            stage_directory,
+            decision_at,
+            name=f"-stage-{index}",
+        )
+        result = run_controlled_stage(
+            portfolio,
+            calendar,
+            signal_session=signal_session,
+            decision_at=decision_at,
+            execution_inputs=(row,),
+            universe_materialization=materialization,
+            decision_artifact=artifact,
+            stage_context=stage_context,
+            capacity_policy=_cost_assumptions().capacity_policy,
+        )
+        results.append(result)
+        portfolio = result.portfolio
+        if index + 1 < len(stage_plan.sessions):
+            stage_context = next_stage(stage_plan, result)
+
+    frozen_results = tuple(results)
+    final_run = capture_final_run_receipt(stage_plan, frozen_results)
+    return_artifact = capture_return_artifact(
+        stage_plan,
+        frozen_results,
+        final_run,
+    )
+    execution_sessions = days[1:]
+    split_manifest = build_split_manifest(
+        entity_ids=("AAA",) * len(execution_sessions),
+        observed_at=execution_sessions,
+        label_end_at=execution_sessions,
+        fold_ids=("real-controlled-chain",) * len(execution_sessions),
+    )
+    evaluation_plan = build_split_evaluation_plan(
+        split_manifest,
+        holdout_id="real-controlled-chain",
+        selected_sample_ids=tuple(
+            sample.sample_id for sample in split_manifest.samples
+        ),
+        method="non_overlapping",
+        preregistered_at=datetime(2026, 7, 1, tzinfo=UTC),
+    )
+    evaluation = evaluate_split(
+        split_manifest,
+        plan=evaluation_plan,
+        return_artifact=return_artifact,
+    )
+
+    assert tuple(item.signal_session for item in return_artifact.observations) == (
+        stage_plan.sessions
+    )
+    assert tuple(item.session for item in return_artifact.observations) == (
+        execution_sessions
+    )
+    assert evaluation.nominal_n == 5
 
 
 def test_candidate_weights_are_computed_from_frozen_strategy_artifacts(

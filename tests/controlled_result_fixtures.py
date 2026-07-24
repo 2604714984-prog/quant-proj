@@ -5,7 +5,7 @@ These fixtures do not establish real-data provenance or external evidence.
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, timedelta
 import hashlib
 from types import SimpleNamespace
 
@@ -25,11 +25,14 @@ def controlled_return_fixture(
     """Create a complete in-memory controlled chain for mechanism tests only."""
 
     sessions = tuple(sorted(returns_by_session))
-    stage_plan = create_stage_plan(sessions)
+    signal_sessions = tuple(session - timedelta(days=1) for session in sessions)
+    stage_plan = create_stage_plan(signal_sessions)
     results: list[ControlledStageResult] = []
     prior_stage_hash = "0" * 64
     starting_cash = 100.0
-    for index, session in enumerate(sessions):
+    for index, (signal_session, session) in enumerate(
+        zip(signal_sessions, sessions, strict=True)
+    ):
         ending_cash = starting_cash * (1 + returns_by_session[session])
         initial_portfolio = Portfolio.us(starting_cash)
         final_portfolio = Portfolio.us(ending_cash)
@@ -47,6 +50,7 @@ def controlled_return_fixture(
         for name, value in {
             "portfolio": final_portfolio,
             "context": SimpleNamespace(
+                signal_session=SimpleNamespace(session_date=signal_session),
                 execution_session=SimpleNamespace(session_date=session)
             ),
             "receipts": (),
@@ -58,7 +62,7 @@ def controlled_return_fixture(
             "final_nav": ending_cash,
             "stage_plan_sha256": stage_plan.plan_sha256,
             "stage_index": index,
-            "stage_session": session,
+            "stage_session": signal_session,
             "prior_stage_hash": prior_stage_hash,
             "initial_portfolio_json": initial_json,
             "initial_portfolio_sha256": initial_sha,
