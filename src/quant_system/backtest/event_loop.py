@@ -8,8 +8,11 @@ from dataclasses import asdict, dataclass, field, fields, is_dataclass, replace
 from datetime import date, datetime, timezone
 from decimal import Decimal
 import hashlib
+from importlib import metadata
 import json
 import math
+import platform
+import sys
 from pathlib import Path
 from typing import Any, Literal
 from zoneinfo import ZoneInfo
@@ -90,6 +93,38 @@ ExecutionPriceBasis = Literal[
     "retrospective_daily_bar_open_fill",
     "confirmed_no_open_event",
 ]
+
+
+def core_engine_artifact() -> tuple[str, str]:
+    """Hash the exact research engine source tree and Python runtime."""
+
+    package_root = Path(__file__).resolve().parents[1]
+    files = tuple(sorted(package_root.rglob("*.py")))
+    source_entries = tuple(
+        (
+            path.relative_to(package_root).as_posix(),
+            hashlib.sha256(path.read_bytes()).hexdigest(),
+        )
+        for path in files
+    )
+    try:
+        package_version = metadata.version("quant-system")
+    except metadata.PackageNotFoundError:
+        package_version = "uninstalled-source-tree"
+    manifest = {
+        "package_version": package_version,
+        "python_implementation": platform.python_implementation(),
+        "python_version": platform.python_version(),
+        "runtime_cache_tag": sys.implementation.cache_tag,
+        "source_entries": source_entries,
+        "version": 1,
+    }
+    manifest_json = json.dumps(
+        manifest,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return hashlib.sha256(manifest_json.encode()).hexdigest(), manifest_json
 LimitRegime = Literal["applies", "no_limit"]
 TargetWeightCallback = Callable[["DecisionContext"], Mapping[str, float]]
 _RAW_ACTIONS = {"split", "reverse_split", "dividend", "special_dividend"}
@@ -151,6 +186,7 @@ class CandidateRunConfig:
     stage_plan_sha256: str
     final_stage_index: int
     cost_assumptions_sha256: str
+    engine_artifact_sha256: str
     signal_session: date
     decision_at: datetime
     max_positions: int | None
@@ -170,8 +206,11 @@ class CandidateRunConfig:
             "split_evaluation_plan_sha256",
             "stage_plan_sha256",
             "cost_assumptions_sha256",
+            "engine_artifact_sha256",
         ):
             _sha256(getattr(self, name), name)
+        if self.engine_artifact_sha256 != core_engine_artifact()[0]:
+            raise ValueError("candidate config engine artifact changed")
         if type(self.final_stage_index) is not int or self.final_stage_index < 0:
             raise ValueError("final_stage_index must be nonnegative")
         if type(self.signal_session) is not date:
@@ -236,6 +275,7 @@ def capture_candidate_run_config(
         "stage_plan_sha256": stage_plan_sha256,
         "final_stage_index": final_stage_index,
         "cost_assumptions_sha256": cost_assumptions_sha256,
+        "engine_artifact_sha256": core_engine_artifact()[0],
         "signal_session": signal_session,
         "decision_at": decision_at,
         "max_positions": max_positions,
@@ -288,9 +328,6 @@ class TerminalAction:
             raise MarketDataError(
                 "terminal action settlement sessions must be an immutable accepted tuple"
             )
-        effective_date = self.effective_at.astimezone(timezone.utc).date()
-        if self.payment_date < effective_date:
-            raise MarketDataError("terminal action payment_date cannot precede effective date")
 
 
 @dataclass(frozen=True)
@@ -357,6 +394,8 @@ class CandidateRunBundle:
     candidate_run_config_sha256: str
     cost_assumptions_sha256: str
     universe_materialization_sha256: str
+    engine_artifact_sha256: str
+    engine_manifest_json: str
     source_receipt_sha256s: tuple[str, ...]
     artifact_payloads: tuple[str, ...]
     qualification_replay_json: str
@@ -384,6 +423,12 @@ class CandidateRunBundle:
     bundle_sha256: str
 
     def verify(self) -> None:
+        observed_engine_sha, observed_engine_manifest = core_engine_artifact()
+        if (
+            self.engine_artifact_sha256 != observed_engine_sha
+            or self.engine_manifest_json != observed_engine_manifest
+        ):
+            raise ValueError("run bundle engine artifact changed")
         for name in (
             "decision_artifact_sha256",
             "dataset_identity_sha256",
@@ -393,6 +438,7 @@ class CandidateRunBundle:
             "candidate_run_config_sha256",
             "cost_assumptions_sha256",
             "universe_materialization_sha256",
+            "engine_artifact_sha256",
             "stage_plan_sha256",
             "prior_stage_hash",
             "base_underlying_input_identity_hash",
@@ -475,7 +521,8 @@ class CandidateRunBundle:
                     f"{self.split_evaluation_sha256}|"
                     f"{self.experiment_manifest_sha256}|"
                     f"{self.candidate_run_config_sha256}|"
-                    f"{self.cost_assumptions_sha256}|{case}"
+                    f"{self.cost_assumptions_sha256}|"
+                    f"{self.engine_artifact_sha256}|{case}"
                 ).encode()
             ).hexdigest()
             if expected_identity != getattr(self, f"{case}_input_identity_hash"):
@@ -995,6 +1042,7 @@ class StaticRebalanceResult:
         compare=False,
     )
     cost_assumptions_sha256: str | None = None
+    engine_artifact_sha256: str | None = None
     adverse_input_identity_hash: str | None = None
     adverse_stage_hash: str | None = None
     adverse_final_nav: float | None = None
@@ -1059,8 +1107,11 @@ class ControlledStageResult(StaticRebalanceResult):
             "split_identity_sha256",
             "universe_materialization_sha256",
             "cost_assumptions_sha256",
+            "engine_artifact_sha256",
         ):
             _sha256(getattr(self, name), name)
+        if self.engine_artifact_sha256 != core_engine_artifact()[0]:
+            raise ValueError("controlled stage engine artifact changed")
         if hashlib.sha256(self.input_artifact_json.encode()).hexdigest() != (
             self.input_identity_hash
         ):
@@ -1079,6 +1130,7 @@ class ControlledStageResult(StaticRebalanceResult):
             split_identity_sha256=self.split_identity_sha256,
             universe_materialization_sha256=self.universe_materialization_sha256,
             cost_assumptions_sha256=self.cost_assumptions_sha256,
+            engine_artifact_sha256=self.engine_artifact_sha256,
         )
         if (
             replayed.context != self.context
@@ -1104,6 +1156,7 @@ def _controlled_stage_hash(
     split_identity_sha256: str,
     universe_materialization_sha256: str,
     cost_assumptions_sha256: str,
+    engine_artifact_sha256: str,
 ) -> str:
     payload = {
         "dataset_identity_sha256": _sha256(
@@ -1117,6 +1170,9 @@ def _controlled_stage_hash(
         ),
         "execution_stage_hash": _sha256(
             execution_stage_hash, "execution_stage_hash"
+        ),
+        "engine_artifact_sha256": _sha256(
+            engine_artifact_sha256, "engine_artifact_sha256"
         ),
         "split_identity_sha256": _sha256(
             split_identity_sha256, "split_identity_sha256"
@@ -1155,6 +1211,7 @@ class ControlledStageReceipt:
     split_identity_sha256: str
     universe_materialization_sha256: str
     cost_assumptions_sha256: str
+    engine_artifact_sha256: str
     initial_portfolio_json: str
     initial_portfolio_sha256: str
     final_portfolio_json: str
@@ -1164,6 +1221,8 @@ class ControlledStageReceipt:
     receipt_sha256: str
 
     def verify(self) -> None:
+        if self.engine_artifact_sha256 != core_engine_artifact()[0]:
+            raise ValueError("controlled receipt engine artifact changed")
         if self.signal_session != self.stage_session:
             raise ValueError("controlled receipt stage must be its signal session")
         if self.execution_session <= self.signal_session:
@@ -1186,6 +1245,7 @@ class ControlledStageReceipt:
             split_identity_sha256=self.split_identity_sha256,
             universe_materialization_sha256=self.universe_materialization_sha256,
             cost_assumptions_sha256=self.cost_assumptions_sha256,
+            engine_artifact_sha256=self.engine_artifact_sha256,
         )
         expected_costs = math.fsum(
             item.commission + item.sell_tax for item in replayed.receipts
@@ -1266,6 +1326,7 @@ def capture_controlled_stage_receipt(
         "split_identity_sha256": result.split_identity_sha256,
         "universe_materialization_sha256": result.universe_materialization_sha256,
         "cost_assumptions_sha256": result.cost_assumptions_sha256,
+        "engine_artifact_sha256": result.engine_artifact_sha256,
         "initial_portfolio_json": result.initial_portfolio_json,
         "initial_portfolio_sha256": result.initial_portfolio_sha256,
         "final_portfolio_json": result.final_portfolio_json,
@@ -1868,6 +1929,7 @@ def run_controlled_stage(
         cost_assumptions_sha256,
         "cost_assumptions_sha256",
     )
+    values["engine_artifact_sha256"] = core_engine_artifact()[0]
     values["stage_hash"] = _controlled_stage_hash(
         experimental.stage_hash,
         decision_artifact_sha256=decision_artifact.artifact_sha256,
@@ -1875,6 +1937,7 @@ def run_controlled_stage(
         split_identity_sha256=decision_artifact.split_identity_sha256,
         universe_materialization_sha256=universe_materialization.materialization_sha256,
         cost_assumptions_sha256=cost_assumptions_sha256,
+        engine_artifact_sha256=core_engine_artifact()[0],
     )
     values["_token"] = _CONTROLLED_STAGE_TOKEN
     controlled = ControlledStageResult(**values)
@@ -1989,6 +2052,8 @@ def apply_qualified_strategy_stage(
         or candidate_run_config.final_stage_index != stage_context.stage_index
         or candidate_run_config.cost_assumptions_sha256
         != cost_assumptions.identity_sha256
+        or candidate_run_config.engine_artifact_sha256
+        != core_engine_artifact()[0]
         or candidate_run_config.signal_session != signal_session
         or candidate_run_config.decision_at
         != require_aware_datetime(decision_at, "decision_at")
@@ -2117,7 +2182,7 @@ def apply_qualified_strategy_stage(
             f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
             f"{split_evaluation.evaluation_sha256}|"
             f"{experiment_manifest.head_sha256}|{candidate_run_config.config_sha256}|"
-            f"{assumption_sha}|base"
+            f"{assumption_sha}|{core_engine_artifact()[0]}|base"
         ).encode()
     ).hexdigest()
     receipt_hashes, stage_hash = _hashes(
@@ -2131,7 +2196,7 @@ def apply_qualified_strategy_stage(
             f"{dataset_manifest.identity_sha256}|{dataset_manifest.split_manifest_sha256}|"
             f"{split_evaluation.evaluation_sha256}|"
             f"{experiment_manifest.head_sha256}|{candidate_run_config.config_sha256}|"
-            f"{assumption_sha}|adverse"
+            f"{assumption_sha}|{core_engine_artifact()[0]}|adverse"
         ).encode()
     ).hexdigest()
     _, adverse_stage_hash = _hashes(
@@ -2857,6 +2922,10 @@ def _terminal_checks(
             raise MarketDataError("terminal action effective_at follows execution open")
         if action.effective_at.astimezone(zone).date() != execution.session_date:
             raise MarketDataError("terminal action effective date is not the execution session")
+        if action.payment_date < action.effective_at.astimezone(zone).date():
+            raise MarketDataError(
+                "terminal action payment_date cannot precede local effective date"
+            )
         settlement_sessions = action.accepted_settlement_sessions
         if action.payment_date == execution.session_date:
             if settlement_sessions:
@@ -3625,6 +3694,7 @@ def _build_candidate_run_bundle(
     adverse_stage_hash: str,
     stage_context: StageContext,
 ) -> CandidateRunBundle:
+    engine_sha, engine_manifest = core_engine_artifact()
     values = {
         "decision_artifact_sha256": decision_artifact.artifact_sha256,
         "dataset_identity_sha256": dataset_manifest.identity_sha256,
@@ -3636,6 +3706,8 @@ def _build_candidate_run_bundle(
         "universe_materialization_sha256": (
             universe_materialization.materialization_sha256
         ),
+        "engine_artifact_sha256": engine_sha,
+        "engine_manifest_json": engine_manifest,
         "source_receipt_sha256s": source_receipt_sha256s,
         "artifact_payloads": _bundle_artifact_payloads(
             decision_artifact,

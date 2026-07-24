@@ -263,6 +263,7 @@ class HoldoutResultReceipt:
 class FinalRunReceipt:
     stage_plan_sha256: str
     stage_count: int
+    engine_artifact_sha256: str
     ordered_stage_receipt_sha256s: tuple[str, ...]
     ordered_stage_hashes: tuple[str, ...]
     ordered_portfolio_transitions: tuple[tuple[str, str], ...]
@@ -274,9 +275,14 @@ class FinalRunReceipt:
     _token: object | None = field(default=None, repr=False, compare=False)
 
     def __post_init__(self) -> None:
+        from quant_system.backtest.event_loop import core_engine_artifact
+
         if self._token is not _FINAL_RUN_TOKEN:
             raise ValueError("FinalRunReceipt must come from capture_final_run_receipt")
         _sha(self.stage_plan_sha256, "stage_plan_sha256")
+        _sha(self.engine_artifact_sha256, "engine_artifact_sha256")
+        if self.engine_artifact_sha256 != core_engine_artifact()[0]:
+            raise ValueError("final run engine artifact changed")
         if (
             type(self.stage_count) is not int
             or self.stage_count < 1
@@ -330,6 +336,7 @@ class FamilyContract:
     stage_plan_sha256: str
     split_evaluation_plan_sha256: str
     cost_assumptions_sha256: str
+    engine_artifact_sha256: str
     alpha: float
     family_size: int
     contract_sha256: str
@@ -343,6 +350,7 @@ class FamilyContract:
             "stage_plan_sha256",
             "split_evaluation_plan_sha256",
             "cost_assumptions_sha256",
+            "engine_artifact_sha256",
         ):
             _sha(getattr(self, name), name)
         if not isinstance(self.alpha, (int, float)) or isinstance(self.alpha, bool):
@@ -381,6 +389,8 @@ def capture_family_contract(
     alpha: float,
     family_size: int,
 ) -> FamilyContract:
+    from quant_system.backtest.event_loop import core_engine_artifact
+
     values = {
         "multiplicity_family_id": multiplicity_family_id,
         "holdout_id": holdout_id,
@@ -389,6 +399,7 @@ def capture_family_contract(
         "stage_plan_sha256": stage_plan_sha256,
         "split_evaluation_plan_sha256": split_evaluation_plan_sha256,
         "cost_assumptions_sha256": cost_assumptions_sha256,
+        "engine_artifact_sha256": core_engine_artifact()[0],
         "alpha": alpha,
         "family_size": family_size,
     }
@@ -418,6 +429,7 @@ class TrialConfig:
     ordered_decision_artifact_sha256s: tuple[str, ...]
     ordered_universe_materialization_sha256s: tuple[str, ...]
     cost_assumptions_sha256: str
+    engine_artifact_sha256: str
     max_positions: int | None
     parameters_json: str
     config_sha256: str
@@ -431,6 +443,7 @@ class TrialConfig:
             "stage_plan_sha256",
             "split_evaluation_plan_sha256",
             "cost_assumptions_sha256",
+            "engine_artifact_sha256",
         ):
             _sha(getattr(self, name), name)
         if (
@@ -489,6 +502,8 @@ def capture_trial_config(
     max_positions: int | None,
     parameters: Mapping[str, object],
 ) -> TrialConfig:
+    from quant_system.backtest.event_loop import core_engine_artifact
+
     parameters_json = json.dumps(
         dict(parameters),
         sort_keys=True,
@@ -507,6 +522,7 @@ def capture_trial_config(
             ordered_universe_materialization_sha256s
         ),
         "cost_assumptions_sha256": cost_assumptions_sha256,
+        "engine_artifact_sha256": core_engine_artifact()[0],
         "max_positions": max_positions,
         "parameters_json": parameters_json,
     }
@@ -621,6 +637,8 @@ def evaluate_frozen_historical_run(
             or item.split_identity_sha256 != trial_config.split_sha256
             or item.cost_assumptions_sha256
             != trial_config.cost_assumptions_sha256
+            or item.engine_artifact_sha256
+            != trial_config.engine_artifact_sha256
             for item in stage_receipts
         )
     ):
@@ -802,6 +820,7 @@ def capture_final_run_receipt(stage_plan: object, results: tuple[object, ...]) -
     values = {
         "stage_plan_sha256": stage_plan.plan_sha256,
         "stage_count": len(results),
+        "engine_artifact_sha256": results[0].engine_artifact_sha256,
         "ordered_stage_receipt_sha256s": tuple(
             result.receipt_sha256 for result in results
         ),
@@ -815,6 +834,11 @@ def capture_final_run_receipt(stage_plan: object, results: tuple[object, ...]) -
         "final_portfolio_sha256": results[-1].final_portfolio_sha256,
         "final_nav": results[-1].final_nav,
     }
+    if any(
+        result.engine_artifact_sha256 != values["engine_artifact_sha256"]
+        for result in results
+    ):
+        raise ValueError("final run stages use different engine artifacts")
     provisional = object.__new__(FinalRunReceipt)
     for name, value in values.items():
         object.__setattr__(provisional, name, value)
@@ -1032,6 +1056,8 @@ def preregister_trial(
         != family_contract.split_evaluation_plan_sha256
         or trial_config.cost_assumptions_sha256
         != family_contract.cost_assumptions_sha256
+        or trial_config.engine_artifact_sha256
+        != family_contract.engine_artifact_sha256
     ):
         raise ValueError(
             "split evaluation plan must be frozen for this holdout before access"

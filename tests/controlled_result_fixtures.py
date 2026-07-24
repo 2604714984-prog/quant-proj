@@ -12,7 +12,7 @@ import json
 
 import quant_system.research.experiments as experiment_module
 import quant_system.research.splits as split_module
-from quant_system.backtest.event_loop import create_stage_plan
+from quant_system.backtest.event_loop import core_engine_artifact, create_stage_plan
 from quant_system.research.experiments import FinalRunReceipt
 from quant_system.research.splits import ReturnArtifact, ReturnObservation
 
@@ -79,6 +79,7 @@ def controlled_return_fixture(
     final_values = {
         "stage_plan_sha256": stage_plan.plan_sha256,
         "stage_count": len(sessions),
+        "engine_artifact_sha256": core_engine_artifact()[0],
         "ordered_stage_receipt_sha256s": tuple(
             hashlib.sha256(
                 f"synthetic-receipt|{index}".encode()

@@ -1431,6 +1431,18 @@ def test_terminal_action_is_timed_ineligible_and_cannot_be_repurchased() -> None
         execution.session_date,
         (),
     )
+    utc_boundary = TerminalAction(
+        "utc-boundary-delisting",
+        "delisting",
+        datetime(2026, 7, 14, 0, 30, tzinfo=UTC),
+        0,
+        terminal.source,
+        date(2026, 7, 13),
+        (),
+    )
+    assert utc_boundary.effective_at.astimezone(
+        ZoneInfo("America/New_York")
+    ).date() == utc_boundary.payment_date
     row = _input(
         "DEAD",
         "us",
@@ -2970,6 +2982,11 @@ def test_real_controlled_multistage_chain_produces_return_artifact(
         load_controlled_stage_receipt(
             json.dumps(tampered, sort_keys=True, separators=(",", ":")).encode()
         )
+    with pytest.raises(ValueError, match="engine artifact changed"):
+        replace(
+            stage_receipts[0],
+            engine_artifact_sha256="f" * 64,
+        ).verify()
 
 
 def test_candidate_weights_are_computed_from_frozen_strategy_artifacts(
@@ -3638,6 +3655,11 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     replayed_base, replayed_adverse = replay_candidate_run_bundle(loaded_bundle)
     assert replayed_base.final_nav == result.final_nav
     assert replayed_adverse.final_nav == result.adverse_final_nav
+    with pytest.raises(ValueError, match="engine artifact changed"):
+        replace(
+            result.run_bundle,
+            engine_artifact_sha256="f" * 64,
+        ).verify()
     bundle_path = tmp_path / "candidate-run-bundle.json"
     bundle_path.write_bytes(payload)
     environment = os.environ.copy()
