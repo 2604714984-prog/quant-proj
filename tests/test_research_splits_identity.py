@@ -464,27 +464,54 @@ def test_captured_dataset_manifest_revalidates_all_semantic_bytes(tmp_path) -> N
 
 def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None:
     as_of = datetime(2026, 1, 2, 12, tzinfo=timezone.utc)
-    raw_rows = [
+    feature_rows = [
         {
             "close": 10.5,
+            "entity_id": "AAA",
             "feature_available_at": "2026-01-02T10:00:00+00:00",
-            "label": 0.02,
-            "label_available_at": "2026-01-02T11:00:00+00:00",
+            "future_label": 0.02,
             "observed_at": "2026-01-02T10:30:00+00:00",
-            "symbol": "AAA",
+            "sample_id": "AAA|2026-01-02",
         }
     ]
-    raw_bytes = json.dumps(raw_rows, sort_keys=True, separators=(",", ":")).encode()
-    raw_path = tmp_path / "raw.json"
-    raw_path.write_bytes(raw_bytes)
-    source = capture_source_bytes(
-        raw_bytes,
+    label_rows = [
+        {
+            "entity_id": "AAA",
+            "label": 0.02,
+            "label_available_at": "2026-01-02T11:00:00+00:00",
+            "label_end_at": "2026-01-02T11:00:00+00:00",
+            "sample_id": "AAA|2026-01-02",
+        }
+    ]
+    feature_bytes = json.dumps(
+        feature_rows, sort_keys=True, separators=(",", ":")
+    ).encode()
+    label_bytes = json.dumps(
+        label_rows, sort_keys=True, separators=(",", ":")
+    ).encode()
+    feature_path = tmp_path / "feature-raw.json"
+    label_path = tmp_path / "label-raw.json"
+    feature_path.write_bytes(feature_bytes)
+    label_path.write_bytes(label_bytes)
+    feature_source = capture_source_bytes(
+        feature_bytes,
         publication_evidence=b"fixture publication",
-        source_url="https://example.test/raw",
+        source_url="https://example.test/feature-raw",
         available_at=datetime(2026, 1, 2, 10, tzinfo=timezone.utc),
         retrieved_at=datetime(2026, 1, 2, 10, 1, tzinfo=timezone.utc),
-        revision_id="raw-v1",
-        source_family_id="raw-family",
+        revision_id="feature-raw-v1",
+        source_family_id="feature-raw-family",
+        provider_id="fixture-provider",
+        subject_id="AAA",
+    ).source
+    label_source = capture_source_bytes(
+        label_bytes,
+        publication_evidence=b"fixture publication",
+        source_url="https://example.test/label-raw",
+        available_at=datetime(2026, 1, 2, 11, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 1, 2, 11, 1, tzinfo=timezone.utc),
+        revision_id="label-raw-v1",
+        source_family_id="label-raw-family",
         provider_id="fixture-provider",
         subject_id="AAA",
     ).source
@@ -493,46 +520,57 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
     label_program = tmp_path / "label-spec.json"
     feature_program.write_text(
         '{"operation":"json_array_to_canonical_jsonl",'
-        '"output_fields":["symbol","close","observed_at","feature_available_at"],'
-        '"sort_keys":["symbol"],"version":1}',
+        '"input_field_roles":{"sample_id":"KEY_ONLY","entity_id":"KEY_ONLY",'
+        '"close":"FEATURE_INPUT","observed_at":"FEATURE_INPUT",'
+        '"feature_available_at":"FEATURE_INPUT"},'
+        '"output_fields":["sample_id","entity_id","close","observed_at",'
+        '"feature_available_at"],"sort_keys":["sample_id"],"version":1}',
         encoding="utf-8",
     )
     label_program.write_text(
         '{"operation":"json_array_to_canonical_jsonl",'
-        '"output_fields":["symbol","label","label_available_at"],'
-        '"sort_keys":["symbol"],"version":1}',
+        '"input_field_roles":{"sample_id":"KEY_ONLY","entity_id":"KEY_ONLY",'
+        '"label":"LABEL_INPUT","label_available_at":"LABEL_INPUT",'
+        '"label_end_at":"LABEL_INPUT"},'
+        '"output_fields":["sample_id","entity_id","label","label_available_at",'
+        '"label_end_at"],"sort_keys":["sample_id"],"version":1}',
         encoding="utf-8",
     )
     program.write_text(
-        '{"keys":["symbol"],"operation":"join_jsonl","version":1}',
+        '{"keys":["sample_id","entity_id"],"operation":"join_jsonl","version":1}',
         encoding="utf-8",
     )
     config = tmp_path / "transform.json"
     config.write_text('{"version":1}\n', encoding="utf-8")
     output = tmp_path / "partition.jsonl"
     receipt = execute_transformation(
-        raw_paths=(raw_path,),
-        raw_sources=(source,),
+        raw_paths=(feature_path, label_path),
+        raw_sources=(feature_source, label_source),
+        raw_source_roles=("FEATURE_INPUT", "LABEL_INPUT"),
         program_path=program,
         feature_program_path=feature_program,
         label_program_path=label_program,
         config_path=config,
         output_path=output,
         schema=(
-            ("symbol", "VARCHAR"),
+            ("sample_id", "VARCHAR"),
+            ("entity_id", "VARCHAR"),
             ("close", "DOUBLE"),
             ("observed_at", "TIMESTAMP"),
             ("feature_available_at", "TIMESTAMP"),
             ("label", "DOUBLE"),
             ("label_available_at", "TIMESTAMP"),
+            ("label_end_at", "TIMESTAMP"),
         ),
         field_metadata=(
-            ("symbol", "security_identifier", "NA"),
+            ("sample_id", "sample_identifier", "NA"),
+            ("entity_id", "security_identifier", "NA"),
             ("close", "USD_per_share", "NA"),
             ("observed_at", "instant", "UTC"),
             ("feature_available_at", "instant", "UTC"),
             ("label", "return_fraction", "NA"),
             ("label_available_at", "instant", "UTC"),
+            ("label_end_at", "instant", "UTC"),
         ),
         dataset_as_of=as_of,
         executed_at=as_of,
@@ -545,19 +583,19 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
     assert receipt.label_program_sha256 == hashlib.sha256(
         label_program.read_bytes()
     ).hexdigest()
-    assert receipt.field_contracts[1] == ("close", "DOUBLE", "USD_per_share", "NA")
+    assert receipt.field_contracts[2] == ("close", "DOUBLE", "USD_per_share", "NA")
     assert receipt.row_pit_enforced is True
     assert receipt.feature_artifact_sha256 != receipt.label_artifact_sha256
     receipt.verify()
     with pytest.raises(ValueError, match="runtime identity changed"):
         replace(receipt, runtime_identity_sha256="f" * 64).verify()
-    output.write_text('{"symbol":"TAMPERED"}\n', encoding="utf-8")
+    output.write_text('{"sample_id":"TAMPERED"}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="output partition bytes changed"):
         receipt.verify()
 
     late_raw_rows = [
         {
-            **raw_rows[0],
+            **feature_rows[0],
             "feature_available_at": "2026-01-02T10:31:00+00:00",
         }
     ]
@@ -579,13 +617,43 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
     ).source
     with pytest.raises(ValueError, match="feature evidence is unavailable"):
         execute_transformation(
-            raw_paths=(late_raw_path,),
-            raw_sources=(late_source,),
+            raw_paths=(late_raw_path, label_path),
+            raw_sources=(late_source, label_source),
+            raw_source_roles=("FEATURE_INPUT", "LABEL_INPUT"),
             program_path=program,
             feature_program_path=feature_program,
             label_program_path=label_program,
             config_path=config,
             output_path=tmp_path / "late-output.jsonl",
+            schema=receipt.schema,
+            field_metadata=tuple(
+                (name, semantic, unit)
+                for name, _, semantic, unit in receipt.field_contracts
+            ),
+            dataset_as_of=as_of,
+            executed_at=as_of,
+        )
+
+    leaking_feature_program = tmp_path / "leaking-feature-spec.json"
+    leaking_feature_program.write_text(
+        '{"operation":"json_array_to_canonical_jsonl",'
+        '"input_field_roles":{"sample_id":"KEY_ONLY","entity_id":"KEY_ONLY",'
+        '"future_label":"LABEL_INPUT","observed_at":"FEATURE_INPUT",'
+        '"feature_available_at":"FEATURE_INPUT"},'
+        '"output_fields":["sample_id","entity_id","future_label","observed_at",'
+        '"feature_available_at"],"sort_keys":["sample_id"],"version":1}',
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="field role is not allowed"):
+        execute_transformation(
+            raw_paths=(feature_path, label_path),
+            raw_sources=(feature_source, label_source),
+            raw_source_roles=("FEATURE_INPUT", "LABEL_INPUT"),
+            program_path=program,
+            feature_program_path=leaking_feature_program,
+            label_program_path=label_program,
+            config_path=config,
+            output_path=tmp_path / "leaking-output.jsonl",
             schema=receipt.schema,
             field_metadata=tuple(
                 (name, semantic, unit)
@@ -609,8 +677,9 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
         )
         with pytest.raises(ValueError, match="unsupported controlled pure"):
             execute_transformation(
-                raw_paths=(raw_path,),
-                raw_sources=(source,),
+                raw_paths=(feature_path, label_path),
+                raw_sources=(feature_source, label_source),
+                raw_source_roles=("FEATURE_INPUT", "LABEL_INPUT"),
                 program_path=program,
                 feature_program_path=malicious,
                 label_program_path=label_program,

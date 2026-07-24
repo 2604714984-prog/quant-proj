@@ -16,6 +16,7 @@ from dataclasses import dataclass
 from dataclasses import field
 from datetime import date, datetime, timezone
 from pathlib import Path
+from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 from quant_system.data.source_identity import (
@@ -38,11 +39,13 @@ _DATASET_MANIFEST_TOKEN = object()
 _CAPTURED_SEMANTICS_TOKEN = object()
 _VERIFIED_SPLIT_TOKEN = object()
 _TRANSFORMATION_TOKEN = object()
+RawSourceRole = Literal["FEATURE_INPUT", "LABEL_INPUT", "KEY_ONLY"]
 
 
 @dataclass(frozen=True)
 class TransformationReceipt:
     raw_sources: tuple[SourceIdentity, ...]
+    raw_source_roles: tuple[RawSourceRole, ...]
     program_sha256: str
     feature_program_sha256: str
     label_program_sha256: str
@@ -75,7 +78,12 @@ class TransformationReceipt:
     def verify(self) -> None:
         if self._token is not _TRANSFORMATION_TOKEN:
             raise ValueError("TransformationReceipt must come from execute_transformation")
-        if len(self.raw_sources) != len(self._raw_paths) or not self.raw_sources:
+        if (
+            len(self.raw_sources) != len(self._raw_paths)
+            or len(self.raw_source_roles) != len(self._raw_paths)
+            or "FEATURE_INPUT" not in self.raw_source_roles
+            or "LABEL_INPUT" not in self.raw_source_roles
+        ):
             raise ValueError("transformation raw source coverage is incomplete")
         for source, path in zip(self.raw_sources, self._raw_paths, strict=True):
             require_trusted_source(source)
@@ -108,6 +116,7 @@ class TransformationReceipt:
                     self._label_program_path,
                     self._config_path,
                     self._raw_paths,
+                    self.raw_source_roles,
                 )
             )
             replay.write_bytes(partition_bytes)
@@ -146,6 +155,7 @@ def _transformation_payload(receipt: TransformationReceipt) -> bytes:
             "raw_source_receipt_sha256s": tuple(
                 source.capture_receipt_sha256 for source in receipt.raw_sources
             ),
+            "raw_source_roles": receipt.raw_source_roles,
             "row_count": receipt.row_count,
             "runtime_identity_sha256": receipt.runtime_identity_sha256,
             "schema": receipt.schema,
@@ -170,7 +180,12 @@ def _pure_runtime_identity() -> str:
     ).hexdigest()
 
 
-def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
+def _pure_step_bytes(
+    spec_bytes: bytes,
+    inputs: tuple[bytes, ...],
+    *,
+    allowed_input_roles: frozenset[str] | None = None,
+) -> bytes:
     try:
         spec = json.loads(spec_bytes)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -188,6 +203,8 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
     ):
         raise ValueError("unsupported controlled pure transformation operation")
     if spec["operation"] == "identity_bytes":
+        if allowed_input_roles is not None:
+            raise ValueError("feature and label transforms require field roles")
         if set(spec) != {"operation", "version"}:
             raise ValueError("identity transformation spec has unexpected fields")
         return b"".join(inputs)
@@ -232,6 +249,7 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
         if set(spec) != {
             "constant_fields",
             "drop_missing_numeric",
+            "input_field_roles",
             "numeric_fields",
             "operation",
             "output_fields",
@@ -246,16 +264,29 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
             raise ValueError("CSV transformation input must be UTF-8") from exc
         rename = spec["rename"]
         constants = spec["constant_fields"]
+        field_roles = spec["input_field_roles"]
         numeric_fields = set(spec["numeric_fields"])
         if (
             type(rename) is not dict
             or type(constants) is not dict
+            or type(field_roles) is not dict
             or type(spec["sort_keys"]) is not list
             or type(spec["numeric_fields"]) is not list
             or type(spec["output_fields"]) is not list
             or type(spec["drop_missing_numeric"]) is not bool
         ):
             raise ValueError("CSV transformation mappings are invalid")
+        if allowed_input_roles is None or any(
+            role not in allowed_input_roles for role in field_roles.values()
+        ):
+            raise ValueError("CSV transformation field role is not allowed")
+        if any(
+            name.endswith(
+                ("available_at", "observed_at", "decision_at", "label_end_at")
+            )
+            for name in constants
+        ):
+            raise ValueError("temporal provenance fields cannot be constants")
         rows = []
         for source_row in csv.DictReader(io.StringIO(decoded_csv)):
             if spec["drop_missing_numeric"] and any(
@@ -269,6 +300,7 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
                 )
                 for name, value in source_row.items()
                 if str(rename.get(name, name)) in set(spec["output_fields"])
+                and name in field_roles
             }
             row.update(
                 {
@@ -287,6 +319,7 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
     if (
         set(spec)
         != {
+            "input_field_roles",
             "operation",
             "output_fields",
             "sort_keys",
@@ -294,8 +327,14 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
         }
         or type(spec["sort_keys"]) is not list
         or type(spec["output_fields"]) is not list
+        or type(spec["input_field_roles"]) is not dict
     ):
         raise ValueError("JSON transformation spec is invalid")
+    if allowed_input_roles is None or any(
+        role not in allowed_input_roles
+        for role in spec["input_field_roles"].values()
+    ):
+        raise ValueError("JSON transformation field role is not allowed")
     rows = []
     for payload in inputs:
         try:
@@ -305,6 +344,8 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
         if type(decoded) is not list or any(type(row) is not dict for row in decoded):
             raise ValueError("JSON transformation input must be an array of objects")
         output_fields = tuple(str(name) for name in spec["output_fields"])
+        if any(name not in spec["input_field_roles"] for name in output_fields):
+            raise ValueError("JSON output field has no declared input role")
         rows.extend(
             {name: row[name] for name in output_fields}
             for row in decoded
@@ -327,6 +368,7 @@ def replay_pure_transformation_bytes(
     label_program_bytes: bytes,
     config_bytes: bytes,
     raw_bytes: tuple[bytes, ...],
+    raw_source_roles: tuple[RawSourceRole, ...],
 ) -> bytes:
     """Recompute the controlled pure transform without filesystem capabilities."""
 
@@ -336,6 +378,7 @@ def replay_pure_transformation_bytes(
         label_program_bytes=label_program_bytes,
         config_bytes=config_bytes,
         raw_bytes=raw_bytes,
+        raw_source_roles=raw_source_roles,
     )[2]
 
 
@@ -346,6 +389,7 @@ def replay_pure_transformation_artifacts_bytes(
     label_program_bytes: bytes,
     config_bytes: bytes,
     raw_bytes: tuple[bytes, ...],
+    raw_source_roles: tuple[RawSourceRole, ...],
 ) -> tuple[bytes, bytes, bytes]:
     try:
         config = json.loads(config_bytes)
@@ -353,8 +397,34 @@ def replay_pure_transformation_artifacts_bytes(
         raise ValueError("pure transformation config must be valid JSON") from exc
     if type(config) is not dict:
         raise ValueError("pure transformation config must be an object")
-    features = _pure_step_bytes(feature_program_bytes, raw_bytes)
-    labels = _pure_step_bytes(label_program_bytes, raw_bytes)
+    if (
+        len(raw_bytes) != len(raw_source_roles)
+        or "FEATURE_INPUT" not in raw_source_roles
+        or "LABEL_INPUT" not in raw_source_roles
+        or any(
+            role not in {"FEATURE_INPUT", "LABEL_INPUT", "KEY_ONLY"}
+            for role in raw_source_roles
+        )
+    ):
+        raise ValueError("raw source roles must isolate feature and label inputs")
+    features = _pure_step_bytes(
+        feature_program_bytes,
+        tuple(
+            payload
+            for payload, role in zip(raw_bytes, raw_source_roles, strict=True)
+            if role in {"FEATURE_INPUT", "KEY_ONLY"}
+        ),
+        allowed_input_roles=frozenset({"FEATURE_INPUT", "KEY_ONLY"}),
+    )
+    labels = _pure_step_bytes(
+        label_program_bytes,
+        tuple(
+            payload
+            for payload, role in zip(raw_bytes, raw_source_roles, strict=True)
+            if role in {"LABEL_INPUT", "KEY_ONLY"}
+        ),
+        allowed_input_roles=frozenset({"LABEL_INPUT", "KEY_ONLY"}),
+    )
     partition = _pure_step_bytes(program_bytes, (features, labels))
     return features, labels, partition
 
@@ -365,6 +435,7 @@ def _run_pure_transformation(
     label_program_path: Path,
     config_path: Path,
     raw_paths: tuple[Path, ...],
+    raw_source_roles: tuple[RawSourceRole, ...],
 ) -> bytes:
     return _run_pure_transformation_artifacts(
         program_path,
@@ -372,6 +443,7 @@ def _run_pure_transformation(
         label_program_path,
         config_path,
         raw_paths,
+        raw_source_roles,
     )[2]
 
 
@@ -381,6 +453,7 @@ def _run_pure_transformation_artifacts(
     label_program_path: Path,
     config_path: Path,
     raw_paths: tuple[Path, ...],
+    raw_source_roles: tuple[RawSourceRole, ...],
 ) -> tuple[bytes, bytes, bytes]:
     return replay_pure_transformation_artifacts_bytes(
         program_bytes=capture_file_bytes(program_path),
@@ -391,6 +464,7 @@ def _run_pure_transformation_artifacts(
             capture_file_bytes(path, max_bytes=64 * 1024 * 1024)
             for path in raw_paths
         ),
+        raw_source_roles=raw_source_roles,
     )
 
 
@@ -519,6 +593,7 @@ def execute_transformation(
     *,
     raw_paths: Sequence[Path],
     raw_sources: Sequence[SourceIdentity],
+    raw_source_roles: Sequence[RawSourceRole],
     program_path: Path,
     feature_program_path: Path,
     label_program_path: Path,
@@ -533,6 +608,7 @@ def execute_transformation(
 
     frozen_raw_paths = tuple(raw_paths)
     frozen_sources = tuple(raw_sources)
+    frozen_source_roles = tuple(raw_source_roles)
     frozen_schema = tuple(schema)
     frozen_metadata = tuple(field_metadata)
     metadata_by_name = {
@@ -552,7 +628,12 @@ def execute_transformation(
     executed = require_aware_utc(executed_at, "executed_at")
     if output_path.exists():
         raise ValueError("transformation output path must not already exist")
-    if len(frozen_raw_paths) != len(frozen_sources) or not frozen_sources:
+    if (
+        len(frozen_raw_paths) != len(frozen_sources)
+        or len(frozen_source_roles) != len(frozen_sources)
+        or "FEATURE_INPUT" not in frozen_source_roles
+        or "LABEL_INPUT" not in frozen_source_roles
+    ):
         raise ValueError("raw paths and source receipts must have one nonempty length")
     for path, source in zip(frozen_raw_paths, frozen_sources, strict=True):
         require_trusted_source(source)
@@ -577,6 +658,7 @@ def execute_transformation(
                 label_program_path,
                 config_path,
                 frozen_raw_paths,
+                frozen_source_roles,
             )
         )
         generated.write_bytes(partition_bytes)
@@ -585,6 +667,7 @@ def execute_transformation(
         os.replace(generated, output_path)
     values = {
         "raw_sources": frozen_sources,
+        "raw_source_roles": frozen_source_roles,
         "program_sha256": program_sha,
         "feature_program_sha256": feature_program_sha,
         "label_program_sha256": label_program_sha,

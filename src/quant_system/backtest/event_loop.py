@@ -948,6 +948,7 @@ def _replay_bundle_qualification(bundle: CandidateRunBundle) -> None:
             label_program_bytes=artifacts[f"{prefix}.label_program"],
             config_bytes=artifacts[f"{prefix}.config"],
             raw_bytes=tuple(artifacts[role] for role in raw_roles),
+            raw_source_roles=tuple(receipt_values["raw_source_roles"]),
             )
         )
         component_hashes = {
