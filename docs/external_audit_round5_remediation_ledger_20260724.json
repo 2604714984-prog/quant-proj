@@ -6,7 +6,7 @@
   "branch": "agent/external-audit-codex-remediation-20260723",
   "pull_request": 126,
   "pull_request_state": "DRAFT",
-  "implementation_head_before_ledger": "ffd5244e3d22b793e73f376f5209ad769313fdb2",
+  "implementation_head_before_ledger": "a3aaef849771974dfcd00ee48cb2c3bc526487aa",
   "external_audit_verdict": "PENDING_UNIFIED_REVIEW",
   "code_remediation_complete_for_round5": true,
   "only_external_evidence_remaining_claim": "PENDING_UNIFIED_REVIEW",
@@ -35,12 +35,72 @@
     "real_data_classification": "EXPLORATORY_GENERIC_CAPTURE",
     "real_data_source": "FRED SP500 CSV",
     "real_data_source_sha256": "b6d0eb007bc910b78e6ff93e1255748bff5467d03fc787e723511dc29597edc1",
-    "real_data_partition_sha256": "4f635f8d31d813bb7ee4f9ce0582848d2c8a58cd56de1182200afd469f9c1ccd",
+    "real_data_feature_artifact_sha256": "7e2cbe9744dc78815626a6ec1c90f7c861fba0371a095347e76d1bf33584d50e",
+    "real_data_label_artifact_sha256": "85fb724596c8f75a009c32e074f158c29f827e120b963dcf281a676acbfc1207",
+    "real_data_partition_sha256": "cad2fe7a2e5680e94e8289cc004dd38cda077eca00d74bc65b7996f564c29c06",
     "real_data_rows": 9,
-    "real_data_transformation_receipt_sha256": "b23c28aba4f0e8acb4407092849fe23e104dc1afea3c0fd88219c703f88b3ab1",
+    "real_data_row_pit_enforced": true,
+    "real_data_transformation_receipt_sha256": "4e4cc9706cb0ef340efc025e5fd823c2bc889a74de2c12fb6255a460aac4b0cf",
     "candidate_evidence": false
   },
   "findings": [
+    {
+      "finding_id": "RT-001",
+      "status": "CODE_CLOSED_REAL_PROVIDER_EVIDENCE_BLOCKED",
+      "commit_sha": "a3aaef849771974dfcd00ee48cb2c3bc526487aa",
+      "files": [
+        "src/quant_system/research/identity.py",
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "functions": [
+        "replay_pure_transformation_artifacts_bytes",
+        "execute_transformation",
+        "TransformationReceipt.verify",
+        "DatasetManifest.has_pit_partitions",
+        "_replay_bundle_qualification"
+      ],
+      "tests": {
+        "commands": [
+          ".venv/bin/python -m pytest -q tests/test_research_splits_identity.py tests/test_event_loop.py",
+          "PYTHONPATH=src .venv/bin/python /tmp/quant-round5-real/run_rt001_evidence.py",
+          ".venv/bin/ruff check .",
+          ".venv/bin/python -m pytest -q"
+        ],
+        "result": "PASS; targeted 87 passed; final 273 passed; independent feature and label artifacts replay from raw bytes; controlled join and per-row feature availability are fail-closed; 9 real exploratory rows replayed"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "The FRED slice remains GENERIC_CAPTURE and is mechanism evidence only; no provider-qualified candidate evidence was available."
+      ]
+    },
+    {
+      "finding_id": "RT-002",
+      "status": "CODE_CLOSED",
+      "commit_sha": "612bec761cffab71ee10f982e9921bf07a6bb7ea",
+      "files": [
+        "src/quant_system/research/experiments.py",
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_event_loop.py",
+        "tests/test_experiment_receipts.py"
+      ],
+      "functions": [
+        "evaluate_frozen_historical_run",
+        "apply_qualified_strategy_stage",
+        "run_candidate_rebalance"
+      ],
+      "tests": {
+        "commands": [
+          ".venv/bin/python -m pytest -q tests/test_event_loop.py tests/test_experiment_receipts.py",
+          ".venv/bin/python -m pytest -q"
+        ],
+        "result": "PASS; historical full-run TrialRunReceipt and prospective single-stage execution use independently bound StagePlans; final 273 passed"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    },
     {
       "finding_id": "EX6-001",
       "status": "CODE_CLOSED",
@@ -220,6 +280,7 @@
       "status": "CODE_CLOSED_REAL_PROVIDER_EVIDENCE_BLOCKED",
       "commit_sha": "7765042b8b0a613a418d4ebcaa79e80fdebfa31a",
       "supporting_commit_sha": "ffd5244e3d22b793e73f376f5209ad769313fdb2",
+      "causal_isolation_commit_sha": "a3aaef849771974dfcd00ee48cb2c3bc526487aa",
       "files": [
         "src/quant_system/research/identity.py",
         "tests/test_research_splits_identity.py"
@@ -235,7 +296,7 @@
           "FRED SP500 real-data pure transformation command",
           ".venv/bin/python -m pytest -q"
         ],
-        "result": "PASS; ctypes, mmap, proc, native-extension and undeclared-database operations are outside the DSL; 9 real exploratory rows transformed; final 273 passed"
+        "result": "PASS; ctypes, mmap, proc, native-extension and undeclared-database operations are outside the DSL; feature and label artifacts independently replay from raw bytes and join under row-level PIT enforcement; 9 real exploratory rows transformed; final 273 passed"
       },
       "database_writes": 0,
       "provider_requests": 3,
@@ -338,7 +399,7 @@
           "sha256sum /tmp/quant-round5-final-wheel/*.whl",
           "isolated wheel install; pip check; checkout-external quant info"
         ],
-        "result": "PASS; 273 passed; local wheel SHA-256 182c4888609bfdd050ee82b2e9e638805e6a800d924b8052f8ef4525d8a95007; CI publishes wheel plus SHA256SUMS after push"
+        "result": "PASS; 273 passed; latest local wheel SHA-256 ceccd3781c5b0d4b6981cf19c9a493aeeed63f6f248dc8c79f4b73c1b2275c4c; CI publishes wheel plus SHA256SUMS after push"
       },
       "database_writes": 0,
       "provider_requests": 0,
@@ -365,9 +426,13 @@
   ],
   "final_validation": {
     "ruff": "PASS",
-    "pytest": "PASS; 273 passed in 6.60s",
+    "pytest": "PASS; 273 passed in 6.64s",
+    "latest_rt001_targeted_pytest": "PASS; 87 passed in 3.27s",
+    "non_executing_attempts": [
+      "pytest command naming tests/test_replayable_candidate.py failed before collection because that obsolete file does not exist; corrected to current test_event_loop.py and test_research_splits_identity.py"
+    ],
     "wheel_build": "PASS",
-    "wheel_sha256": "182c4888609bfdd050ee82b2e9e638805e6a800d924b8052f8ef4525d8a95007",
+    "wheel_sha256": "ceccd3781c5b0d4b6981cf19c9a493aeeed63f6f248dc8c79f4b73c1b2275c4c",
     "isolated_install": "PASS",
     "pip_check": "PASS; No broken requirements found",
     "checkout_external_quant_info": "PASS",
