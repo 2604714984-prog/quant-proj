@@ -1,0 +1,228 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-07-24T00:00:00+08:00",
+  "source_audit": "docs/external_audit_round6_independent_938aada_20260724.md",
+  "audited_code_head": "938aada03f819d98cbf7c9ac627a8c77326ed312",
+  "branch": "agent/external-audit-codex-remediation-20260723",
+  "pull_request": 126,
+  "pull_request_state": "DRAFT",
+  "implementation_head_before_ledger": "1038476191341288720d8f87d90732384047ff76",
+  "external_audit_verdict": "PENDING_UNIFIED_REVIEW",
+  "code_remediation_complete_for_round6_focused_scope": true,
+  "authorizations": {
+    "strategy_candidate_available": false,
+    "recommendation_authorized": false,
+    "paper_trading_authorized": false,
+    "live_trading_authorized": false,
+    "automatic_execution_authorized": false
+  },
+  "architecture": {
+    "new_manager_or_dispatcher": false,
+    "new_ticket_or_registry": false,
+    "new_proxy_layer": false,
+    "second_canonical_writer": false,
+    "throughput_scope_added": false,
+    "fail_closed_weakened": false
+  },
+  "findings": [
+    {
+      "finding_id": "R6-001",
+      "status": "CODE_CLOSED_EXTERNAL_CALIBRATION_BLOCKED",
+      "commit_sha": "c8b696e3a53fcaec7a65ebb861714ab129b064e0",
+      "files": [
+        "src/quant_system/backtest/costs.py",
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_event_loop.py"
+      ],
+      "functions": [
+        "ExecutionCostAssumptions.canonical_payload_json",
+        "run_controlled_stage",
+        "_verify_replayed_cost_binding",
+        "ControlledStageReceipt.verify"
+      ],
+      "tests": {
+        "commands": [
+          ".venv/bin/python -m pytest -q tests/test_event_loop.py tests/test_backtest_core.py",
+          ".venv/bin/python -m pytest -q"
+        ],
+        "result": "PASS; 87 targeted tests; 274 final tests; base/adverse costs, capacity, slippage, portfolio cost model and receipt identity are derived from one canonical assumptions payload"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "Production cost, liquidity, FX and regulatory calibration remain external evidence."
+      ]
+    },
+    {
+      "finding_id": "R6-002",
+      "status": "CODE_CLOSED",
+      "commit_sha": "d19fa5f587e7bcc3060ccdd1fa0ee89583371564",
+      "files": [
+        "src/quant_system/backtest/event_loop.py",
+        "src/quant_system/research/experiments.py",
+        "tests/test_event_loop.py",
+        "tests/test_experiment_receipts.py"
+      ],
+      "functions": [
+        "_verify_historical_decision_binding",
+        "ControlledStageReceipt.verify",
+        "TrialConfig",
+        "evaluate_frozen_historical_run"
+      ],
+      "tests": {
+        "commands": [
+          ".venv/bin/python -m pytest -q tests/test_event_loop.py tests/test_experiment_receipts.py",
+          ".venv/bin/python -m pytest -q"
+        ],
+        "result": "PASS; per-stage feature, definition and adapter bytes reproduce weights in a fresh-process portable receipt; TrialConfig definition and adapter must match every stage"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    },
+    {
+      "finding_id": "R6-003",
+      "status": "CODE_CLOSED_REAL_PROVIDER_EVIDENCE_BLOCKED",
+      "commit_sha": "f3520037a4262ae81805f2259fc6c4b85102a142",
+      "supporting_commit_sha": "1038476191341288720d8f87d90732384047ff76",
+      "files": [
+        "src/quant_system/research/identity.py",
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "functions": [
+        "replay_pure_transformation_artifacts_bytes",
+        "_pure_step_bytes",
+        "execute_transformation",
+        "TransformationReceipt.verify"
+      ],
+      "tests": {
+        "commands": [
+          ".venv/bin/python -m pytest -q tests/test_research_splits_identity.py tests/test_event_loop.py",
+          ".venv/bin/python -m pytest -q"
+        ],
+        "result": "PASS; feature and label source sets are isolated; a separately hashed raw-field provenance contract constrains every spec field; label-role fields and constant temporal provenance are rejected from feature transforms"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "No provider-qualified real feature/label source receipt was available."
+      ]
+    },
+    {
+      "finding_id": "R6-004",
+      "status": "CODE_CLOSED_REAL_DATA_EVIDENCE_BLOCKED",
+      "commit_sha": "8640d85ed16a0fa09bee525529e4d96c90f794d4",
+      "files": [
+        "src/quant_system/research/identity.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "functions": [
+        "_partition_row_index",
+        "_split_row_index",
+        "capture_dataset_manifest",
+        "DatasetManifest.verify_identity"
+      ],
+      "tests": {
+        "commands": [
+          ".venv/bin/python -m pytest -q tests/test_research_splits_identity.py",
+          ".venv/bin/python -m pytest -q"
+        ],
+        "result": "PASS; sample_id, entity_id, observed_at and label_end_at are unique and exactly equal between all transformation partitions and SplitManifest; mismatched, missing or extra rows fail closed"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "No provider-qualified production partition was available."
+      ]
+    },
+    {
+      "finding_id": "R6-005",
+      "status": "CODE_CLOSED",
+      "commit_sha": "d692e2664db58042a7c73a891eb58d5d638e42c4",
+      "files": [
+        "src/quant_system/backtest/event_loop.py",
+        "src/quant_system/research/splits.py",
+        "tests/controlled_result_fixtures.py",
+        "tests/test_event_loop.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "functions": [
+        "SplitSample",
+        "ReturnObservation",
+        "capture_return_artifact",
+        "evaluate_split"
+      ],
+      "tests": {
+        "commands": [
+          ".venv/bin/python -m pytest -q tests/test_research_splits_identity.py tests/test_event_loop.py tests/test_experiment_receipts.py",
+          ".venv/bin/python -m pytest -q"
+        ],
+        "result": "PASS; feature observation, return start and label end are distinct; execution-to-execution periods are contiguous and carry complete accepted-session coverage; first and terminal boundaries are explicit"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    },
+    {
+      "finding_id": "R6-006",
+      "status": "CODE_CLOSED",
+      "commit_sha": "d692e2664db58042a7c73a891eb58d5d638e42c4",
+      "files": [
+        "src/quant_system/research/splits.py",
+        "tests/test_event_loop.py"
+      ],
+      "functions": [
+        "ReturnObservation",
+        "capture_return_artifact",
+        "ReturnArtifact.verify"
+      ],
+      "tests": {
+        "commands": [
+          ".venv/bin/python -m pytest -q tests/test_event_loop.py::test_return_exposure_uses_blocked_actual_holdings_not_target_weights",
+          ".venv/bin/python -m pytest -q"
+        ],
+        "result": "PASS; contributors are the union of actual opening/closing positions, fills and blocked attempts; blocked residual holdings are included even when absent from target weights; exposure payload is hash-reconciled"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": []
+    },
+    {
+      "finding_id": "E6-001",
+      "status": "BLOCKED_EXTERNAL_EVIDENCE",
+      "commit_sha": null,
+      "files": [],
+      "functions": [],
+      "tests": {
+        "commands": [],
+        "result": "NOT CLOSED BY CODE OR FIXTURES"
+      },
+      "database_writes": 0,
+      "provider_requests": 0,
+      "unverified": [
+        "Provider-qualified observations, production calibration, independent preregistration anchor and QF-014/EA-001 reviewer receipt remain unavailable."
+      ]
+    }
+  ],
+  "deferred_out_of_scope": [
+    "R6-007 transformation config cleanup",
+    "R6-008 repository vertical slice",
+    "R6-009 structural verify versus explicit replay",
+    "R6-010 content-addressed bundle"
+  ],
+  "final_validation": {
+    "ruff": "PASS",
+    "pytest": "PASS; 274 passed in 6.54s",
+    "focused_pytest": "PASS; 98 passed in 3.55s",
+    "wheel_build": "PASS",
+    "wheel_sha256": "da2b567a25a83ef32661a27b6b7aa63ee186647de05567bec4f2d908da81170f",
+    "isolated_install": "PASS",
+    "pip_check": "PASS; No broken requirements found",
+    "checkout_external_quant_info": "PASS; UNBOUND_DATA_ROOT; database_exists=false",
+    "database_writes": 0,
+    "provider_requests": 0,
+    "mutable_data_written_to_git": 0,
+    "github_actions": "PENDING_FROZEN_HEAD_PUSH"
+  }
+}
