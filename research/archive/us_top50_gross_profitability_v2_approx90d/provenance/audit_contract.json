@@ -1,0 +1,95 @@
+{
+  "research_id": "US_TOP50_GP_V2_VS_QQQ_AUDIT_V1",
+  "date": "2026-07-23",
+  "market": "US_EQUITIES",
+  "phase": "PREREGISTERED_RETROSPECTIVE_BENCHMARK_KILL_TEST",
+  "research_question": "Does the frozen gross-profitability portfolio add enough net value over an investable Nasdaq-100 proxy to justify its complexity?",
+  "null_hypothesis": "The frozen strategy does not clear every return, risk, stability, turnover, and dependence-aware hurdle versus QQQ.",
+  "frozen_strategy": {
+    "identity": "US_TOP50_GROSS_PROFITABILITY_V2_APPROX90D",
+    "result_sha256": "a5d4950d7d62ae64249d9f430ee289baa432a5904b954f57b87e9bce671614db",
+    "contract_sha256": "ff73032def532e4ad256a1e78ce85357ccc0fcbcdd0e1552d9e92c6f25184b64",
+    "adapter_sha256": "5b09494288916ff52e521a9a0171444557ae826e0a76e42e008ddc8680f07942",
+    "price_database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "fundamental_rows_sha256": "9cd40b4d78417f815cda20934499978b1a2ad21b5232749fe1128e0c7e21a84f",
+    "selection_or_parameter_changes": 0
+  },
+  "benchmark": {
+    "symbol": "QQQ",
+    "role": "investable Nasdaq-100 proxy",
+    "price_field": "adjusted close total-return proxy",
+    "source_order": [
+      "central Tiingo snapshot tiingo_raw_20260711T142010Z_5c24877d23cfc4a0 through 2026-07-10",
+      "Yahoo chart adjusted close for sessions strictly after 2026-07-10 through 2026-07-22"
+    ],
+    "source_selection_from_outcomes": false,
+    "overlap_check": "last 20 common daily returns; maximum absolute return difference <= 0.005",
+    "missing_session_rule": "fail closed",
+    "cost_bps_one_way": 2,
+    "entry_cost": true,
+    "terminal_liquidation_cost": true,
+    "fund_expense_handling": "embedded in ETF adjusted prices"
+  },
+  "evaluation": {
+    "start": "2018-04-02",
+    "end": "2026-07-22",
+    "strategy_costs_bps_one_way": {
+      "base": 15,
+      "stress": 30
+    },
+    "strategy_entry_cost": true,
+    "strategy_terminal_liquidation_cost": true,
+    "strategy_turnover": "pre-trade drifted weights",
+    "nav_frequency": "daily",
+    "sharpe": "mean daily simple return divided by sample standard deviation times sqrt(252); zero risk-free rate",
+    "max_drawdown": "full daily after-cost NAV path",
+    "subperiods": [
+      "2018-2019",
+      "2020-2022",
+      "2023-latest"
+    ],
+    "monthly_excess": "strategy base after-cost month-end simple return minus QQQ after-cost month-end simple return",
+    "bootstrap": {
+      "method": "circular moving-block bootstrap of monthly excess mean",
+      "block_length": 3,
+      "resamples": 10000,
+      "seed": 20260723,
+      "interval": 0.95
+    }
+  },
+  "strict_gates": {
+    "base_cagr_excess_vs_qqq_strict_min": 0.02,
+    "daily_sharpe_margin_vs_qqq_min": 0.10,
+    "drawdown_shortfall_vs_qqq_max": 0.05,
+    "subperiod_gate": "at least 2 of 3 positive excess subperiods and 2023-latest strictly positive",
+    "annual_one_way_turnover_max": 0.50,
+    "monthly_excess_bootstrap_lower_strict_positive": true
+  },
+  "multiplicity": {
+    "formal_runs": 1,
+    "primary_benchmarks": 1,
+    "variants": 0,
+    "post_outcome_repairs": false
+  },
+  "adjudication": {
+    "all_gates_required": true,
+    "pass": "WORTH_TRUE_PIT_REPAIR_NOT_VALIDATED",
+    "fail": "REJECTED_NOT_WORTH_COMPLEXITY_VS_QQQ",
+    "after_fail": "permanent closure; no PIT repair, timing overlay, factor addition, or parameter change"
+  },
+  "limitations": {
+    "historical_outcomes_previously_seen": true,
+    "this_is_validation": false,
+    "strategy_uses_approximate_pit": true,
+    "strategy_uses_current_constituents": true
+  },
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "current_holdings_output": false,
+    "recommendation": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false
+  }
+}
