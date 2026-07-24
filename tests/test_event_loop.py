@@ -3260,7 +3260,13 @@ def _run_candidate_rebalance(
     )
     configured_root = tmp_path / "canonical-quant-data"
     previous_data_root = os.environ.get("QUANT_DATA_ROOT")
+    previous_owner_root = os.environ.get("QUANT_EXPERIMENT_OWNER_ROOT")
+    previous_project_id = os.environ.get("QUANT_PROJECT_ID")
     os.environ["QUANT_DATA_ROOT"] = str(configured_root)
+    os.environ["QUANT_EXPERIMENT_OWNER_ROOT"] = str(
+        tmp_path / "experiment-owner"
+    )
+    os.environ["QUANT_PROJECT_ID"] = "quant-proj-test"
     preregistration_ledger = persist_experiment_ledger(events)
     anchor_available_at = decision_at - timedelta(hours=12)
     anchor_values = {
@@ -3360,6 +3366,14 @@ def _run_candidate_rebalance(
             os.environ.pop("QUANT_DATA_ROOT", None)
         else:
             os.environ["QUANT_DATA_ROOT"] = previous_data_root
+        if previous_owner_root is None:
+            os.environ.pop("QUANT_EXPERIMENT_OWNER_ROOT", None)
+        else:
+            os.environ["QUANT_EXPERIMENT_OWNER_ROOT"] = previous_owner_root
+        if previous_project_id is None:
+            os.environ.pop("QUANT_PROJECT_ID", None)
+        else:
+            os.environ["QUANT_PROJECT_ID"] = previous_project_id
 
 
 def test_callable_interface_is_permanently_experimental() -> None:

@@ -7,7 +7,6 @@ from contextlib import contextmanager
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 import hashlib
-import fcntl
 import json
 import math
 import os
@@ -21,7 +20,11 @@ from quant_system.data import (
     require_trusted_source,
     require_typed_observation,
 )
-from quant_system.paths import AppPaths
+from quant_system.data.writer import (
+    DataWriteError,
+    _assert_path_identity,
+    _writer_lock,
+)
 from quant_system.research.splits import SplitEvaluation, SplitEvaluationPlan
 
 _SHA256 = re.compile(r"[0-9a-f]{64}")
@@ -1262,7 +1265,8 @@ def require_adjusted_holdout_for_candidate(
 @dataclass(frozen=True)
 class ExperimentLedgerReceipt:
     path: Path
-    data_root_sha256: str
+    project_identity_sha256: str
+    owner_root_sha256: str
     event_count: int
     head_sha256: str
     bytes_sha256: str
@@ -1271,19 +1275,21 @@ class ExperimentLedgerReceipt:
     def verify_current_bytes(self) -> None:
         if self._token is not _LEDGER_TOKEN:
             raise ValueError("experiment ledger receipt must come from persist entrypoint")
-        paths = AppPaths.discover()
-        if not paths.data_root_bound:
-            raise ValueError("experiment ledger requires an explicit QUANT_DATA_ROOT")
-        expected_path = paths.data_root / "research" / "experiment_ledger.ndjson"
+        expected_path, project_sha, owner_sha = _ledger_location()
         if (
             self.path != expected_path
-            or self.data_root_sha256
-            != hashlib.sha256(str(paths.data_root).encode()).hexdigest()
+            or self.project_identity_sha256 != project_sha
+            or self.owner_root_sha256 != owner_sha
         ):
-            raise ValueError("experiment ledger is not bound to the configured AppPaths")
-        payload = self.path.read_bytes()
+            raise ValueError("experiment ledger is not bound to its project owner")
+        events, payload = _load_ledger_path(self.path)
         if hashlib.sha256(payload).hexdigest() != self.bytes_sha256:
             raise ValueError("persistent experiment ledger bytes changed")
+        if (
+            len(events) != self.event_count
+            or events[-1].event_sha256 != self.head_sha256
+        ):
+            raise ValueError("persistent experiment ledger head changed")
 
 
 _LEDGER_TOKEN = object()
@@ -1291,18 +1297,101 @@ _LEDGER_TOKEN = object()
 
 @contextmanager
 def _canonical_ledger_lock(path: Path) -> Iterator[None]:
-    lock_path = path.with_suffix(path.suffix + ".lock")
-    descriptor = os.open(
-        lock_path,
-        os.O_RDWR | os.O_CREAT | getattr(os, "O_CLOEXEC", 0),
-        0o600,
-    )
     try:
-        fcntl.flock(descriptor, fcntl.LOCK_EX)
-        yield
+        with _writer_lock(path, 30.0):
+            yield
+    except DataWriteError as exc:
+        raise ValueError("experiment ledger lock identity is unsafe") from exc
+
+
+def _ledger_location() -> tuple[Path, str, str]:
+    project_id = os.environ.get("QUANT_PROJECT_ID", "")
+    owner_text = os.environ.get("QUANT_EXPERIMENT_OWNER_ROOT", "")
+    if not project_id.strip() or not owner_text.strip():
+        raise ValueError(
+            "experiment ledger requires QUANT_PROJECT_ID and "
+            "QUANT_EXPERIMENT_OWNER_ROOT"
+        )
+    project = _text(project_id, "QUANT_PROJECT_ID")
+    owner = Path(owner_text).expanduser().resolve()
+    if owner == Path(owner.anchor):
+        raise ValueError("experiment owner root must not be a filesystem root")
+    return (
+        owner / "research" / "experiment_ledger.ndjson",
+        hashlib.sha256(project.encode()).hexdigest(),
+        hashlib.sha256(str(owner).encode()).hexdigest(),
+    )
+
+
+def _ledger_line(event: ExperimentEvent) -> bytes:
+    payload = {
+        "event": json.loads(_event_payload(event)),
+        "event_sha256": event.event_sha256,
+        "version": 2,
+    }
+    return (
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+        + b"\n"
+    )
+
+
+def _decode_ledger_line(line: bytes) -> ExperimentEvent:
+    try:
+        envelope = json.loads(line)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("experiment ledger line is not valid JSON") from exc
+    if (
+        type(envelope) is not dict
+        or set(envelope) != {"event", "event_sha256", "version"}
+        or envelope["version"] != 2
+        or type(envelope["event"]) is not dict
+    ):
+        raise ValueError("experiment ledger event envelope is invalid")
+    values = dict(envelope["event"])
+    for name in ("preregistered_at", "holdout_access_at"):
+        if values.get(name) is not None:
+            values[name] = datetime.fromisoformat(values[name])
+    event = _event(**values)
+    if event.event_sha256 != envelope["event_sha256"] or _ledger_line(event) != line:
+        raise ValueError("experiment ledger event hash or canonical bytes changed")
+    return event
+
+
+def _load_ledger_path(path: Path) -> tuple[tuple[ExperimentEvent, ...], bytes]:
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(path, flags)
+    except OSError as exc:
+        raise ValueError("experiment ledger is not a safe regular file") from exc
+    try:
+        identity = (os.fstat(descriptor).st_dev, os.fstat(descriptor).st_ino)
+        _assert_path_identity(path, descriptor, identity)
+        chunks = []
+        while True:
+            chunk = os.read(descriptor, 1024 * 1024)
+            if not chunk:
+                break
+            chunks.append(chunk)
+        _assert_path_identity(path, descriptor, identity)
+    except DataWriteError as exc:
+        raise ValueError("experiment ledger path identity changed") from exc
     finally:
-        fcntl.flock(descriptor, fcntl.LOCK_UN)
         os.close(descriptor)
+    payload = b"".join(chunks)
+    lines = tuple(payload.splitlines(keepends=True))
+    if not lines or any(not line.endswith(b"\n") for line in lines):
+        raise ValueError("experiment ledger must contain complete NDJSON lines")
+    events = tuple(_decode_ledger_line(line) for line in lines)
+    _validate_chain(events)
+    return events, payload
+
+
+def load_experiment_ledger() -> tuple[ExperimentEvent, ...]:
+    """Recover the complete canonical chain in a fresh process."""
+
+    path, _, _ = _ledger_location()
+    events, _ = _load_ledger_path(path)
+    return events
 
 
 def persist_experiment_ledger(
@@ -1313,39 +1402,41 @@ def persist_experiment_ledger(
     _validate_chain(events)
     if not events:
         raise ValueError("persistent experiment ledger requires at least one event")
-    paths = AppPaths.discover()
-    if not paths.data_root_bound:
-        raise ValueError("experiment ledger requires an explicit QUANT_DATA_ROOT")
-    candidate = paths.data_root / "research" / "experiment_ledger.ndjson"
+    candidate, project_sha, owner_sha = _ledger_location()
     candidate.parent.mkdir(parents=True, exist_ok=True)
-    expected_lines = tuple(
-        json.dumps(
-            {"event_index": event.event_index, "event_sha256": event.event_sha256},
-            sort_keys=True,
-            separators=(",", ":"),
-        ).encode()
-        + b"\n"
-        for event in events
-    )
+    expected_lines = tuple(_ledger_line(event) for event in events)
     with _canonical_ledger_lock(candidate):
-        existing = candidate.read_bytes() if candidate.exists() else b""
+        existing = _load_ledger_path(candidate)[1] if candidate.exists() else b""
         existing_lines = tuple(existing.splitlines(keepends=True))
         if existing_lines != expected_lines[: len(existing_lines)]:
             raise ValueError("persistent experiment ledger prefix is missing or changed")
         if len(existing_lines) > len(expected_lines):
             raise ValueError("persistent experiment ledger is ahead of supplied chain")
-        flags = os.O_WRONLY | os.O_CREAT | os.O_APPEND | getattr(os, "O_CLOEXEC", 0)
+        flags = (
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_APPEND
+            | getattr(os, "O_CLOEXEC", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
         descriptor = os.open(candidate, flags, 0o600)
         try:
+            opened = os.fstat(descriptor)
+            identity = (opened.st_dev, opened.st_ino)
+            _assert_path_identity(candidate, descriptor, identity)
             for line in expected_lines[len(existing_lines) :]:
                 os.write(descriptor, line)
             os.fsync(descriptor)
+            _assert_path_identity(candidate, descriptor, identity)
+        except DataWriteError as exc:
+            raise ValueError("experiment ledger path identity changed") from exc
         finally:
             os.close(descriptor)
-        payload = candidate.read_bytes()
+        _, payload = _load_ledger_path(candidate)
     return ExperimentLedgerReceipt(
         candidate,
-        hashlib.sha256(str(paths.data_root).encode()).hexdigest(),
+        project_sha,
+        owner_sha,
         len(events),
         events[-1].event_sha256,
         hashlib.sha256(payload).hexdigest(),

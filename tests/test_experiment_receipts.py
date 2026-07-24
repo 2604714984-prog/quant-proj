@@ -14,6 +14,7 @@ from quant_system.research.experiments import (
     capture_holdout_result,
     capture_trial_config,
     freeze_experiment_manifest,
+    load_experiment_ledger,
     persist_experiment_ledger,
     preregister_trial,
     record_holdout_family_results,
@@ -38,6 +39,11 @@ def _bind_experiment_data_root(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     monkeypatch.setenv("QUANT_DATA_ROOT", str(tmp_path / "quant-data"))
+    monkeypatch.setenv("QUANT_PROJECT_ID", "quant-proj-test")
+    monkeypatch.setenv(
+        "QUANT_EXPERIMENT_OWNER_ROOT",
+        str(tmp_path / "experiment-owner"),
+    )
 
 
 def _anchor(events, tmp_path, *, holdout_id: str = "holdout-001"):
@@ -356,20 +362,43 @@ def test_persistent_ledger_detects_deleted_prefix(
     receipt = persist_experiment_ledger(events)
     receipt.verify_current_bytes()
     monkeypatch.setenv("QUANT_DATA_ROOT", str(tmp_path / "other-data-root"))
-    with pytest.raises(ValueError, match="configured AppPaths"):
+    receipt.verify_current_bytes()
+    monkeypatch.setenv(
+        "QUANT_EXPERIMENT_OWNER_ROOT",
+        str(tmp_path / "other-owner"),
+    )
+    with pytest.raises(ValueError, match="project owner"):
         receipt.verify_current_bytes()
-    monkeypatch.setenv("QUANT_DATA_ROOT", str(tmp_path / "quant-data"))
+    monkeypatch.setenv(
+        "QUANT_EXPERIMENT_OWNER_ROOT",
+        str(tmp_path / "experiment-owner"),
+    )
     receipt.path.write_bytes(b"")
-    with pytest.raises(ValueError, match="bytes changed"):
+    with pytest.raises(ValueError, match="bytes changed|complete NDJSON"):
         receipt.verify_current_bytes()
 
 
 def test_persistent_ledger_requires_explicit_data_root(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    monkeypatch.delenv("QUANT_DATA_ROOT", raising=False)
-    with pytest.raises(ValueError, match="explicit QUANT_DATA_ROOT"):
+    monkeypatch.delenv("QUANT_PROJECT_ID", raising=False)
+    with pytest.raises(ValueError, match="QUANT_PROJECT_ID"):
         persist_experiment_ledger(_preregister())
+
+
+def test_persistent_ledger_restores_full_events_and_appends_in_new_process() -> None:
+    first = _preregister("trial-a", family_size=2)
+    persist_experiment_ledger(first)
+    restored = load_experiment_ledger()
+    assert restored == first
+    completed = _preregister(
+        "trial-b",
+        events=restored,
+        family_size=2,
+        definition_sha256="e" * 64,
+    )
+    persist_experiment_ledger(completed)
+    assert load_experiment_ledger() == completed
 
 
 def test_final_run_receipt_requires_complete_ordered_stage_chain() -> None:
