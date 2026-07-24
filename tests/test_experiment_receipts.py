@@ -111,12 +111,16 @@ def _evaluation(
     returns=(0.10, 0.11, 0.09, 0.12, 0.08),
 ):
     count = len(returns)
-    observed = tuple(date(2026, 1, 1) + timedelta(days=index) for index in range(count))
+    execution_dates = tuple(
+        date(2026, 1, 1) + timedelta(days=index) for index in range(count)
+    )
+    observed = tuple(item - timedelta(days=1) for item in execution_dates)
     manifest = build_split_manifest(
         entity_ids=tuple(f"S{index}" for index in range(count)),
         observed_at=observed,
-        label_end_at=observed,
+        label_end_at=execution_dates,
         fold_ids=("holdout",) * count,
+        return_start_sessions=observed,
     )
     plan = build_split_evaluation_plan(
         manifest,
@@ -126,10 +130,10 @@ def _evaluation(
         preregistered_at=PREREGISTERED_AT,
     )
     return_artifact, final_run_receipt = controlled_return_fixture(
-        dict(zip(observed, returns, strict=True)),
+        dict(zip(execution_dates, returns, strict=True)),
         contributors_by_session={
             session: (f"S{index}",)
-            for index, session in enumerate(observed)
+            for index, session in enumerate(execution_dates)
         },
     )
     evaluation = evaluate_split(

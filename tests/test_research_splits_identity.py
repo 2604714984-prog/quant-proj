@@ -254,12 +254,16 @@ def test_same_day_multi_security_panel_has_distinct_stable_sample_ids() -> None:
 def test_daily_portfolio_unit_binds_nav_returns_and_rejects_cross_fold_or_small_n() -> None:
     days = tuple(date(2026, 2, 1) + timedelta(days=index) for index in range(5))
     entities = tuple(entity for day in days for entity in ("AAA", "BBB"))
-    observed = tuple(day for day in days for _ in range(2))
+    observed = tuple(
+        day - timedelta(days=1) for day in days for _ in range(2)
+    )
+    label_ends = tuple(day for day in days for _ in range(2))
     manifest = build_split_manifest(
         entity_ids=entities,
         observed_at=observed,
-        label_end_at=observed,
+        label_end_at=label_ends,
         fold_ids=("holdout",) * len(observed),
+        return_start_sessions=observed,
     )
     plan = build_split_evaluation_plan(
         manifest,
@@ -293,9 +297,10 @@ def test_daily_portfolio_unit_binds_nav_returns_and_rejects_cross_fold_or_small_
 
     too_small = build_split_manifest(
         entity_ids=("AAA", "AAA"),
-        observed_at=days[:2],
+        observed_at=tuple(item - timedelta(days=1) for item in days[:2]),
         label_end_at=days[:2],
         fold_ids=("holdout", "holdout"),
+        return_start_sessions=tuple(item - timedelta(days=1) for item in days[:2]),
     )
     with pytest.raises(ValueError, match="at least 5 daily portfolio returns"):
         evaluate_split(
@@ -316,9 +321,10 @@ def test_daily_portfolio_unit_binds_nav_returns_and_rejects_cross_fold_or_small_
 
     mixed = build_split_manifest(
         entity_ids=("AAA",) * 5,
-        observed_at=days,
+        observed_at=tuple(item - timedelta(days=1) for item in days),
         label_end_at=days,
         fold_ids=("one", "one", "two", "two", "two"),
+        return_start_sessions=tuple(item - timedelta(days=1) for item in days),
     )
     with pytest.raises(ValueError, match="cannot mix fold IDs"):
         evaluate_split(

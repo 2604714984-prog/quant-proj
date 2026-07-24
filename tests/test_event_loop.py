@@ -2974,9 +2974,10 @@ def test_real_controlled_multistage_chain_produces_return_artifact(
     execution_sessions = days[1:]
     split_manifest = build_split_manifest(
         entity_ids=("AAA",) * len(execution_sessions),
-        observed_at=execution_sessions,
+        observed_at=days[:5],
         label_end_at=execution_sessions,
         fold_ids=("real-controlled-chain",) * len(execution_sessions),
+        return_start_sessions=days[:5],
     )
     evaluation_plan = build_split_evaluation_plan(
         split_manifest,
@@ -2999,6 +3000,16 @@ def test_real_controlled_multistage_chain_produces_return_artifact(
     assert tuple(item.session for item in return_artifact.observations) == (
         execution_sessions
     )
+    assert return_artifact.observations[0].period_start_session == days[0]
+    assert return_artifact.observations[-1].period_end_session == days[-1]
+    with pytest.raises(ValueError, match="contiguous and fully covered"):
+        replace(
+            return_artifact,
+            observations=(
+                replace(return_artifact.observations[0], accepted_sessions=()),
+                *return_artifact.observations[1:],
+            ),
+        ).verify()
     assert evaluation.nominal_n == 5
     tampered = json.loads(serialize_controlled_stage_receipt(stage_receipts[0]))
     tampered["final_nav"] += 1
@@ -3011,6 +3022,116 @@ def test_real_controlled_multistage_chain_produces_return_artifact(
             stage_receipts[0],
             engine_artifact_sha256="f" * 64,
         ).verify()
+
+
+def test_return_exposure_uses_blocked_actual_holdings_not_target_weights(
+    tmp_path: Path,
+) -> None:
+    days = (date(2026, 7, 6), date(2026, 7, 7), date(2026, 7, 8))
+    calendar = _controlled_calendar(days)
+    plan = create_stage_plan(days[:2])
+    costs = _cost_assumptions()
+    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+
+    first_execution = calendar.session_on(
+        days[1], as_of=datetime(2026, 7, 20, tzinfo=UTC)
+    )
+    first_decision_at = first_execution.open_at - timedelta(microseconds=1)
+    first_row = _controlled_input(
+        "AAA",
+        first_execution,
+        observed_session=calendar.session_on(days[0], as_of=first_decision_at),
+    )
+    first_dir = tmp_path / "exposure-first"
+    first_dir.mkdir()
+    first = run_controlled_stage(
+        portfolio,
+        calendar,
+        signal_session=days[0],
+        decision_at=first_decision_at,
+        execution_inputs=(first_row,),
+        universe_materialization=_controlled_materialization(
+            first_dir,
+            calendar,
+            first_execution,
+            first_decision_at,
+            (first_row,),
+        ),
+        decision_artifact=_captured_decision_artifact(
+            first_dir,
+            first_decision_at,
+            scores={"AAA": 1.0},
+        ),
+        stage_context=genesis_stage(plan),
+        cost_assumptions=costs,
+        cost_case="base",
+    )
+
+    second_execution = calendar.session_on(
+        days[2], as_of=datetime(2026, 7, 20, tzinfo=UTC)
+    )
+    second_decision_at = second_execution.open_at - timedelta(microseconds=1)
+    observed = calendar.session_on(days[1], as_of=second_decision_at)
+    blocked_aaa = replace(
+        _controlled_input(
+            "AAA",
+            second_execution,
+            observed_session=observed,
+        ),
+        capacity=CapacityObservation(
+            "AAA",
+            observed,
+            0,
+            0,
+            "CNY",
+            _captured_source("zero-capacity", observed.close_at),
+        ),
+    )
+    bbb = _controlled_input(
+        "BBB",
+        second_execution,
+        observed_session=observed,
+    )
+    second_dir = tmp_path / "exposure-second"
+    second_dir.mkdir()
+    second = run_controlled_stage(
+        first.portfolio,
+        calendar,
+        signal_session=days[1],
+        decision_at=second_decision_at,
+        execution_inputs=(blocked_aaa, bbb),
+        universe_materialization=_controlled_materialization(
+            second_dir,
+            calendar,
+            second_execution,
+            second_decision_at,
+            (blocked_aaa, bbb),
+        ),
+        decision_artifact=_captured_decision_artifact(
+            second_dir,
+            second_decision_at,
+            scores={"BBB": 1.0},
+        ),
+        stage_context=next_stage(plan, first),
+        cost_assumptions=costs,
+        cost_case="base",
+    )
+    receipts = tuple(
+        capture_controlled_stage_receipt(result) for result in (first, second)
+    )
+    artifact = capture_return_artifact(
+        plan,
+        receipts,
+        capture_final_run_receipt(plan, receipts),
+    )
+
+    observation = artifact.observations[1]
+    assert dict(observation.opening_exposure)["AAA"] > 0
+    assert "AAA" in observation.blocked_symbols
+    assert "AAA" in observation.contributors
+    assert observation.contributors != tuple(
+        symbol for symbol, weight in second.target_weights if weight
+    )
 
 
 def test_candidate_weights_are_computed_from_frozen_strategy_artifacts(
@@ -3086,12 +3207,16 @@ def _dataset_manifest(
 
 
 def _candidate_split_manifest(session: date):
-    observed = tuple(session - timedelta(days=offset) for offset in range(6, 1, -1))
+    label_ends = tuple(
+        session - timedelta(days=offset) for offset in range(6, 1, -1)
+    )
+    observed = tuple(item - timedelta(days=1) for item in label_ends)
     return build_split_manifest(
         entity_ids=("AAA",) * len(observed),
         observed_at=observed,
-        label_end_at=observed,
+        label_end_at=label_ends,
         fold_ids=("candidate",) * len(observed),
+        return_start_sessions=observed,
     )
 
 
@@ -3223,9 +3348,9 @@ def _run_candidate_rebalance(
     split_dates = tuple(
         sorted(
             {
-                sample.observed_at
+                sample.label_end_at
                 for sample in split_manifest.samples
-                if type(sample.observed_at) is date
+                if type(sample.label_end_at) is date
             }
         )
     )

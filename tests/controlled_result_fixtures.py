@@ -55,11 +55,37 @@ def controlled_return_fixture(
                 f"synthetic-stage|{index}|{initial_sha}|{final_sha}".encode()
             ).hexdigest()
         )
+        period_start = (
+            sessions[index - 1] if index else session - timedelta(days=1)
+        )
+        exposure = tuple((symbol, 1.0) for symbol in session_contributors)
+        exposure_payload = json.dumps(
+            {
+                "accepted_sessions": (session.isoformat(),),
+                "blocked_symbols": (),
+                "closing_exposure": exposure,
+                "execution_receipt_sha256s": (),
+                "opening_exposure": exposure,
+                "period_end_session": session.isoformat(),
+                "period_start_session": period_start.isoformat(),
+                "traded_symbols": (),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
         observations.append(
             ReturnObservation(
                 signal_session=session - timedelta(days=1),
                 session=session,
+                period_start_session=period_start,
+                period_end_session=session,
+                accepted_sessions=(session,),
                 contributors=session_contributors,
+                opening_exposure=exposure,
+                closing_exposure=exposure,
+                traded_symbols=(),
+                blocked_symbols=(),
+                exposure_sha256=hashlib.sha256(exposure_payload).hexdigest(),
                 aggregate_receipt_sha256=hashlib.sha256(
                     f"synthetic-aggregate|{index}|{session_contributors}".encode()
                 ).hexdigest(),

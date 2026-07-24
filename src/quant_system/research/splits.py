@@ -38,6 +38,7 @@ class SplitSample:
     sample_id: str
     entity_id: str
     observed_at: DateLike
+    return_start_session: date
     label_end_at: DateLike
     fold_id: str
     overlap_group: str
@@ -86,7 +87,15 @@ class SplitEvaluationPlan:
 class ReturnObservation:
     signal_session: date
     session: date
+    period_start_session: date
+    period_end_session: date
+    accepted_sessions: tuple[date, ...]
     contributors: tuple[str, ...]
+    opening_exposure: tuple[tuple[str, float], ...]
+    closing_exposure: tuple[tuple[str, float], ...]
+    traded_symbols: tuple[str, ...]
+    blocked_symbols: tuple[str, ...]
+    exposure_sha256: str
     aggregate_receipt_sha256: str
     initial_nav: float
     final_nav: float
@@ -117,17 +126,71 @@ class ReturnArtifact:
             sorted({item.session for item in self.observations})
         ):
             raise ValueError("return artifact sessions must be unique and chronological")
-        for observation in self.observations:
+        for index, observation in enumerate(self.observations):
             if observation.signal_session >= observation.session:
                 raise ValueError(
                     "return artifact execution session must follow signal session"
                 )
+            if (
+                observation.session != observation.period_end_session
+                or observation.period_start_session >= observation.period_end_session
+                or not observation.accepted_sessions
+                or observation.accepted_sessions[-1]
+                != observation.period_end_session
+                or any(
+                    session <= observation.period_start_session
+                    or session > observation.period_end_session
+                    for session in observation.accepted_sessions
+                )
+                or (
+                    index > 0
+                    and observation.period_start_session
+                    != self.observations[index - 1].period_end_session
+                )
+            ):
+                raise ValueError("return periods must be contiguous and fully covered")
             if (
                 not observation.contributors
                 or observation.contributors
                 != tuple(sorted(set(observation.contributors)))
             ):
                 raise ValueError("return contributors must be nonempty, sorted, and unique")
+            actual_symbols = tuple(
+                sorted(
+                    {
+                        *(symbol for symbol, _ in observation.opening_exposure),
+                        *(symbol for symbol, _ in observation.closing_exposure),
+                        *observation.traded_symbols,
+                        *observation.blocked_symbols,
+                    }
+                )
+            )
+            exposure_payload = json.dumps(
+                {
+                    "accepted_sessions": tuple(
+                        item.isoformat() for item in observation.accepted_sessions
+                    ),
+                    "blocked_symbols": observation.blocked_symbols,
+                    "closing_exposure": observation.closing_exposure,
+                    "execution_receipt_sha256s": (
+                        observation.execution_receipt_sha256s
+                    ),
+                    "opening_exposure": observation.opening_exposure,
+                    "period_end_session": observation.period_end_session.isoformat(),
+                    "period_start_session": (
+                        observation.period_start_session.isoformat()
+                    ),
+                    "traded_symbols": observation.traded_symbols,
+                },
+                sort_keys=True,
+                separators=(",", ":"),
+            ).encode()
+            if (
+                observation.contributors != actual_symbols
+                or hashlib.sha256(exposure_payload).hexdigest()
+                != observation.exposure_sha256
+            ):
+                raise ValueError("return exposure differs from actual portfolio economics")
             if (
                 not isinstance(observation.aggregate_receipt_sha256, str)
                 or len(observation.aggregate_receipt_sha256) != 64
@@ -182,6 +245,13 @@ def _return_artifact_payload(artifact: ReturnArtifact) -> bytes:
                     **observation.__dict__,
                     "signal_session": observation.signal_session.isoformat(),
                     "session": observation.session.isoformat(),
+                    "period_start_session": (
+                        observation.period_start_session.isoformat()
+                    ),
+                    "period_end_session": observation.period_end_session.isoformat(),
+                    "accepted_sessions": tuple(
+                        item.isoformat() for item in observation.accepted_sessions
+                    ),
                 }
                 for observation in artifact.observations
             ),
@@ -205,6 +275,7 @@ def capture_return_artifact(
         ControlledStageReceipt,
         StagePlan,
         _portfolio_nav_from_artifact,
+        _replay_decode,
     )
     from quant_system.research.experiments import (
         FinalRunReceipt,
@@ -244,15 +315,94 @@ def capture_return_artifact(
         denominator = initial_nav + net_external_cashflow
         if denominator <= 0:
             raise ValueError("return artifact initial NAV must be positive")
+        initial_state = json.loads(result.initial_portfolio_json)
+        final_state = json.loads(result.final_portfolio_json)
+        try:
+            period_start_session = date.fromisoformat(
+                initial_state["current_session"]
+            )
+            opening_exposure = tuple(
+                sorted(
+                    (symbol, float(position["shares"]))
+                    for symbol, position in initial_state["positions"].items()
+                    if float(position["shares"]) != 0
+                )
+            )
+            closing_exposure = tuple(
+                sorted(
+                    (symbol, float(position["shares"]))
+                    for symbol, position in final_state["positions"].items()
+                    if float(position["shares"]) != 0
+                )
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ValueError("return portfolio exposure artifact is invalid") from exc
+        replay = json.loads(result.replay_artifact_json)
+        calendar_sessions = _replay_decode(replay["calendar_sessions"])
+        accepted_sessions = tuple(
+            item.session_date
+            for item in calendar_sessions
+            if period_start_session < item.session_date <= execution_session
+        )
+        receipts = tuple(json.loads(payload) for payload in result.receipt_payloads)
+        traded_symbols = tuple(
+            sorted(
+                {
+                    str(receipt["symbol"])
+                    for receipt in receipts
+                    if float(receipt["filled_shares"]) != 0
+                }
+            )
+        )
+        blocked_symbols = tuple(
+            sorted(
+                {
+                    str(receipt["symbol"])
+                    for receipt in receipts
+                    if float(receipt["requested_shares"]) != 0
+                    and float(receipt["filled_shares"]) == 0
+                }
+            )
+        )
+        contributors = tuple(
+            sorted(
+                {
+                    *(symbol for symbol, _ in opening_exposure),
+                    *(symbol for symbol, _ in closing_exposure),
+                    *traded_symbols,
+                    *blocked_symbols,
+                }
+            )
+        )
+        exposure_payload = json.dumps(
+            {
+                "accepted_sessions": tuple(
+                    item.isoformat() for item in accepted_sessions
+                ),
+                "blocked_symbols": blocked_symbols,
+                "closing_exposure": closing_exposure,
+                "execution_receipt_sha256s": result.receipt_hashes,
+                "opening_exposure": opening_exposure,
+                "period_end_session": execution_session.isoformat(),
+                "period_start_session": period_start_session.isoformat(),
+                "traded_symbols": traded_symbols,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ).encode()
         observations.append(
             ReturnObservation(
                 signal_session=signal_session,
                 session=execution_session,
-                contributors=tuple(
-                    symbol
-                    for symbol, weight in result.target_weights
-                    if weight != 0
-                ),
+                period_start_session=period_start_session,
+                period_end_session=execution_session,
+                accepted_sessions=accepted_sessions,
+                contributors=contributors,
+                opening_exposure=opening_exposure,
+                closing_exposure=closing_exposure,
+                traded_symbols=traded_symbols,
+                blocked_symbols=blocked_symbols,
+                exposure_sha256=hashlib.sha256(exposure_payload).hexdigest(),
                 aggregate_receipt_sha256=hashlib.sha256(
                     json.dumps(
                         {
@@ -260,8 +410,10 @@ def capture_return_artifact(
                                 result.receipt_sha256
                             ),
                             "execution_session": execution_session.isoformat(),
+                            "exposure_sha256": hashlib.sha256(
+                                exposure_payload
+                            ).hexdigest(),
                             "signal_session": signal_session.isoformat(),
-                            "target_weights": result.target_weights,
                         },
                         sort_keys=True,
                         separators=(",", ":"),
@@ -357,6 +509,7 @@ def _sample_payload(sample: SplitSample) -> dict[str, str]:
         "observed_at": _time_text(sample.observed_at),
         "observed_time_type": type(sample.observed_at).__name__,
         "overlap_group": sample.overlap_group,
+        "return_start_session": sample.return_start_session.isoformat(),
         "sample_id": sample.sample_id,
     }
 
@@ -403,6 +556,7 @@ def load_split_manifest(payload: bytes) -> SplitManifest:
             "observed_at",
             "observed_time_type",
             "overlap_group",
+            "return_start_session",
             "sample_id",
         }:
             raise ValueError("split manifest sample schema is invalid")
@@ -422,6 +576,9 @@ def load_split_manifest(payload: bytes) -> SplitManifest:
                 sample_id=row["sample_id"],
                 entity_id=row["entity_id"],
                 observed_at=parse_time(row["observed_at"], row["observed_time_type"]),
+                return_start_session=date.fromisoformat(
+                    row["return_start_session"]
+                ),
                 label_end_at=parse_time(row["label_end_at"], row["label_time_type"]),
                 fold_id=row["fold_id"],
                 overlap_group=row["overlap_group"],
@@ -440,6 +597,7 @@ def build_split_manifest(
     observed_at: Sequence[DateLike],
     label_end_at: Sequence[DateLike],
     fold_ids: Sequence[str],
+    return_start_sessions: Sequence[date] | None = None,
 ) -> SplitManifest:
     """Build stable panel sample IDs and connected interval-overlap groups."""
 
@@ -447,37 +605,61 @@ def build_split_manifest(
     observations = tuple(observed_at)
     labels = tuple(label_end_at)
     folds = tuple(fold_ids)
+    starts = (
+        tuple(return_start_sessions)
+        if return_start_sessions is not None
+        else tuple(
+            item.date() if isinstance(item, datetime) else item
+            for item in observations
+        )
+    )
     count = len(entities)
-    if count == 0 or any(len(values) != count for values in (observations, labels, folds)):
+    if count == 0 or any(
+        len(values) != count for values in (observations, labels, folds, starts)
+    ):
         raise ValueError("split manifest columns must have one nonempty common length")
     expected_type = type(observations[0])
     if expected_type not in {date, datetime}:
         raise TypeError("observed_at must contain dates or datetimes")
     rows: list[dict[str, object]] = []
     seen_keys: set[tuple[str, DateLike]] = set()
-    for entity, observed, label_end, fold in zip(
+    for entity, observed, label_end, fold, return_start in zip(
         entities,
         observations,
         labels,
         folds,
+        starts,
         strict=True,
     ):
         if not isinstance(entity, str) or not entity.strip():
             raise ValueError("entity_id must be nonempty")
         if not isinstance(fold, str) or not fold.strip():
             raise ValueError("fold_id must be nonempty")
+        if type(return_start) is not date:
+            raise TypeError("return_start_session must contain dates")
         if type(observed) is not expected_type or type(label_end) is not expected_type:
             raise TypeError("split times must use one consistent temporal type")
         observed_text = _time_text(observed)
         label_text = _time_text(label_end)
         if label_end < observed:
             raise ValueError("label_end_at cannot precede observed_at")
+        observed_date = observed.date() if isinstance(observed, datetime) else observed
+        label_date = (
+            label_end.date() if isinstance(label_end, datetime) else label_end
+        )
+        if not observed_date <= return_start <= label_date:
+            raise ValueError(
+                "return_start_session must follow observation and not exceed label end"
+            )
         key = (entity, observed)
         if key in seen_keys:
             raise ValueError("entity_id and observed_at must identify one panel sample")
         seen_keys.add(key)
         sample_id = hashlib.sha256(
-            f"{entity}|{observed_text}|{label_text}|{fold}".encode()
+            (
+                f"{entity}|{observed_text}|{return_start.isoformat()}|"
+                f"{label_text}|{fold}"
+            ).encode()
         ).hexdigest()
         rows.append(
             {
@@ -485,6 +667,7 @@ def build_split_manifest(
                 "observed": observed,
                 "label_end": label_end,
                 "fold": fold,
+                "return_start": return_start,
                 "sample_id": sample_id,
             }
         )
@@ -516,6 +699,7 @@ def build_split_manifest(
             sample_id=str(row["sample_id"]),
             entity_id=str(row["entity"]),
             observed_at=row["observed"],  # type: ignore[arg-type]
+            return_start_session=row["return_start"],  # type: ignore[arg-type]
             label_end_at=row["label_end"],  # type: ignore[arg-type]
             fold_id=str(row["fold"]),
             overlap_group=overlap_by_sample[str(row["sample_id"])],
@@ -629,25 +813,34 @@ def evaluate_split(
     if len({sample.fold_id for sample in selected_samples}) != 1:
         raise ValueError("one split evaluation cannot mix fold IDs")
     overlapping = any(
-        left.observed_at != right.observed_at
-        and left.observed_at <= right.label_end_at
-        and right.observed_at <= left.label_end_at
+        (
+            left.return_start_session,
+            _time_text(left.label_end_at),
+        )
+        != (
+            right.return_start_session,
+            _time_text(right.label_end_at),
+        )
+        and left.return_start_session
+        < (
+            right.label_end_at.date()
+            if isinstance(right.label_end_at, datetime)
+            else right.label_end_at
+        )
+        and right.return_start_session
+        < (
+            left.label_end_at.date()
+            if isinstance(left.label_end_at, datetime)
+            else left.label_end_at
+        )
         for index, left in enumerate(selected_samples)
         for right in selected_samples[index + 1 :]
     )
     if method == "non_overlapping" and overlapping:
         raise ValueError("non-overlapping evaluation selected overlapping labels")
-    observations_by_date = {
-        observation.session: observation
-        for observation in return_artifact.observations
-    }
     intervals: dict[tuple[date, date], set[str]] = defaultdict(set)
     for sample in selected_samples:
-        start = (
-            sample.observed_at.date()
-            if isinstance(sample.observed_at, datetime)
-            else sample.observed_at
-        )
+        start = sample.return_start_session
         end = (
             sample.label_end_at.date()
             if isinstance(sample.label_end_at, datetime)
@@ -658,13 +851,18 @@ def evaluate_split(
     for (start, end), contributors in sorted(intervals.items()):
         horizon = tuple(
             observation
-            for session, observation in sorted(observations_by_date.items())
-            if start <= session <= end
+            for observation in return_artifact.observations
+            if observation.period_start_session >= start
+            and observation.period_end_session <= end
         )
         if (
             not horizon
-            or horizon[0].session != start
-            or horizon[-1].session != end
+            or horizon[0].period_start_session != start
+            or horizon[-1].period_end_session != end
+            or any(
+                right.period_start_session != left.period_end_session
+                for left, right in zip(horizon, horizon[1:], strict=False)
+            )
         ):
             raise ValueError(
                 "ReturnArtifact does not cover the complete label horizon"

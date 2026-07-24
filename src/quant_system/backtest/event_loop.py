@@ -2025,6 +2025,8 @@ def run_controlled_stage(
     execution_portfolio = deepcopy(portfolio)
     execution_portfolio.costs = stress_case.transaction_cost_model()
     execution_portfolio.a_share_stamp_tax_schedule = False
+    if execution_portfolio.current_session is None:
+        execution_portfolio.start_session(signal_session)
     experimental = run_static_rebalance(
         execution_portfolio,
         calendar,
