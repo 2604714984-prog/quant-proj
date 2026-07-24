@@ -1,0 +1,117 @@
+{
+  "research_id": "US_TOP50_QUARTERLY_RESIDUAL_MOMENTUM_V1",
+  "date": "2026-07-23",
+  "market": "US_EQUITIES",
+  "phase": "DISCOVERY_PREREGISTRATION",
+  "status": "preregistered-not-executed",
+  "family_number": null,
+  "family_number_status": "NOT_ASSIGNED",
+  "lineage": {
+    "adaptive_follow_up_to": "US_TOP50_MARKET_RESIDUAL_MOMENTUM_V1",
+    "parent_result": "DISCOVERY_FAIL",
+    "parent_terminal_result_sha256": "ef37e668d377e2cd424607b014197638ac7f560517e3948fb218fd8aa4807340",
+    "parent_commit": "43c0028718cf4e2610af2fab4da968ab00096f97",
+    "parent_failure_trigger": "annual_turnover_above_frozen_limit",
+    "statistically_independent_of_parent": false,
+    "only_strategy_change": "quarterly_instead_of_monthly_formation_and_rebalance"
+  },
+  "research_question": "Does the previously frozen market-residual momentum signal retain its net return and risk advantage when formation and rebalancing are reduced from monthly to calendar-quarterly frequency?",
+  "null_hypothesis": "The quarterly strategy fails at least one frozen discovery gate relative to its same-date eligible-stock benchmark.",
+  "input": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "qualified_identity_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "qualified_stock_count": 46,
+    "price_table": "us_equity_research.us_daily_total_return_research",
+    "price_field": "adj_close",
+    "benchmark_price_symbol": "SPY",
+    "read_only": true
+  },
+  "universe": {
+    "scope": "the same 46 current Top-50-derived qualified US stocks frozen by the input identity",
+    "historical_point_in_time_membership": false,
+    "survivorship_bias": true,
+    "minimum_eligible_stocks_per_formation": 30,
+    "missing_or_conflicting_identity_action": "INPUT_BLOCKED_WITHOUT_OUTCOME_COMPUTATION"
+  },
+  "signal": {
+    "formation_months": [3, 6, 9, 12],
+    "formation_session": "last SPY trading session of each formation month",
+    "beta_model": "OLS of stock daily total return on intercept and SPY daily total return",
+    "beta_estimation_window": "504 daily returns ending t-253 inclusive; minimum 450 paired observations",
+    "momentum_window": "232 daily returns from t-252 through t-21 inclusive; minimum 220 paired observations",
+    "score": "mean residual divided by sample standard deviation of residuals, multiplied by sqrt(252)",
+    "invalid_score_action": "INELIGIBLE",
+    "ranking": "descending score with ascending symbol tie-break"
+  },
+  "portfolio": {
+    "selected_count": 10,
+    "retention_buffer_rank": 15,
+    "weighting": "equal 10 percent",
+    "benchmark": "equal weight all residual-score-eligible qualified stocks at the same formation",
+    "entry": "next SPY trading session close after formation",
+    "holding_period": "until the next calendar-quarterly execution close",
+    "cash_return": 0.0,
+    "long_only": true,
+    "current_holdings_output": false
+  },
+  "costs": {
+    "turnover_definition": "0.5 times the sum of absolute target-weight changes; initial entry excluded from annual turnover but charged costs",
+    "base_one_way_bps": 15,
+    "stress_one_way_bps": 30
+  },
+  "evaluation": {
+    "available_history": ["2018-02-01", "2026-07-22"],
+    "subperiods": [
+      ["2018-2019", "2018-01-01", "2019-12-31"],
+      ["2020-2022", "2020-01-01", "2022-12-31"],
+      ["2023-latest", "2023-01-01", "9999-12-31"]
+    ],
+    "minimum_complete_formations": 30,
+    "discovery_inference": "deterministic_gate_screen_without_p_values_or_alpha_spend",
+    "validation_alpha": "NOT_ALLOCATED_UNTIL_A_SEPARATE_PIT_VALIDATION_PREREGISTRATION"
+  },
+  "strict_gates": {
+    "strategy_cagr_exceeds_benchmark_by_strictly_more_than": 0.01,
+    "strategy_sharpe_exceeds_benchmark_by_at_least": 0.05,
+    "strategy_drawdown_shortfall_maximum": 0.05,
+    "stress_cost_cagr_excess_strictly_positive": true,
+    "annual_turnover_maximum": 1.25,
+    "positive_relative_subperiods_minimum": 2,
+    "eligible_stocks_minimum": 30,
+    "complete_formations_minimum": 30,
+    "all_gates_required": true
+  },
+  "run_control": {
+    "maximum_formal_runs": 1,
+    "outcome_access_before_contract_and_code_hash_freeze": false,
+    "parameter_variants": 1,
+    "rerun": false,
+    "post_outcome_repair": false,
+    "forbidden_changes": [
+      "change formation months",
+      "change beta or momentum windows",
+      "change selected count or retention buffer",
+      "change costs or gates",
+      "try monthly, bimonthly, semiannual, or annual alternatives",
+      "add volatility, quality, market-state, or fundamental filters"
+    ],
+    "failure_action": "PERMANENTLY_CLOSE_IDENTITY_WITHOUT_OPENING_PIT_VALIDATION",
+    "pass_action": "RECORD_DISCOVERY_PASS_BUT_KEEP_STRATEGY_CANDIDATE_FALSE_AND_PREREGISTER_PIT_VALIDATION"
+  },
+  "conditional_pit_validation": {
+    "start_only_after_discovery_pass": true,
+    "required_upgrade": "historical point-in-time Top-50 membership or an explicitly frozen reproducible PIT market-cap reconstruction",
+    "current_constituent_backfill_forbidden": true,
+    "survivor_and_delisting_coverage_required": true,
+    "separate_contract_and_alpha_allocation_required": true
+  },
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "recommendation": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false
+  }
+}
