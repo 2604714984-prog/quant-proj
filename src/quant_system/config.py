@@ -23,7 +23,9 @@ class DatabaseSettings:
 @dataclass(frozen=True)
 class WriterSettings:
     max_rows_per_batch: int
+    max_input_bytes: int
     lock_timeout_seconds: float
+    target_data_grades: tuple[tuple[str, str], ...]
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,7 @@ class AppSettings:
 
 DEFAULT_DATABASE_FILENAME = "quant_research.duckdb"
 DEFAULT_MAX_ROWS_PER_BATCH = 100_000
+DEFAULT_MAX_INPUT_BYTES = 64 * 1024 * 1024
 DEFAULT_LOCK_TIMEOUT_SECONDS = 5.0
 
 
@@ -44,7 +47,9 @@ def _built_in_settings() -> dict[str, Any]:
         "database": {"filename": DEFAULT_DATABASE_FILENAME},
         "writer": {
             "max_rows_per_batch": DEFAULT_MAX_ROWS_PER_BATCH,
+            "max_input_bytes": DEFAULT_MAX_INPUT_BYTES,
             "lock_timeout_seconds": DEFAULT_LOCK_TIMEOUT_SECONDS,
+            "target_data_grades": {"market.daily": "GENERIC_CAPTURE"},
         },
     }
 
@@ -84,22 +89,42 @@ def load_settings(
 
     database_raw = _table(raw, "database")
     writer_raw = _table(raw, "writer")
+    paths_raw = raw.get("paths", {})
+    if not isinstance(paths_raw, dict):
+        raise ConfigurationError("[paths] must be a table")
+    configured_data_root = paths_raw.get("data_root")
+    if configured_data_root is not None and not isinstance(configured_data_root, str):
+        raise ConfigurationError("paths.data_root must be a string")
     filename = database_raw.get("filename")
     max_rows = writer_raw.get("max_rows_per_batch")
+    max_input_bytes = writer_raw.get("max_input_bytes")
     lock_timeout = writer_raw.get("lock_timeout_seconds")
+    target_data_grades = writer_raw.get("target_data_grades", {})
 
     if not isinstance(filename, str):
         raise ConfigurationError("database.filename must be a string")
     if type(max_rows) is not int or not 1 <= max_rows <= 1_000_000:
         raise ConfigurationError("writer.max_rows_per_batch must be 1..1000000")
+    if type(max_input_bytes) is not int or not 1 <= max_input_bytes <= 1_073_741_824:
+        raise ConfigurationError("writer.max_input_bytes must be 1..1073741824")
     if (
         type(lock_timeout) not in {int, float}
         or not 0 <= float(lock_timeout) <= 300
     ):
         raise ConfigurationError("writer.lock_timeout_seconds must be 0..300")
+    if not isinstance(target_data_grades, dict) or any(
+        not isinstance(target, str)
+        or target.count(".") != 1
+        or grade not in {"GENERIC_CAPTURE", "PROVIDER_QUALIFIED_CAPTURE"}
+        for target, grade in target_data_grades.items()
+    ):
+        raise ConfigurationError(
+            "writer.target_data_grades must map schema.table to a supported grade"
+        )
 
     paths = AppPaths.discover(
         project_root=initial_paths.project_root,
+        data_root=(Path(configured_data_root) if configured_data_root else None),
         database_filename=filename,
         environ=env,
     )
@@ -108,7 +133,9 @@ def load_settings(
         database=DatabaseSettings(filename=filename),
         writer=WriterSettings(
             max_rows_per_batch=max_rows,
+            max_input_bytes=max_input_bytes,
             lock_timeout_seconds=float(lock_timeout),
+            target_data_grades=tuple(sorted(target_data_grades.items())),
         ),
         config_path=config_path,
     )

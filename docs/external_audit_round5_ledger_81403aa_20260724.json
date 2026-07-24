@@ -1,0 +1,251 @@
+{
+  "schema": "quant.external_audit_round5.v1",
+  "audit_date": "2026-07-24",
+  "repository": "2604714984-prog/quant-proj",
+  "pull_request": 126,
+  "base_head": "31329dbfd7b9bb1c184a13ee7fe2e60bd0a6ba14",
+  "previous_audited_head": "857b264883bbcdaf06e47f66df4f878dfea5c475",
+  "audited_code_head": "81403aa223ad6d11a7339fd970b65512bdc0a5c8",
+  "tested_merge_ref": "37da8ccaa028e5cd983054148217a836428f1cec",
+  "github_actions": {
+    "run_id": 30026809844,
+    "job_id": 89273236139,
+    "status": "completed",
+    "conclusion": "success",
+    "confirmed_steps": [
+      "wheel build",
+      "wheel install",
+      "pip check",
+      "quant info outside checkout",
+      "ruff",
+      "pytest"
+    ],
+    "reported_test_count": 270,
+    "test_count_independently_extracted": false,
+    "workflow_artifacts": []
+  },
+  "verdict": {
+    "external_audit_verdict": "REQUEST_CHANGES",
+    "architecture_cleanup_substantially_complete": true,
+    "prospective_tree_lightweight": true,
+    "prospective_tree_single_writer": true,
+    "provider_default_fail_closed": true,
+    "code_remediation_complete": false,
+    "only_external_evidence_remaining": false,
+    "historical_run_evidence_valid": false,
+    "return_artifact_real_path_reachable": false,
+    "multiplicity_family_real_path_valid": false,
+    "transformation_hermetic": false,
+    "end_to_end_research_replay": false,
+    "capital_grade_research_process": false
+  },
+  "authorization": {
+    "strategy_candidate_available": false,
+    "recommendation_authorized": false,
+    "paper_trading_authorized": false,
+    "live_trading_authorized": false,
+    "automatic_execution_authorized": false
+  },
+  "accepted_fixes": [
+    {
+      "id": "AC6-001",
+      "status": "ACCEPTED_CODE_FIX",
+      "summary": "Prospective tree removes active terminal archives, mutable results and direct DuckDB writers; whole-tree boundary tests were added."
+    },
+    {
+      "id": "AC6-002",
+      "status": "ACCEPTED_FAIL_CLOSED_FIX",
+      "summary": "Generic and transport capture paths cannot mint provider-qualified capability; authoritative provider path remains blocked."
+    },
+    {
+      "id": "AC6-003",
+      "status": "PARTIAL_FIX_ACCEPTED",
+      "summary": "Experimental and controlled result classes are separated and portfolio transition hashes are present, but controlled results remain manually forgeable."
+    },
+    {
+      "id": "AC6-004",
+      "status": "PARTIAL_FIX_ACCEPTED",
+      "summary": "Bundle v3 replays base/adverse execution and NAV, but does not replay research provenance or qualification."
+    }
+  ],
+  "finding_counts": {
+    "HIGH": 9,
+    "MEDIUM": 3,
+    "BLOCKED_EXTERNAL_EVIDENCE": 1
+  },
+  "findings": [
+    {
+      "id": "EX6-001",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "Real controlled runner results cannot enter ReturnArtifact because stage_session is the signal date while ReturnArtifact requires the execution date.",
+      "files": [
+        "src/quant_system/backtest/event_loop.py",
+        "src/quant_system/research/splits.py",
+        "tests/controlled_result_fixtures.py"
+      ],
+      "minimum_fix": "Bind signal_session and execution_session explicitly and prove execution is the next accepted session; replace synthetic positive-path fixtures with real runner chains."
+    },
+    {
+      "id": "EX6-002",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "ControlledStageResult and FinalRunReceipt can be forged with object.__new__ and module-private tokens.",
+      "files": [
+        "src/quant_system/backtest/event_loop.py",
+        "src/quant_system/research/experiments.py",
+        "tests/controlled_result_fixtures.py",
+        "tests/test_experiment_receipts.py"
+      ],
+      "minimum_fix": "Create canonical persisted stage receipts and recompute input identity, execution receipt chain, stage hash, portfolio continuity and NAV during verification."
+    },
+    {
+      "id": "EX6-003",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "FinalRun and Return evidence are not bound to the preregistered strategy, dataset, universe and costs.",
+      "files": [
+        "src/quant_system/research/experiments.py",
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_event_loop.py"
+      ],
+      "minimum_fix": "Add ordered per-stage TrialRunReceipts binding trial, decision artifact, dataset, universe, costs, run config and engine artifact."
+    },
+    {
+      "id": "EX6-004",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "Historical qualification StagePlan can differ from the StageContext used by run_candidate_rebalance.",
+      "files": [
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_event_loop.py"
+      ],
+      "minimum_fix": "Separate frozen historical evaluation from prospective qualified-stage execution and make each API bind its own explicit plan."
+    },
+    {
+      "id": "EX6-005",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "A real multi-trial multiplicity family cannot be represented because all trials are required to share one CandidateRunConfig SHA.",
+      "files": [
+        "src/quant_system/research/experiments.py",
+        "src/quant_system/backtest/event_loop.py",
+        "tests/test_experiment_receipts.py"
+      ],
+      "minimum_fix": "Separate FamilyContract from TrialConfig and anchor the ordered set of real trial configuration hashes."
+    },
+    {
+      "id": "EX6-006",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "Evaluated returns are matched only by observed date and are not bound to label_end_at horizon or selected contributor set.",
+      "files": [
+        "src/quant_system/research/splits.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "minimum_fix": "Bind start/end sessions, compounded net NAV return, contributor set and weights or aggregate receipt to each evaluated sample/horizon."
+    },
+    {
+      "id": "EX6-007",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "Experiment history can restart under another QUANT_DATA_ROOT and the ledger cannot reconstruct full events.",
+      "files": [
+        "src/quant_system/research/experiments.py"
+      ],
+      "minimum_fix": "Bind an immutable project/data-owner identity, persist full canonical event payloads, and provide a verified loader with globally stable holdout keys."
+    },
+    {
+      "id": "EX6-008",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "The Python audit-hook transformation runner is bypassable through ctypes/native system calls and is not hermetic.",
+      "files": [
+        "src/quant_system/research/identity.py",
+        "tests/test_research_splits_identity.py"
+      ],
+      "minimum_fix": "Use a controlled pure transform or OS-level isolation; do not extend the audit-hook as if it were a security boundary."
+    },
+    {
+      "id": "EX6-009",
+      "priority": "P0",
+      "severity": "HIGH",
+      "status": "OPEN",
+      "title": "Candidate bundle v3 replays execution but not strategy, dataset, historical return, statistics or experiment qualification.",
+      "files": [
+        "src/quant_system/backtest/event_loop.py"
+      ],
+      "minimum_fix": "Use a role-indexed artifact manifest and rebuild the complete research qualification chain before replaying execution."
+    },
+    {
+      "id": "EX6-010",
+      "priority": "P1",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "title": "Experiment ledger and lock lack O_NOFOLLOW, single-link and inode/path identity protection.",
+      "files": [
+        "src/quant_system/research/experiments.py"
+      ],
+      "minimum_fix": "Reuse the canonical writer pinned-file helper and post-commit ambiguity handling."
+    },
+    {
+      "id": "EX6-011",
+      "priority": "P1",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "title": "TerminalAction payment-date checks mix UTC dates with exchange-local session dates.",
+      "files": [
+        "src/quant_system/backtest/event_loop.py"
+      ],
+      "minimum_fix": "Validate payment chronology only in the exchange/session-aware path using the local session date."
+    },
+    {
+      "id": "EX6-012",
+      "priority": "P1",
+      "severity": "MEDIUM",
+      "status": "OPEN",
+      "title": "Final receipts and bundles do not bind the exact core-engine/package/runtime artifact.",
+      "files": [
+        "src/quant_system/research/experiments.py",
+        "src/quant_system/backtest/event_loop.py",
+        ".github/workflows/ci.yml"
+      ],
+      "minimum_fix": "Bind an exact source/package/runtime manifest and publish downloadable CI artifacts and hashes."
+    },
+    {
+      "id": "EA-001",
+      "priority": "EXTERNAL",
+      "severity": "BLOCKED_EXTERNAL_EVIDENCE",
+      "status": "BLOCKED_EXTERNAL_EVIDENCE",
+      "title": "A-share evidence-room Release still lacks an independent external reviewer receipt.",
+      "minimum_fix": "Independent read-only download, manifest verification, validation-command execution, reviewer identity and zero-write receipt."
+    }
+  ],
+  "codex_constraints": [
+    "Do not add managers, dispatchers, registries, ticket systems, proxy layers or a second writer.",
+    "Prioritize a real positive event-loop chain over more generic receipt abstractions.",
+    "Do not use tests/controlled_result_fixtures.py as evidence for the controlled candidate happy path.",
+    "Separate historical qualification from prospective execution.",
+    "Keep all authorization fields false until a later external audit.",
+    "Do not close real-data, authoritative-provider or EA-001 items with fixtures."
+  ],
+  "recommended_commit_order": [
+    "stage signal/execution semantics and real controlled chain",
+    "fully recomputable ControlledStageReceipt",
+    "TrialRun/FinalRun/ReturnArtifact binding",
+    "historical qualification versus prospective execution split",
+    "FamilyContract versus TrialConfig and full ledger payloads",
+    "label horizon and contributor binding",
+    "pure or OS-isolated transformation",
+    "full qualification replay bundle",
+    "ledger path identity, terminal local date and engine artifact binding"
+  ]
+}

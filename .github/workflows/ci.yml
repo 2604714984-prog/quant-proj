@@ -21,6 +21,15 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade 'pip==26.1.2'
       - run: python -m pip wheel --no-deps . --wheel-dir dist
+      - run: sha256sum dist/*.whl | tee dist/SHA256SUMS
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: quant-system-wheel-${{ github.sha }}
+          path: |
+            dist/*.whl
+            dist/SHA256SUMS
+          if-no-files-found: error
+          retention-days: 30
       - run: python -m pip install 'pytest==9.1.1' 'ruff==0.15.21' dist/*.whl
       - run: python -m pip check
       - run: cd "$RUNNER_TEMP" && quant info

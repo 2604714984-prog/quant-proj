@@ -16,29 +16,53 @@ from quant_system.markets.common import MarketDataError
 def test_suspension_and_locked_limits_reject_only_the_blocked_side() -> None:
     assert decide_fill(
         "buy",
-        AShareBar(10.0, data_qualified=True, is_suspended=True),
+        AShareBar(10.0, data_qualified=True, is_suspended=True, limit_regime="no_limit"),
     ).reason == "suspended"
     assert decide_fill(
         "buy",
-        AShareBar(10.0, data_qualified=True, up_limit=10.0),
+        AShareBar(
+            10.0,
+            data_qualified=True,
+            up_limit=10.0,
+            down_limit=9.0,
+            limit_regime="applies",
+        ),
     ).reason == (
         "limit_up_buy_rejected"
     )
     assert decide_fill(
         "sell",
-        AShareBar(9.0, data_qualified=True, down_limit=9.0),
+        AShareBar(
+            9.0,
+            data_qualified=True,
+            up_limit=10.0,
+            down_limit=9.0,
+            limit_regime="applies",
+        ),
     ).reason == (
         "limit_down_sell_rejected"
     )
 
     allowed_buy = decide_fill(
         "buy",
-        AShareBar(9.9, data_qualified=True, up_limit=10.0),
+        AShareBar(
+            9.9,
+            data_qualified=True,
+            up_limit=10.0,
+            down_limit=9.0,
+            limit_regime="applies",
+        ),
         slippage_bps=5.0,
     )
     allowed_sell = decide_fill(
         "sell",
-        AShareBar(9.1, data_qualified=True, down_limit=9.0),
+        AShareBar(
+            9.1,
+            data_qualified=True,
+            up_limit=10.0,
+            down_limit=9.0,
+            limit_regime="applies",
+        ),
     )
     assert allowed_buy.filled is True
     assert allowed_buy.price == pytest.approx(9.90495)
@@ -49,18 +73,33 @@ def test_invalid_market_inputs_fail_closed() -> None:
     with pytest.raises(MarketDataError, match="explicitly complete"):
         decide_fill("buy", AShareBar(10.0))
     with pytest.raises(MarketDataError, match="positive finite open"):
-        decide_fill("buy", AShareBar(None, data_qualified=True))
+        decide_fill("buy", AShareBar(None, data_qualified=True, limit_regime="no_limit"))
     with pytest.raises(MarketDataError, match="positive finite open"):
-        decide_fill("sell", AShareBar(float("nan"), data_qualified=True))
+        decide_fill(
+            "sell",
+            AShareBar(float("nan"), data_qualified=True, limit_regime="no_limit"),
+        )
     with pytest.raises(MarketDataError, match="up_limit"):
         decide_fill(
             "buy",
-            AShareBar(10.0, data_qualified=True, up_limit=float("nan")),
+            AShareBar(
+                10.0,
+                data_qualified=True,
+                up_limit=float("nan"),
+                down_limit=9.0,
+                limit_regime="applies",
+            ),
         )
     with pytest.raises(MarketDataError, match="exceeds"):
         decide_fill(
             "buy",
-            AShareBar(10.1, data_qualified=True, up_limit=10.0),
+            AShareBar(
+                10.1,
+                data_qualified=True,
+                up_limit=10.0,
+                down_limit=9.0,
+                limit_regime="applies",
+            ),
         )
     with pytest.raises(MarketDataError, match="down_limit cannot exceed"):
         decide_fill(
@@ -70,16 +109,41 @@ def test_invalid_market_inputs_fail_closed() -> None:
                 down_limit=11.0,
                 up_limit=10.0,
                 data_qualified=True,
+                limit_regime="applies",
             ),
         )
     with pytest.raises(ValueError, match="multiple of 100"):
         require_board_lot(50)
 
 
+def test_limit_regime_is_explicit_and_complete() -> None:
+    with pytest.raises(MarketDataError, match="explicit limit_regime"):
+        decide_fill("buy", AShareBar(10.0, data_qualified=True))
+    with pytest.raises(MarketDataError, match="requires both limit fields"):
+        decide_fill(
+            "buy",
+            AShareBar(
+                10.0,
+                data_qualified=True,
+                up_limit=11.0,
+                limit_regime="applies",
+            ),
+        )
+    assert decide_fill(
+        "buy",
+        AShareBar(10.0, data_qualified=True, limit_regime="no_limit"),
+    ).filled
+
+
 def test_suspended_bar_is_an_explicit_explanation_for_missing_open() -> None:
     decision = decide_fill(
         "sell",
-        AShareBar(None, data_qualified=True, is_suspended=True),
+        AShareBar(
+            None,
+            data_qualified=True,
+            is_suspended=True,
+            limit_regime="no_limit",
+        ),
     )
     assert (decision.filled, decision.reason) == (False, "suspended")
 
@@ -87,12 +151,24 @@ def test_suspended_bar_is_an_explicit_explanation_for_missing_open() -> None:
 def test_slippage_crossing_qualified_daily_limits_is_an_unfilled_order() -> None:
     buy = decide_fill(
         "buy",
-        AShareBar(9.99, up_limit=10.0, data_qualified=True),
+        AShareBar(
+            9.99,
+            up_limit=10.0,
+            down_limit=9.0,
+            data_qualified=True,
+            limit_regime="applies",
+        ),
         slippage_bps=20.0,
     )
     sell = decide_fill(
         "sell",
-        AShareBar(9.01, down_limit=9.0, data_qualified=True),
+        AShareBar(
+            9.01,
+            up_limit=10.0,
+            down_limit=9.0,
+            data_qualified=True,
+            limit_regime="applies",
+        ),
         slippage_bps=20.0,
     )
 
@@ -103,12 +179,24 @@ def test_slippage_crossing_qualified_daily_limits_is_an_unfilled_order() -> None
 def test_slippage_inside_limit_tolerance_remains_fillable_without_capping() -> None:
     buy = decide_fill(
         "buy",
-        AShareBar(9.9989, up_limit=10.0, data_qualified=True),
+        AShareBar(
+            9.9989,
+            up_limit=10.0,
+            down_limit=9.0,
+            data_qualified=True,
+            limit_regime="applies",
+        ),
         slippage_bps=1.2,
     )
     sell = decide_fill(
         "sell",
-        AShareBar(9.0011, down_limit=9.0, data_qualified=True),
+        AShareBar(
+            9.0011,
+            up_limit=10.0,
+            down_limit=9.0,
+            data_qualified=True,
+            limit_regime="applies",
+        ),
         slippage_bps=1.3,
     )
 
@@ -129,7 +217,7 @@ def test_slippage_nonfinite_or_nonpositive_result_fails_closed(
     with pytest.raises(MarketDataError, match="slippage-adjusted price"):
         decide_fill(
             side,
-            AShareBar(price, data_qualified=True),
+            AShareBar(price, data_qualified=True, limit_regime="no_limit"),
             slippage_bps=9999.0,
         )
 

@@ -4,10 +4,11 @@ from __future__ import annotations
 
 from collections import defaultdict
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import date, datetime
 import hashlib
 import json
+from pathlib import Path
 from typing import Literal
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
@@ -15,7 +16,11 @@ from quant_system.data import (
     AcceptedSession,
     CalendarIdentity,
     SourceIdentity,
+    TypedObservationReceipt,
     calendar_identity_sha256,
+    capture_file_bytes,
+    capture_file_digest,
+    require_trusted_source,
     select_source_revision,
 )
 from quant_system.data.source_identity import require_sha256
@@ -39,6 +44,7 @@ US_REQUIRED_STATUS_KINDS: tuple[StatusKind, ...] = (
     "listed",
     "delisted",
 )
+_UNIVERSE_MATERIALIZATION_TOKEN = object()
 
 
 @dataclass(frozen=True)
@@ -51,6 +57,7 @@ class StatusEvidence:
     effective_to: date | None
     exchange_timezone: str
     source: SourceIdentity
+    observation_receipt: TypedObservationReceipt | None = None
 
     def __post_init__(self) -> None:
         require_nonempty_text(self.status_id, "status_id")
@@ -98,6 +105,9 @@ class UniverseSnapshotIdentity:
     inclusion_rule_sha256: str
     calendar_identity_sha256: str
     source_identity: SourceIdentity
+    source_partition_sha256: str | None = None
+    materialization_sha256: str | None = None
+    observation_receipt: TypedObservationReceipt | None = None
 
     def __post_init__(self) -> None:
         if self.market not in {"a_share", "us"}:
@@ -123,6 +133,253 @@ class UniverseSnapshotIdentity:
             object.__setattr__(self, field_name, digest)
         if not isinstance(self.source_identity, SourceIdentity):
             raise MarketDataError("universe source_identity must be a SourceIdentity")
+        materialization_fields = (
+            self.source_partition_sha256,
+            self.materialization_sha256,
+        )
+        if any(value is not None for value in materialization_fields):
+            if not all(value is not None for value in materialization_fields):
+                raise MarketDataError(
+                    "source_partition_sha256 and materialization_sha256 must be supplied together"
+                )
+            for field_name in ("source_partition_sha256", "materialization_sha256"):
+                try:
+                    digest = require_sha256(getattr(self, field_name), field_name)
+                except ValueError as exc:
+                    raise MarketDataError(str(exc)) from exc
+                object.__setattr__(self, field_name, digest)
+
+
+@dataclass(frozen=True)
+class UniverseMaterializationEntry:
+    """One explicit inclusion or exclusion from the complete source partition."""
+
+    symbol: str
+    included: bool
+    exclusion_reason: str | None
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "symbol", require_nonempty_text(self.symbol, "symbol"))
+        if type(self.included) is not bool:
+            raise MarketDataError("included must be boolean")
+        if self.included:
+            if self.exclusion_reason is not None:
+                raise MarketDataError("included symbols cannot have an exclusion reason")
+        else:
+            object.__setattr__(
+                self,
+                "exclusion_reason",
+                require_nonempty_text(self.exclusion_reason, "exclusion_reason"),
+            )
+
+
+@dataclass(frozen=True)
+class UniverseMaterialization:
+    """Captured complete-partition materialization accepted by the candidate API."""
+
+    entries: tuple[UniverseMaterializationEntry, ...]
+    snapshot: UniverseSnapshotIdentity
+    source_partition_sha256: str
+    inclusion_rule_sha256: str
+    source_lifecycle_coverage_sha256: str
+    materialization_sha256: str
+    _source_partition_path: Path = field(repr=False, compare=False, hash=False)
+    _inclusion_rule_path: Path = field(repr=False, compare=False, hash=False)
+    _materialization_token: object | None = field(
+        default=None,
+        repr=False,
+        compare=False,
+        hash=False,
+    )
+
+    def __post_init__(self) -> None:
+        if self._materialization_token is not _UNIVERSE_MATERIALIZATION_TOKEN:
+            raise MarketDataError(
+                "UniverseMaterialization must come from materialize_universe_partition"
+            )
+        if not self.entries or tuple(sorted(entry.symbol for entry in self.entries)) != tuple(
+            entry.symbol for entry in self.entries
+        ):
+            raise MarketDataError("materialization entries must be nonempty and sorted")
+        if len({entry.symbol for entry in self.entries}) != len(self.entries):
+            raise MarketDataError("materialization entries must be unique")
+        require_sha256(self.source_partition_sha256, "source_partition_sha256")
+        require_sha256(self.inclusion_rule_sha256, "inclusion_rule_sha256")
+        require_sha256(
+            self.source_lifecycle_coverage_sha256,
+            "source_lifecycle_coverage_sha256",
+        )
+        require_sha256(self.materialization_sha256, "materialization_sha256")
+        if self.snapshot.source_partition_sha256 != self.source_partition_sha256:
+            raise MarketDataError("snapshot source partition identity mismatch")
+        if self.snapshot.inclusion_rule_sha256 != self.inclusion_rule_sha256:
+            raise MarketDataError("snapshot inclusion rule identity mismatch")
+        if self.snapshot.materialization_sha256 != self.materialization_sha256:
+            raise MarketDataError("snapshot materialization identity mismatch")
+        expected = hashlib.sha256(_materialization_payload(self)).hexdigest()
+        if expected != self.materialization_sha256:
+            raise MarketDataError("materialization receipt does not match its contents")
+
+    @property
+    def members(self) -> tuple[str, ...]:
+        return tuple(entry.symbol for entry in self.entries if entry.included)
+
+    def verify_current_bytes(self) -> None:
+        if capture_file_digest(self._source_partition_path)[0] != self.source_partition_sha256:
+            raise MarketDataError("source partition no longer matches captured bytes")
+        if capture_file_digest(self._inclusion_rule_path)[0] != self.inclusion_rule_sha256:
+            raise MarketDataError("inclusion rule no longer matches captured bytes")
+
+
+def _materialization_payload(materialization: UniverseMaterialization) -> bytes:
+    payload = {
+        "calendar_identity_sha256": materialization.snapshot.calendar_identity_sha256,
+        "effective_session": materialization.snapshot.effective_session.isoformat(),
+        "entries": tuple(
+            {
+                "exclusion_reason": entry.exclusion_reason,
+                "included": entry.included,
+                "symbol": entry.symbol,
+            }
+            for entry in materialization.entries
+        ),
+        "inclusion_rule_sha256": materialization.inclusion_rule_sha256,
+        "lifecycle_coverage_sha256": materialization.source_lifecycle_coverage_sha256,
+        "market": materialization.snapshot.market,
+        "source_capture_receipt_sha256": (
+            materialization.snapshot.source_identity.capture_receipt_sha256
+        ),
+        "source_partition_sha256": materialization.source_partition_sha256,
+        "version": 1,
+    }
+    return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def materialize_universe_partition(
+    partition_path: Path,
+    *,
+    source_identity: SourceIdentity,
+    symbol_field: str,
+    records_by_symbol: Mapping[str, tuple[StatusEvidence, ...]],
+    inclusion_rule_path: Path,
+    market: UniverseMarket,
+    calendar_identity: CalendarIdentity,
+    session: AcceptedSession,
+    decision_at: datetime,
+) -> UniverseMaterialization:
+    """Execute one frozen lifecycle rule across a complete captured partition."""
+
+    cutoff = require_aware_datetime(decision_at, "decision_at")
+    if not isinstance(calendar_identity, CalendarIdentity):
+        raise MarketDataError("calendar_identity must be a CalendarIdentity")
+    if not isinstance(session, AcceptedSession):
+        raise MarketDataError("session must be an AcceptedSession")
+    try:
+        require_trusted_source(source_identity)
+    except ValueError as exc:
+        raise MarketDataError("universe partition requires a trusted source capture") from exc
+    if source_identity.available_at > cutoff:
+        raise MarketDataError("universe partition was unavailable at decision_at")
+    field_name = require_nonempty_text(symbol_field, "symbol_field")
+    raw = capture_file_bytes(partition_path)
+    source_sha = hashlib.sha256(raw).hexdigest()
+    if source_sha != source_identity.content_sha256:
+        raise MarketDataError("source partition bytes do not match source identity")
+    if len(raw) != source_identity.capture_byte_count:
+        raise MarketDataError("source partition byte count does not match capture receipt")
+    try:
+        decoded = json.loads(raw)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise MarketDataError("source partition must be UTF-8 JSON") from exc
+    if not isinstance(decoded, list) or not decoded:
+        raise MarketDataError("source partition must be a nonempty JSON array")
+    symbols: list[str] = []
+    for row in decoded:
+        if not isinstance(row, dict) or field_name not in row:
+            raise MarketDataError("every source partition row must contain symbol_field")
+        symbols.append(require_nonempty_text(row[field_name], "source symbol"))
+    source_symbols = tuple(sorted(symbols))
+    if len(set(source_symbols)) != len(source_symbols):
+        raise MarketDataError("source partition symbols must be unique")
+    if tuple(sorted(records_by_symbol)) != source_symbols:
+        raise MarketDataError("lifecycle records must cover every source partition symbol")
+    rule_bytes = capture_file_bytes(inclusion_rule_path)
+    try:
+        rule = json.loads(rule_bytes.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise MarketDataError("inclusion rule must be UTF-8 JSON") from exc
+    if rule != {"include": "lifecycle_eligible", "version": 1}:
+        raise MarketDataError("unsupported controlled universe inclusion rule")
+    evaluated: dict[str, UniverseDecision] = {}
+    for symbol in source_symbols:
+        evaluated[symbol] = evaluate_universe(
+            symbol,
+            session,
+            cutoff,
+            records_by_symbol[symbol],
+            market=market,
+        )
+    entries = tuple(
+        UniverseMaterializationEntry(
+            symbol,
+            evaluated[symbol].eligible,
+            None if evaluated[symbol].eligible else ",".join(evaluated[symbol].reasons),
+        )
+        for symbol in source_symbols
+    )
+    members = tuple(entry.symbol for entry in entries if entry.included)
+    if not members:
+        raise MarketDataError("materialized universe must include at least one symbol")
+    lifecycle_sha = lifecycle_coverage_sha256(
+        source_symbols,
+        session,
+        cutoff,
+        records_by_symbol,
+        market=market,
+    )
+    rule_sha = hashlib.sha256(rule_bytes).hexdigest()
+    provisional = object.__new__(UniverseMaterialization)
+    provisional_values = {
+        "entries": entries,
+        "source_partition_sha256": source_sha,
+        "inclusion_rule_sha256": rule_sha,
+        "source_lifecycle_coverage_sha256": lifecycle_sha,
+    }
+    snapshot = UniverseSnapshotIdentity(
+        market=market,
+        exchange_id=calendar_identity.exchange_id,
+        effective_session=session.session_date,
+        member_count=len(members),
+        ordered_members_sha256=ordered_members_sha256(members),
+        lifecycle_coverage_sha256=lifecycle_coverage_sha256(
+            members,
+            session,
+            cutoff,
+            {symbol: records_by_symbol[symbol] for symbol in members},
+            market=market,
+        ),
+        inclusion_rule_sha256=rule_sha,
+        calendar_identity_sha256=calendar_identity_sha256(calendar_identity),
+        source_identity=source_identity,
+        source_partition_sha256=source_sha,
+        materialization_sha256="0" * 64,
+    )
+    object.__setattr__(provisional, "snapshot", snapshot)
+    for field_name, value in provisional_values.items():
+        object.__setattr__(provisional, field_name, value)
+    materialization_sha = hashlib.sha256(_materialization_payload(provisional)).hexdigest()
+    snapshot = replace(snapshot, materialization_sha256=materialization_sha)
+    return UniverseMaterialization(
+        entries=entries,
+        snapshot=snapshot,
+        source_partition_sha256=source_sha,
+        inclusion_rule_sha256=rule_sha,
+        source_lifecycle_coverage_sha256=lifecycle_sha,
+        materialization_sha256=materialization_sha,
+        _source_partition_path=partition_path,
+        _inclusion_rule_path=inclusion_rule_path,
+        _materialization_token=_UNIVERSE_MATERIALIZATION_TOKEN,
+    )
 
 
 def ordered_members_sha256(members: tuple[str, ...]) -> str:
@@ -378,5 +635,11 @@ def _source_payload(source: SourceIdentity) -> dict[str, object]:
         "available_at": source.available_at.isoformat(),
         "retrieved_at": source.retrieved_at.isoformat(),
         "revision_id": source.revision_id,
+        "source_family_id": source.source_family_id,
+        "provider_id": source.provider_id,
+        "subject_id": source.subject_id,
         "supersedes_revision_id": source.supersedes_revision_id,
+        "capture_receipt_sha256": source.capture_receipt_sha256,
+        "publication_evidence_sha256": source.publication_evidence_sha256,
+        "url_migration_receipt_sha256": source.url_migration_receipt_sha256,
     }

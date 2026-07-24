@@ -25,6 +25,51 @@ def _sha256(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _controlled_args(tmp_path: Path) -> list[str]:
+    publication = tmp_path / "publication.txt"
+    publication.write_text("published fixture", encoding="utf-8")
+    return [
+        "--publication-evidence",
+        str(publication),
+        "--source-url",
+        "https://example.test/rows",
+        "--available-at",
+        "2026-07-14T00:00:00+00:00",
+        "--retrieved-at",
+        "2026-07-14T00:01:00+00:00",
+        "--revision-id",
+        "rows-v1",
+        "--source-family-id",
+        "market-daily",
+        "--provider-id",
+        "fixture-provider",
+        "--subject-id",
+        "market.daily",
+        "--contract-version",
+        "market.daily.v1",
+    ]
+
+
+def _limited_config(tmp_path: Path, *, max_rows: int, max_bytes: int) -> Path:
+    config = tmp_path / "settings.toml"
+    config.write_text(
+        "\n".join(
+            (
+                "[database]",
+                'filename = "test.duckdb"',
+                "[writer]",
+                f"max_rows_per_batch = {max_rows}",
+                f"max_input_bytes = {max_bytes}",
+                "lock_timeout_seconds = 0",
+                "[writer.target_data_grades]",
+                '"market.daily" = "GENERIC_CAPTURE"',
+            )
+        ),
+        encoding="utf-8",
+    )
+    return config
+
+
 def test_append_cli_is_dry_run_by_default(
     tmp_path: Path,
     capsys,
@@ -67,6 +112,7 @@ def test_append_cli_is_dry_run_by_default(
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "DRY_RUN"
     assert payload["writes"] is False
+    assert payload["data_root_binding"] == "EXPLICIT_DATA_ROOT"
     with duckdb.connect(str(db), read_only=True) as connection:
         assert connection.execute("SELECT count(*) FROM market.daily").fetchone() == (0,)
         assert connection.execute(
@@ -108,6 +154,7 @@ def test_append_cli_requires_execute_and_then_writes(
             "batch-001",
             "--source-sha256",
             _sha256(rows),
+            *_controlled_args(tmp_path),
             "--execute",
         ]
     )
@@ -116,6 +163,51 @@ def test_append_cli_requires_execute_and_then_writes(
     payload = json.loads(capsys.readouterr().out)
     assert payload["status"] == "COMPLETED"
     assert payload["inserted_rows"] == 1
+    with duckdb.connect(str(db), read_only=True) as connection:
+        code_sha, config_sha = connection.execute(
+            "SELECT code_sha256, config_sha256 FROM _quant_meta.ingest_runs"
+        ).fetchone()
+    assert code_sha == cli_module._package_code_sha256()
+    assert config_sha == cli_module._settings_sha256(
+        cli_module.load_settings(None)
+    )
+
+
+def test_unbound_data_root_is_visible_and_execute_fails_before_write(
+    tmp_path: Path,
+    capsys,
+    monkeypatch,
+) -> None:
+    project = tmp_path / "installed-package-anchor"
+    project.mkdir()
+    rows = tmp_path / "rows.jsonl"
+    rows.write_text('{"symbol":"AAA","trade_date":"2026-07-14","close":10}\n')
+    monkeypatch.setenv("QUANT_PROJECT_ROOT", str(project))
+    monkeypatch.delenv("QUANT_DATA_ROOT", raising=False)
+    common = [
+        "data",
+        "append",
+        "--schema",
+        "market",
+        "--table",
+        "daily",
+        "--keys",
+        "symbol,trade_date",
+        "--input",
+        str(rows),
+        "--batch-id",
+        "batch-unbound",
+        "--source-sha256",
+        _sha256(rows),
+    ]
+
+    assert main(common) == 0
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["status"] == "DRY_RUN"
+    assert payload["data_root_binding"] == "UNBOUND_DATA_ROOT"
+    with pytest.raises(ValueError, match="requires QUANT_DATA_ROOT"):
+        main([*common, "--execute"])
+    assert not (tmp_path / "quant-data" / "quant_research.duckdb").exists()
 
 
 def test_append_cli_rejects_source_hash_mismatch(
@@ -149,6 +241,72 @@ def test_append_cli_rejects_source_hash_mismatch(
                 "a" * 64,
             ]
         )
+
+
+@pytest.mark.parametrize(
+    ("suffix", "contents", "max_rows", "max_bytes", "message"),
+    [
+        (".json", '[{"value":"' + "x" * 1024 + '"}]', 10, 128, "byte limit"),
+        (".jsonl", '{"value":1}\n{"value":2}\n{"value":3}\n', 2, 1024, "row limit"),
+    ],
+)
+def test_append_cli_limits_input_before_any_database_write(
+    tmp_path: Path,
+    monkeypatch,
+    suffix: str,
+    contents: str,
+    max_rows: int,
+    max_bytes: int,
+    message: str,
+) -> None:
+    db = _database(tmp_path / "test.duckdb")
+    before = _sha256(db)
+    rows = tmp_path / f"rows{suffix}"
+    rows.write_text(contents, encoding="utf-8")
+    config = _limited_config(tmp_path, max_rows=max_rows, max_bytes=max_bytes)
+    project = Path(__file__).resolve().parents[1]
+    monkeypatch.setenv("QUANT_PROJECT_ROOT", str(project))
+    monkeypatch.setenv("QUANT_DATA_ROOT", str(tmp_path))
+    real_read = cli_module.os.read
+
+    def bounded_read(descriptor: int, size: int) -> bytes:
+        assert size <= 64 * 1024
+        return real_read(descriptor, size)
+
+    monkeypatch.setattr(cli_module.os, "read", bounded_read)
+    with pytest.raises(ValueError, match=message):
+        main(
+            [
+                "--config",
+                str(config),
+                "data",
+                "append",
+                "--db",
+                str(db),
+                "--schema",
+                "market",
+                "--table",
+                "daily",
+                "--keys",
+                "symbol,trade_date",
+                "--input",
+                str(rows),
+                "--batch-id",
+                "batch-limit",
+                "--source-sha256",
+                _sha256(rows),
+                *_controlled_args(tmp_path),
+                "--execute",
+            ]
+        )
+
+    assert _sha256(db) == before
+    with duckdb.connect(str(db), read_only=True) as connection:
+        assert connection.execute("SELECT count(*) FROM market.daily").fetchone() == (0,)
+        assert connection.execute(
+            "SELECT count(*) FROM information_schema.tables "
+            "WHERE table_schema='_quant_meta'"
+        ).fetchone() == (0,)
 
 
 def test_append_cli_rejects_duplicate_json_keys(
@@ -285,6 +443,7 @@ def test_append_cli_rejects_hardlink_boundary_alias(
                 "batch-001",
                 "--source-sha256",
                 _sha256(rows),
+                *_controlled_args(tmp_path),
                 "--execute",
             ]
         )

@@ -10,7 +10,12 @@ import hashlib
 import json
 from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
-from .source_identity import SourceIdentity, require_aware_utc, require_sha256
+from .source_identity import (
+    SourceIdentity,
+    TypedObservationReceipt,
+    require_aware_utc,
+    require_sha256,
+)
 
 
 class CalendarIdentityError(ValueError):
@@ -80,6 +85,7 @@ class AcceptedSession:
     exchange_timezone: str
     is_early_close: bool = False
     exchange_id: str = ""
+    observation_receipt: TypedObservationReceipt | None = None
 
     def __post_init__(self) -> None:
         if type(self.session_date) is not date:
@@ -215,6 +221,10 @@ class AcceptedSessionCalendar:
         return self._dates
 
     @property
+    def sessions(self) -> tuple[AcceptedSession, ...]:
+        return self._sessions
+
+    @property
     def exchange_timezone(self) -> str:
         return self._exchange_timezone
 
@@ -286,5 +296,11 @@ def _source_payload(source: SourceIdentity) -> dict[str, object]:
         "available_at": source.available_at.isoformat(),
         "retrieved_at": source.retrieved_at.isoformat(),
         "revision_id": source.revision_id,
+        "source_family_id": source.source_family_id,
+        "provider_id": source.provider_id,
+        "subject_id": source.subject_id,
         "supersedes_revision_id": source.supersedes_revision_id,
+        "capture_receipt_sha256": source.capture_receipt_sha256,
+        "publication_evidence_sha256": source.publication_evidence_sha256,
+        "url_migration_receipt_sha256": source.url_migration_receipt_sha256,
     }

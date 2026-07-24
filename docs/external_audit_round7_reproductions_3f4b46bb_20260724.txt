@@ -1,0 +1,40 @@
+PR #126 Round 7 independent reproductions
+Audited code head: 3f4b46bbd3ff28bb8f28a4377a6bf4f91d566824
+Exact CI wheel SHA-256: 75ea5db7675deb258cbe88c5459d3fe254ad6390283732885f8beb02eaa93f13
+Audit date: 2026-07-24
+
+Execution boundary:
+- no project/production database writes
+- no market-data provider requests
+- exact CI wheel used
+- minimal DuckDB import stub only; no DuckDB API calls
+
+Accepted negative controls:
+BAD_STRATEGY_REJECTED ValueError historical stage receipts differ from TrialConfig
+BAD_COST_PAYLOAD_REJECTED ValueError controlled receipt cost payload differs from its identity
+
+Residual findings:
+
+R7-001 cost semantics
+GROSS_ONLY_WITH_MINIMUM_ACCEPTED True 5.0 5.0
+ADVERSE_STAGE_BETTER_THAN_BASE 99900.0 99980.2 True
+BASE_COST_GROSS_1000 100.0
+ADVERSE_COST_GROSS_1000 0.2
+
+R7-002 historical run controls
+MAX_POSITIONS_IMPACT_ACCEPTED 1 ('AAA', 'BBB') 0.017573437412390598
+ADVERSE_AS_BASE_CONTRACT_ACCEPTED 07329f806fd3dabc7ee543fe299bbb4b440f6ee3eb6ffdd5f2cfd1d02ba4eaf8
+
+R7-003 feature snapshot lineage
+ARBITRARY_FEATURE_SNAPSHOT_ACCEPTED_FOR_DATASET
+
+R7-004 transformation isolation and join identity
+KEY_ONLY_LABEL_LEAK_ACCEPTED True future_label=0.75
+LATE_FEATURE_SOURCE_ACCEPTED_AS_PIT source_available=2021 observed=2020 row_pit_enforced=True
+WRONG_ENTITY_LABEL_JOIN_ACCEPTED final_entity=AAA raw_label_entity=BBB
+
+R7-005 portfolio evaluation unit
+TOPN_PORTFOLIO_EVALUATION_REJECTED ValueError ReturnArtifact contributor set differs from selected samples ('AAA',)
+
+Interpretation:
+These are research-correctness reproductions, not same-process security attacks. They directly affect cost stress, historical execution policy, feature causality, label ownership, or the ability to evaluate ordinary top-N cross-sectional strategies.

@@ -79,6 +79,8 @@ def test_terminal_delisting_recovery_is_settled_once_and_position_is_removed() -
         event_id="delisting-DELISTED-20260713-v1",
         action_type="delisting",
         recovery_per_share=2.5,
+        payment_date=trade_date,
+        accepted_settlement_sessions=(),
     )
 
     assert recovery == pytest.approx(25.0)
@@ -91,8 +93,36 @@ def test_terminal_delisting_recovery_is_settled_once_and_position_is_removed() -
             event_id="delisting-DELISTED-20260713-v1",
             action_type="delisting",
             recovery_per_share=2.5,
+            payment_date=trade_date,
+            accepted_settlement_sessions=(),
         )
     assert portfolio.available_cash == pytest.approx(925.0)
+
+
+def test_terminal_recovery_remains_pending_until_payment_session() -> None:
+    portfolio = Portfolio.us(100.0, costs=TransactionCostModel())
+    effective = date(2026, 7, 13)
+    payment = date(2026, 7, 14)
+    portfolio.start_session(effective)
+    portfolio.buy("DELISTED", 10, 10.0, effective)
+
+    recovery = portfolio.apply_terminal_action(
+        "DELISTED",
+        event_id="delisting-DELISTED-pending-v1",
+        action_type="delisting",
+        recovery_per_share=2.5,
+        payment_date=payment,
+        accepted_settlement_sessions=(payment,),
+    )
+
+    assert recovery == pytest.approx(25.0)
+    assert portfolio.available_cash == 0.0
+    assert portfolio.pending_cash_total == pytest.approx(25.0)
+    with pytest.raises(ValueError, match="settled cash"):
+        portfolio.buy("OTHER", 1, 10.0, effective)
+    portfolio.start_session(payment)
+    portfolio.buy("OTHER", 1, 10.0, payment)
+    assert portfolio.available_cash == pytest.approx(15.0)
 
 
 def test_zero_terminal_recovery_closes_position_without_a_zero_nav_mark() -> None:
@@ -106,6 +136,8 @@ def test_zero_terminal_recovery_closes_position_without_a_zero_nav_mark() -> Non
         event_id="delisting-ZERO-20260713-v1",
         action_type="delisting",
         recovery_per_share=0.0,
+        payment_date=trade_date,
+        accepted_settlement_sessions=(),
     ) == 0.0
     assert portfolio.positions == {}
     assert portfolio.nav({}) == pytest.approx(90.0)
@@ -124,6 +156,8 @@ def test_invalid_terminal_recovery_fails_before_mutation(bad_recovery: float) ->
             event_id="terminal-ABC-20260713-v1",
             action_type="delisting",
             recovery_per_share=bad_recovery,
+            payment_date=trade_date,
+            accepted_settlement_sessions=(),
         )
 
     assert portfolio.available_cash == pytest.approx(90.0)
@@ -145,6 +179,8 @@ def test_stock_terminal_action_without_successor_mapping_fails_closed(
             event_id=f"{action_type}-OLD-20260713-v1",
             action_type=action_type,
             recovery_per_share=0.0,
+            payment_date=trade_date,
+            accepted_settlement_sessions=(),
         )
 
     assert portfolio.available_cash == pytest.approx(80.0)
@@ -162,6 +198,8 @@ def test_symbol_change_mapping_replaces_position_and_requires_a_fresh_mark() -> 
         event_id="symbol-change-OLD-NEW-20260713-v1",
         action_type="symbol_change",
         recovery_per_share=1.0,
+        payment_date=trade_date,
+        accepted_settlement_sessions=(),
         successor_symbol="NEW",
         successor_shares_per_share=0.5,
     )

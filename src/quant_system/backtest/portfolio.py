@@ -363,8 +363,6 @@ class Portfolio:
     ) -> float:
         """Freeze ex-date entitlement and settle one cash action exactly once."""
 
-        if not self.us_cash_settlement:
-            raise ValueError("cash distributions are supported only for US portfolios")
         self._require_stable_identity(symbol, "symbol")
         self._require_stable_identity(event_id, "event_id")
         if event_id in self._applied_distribution_action_ids:
@@ -398,19 +396,18 @@ class Portfolio:
         event_id: str,
         action_type: str,
         recovery_per_share: float,
+        payment_date: date,
+        accepted_settlement_sessions: tuple[date, ...],
         successor_symbol: str | None = None,
         successor_shares_per_share: float | None = None,
     ) -> float:
-        """Settle one accepted US terminal event exactly once."""
-
-        if not self.us_cash_settlement:
-            raise ValueError("terminal actions are supported only for US portfolios")
+        """Settle one accepted terminal event exactly once."""
         self._require_stable_identity(symbol, "symbol")
         self._require_stable_identity(event_id, "event_id")
         if event_id in self._applied_terminal_action_ids:
             raise ValueError("terminal action event_id has already been applied")
         if action_type not in TERMINAL_ACTION_TYPES:
-            raise ValueError("action_type must be a terminal US corporate action")
+            raise ValueError("action_type must be a terminal corporate action")
 
         position = self.positions.get(symbol)
         if position is None:
@@ -426,10 +423,43 @@ class Portfolio:
             position.shares * normalized_recovery,
             "terminal cash recovery",
         )
-        new_cash = self._finite_result(
-            self.settled_cash + cash_recovery,
-            "settled cash",
-        )
+        if self.current_session is None:
+            raise ValueError("terminal action requires an active session")
+        if type(payment_date) is not date or payment_date < self.current_session:
+            raise ValueError("terminal payment_date cannot precede the effective session")
+        if type(accepted_settlement_sessions) is not tuple:
+            raise TypeError("accepted_settlement_sessions must be an immutable tuple")
+        if payment_date == self.current_session:
+            if accepted_settlement_sessions:
+                raise ValueError("same-day terminal recovery cannot carry settlement sessions")
+        else:
+            if (
+                not accepted_settlement_sessions
+                or any(type(item) is not date for item in accepted_settlement_sessions)
+                or accepted_settlement_sessions[0] <= self.current_session
+                or any(
+                    earlier >= later
+                    for earlier, later in zip(
+                        accepted_settlement_sessions,
+                        accepted_settlement_sessions[1:],
+                    )
+                )
+                or accepted_settlement_sessions[-1] != payment_date
+            ):
+                raise ValueError(
+                    "terminal settlement sessions must increase through payment_date"
+                )
+        new_cash = self.settled_cash
+        if payment_date == self.current_session:
+            new_cash = self._finite_result(
+                self.settled_cash + cash_recovery,
+                "settled cash",
+            )
+        else:
+            self._finite_result(
+                self.pending_cash_total + cash_recovery,
+                "pending cash after terminal action",
+            )
 
         successor_position: Position | None = None
         requires_mapping = action_type in {"merger", "symbol_change"}
@@ -471,6 +501,8 @@ class Portfolio:
             raise ValueError("delisting does not accept a successor mapping")
 
         self.settled_cash = new_cash
+        if payment_date > self.current_session:
+            self.pending_cash.append(PendingCash(payment_date, cash_recovery))
         del self.positions[symbol]
         if successor_position is not None:
             assert successor_symbol is not None

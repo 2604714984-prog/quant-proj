@@ -25,11 +25,14 @@ def _calendar_source(
     content_sha256: str | None = None,
 ) -> SourceIdentity:
     return SourceIdentity(
-        source_url=f"https://www.nyse.com/publicdocs/{revision}.json",
+        source_url="https://www.nyse.com/publicdocs/calendar.json",
         content_sha256=content_sha256 or hashlib.sha256(revision.encode()).hexdigest(),
         available_at=available_at,
         retrieved_at=max(available_at, datetime(2026, 7, 2, tzinfo=UTC)),
         revision_id=revision,
+        source_family_id="nyse-calendar",
+        provider_id="nyse",
+        subject_id="XNYS",
     )
 
 
