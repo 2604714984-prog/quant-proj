@@ -1,0 +1,171 @@
+{
+  "schema_version": "research-definition-v1",
+  "cycle_id": "ISSUE119_US_EQUITY_OUTCOME_FREE_CYCLE_20260724_005",
+  "post_reset_frozen_mechanism_ordinal": 7,
+  "research_id": "US_EQ_TIC_FOREIGN_EQUITY_DEMAND_SIGN_SPY_CASH_V1",
+  "status": "preregistered-not-executed-input-accepted",
+  "target": "SPY_OR_ZERO_RETURN_CASH",
+  "economic_question": "Does the sign of foreign net demand for U.S. equities in the latest officially released Treasury TIC monthly archive identify a risk-bearing state in which holding SPY improves the return/drawdown tradeoff versus a frozen monthly 50/50 SPY-cash benchmark?",
+  "control_record": {
+    "issue": 119,
+    "freeze_comment_id": 5069987077,
+    "archive_delay_clarification_comment_id": 5069995421,
+    "february_2022_object_correction_comment_id": 5070095235,
+    "archive_member_cutover_correction_comment_id": 5070116565,
+    "input_acceptance_comment_id": 5070173573
+  },
+  "source": {
+    "owner": "U.S. Department of the Treasury",
+    "system_page": "https://home.treasury.gov/data/treasury-international-capital-tic-system",
+    "release_dates_page": "https://home.treasury.gov/data/treasury-international-capital-tic-system/release-dates-of-tic-data",
+    "monthly_archive_index": "https://home.treasury.gov/archives-of-tic-monthly-data-releases",
+    "archive_url_prefix": "https://ticdata.treasury.gov/resource-center/data-chart-center/tic/Documents/ticrel_",
+    "strategy_input": "latest published monthly TIC net foreign demand for U.S. equities",
+    "evidence_classification": "OFFICIAL_PRIMARY_REVISION_PRESERVED",
+    "method_limit": "archive snapshots preserve revision state by decision but do not reconstruct observations unavailable before the first retained release"
+  },
+  "accepted_input": {
+    "input_receipt_sha256": "373b4f6a5a085bc1409cc000801109442ee86b74c97aa0954ec6f5c8f3c8564d",
+    "archive_manifest_sha256": "756dec875e2fe1ed199a4ac3d301a10b04ada1a55bac61a2ed73d35921b6344c",
+    "validation_states_sha256": "d8bed0d33e4d4ea73bdbe0434a112ea979d643f5ca245e6d2f5b519e1535e641",
+    "secondary_states_sha256": "8171b11bee2161bbe3b041a17be568202c3a450d4784bfcc2dbb8b80fe426c2a",
+    "unique_official_archives": 61,
+    "decision_release_selections": 62,
+    "revision_policy": "AS_PUBLISHED_ARCHIVE_PER_DECISION_NO_OVERWRITE",
+    "february_2022_exact_object": "ticrel_20220222.zip",
+    "delayed_2025_rule": "the 2025-09-18 archive is reused for the October and November 2025 execution decisions because no later archive was public by the latter cutoff"
+  },
+  "signal": {
+    "decision_cutoff": "20:05 America/New_York on the final accepted XNYS session before execution month",
+    "release_selection": "latest official TIC monthly archive with public release timestamp no later than the decision cutoff",
+    "private_component": "npr_history line 8 private domestic equity net",
+    "official_component": "npr_history line 13 official domestic equity net",
+    "foreign_equity_demand": "line 8 plus line 13",
+    "spy": "foreign_equity_demand strictly greater than zero",
+    "cash": "foreign_equity_demand less than or equal to zero",
+    "tie": "cash",
+    "perspective_through_2023_03_15_release": "NET_FOREIGN_PURCHASES",
+    "perspective_from_2023_04_17_release": "NET_US_SALES",
+    "sign_interpretation": "under both reporting perspectives a positive value denotes foreign net demand for U.S. equities",
+    "member_through_2023_08_15_release": "npr_history.csv",
+    "member_from_2023_09_18_release": "npr_history.html"
+  },
+  "portfolio": {
+    "decision_at": "20:05 America/New_York on final accepted XNYS session before state month",
+    "execution": "first accepted XNYS open of state month",
+    "holding": "until next monthly execution open; unchanged state keeps existing exposure",
+    "initial_capital_usd": 40000,
+    "whole_shares": true,
+    "one_way_cost_bps_on_exposure_change": 10,
+    "cash_accrual": 0.0,
+    "leverage": false,
+    "shorting": false
+  },
+  "measurement": {
+    "decision_sizing_price": "immediately preceding accepted XNYS raw close",
+    "interval_boundary": "pretrade NAV marked at the immediately preceding accepted XNYS raw close",
+    "interval_return": "successive pretrade boundary NAV ratio minus one",
+    "terminal_boundary": "pretrade NAV at the session before the frozen terminal month execution",
+    "maximum_drawdown_path": "initial capital followed by each accepted session opening NAV before the terminal boundary",
+    "cash_distributions": "ex-date entitlement and pay-date settlement through the shared US Portfolio",
+    "unchanged_strategy_state": "no rebalance",
+    "fifty_fifty": "rebalance monthly",
+    "spy_buy_and_hold": "buy once at first validation or secondary execution and do not rebalance"
+  },
+  "market_input_contract": {
+    "symbol": "SPY",
+    "currency": "USD",
+    "price_basis": "UNADJUSTED_RAW_OPEN_CLOSE_ONLY",
+    "distribution_unit": "per_share",
+    "central_db_sha256": "7a0e6a40fe5a1f2fbb7e9d0cecfb7178efb988befe854124e923206c5897b213",
+    "validation": {
+      "market_sha256": "0db17510864b5edd02fdf35da89ecb85bd57e4d3631edd850b4b0b95b4329e6b",
+      "calendar_sha256": "4f9b7cfe58f7cec14ef0daa6f1f641a435c8f1bec919f847aa7d50e02995186f",
+      "actions_sha256": "470c7e09496307bb5414b7116defa308789ebfdd83c51a6703afd7854303970a",
+      "lifecycle_sha256": "a804d76ea3614bface8aebead8886379c6a6b1fb42ed30228c86b21306f656ec"
+    },
+    "secondary": {
+      "market_sha256": "b0711263e567034a2ff03879e408cf959e2db4e40374c54a56b2e11577ade1de",
+      "calendar_sha256": "688e35b2a8c18756b272a385b9e0f423a6075bc22915e4fab9bee3ccfb36f57f",
+      "actions_sha256": "f911b51cdef4b5bc38caf5f7296f095904143b550df7a388e93f7ff6f91b2c80",
+      "lifecycle_sha256": "c09a7c06e3c20948ac6bc249193ba76c2c7ebcabcd5f74fb5463a62482c2850b"
+    }
+  },
+  "splits": {
+    "validation_state_months": "2021-02 through 2023-05",
+    "validation_terminal_month": "2023-06",
+    "validation_intervals": 28,
+    "unused_boundary_gap": "2023-06 and 2023-07 state months",
+    "secondary_state_months": "2023-08 through 2026-05",
+    "secondary_terminal_month": "2026-06",
+    "secondary_intervals": 34,
+    "secondary_open_rule": "only after all validation gates pass"
+  },
+  "support": {
+    "minimum_spy_months_per_split": 4,
+    "minimum_cash_months_per_split": 4,
+    "minimum_spy_to_cash_transitions_per_split": 1,
+    "minimum_cash_to_spy_transitions_per_split": 1,
+    "validation": {
+      "intervals": 28,
+      "spy_months": 11,
+      "cash_months": 17,
+      "spy_to_cash_transitions": 5,
+      "cash_to_spy_transitions": 4,
+      "passes": true
+    },
+    "secondary": {
+      "intervals": 34,
+      "spy_months": 23,
+      "cash_months": 11,
+      "spy_to_cash_transitions": 8,
+      "cash_to_spy_transitions": 9,
+      "passes": true
+    }
+  },
+  "benchmarks": [
+    "SPY_BUY_AND_HOLD_TOTAL_RETURN",
+    "MONTHLY_REBALANCED_50_PERCENT_SPY_50_PERCENT_ZERO_RETURN_CASH"
+  ],
+  "gates": [
+    "exact_interval_and_state_support_contract_passes",
+    "strategy_terminal_net_wealth_strictly_exceeds_monthly_50_50",
+    "paired_arithmetic_mean_net_active_return_vs_monthly_50_50_strictly_positive",
+    "strategy_maximum_drawdown_no_worse_than_SPY_buy_and_hold"
+  ],
+  "multiplicity": {
+    "historical_inference": "DESCRIPTIVE_ONLY_NO_CONFIRMATORY_P_VALUE",
+    "confirmatory_alpha_assigned": false,
+    "family_reset": false,
+    "alpha_recycling": false,
+    "one_shot": true,
+    "rerun_or_post_outcome_change": false,
+    "maximum_success_label": "RETROSPECTIVE_SECONDARY_PASS_PENDING_USER_REVIEW"
+  },
+  "forbidden_changes": [
+    "alternate TIC lines or aggregates",
+    "absolute-value or magnitude threshold",
+    "smoothing or lookback window",
+    "reverse direction",
+    "archive backdating from filename",
+    "source blending",
+    "QQQ substitution",
+    "price or volatility overlay",
+    "parameter grid",
+    "post-outcome source change"
+  ],
+  "method_limits": [
+    "historical inference is descriptive and no confirmatory p-value is assigned",
+    "the archived series can contain revisions and is only interpreted as published in each retained archive",
+    "the retained release archive is not evidence for observations predating its public release",
+    "the sign rule does not distinguish the composition, persistence, or causal origin of foreign equity demand"
+  ],
+  "sealed": {
+    "strategy_candidate_available": false,
+    "rerun": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
