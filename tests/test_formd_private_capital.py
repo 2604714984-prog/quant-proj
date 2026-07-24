@@ -199,6 +199,41 @@ def test_distribution_loader_uses_exact_accepted_unit() -> None:
         )
 
 
+def test_session_loader_uses_exact_frozen_market_calendar_contract() -> None:
+    calendar = {
+        "session_date": "2021-01-29",
+        "exchange": "XNYS",
+        "open_at": "2021-01-29T09:30:00-05:00",
+        "close_at": "2021-01-29T16:00:00-05:00",
+        "source_row_sha256": "a" * 64,
+        "row_identity_sha256": "b" * 64,
+    }
+    market = {
+        "session_date": "2021-01-29",
+        "symbol": "SPY",
+        "currency": "USD",
+        "price_basis": "UNADJUSTED_RAW_OPEN_CLOSE_ONLY",
+        "calendar_row_sha256": calendar["source_row_sha256"],
+        "raw_open": 100.0,
+        "raw_close": 101.0,
+    }
+
+    def payload(row: dict[str, object]) -> bytes:
+        return (json.dumps(row, sort_keys=True) + "\n").encode()
+
+    assert formd.load_sessions(payload(market), payload(calendar)) == (
+        formd.Session(date(2021, 1, 29), 100.0, 101.0),
+    )
+
+    wrong_hash = dict(market, calendar_row_sha256=calendar["row_identity_sha256"])
+    with pytest.raises(formd.ContractError, match="identity drift"):
+        formd.load_sessions(payload(wrong_hash), payload(calendar))
+
+    wrong_basis = dict(market, price_basis="unadjusted_raw_open_close")
+    with pytest.raises(formd.ContractError, match="identity drift"):
+        formd.load_sessions(payload(wrong_basis), payload(calendar))
+
+
 def test_exact_file_hash_and_atomic_claim_are_fail_closed(tmp_path: Path) -> None:
     payload = b"accepted bytes\n"
     source = tmp_path / "source"

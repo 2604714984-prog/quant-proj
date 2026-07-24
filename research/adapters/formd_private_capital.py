@@ -330,9 +330,9 @@ def load_sessions(
         if (
             market.get("symbol") != SYMBOL
             or market.get("currency") != "USD"
-            or market.get("price_basis") != "unadjusted_raw_open_close"
+            or market.get("price_basis") != "UNADJUSTED_RAW_OPEN_CLOSE_ONLY"
             or calendar.get("exchange") != "XNYS"
-            or market.get("calendar_row_sha256") != calendar.get("row_identity_sha256")
+            or market.get("calendar_row_sha256") != calendar.get("source_row_sha256")
         ):
             raise ContractError("market/calendar identity drift")
         open_at = datetime.fromisoformat(str(calendar.get("open_at")))
