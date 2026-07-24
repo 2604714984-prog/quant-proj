@@ -1,0 +1,234 @@
+{
+  "schema": "quant.external_audit_round6.v1",
+  "audit_date": "2026-07-24",
+  "repository": "2604714984-prog/quant-proj",
+  "pull_request": 126,
+  "base_sha": "31329dbfd7b9bb1c184a13ee7fe2e60bd0a6ba14",
+  "previous_audited_head": "81403aa223ad6d11a7339fd970b65512bdc0a5c8",
+  "audited_code_head": "938aada03f819d98cbf7c9ac627a8c77326ed312",
+  "tested_merge_ref": "7d076d51eb70cdbcfd41a1360fd4f14c3fb958df",
+  "review_type": "incremental_after_prior_full_audit",
+  "verdict": {
+    "external_audit_verdict": "REQUEST_CHANGES_FOCUSED",
+    "repository_boundary": "PASS",
+    "single_canonical_writer": "PASS",
+    "runtime_architecture_lightweight": "PASS",
+    "fail_closed_default": "PASS",
+    "exploratory_research": "CONDITIONAL_PASS",
+    "validated_historical_research": "FAIL",
+    "fast_result_pipeline": "FAIL",
+    "capital_grade_research_process": false,
+    "code_remediation_complete": false,
+    "only_external_evidence_remaining": false
+  },
+  "authorization": {
+    "strategy_candidate_available": false,
+    "recommendation_authorized": false,
+    "paper_trading_authorized": false,
+    "live_trading_authorized": false,
+    "automatic_execution_authorized": false
+  },
+  "ci": {
+    "run_id": 30062113832,
+    "job_id": 89385663162,
+    "status": "completed",
+    "conclusion": "success",
+    "merge_ref": "7d076d51eb70cdbcfd41a1360fd4f14c3fb958df",
+    "reported_test_count": 273,
+    "reported_test_count_independently_extracted": false,
+    "artifact_id": 8584900000,
+    "artifact_archive_sha256": "625c596fccf40fbc9d42ec9fd0a47b95fd2567b3ce23e3af66e9fea1a966dcbb",
+    "wheel_sha256": "0f7b925efeb9a356b4e2017ca27f320bc51aba382c6cf7d60110fbb9b37eee72",
+    "wheel_sha_independently_verified": true,
+    "sha256sums_path_usable_after_extract": false
+  },
+  "finding_counts": {
+    "HIGH": 4,
+    "MEDIUM": 2,
+    "LOW": 1,
+    "BLOCKED_EXTERNAL": 3
+  },
+  "findings": [
+    {
+      "id": "R6-001",
+      "severity": "HIGH",
+      "priority": "P0",
+      "title": "收益区间归属于上一期持仓，却被标记为本期目标组合",
+      "files_functions": [
+        "src/quant_system/backtest/event_loop.py::run_static_rebalance",
+        "src/quant_system/research/splits.py::capture_return_artifact",
+        "src/quant_system/research/splits.py::evaluate_split"
+      ],
+      "trigger": "上一期持有A，本期A价格变化后目标切换到B，或存在残余持仓。",
+      "impact": "上一期持仓产生的收益被归给本期target weights，样本、标签和显著性错位；首期成本和末期收益也存在边界问题。",
+      "evidence": [
+        "initial portfolio在本期执行前冻结，final NAV在本期交易后计算",
+        "contributors来自本期target_weights",
+        "独立复现输出stage1 return=1.0, contributors=('BBB',)，实际盈利来自AAA"
+      ],
+      "minimal_fix": "使用execution-to-next-execution收益期并归属于opening actual exposure；增加terminal valuation。",
+      "regression_tests": [
+        "交替AAA/BBB的真实多阶段测试",
+        "blocked exit和残余持仓进入exposure receipt",
+        "最后一期有terminal mark或明确排除"
+      ]
+    },
+    {
+      "id": "R6-002",
+      "severity": "HIGH",
+      "priority": "P0",
+      "title": "历史TrialConfig未绑定实际策略定义、特征快照和DatasetManifest",
+      "files_functions": [
+        "src/quant_system/research/experiments.py::TrialConfig",
+        "src/quant_system/research/experiments.py::evaluate_frozen_historical_run",
+        "src/quant_system/backtest/event_loop.py::ControlledStageReceipt",
+        "src/quant_system/backtest/event_loop.py::DecisionArtifact"
+      ],
+      "trigger": "TrialConfig声明策略A，但stage receipts来自策略B或无关dataset。",
+      "impact": "策略A可借用策略B的历史收益和holdout证据。",
+      "evidence": [
+        "evaluate_frozen_historical_run未比较definition_sha256、parameters_json或max_positions与stage实际配置",
+        "历史评估不验证DatasetManifest或重跑feature-to-weights",
+        "独立复现用f*64替换TrialConfig definition后评估仍成功"
+      ],
+      "minimal_fix": "保存可重放历史DecisionArtifact payload和DatasetManifest；重算feature-to-weights并逐阶段对账definition/adapter/parameters。",
+      "regression_tests": [
+        "修改definition或threshold必须失败",
+        "相同weights不同feature/definition不能共用资格",
+        "替换dataset/partition后旧TrialRunReceipt失效"
+      ]
+    },
+    {
+      "id": "R6-003",
+      "severity": "HIGH",
+      "priority": "P0",
+      "title": "历史阶段只绑定成本摘要，未证明执行使用对应成本和容量",
+      "files_functions": [
+        "src/quant_system/backtest/event_loop.py::run_controlled_stage",
+        "src/quant_system/backtest/event_loop.py::ControlledStageReceipt",
+        "src/quant_system/research/experiments.py::evaluate_frozen_historical_run"
+      ],
+      "trigger": "传入非零成本SHA，但portfolio、slippage或capacity使用不同设置。",
+      "impact": "零成本历史收益可冒充现实成本后收益并进入统计和holdout。",
+      "evidence": [
+        "run_controlled_stage独立接受cost_assumptions_sha256和实际成本参数",
+        "历史评估只比较SHA标签",
+        "独立复现中非零cost SHA配合零commission/tax/slippage仍评估成功"
+      ],
+      "minimal_fix": "run_controlled_stage接受实际ExecutionCostAssumptions并内部配置成本、capacity和slippage；历史保存base/adverse完整路径。",
+      "regression_tests": [
+        "非零成本identity配零成本执行必须失败",
+        "逐笔费用与CostStressCase对账",
+        "gross-only不能作为net validation"
+      ]
+    },
+    {
+      "id": "R6-004",
+      "severity": "HIGH",
+      "priority": "P0",
+      "title": "RT-001仍可通过共享raw bytes和未覆盖字段引入前视",
+      "files_functions": [
+        "src/quant_system/research/identity.py::replay_pure_transformation_artifacts_bytes",
+        "src/quant_system/research/identity.py::_pure_step_bytes",
+        "src/quant_system/research/identity.py::_validate_partition",
+        "src/quant_system/research/identity.py::_row_pit_enforced"
+      ],
+      "trigger": "feature和label共享raw source，feature把future label重命名为score，并附无关安全availability字段。",
+      "impact": "row_pit_enforced=true且可重放，但feature实际使用未来信息。",
+      "evidence": [
+        "feature和label steps接收相同raw_bytes",
+        "rename没有字段级provenance/availability映射",
+        "row_pit_enforced只要求任意feature_available_at",
+        "独立复现future_label=123变成score=123并通过PIT标志"
+      ],
+      "minimal_fix": "分离feature_raw_sources和label_raw_sources；要求sample_id、decision_at、max_feature_available_at和label_end_at，并逐行对账SplitManifest。",
+      "regression_tests": [
+        "feature读取label-only source时失败",
+        "安全availability字段不能掩盖无provenance feature",
+        "partition与SplitManifest时间或sample不一致时失败"
+      ]
+    },
+    {
+      "id": "R6-005",
+      "severity": "MEDIUM",
+      "priority": "P1_THROUGHPUT",
+      "title": "Stage receipts重复内嵌共享日历并多次replay",
+      "impact": "多年日频run出现O(N²)存储和高倍重复计算。",
+      "evidence": [
+        "6 sessions receipt=32979 bytes",
+        "50 sessions receipt=122365 bytes",
+        "200 sessions receipt=427767 bytes"
+      ],
+      "minimal_fix": "共享RunContextManifest；stage只引用共享SHA；结构验证与显式replay分开。"
+    },
+    {
+      "id": "R6-006",
+      "severity": "MEDIUM",
+      "priority": "P1_THROUGHPUT",
+      "title": "没有标准research runner和repo-contained vertical slice",
+      "impact": "新假设需要手工连接大量低层对象，基础设施没有转化为日常成果吞吐。",
+      "evidence": [
+        "CLI只有info和data命令",
+        "active tree无当前策略spec或正式exploratory report",
+        "FRED切片仅为外部generic transformation台账"
+      ],
+      "minimal_fix": "下一小PR增加run_research(spec, explore|verify)和CLI，只实现一个窄数据源和简单策略。"
+    },
+    {
+      "id": "R6-007",
+      "severity": "LOW",
+      "priority": "P2",
+      "title": "CI artifact的SHA256SUMS路径与解压布局不一致",
+      "impact": "wheel digest正确，但直接sha256sum -c失败。",
+      "minimal_fix": "在dist目录内生成无dist/前缀的SHA256SUMS。"
+    }
+  ],
+  "external_blockers": [
+    {
+      "id": "B6-001",
+      "status": "BLOCKED_EXTERNAL_PROVIDER",
+      "title": "没有authoritative provider adapter"
+    },
+    {
+      "id": "B6-002",
+      "status": "BLOCKED_EXTERNAL_CALIBRATION",
+      "title": "真实成本、流动性、公司行动、退市和完整PIT universe未验收"
+    },
+    {
+      "id": "EA-001",
+      "status": "BLOCKED_EXTERNAL_EVIDENCE",
+      "title": "A股evidence-room Release缺独立reviewer receipt"
+    }
+  ],
+  "independent_reproductions": [
+    {
+      "id": "REPRO-R6-001",
+      "result": "stage1 return=1.0 attributed to BBB although gain came from prior AAA holding"
+    },
+    {
+      "id": "REPRO-R6-002",
+      "result": "historical evaluation accepted mismatched TrialConfig definition"
+    },
+    {
+      "id": "REPRO-R6-003",
+      "result": "nonzero declared cost SHA accepted with zero actual costs/slippage"
+    },
+    {
+      "id": "REPRO-R6-004",
+      "result": "future_label projected into score while row_pit_enforced=true"
+    },
+    {
+      "id": "NUMERIC-GOLD",
+      "result": "Student-t matched SciPy within 4.31e-14; HAC matched statsmodels to machine precision on tested cases"
+    }
+  ],
+  "unverified": [
+    "exact CI 273-passed log tail",
+    "submitter local 87/273 test runs",
+    "submitter database-write and provider-request accounting",
+    "FRED raw and derived artifact bytes",
+    "authoritative provider observations",
+    "production cost/liquidity/action/delisting calibration",
+    "EA-001 external reviewer receipt"
+  ]
+}
