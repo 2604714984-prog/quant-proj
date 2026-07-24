@@ -1,0 +1,231 @@
+{
+  "schema": "quant.external_audit_round7_independent.v1",
+  "audit_date": "2026-07-24",
+  "repository": "2604714984-prog/quant-proj",
+  "pull_request": 126,
+  "boundary": {
+    "previous_base": "31329dbfd7b9bb1c184a13ee7fe2e60bd0a6ba14",
+    "base_sha": "3ec32b30f66ab496740ca7e879983a73d68857d6",
+    "previous_audited_head": "938aada03f819d98cbf7c9ac627a8c77326ed312",
+    "audited_code_head": "3f4b46bbd3ff28bb8f28a4377a6bf4f91d566824",
+    "tested_merge_ref": "73e974500801c6806f6b7150517812ecb4d5981c",
+    "review_type": "incremental_after_prior_full_audit",
+    "delta_commits": 14,
+    "delta_changed_files": 15
+  },
+  "ci": {
+    "run_id": 30078703327,
+    "job_id": 89435117886,
+    "status": "completed",
+    "conclusion": "success",
+    "confirmed_steps": [
+      "wheel build",
+      "SHA256SUMS",
+      "artifact upload",
+      "wheel install",
+      "pip check",
+      "quant info outside checkout",
+      "ruff",
+      "pytest"
+    ],
+    "reported_test_count": 274,
+    "test_count_independently_extracted": false,
+    "artifact_id": 8590893248,
+    "artifact_zip_sha256": "a10788da8c92d6a5af2e8a82b79c8d8a748db2fb63574b250f840843495a57fc",
+    "wheel_sha256": "75ea5db7675deb258cbe88c5459d3fe254ad6390283732885f8beb02eaa93f13",
+    "wheel_sha256_independently_verified": true,
+    "wheel_compileall": "PASS"
+  },
+  "verdict": {
+    "external_audit_verdict": "REQUEST_CHANGES_FOCUSED",
+    "repository_boundary_clean": true,
+    "runtime_architecture_lightweight": true,
+    "single_canonical_writer": true,
+    "fail_closed_default": true,
+    "R6_005_return_period_code": "PASS",
+    "R6_006_actual_exposure_code": "PASS",
+    "historical_run_controls_complete": false,
+    "cost_stress_semantics_valid": false,
+    "historical_feature_dataset_lineage": false,
+    "feature_label_isolation_complete": false,
+    "dataset_label_join_complete": false,
+    "exploratory_research": "USABLE_WITH_CAUTION",
+    "validated_historical_research": false,
+    "fast_result_pipeline": "NOT_READY",
+    "capital_grade_research_process": false,
+    "code_remediation_complete": false,
+    "only_external_evidence_remaining": false
+  },
+  "authorization": {
+    "strategy_candidate_available": false,
+    "recommendation_authorized": false,
+    "paper_trading_authorized": false,
+    "live_trading_authorized": false,
+    "automatic_execution_authorized": false
+  },
+  "original_finding_status": [
+    {
+      "id": "R6-001",
+      "status": "PARTIAL_CODE_CLOSE_ACCEPTED",
+      "reason": "Actual stage costs now derive from a canonical payload; gross/adverse semantics and historical cost-case binding remain open."
+    },
+    {
+      "id": "R6-002",
+      "status": "PARTIAL_CODE_CLOSE_ACCEPTED",
+      "reason": "Definition/adapter bytes and weights replay; feature snapshot derivation from DatasetManifest remains open."
+    },
+    {
+      "id": "R6-003",
+      "status": "PARTIAL_CODE_CLOSE_ACCEPTED",
+      "reason": "Feature and label source sets are separated; KEY_ONLY and self-reported availability remain bypasses."
+    },
+    {
+      "id": "R6-004",
+      "status": "PARTIAL_CODE_CLOSE_ACCEPTED",
+      "reason": "Final partition row index matches SplitManifest; label-side join identity remains incomplete."
+    },
+    {
+      "id": "R6-005",
+      "status": "CLOSED_CODE",
+      "reason": "Explicit contiguous return periods and accepted-session coverage are implemented."
+    },
+    {
+      "id": "R6-006",
+      "status": "CLOSED_CODE",
+      "reason": "Actual opening/closing positions, fills and blocked attempts drive exposure receipts."
+    }
+  ],
+  "finding_counts": {
+    "HIGH": 4,
+    "MEDIUM_THROUGHPUT": 1,
+    "BLOCKED_EXTERNAL_EVIDENCE": 1
+  },
+  "findings": [
+    {
+      "id": "R7-001",
+      "severity": "HIGH",
+      "title": "Cost assumptions can label non-gross and non-adverse economics as gross/adverse",
+      "files_functions": [
+        "src/quant_system/backtest/costs.py::CostStressCase.total_rate_proxy",
+        "src/quant_system/backtest/costs.py::ExecutionCostAssumptions.__post_init__",
+        "src/quant_system/backtest/event_loop.py::apply_qualified_strategy_stage"
+      ],
+      "trigger": "gross_only with nonzero minimum commission, or adverse with cheaper minimum commission / more favorable FX",
+      "impact": "Gross results can charge fees and adverse replay can outperform base because assumptions are economically cheaper.",
+      "independent_reproductions": [
+        "GROSS_ONLY_WITH_MINIMUM_ACCEPTED True 5.0 5.0",
+        "ADVERSE_STAGE_BETTER_THAN_BASE 99900.0 99980.2 True",
+        "base cost 100.0 versus adverse cost 0.2 on gross amount 1000"
+      ],
+      "minimal_fix": "Require all gross-only cost components to be zero and adverse componentwise no cheaper, including minimum commission and FX direction.",
+      "status": "OPEN_CODE"
+    },
+    {
+      "id": "R7-002",
+      "severity": "HIGH",
+      "title": "Historical TrialConfig does not bind max_positions or evaluated cost case",
+      "files_functions": [
+        "src/quant_system/research/experiments.py::TrialConfig",
+        "src/quant_system/research/experiments.py::evaluate_frozen_historical_run",
+        "src/quant_system/backtest/event_loop.py::ControlledStageReceipt"
+      ],
+      "trigger": "Unbounded stages satisfy max_positions=1, or adverse stages satisfy a trial with no declared cost case.",
+      "impact": "Holdout evidence can use a materially different execution policy from the preregistered trial.",
+      "independent_reproductions": [
+        "MAX_POSITIONS_IMPACT_ACCEPTED 1 ('AAA', 'BBB') 0.017573437412390598",
+        "ADVERSE_AS_BASE_CONTRACT_ACCEPTED 07329f806fd3dabc7ee543fe299bbb4b440f6ee3eb6ffdd5f2cfd1d02ba4eaf8"
+      ],
+      "minimal_fix": "Compare stage max_positions with TrialConfig and add one explicit historical_cost_case per TrialRunReceipt.",
+      "status": "OPEN_CODE"
+    },
+    {
+      "id": "R7-003",
+      "severity": "HIGH",
+      "title": "Historical feature snapshots can borrow a DatasetManifest identity without derivation",
+      "files_functions": [
+        "src/quant_system/backtest/event_loop.py::capture_decision_artifact",
+        "src/quant_system/backtest/event_loop.py::_verify_historical_decision_binding",
+        "src/quant_system/research/experiments.py::evaluate_frozen_historical_run"
+      ],
+      "trigger": "Arbitrary feature bytes are attached to a valid dataset identity string.",
+      "impact": "A future-edited or unrelated feature snapshot can use the PIT identity of another frozen dataset.",
+      "independent_reproductions": [
+        "ARBITRARY_FEATURE_SNAPSHOT_ACCEPTED_FOR_DATASET"
+      ],
+      "minimal_fix": "Create FeatureSnapshotReceipt from a verified DatasetManifest/TransformationReceipt and deterministic as-of selector; historical replay must regenerate snapshots.",
+      "status": "OPEN_CODE"
+    },
+    {
+      "id": "R7-004",
+      "severity": "HIGH",
+      "title": "Transformation field roles and join keys still allow feature leakage and wrong-label attachment",
+      "files_functions": [
+        "src/quant_system/research/identity.py::_pure_step_bytes",
+        "src/quant_system/research/identity.py::replay_pure_transformation_artifacts_bytes",
+        "src/quant_system/research/identity.py::_validate_partition",
+        "src/quant_system/research/identity.py::capture_dataset_manifest"
+      ],
+      "trigger": "Label field declared KEY_ONLY, late source paired with early self-reported availability, or join omits complete identity.",
+      "impact": "row_pit_enforced and final row-index equality can pass with future labels in features or AAA rows carrying BBB labels.",
+      "independent_reproductions": [
+        "KEY_ONLY_LABEL_LEAK_ACCEPTED True future_label=0.75",
+        "LATE_FEATURE_SOURCE_ACCEPTED_AS_PIT source_available=2021 observed=2020",
+        "WRONG_ENTITY_LABEL_JOIN_ACCEPTED final_entity=AAA raw_label_entity=BBB"
+      ],
+      "minimal_fix": "Restrict KEY_ONLY to fixed identity fields, require complete canonical identity on both sides, fix join keys, recompute sample_id and derive feature availability from actual inputs.",
+      "status": "OPEN_CODE"
+    },
+    {
+      "id": "R7-005",
+      "severity": "MEDIUM_THROUGHPUT",
+      "title": "Daily portfolio evaluation conflates model samples with realized contributors",
+      "files_functions": [
+        "src/quant_system/research/splits.py::SplitEvaluationPlan",
+        "src/quant_system/research/splits.py::evaluate_split",
+        "src/quant_system/research/splits.py::ReturnObservation"
+      ],
+      "trigger": "A cross-sectional holdout contains multiple model samples while a frozen top-N portfolio holds a subset.",
+      "impact": "A valid top-N portfolio is rejected, while selecting only realized holdings would make the sample set outcome-dependent.",
+      "independent_reproductions": [
+        "TOPN_PORTFOLIO_EVALUATION_REJECTED ValueError ReturnArtifact contributor set differs from selected samples ('AAA',)"
+      ],
+      "minimal_fix": "Separate model-sample SplitManifest from a preregistered PortfolioEvaluationSchedule; keep exposure receipts for audit, not sample identity.",
+      "status": "DEFER_TO_THROUGHPUT_PR"
+    },
+    {
+      "id": "E7-001",
+      "severity": "BLOCKED_EXTERNAL_EVIDENCE",
+      "title": "Authoritative provider, production calibration, independent anchor and evidence-room receipt remain unavailable",
+      "status": "BLOCKED_EXTERNAL_EVIDENCE"
+    }
+  ],
+  "focused_next_steps": [
+    "Run contract: max_positions, historical_cost_case and gross/adverse componentwise invariants",
+    "Feature lineage: DatasetManifest-derived FeatureSnapshotReceipt and dataset-to-snapshot replay",
+    "Transformation identity: fixed KEY_ONLY fields, complete join identity, recomputed sample_id and derived availability"
+  ],
+  "deferred_throughput_scope": [
+    "R6-007 transformation config cleanup",
+    "R6-008 reproducible research runner / vertical slice",
+    "R6-009 structural verification versus explicit replay",
+    "R6-010 content-addressed bundle",
+    "R7-005 portfolio evaluation schedule separation"
+  ],
+  "audit_execution": {
+    "database_writes": 0,
+    "market_data_provider_requests": 0,
+    "full_local_pytest": false,
+    "full_local_ruff": false,
+    "exact_ci_wheel_used_for_reproductions": true,
+    "duckdb_import_stub_only": true
+  },
+  "unverified": [
+    "exact 274-passed raw log tail",
+    "submitter local worktree cleanliness",
+    "submitter DB/provider accounting",
+    "authoritative market provider observations",
+    "production cost/liquidity calibration",
+    "independent experiment anchor",
+    "EA-001 evidence-room reviewer receipt"
+  ]
+}
