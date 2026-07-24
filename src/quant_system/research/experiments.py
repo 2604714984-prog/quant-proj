@@ -422,6 +422,7 @@ class TrialConfig:
 
     trial_id: str
     definition_sha256: str
+    strategy_adapter_sha256: str
     dataset_sha256: str
     split_sha256: str
     stage_plan_sha256: str
@@ -438,6 +439,7 @@ class TrialConfig:
         _text(self.trial_id, "trial_id")
         for name in (
             "definition_sha256",
+            "strategy_adapter_sha256",
             "dataset_sha256",
             "split_sha256",
             "stage_plan_sha256",
@@ -492,6 +494,7 @@ def capture_trial_config(
     *,
     trial_id: str,
     definition_sha256: str,
+    strategy_adapter_sha256: str,
     dataset_sha256: str,
     split_sha256: str,
     stage_plan_sha256: str,
@@ -513,6 +516,7 @@ def capture_trial_config(
     values = {
         "trial_id": trial_id,
         "definition_sha256": definition_sha256,
+        "strategy_adapter_sha256": strategy_adapter_sha256,
         "dataset_sha256": dataset_sha256,
         "split_sha256": split_sha256,
         "stage_plan_sha256": stage_plan_sha256,
@@ -633,7 +637,9 @@ def evaluate_frozen_historical_run(
         or trial_config.ordered_universe_materialization_sha256s
         != tuple(item.universe_materialization_sha256 for item in stage_receipts)
         or any(
-            item.dataset_identity_sha256 != trial_config.dataset_sha256
+            item.strategy_definition_sha256 != trial_config.definition_sha256
+            or item.strategy_adapter_sha256 != trial_config.strategy_adapter_sha256
+            or item.dataset_identity_sha256 != trial_config.dataset_sha256
             or item.split_identity_sha256 != trial_config.split_sha256
             or item.cost_assumptions_sha256
             != trial_config.cost_assumptions_sha256

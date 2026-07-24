@@ -1053,6 +1053,11 @@ class StaticRebalanceResult:
     execution_evidence_grade: str = "UNCLASSIFIED"
     interface_grade: str = "UNTRUSTED_EXPERIMENT"
     decision_artifact_sha256: str | None = None
+    feature_snapshot_sha256: str | None = None
+    decision_feature_json: str | None = None
+    decision_definition_json: str | None = None
+    decision_adapter_json: str | None = None
+    decision_artifact_payload_json: str | None = None
     dataset_identity_sha256: str | None = None
     split_identity_sha256: str | None = None
     universe_materialization_sha256: str | None = None
@@ -1145,6 +1150,7 @@ class ControlledStageResult(StaticRebalanceResult):
             raise ValueError("controlled stage cost payload differs from its identity")
         if self.engine_artifact_sha256 != core_engine_artifact()[0]:
             raise ValueError("controlled stage engine artifact changed")
+        _verify_historical_decision_binding(self)
         if hashlib.sha256(self.input_artifact_json.encode()).hexdigest() != (
             self.input_identity_hash
         ):
@@ -1246,6 +1252,13 @@ class ControlledStageReceipt:
     signal_session: date
     execution_session: date
     decision_artifact_sha256: str
+    feature_snapshot_sha256: str
+    strategy_definition_sha256: str
+    strategy_adapter_sha256: str
+    decision_feature_json: str
+    decision_definition_json: str
+    decision_adapter_json: str
+    decision_artifact_payload_json: str
     dataset_identity_sha256: str
     split_identity_sha256: str
     universe_materialization_sha256: str
@@ -1264,6 +1277,7 @@ class ControlledStageReceipt:
     def verify(self) -> None:
         if self.engine_artifact_sha256 != core_engine_artifact()[0]:
             raise ValueError("controlled receipt engine artifact changed")
+        _verify_historical_decision_binding(self)
         if self.cost_case not in {"base", "adverse"} or (
             hashlib.sha256(self.cost_assumptions_json.encode()).hexdigest()
             != self.cost_assumptions_sha256
@@ -1374,6 +1388,13 @@ def capture_controlled_stage_receipt(
         "signal_session": result.context.signal_session.session_date,
         "execution_session": result.context.execution_session.session_date,
         "decision_artifact_sha256": result.decision_artifact_sha256,
+        "feature_snapshot_sha256": result.feature_snapshot_sha256,
+        "strategy_definition_sha256": result.strategy_definition_sha256,
+        "strategy_adapter_sha256": result.strategy_adapter_sha256,
+        "decision_feature_json": result.decision_feature_json,
+        "decision_definition_json": result.decision_definition_json,
+        "decision_adapter_json": result.decision_adapter_json,
+        "decision_artifact_payload_json": result.decision_artifact_payload_json,
         "dataset_identity_sha256": result.dataset_identity_sha256,
         "split_identity_sha256": result.split_identity_sha256,
         "universe_materialization_sha256": result.universe_materialization_sha256,
@@ -1588,6 +1609,51 @@ def _decision_artifact_payload(artifact: DecisionArtifact) -> bytes:
         "weights": artifact.weights,
     }
     return json.dumps(payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
+
+
+def _verify_historical_decision_binding(
+    stage: ControlledStageResult | ControlledStageReceipt,
+) -> None:
+    artifact_bytes = (
+        stage.decision_feature_json.encode(),
+        stage.decision_definition_json.encode(),
+        stage.decision_adapter_json.encode(),
+    )
+    expected_hashes = (
+        stage.feature_snapshot_sha256,
+        stage.strategy_definition_sha256,
+        stage.strategy_adapter_sha256,
+    )
+    if tuple(hashlib.sha256(item).hexdigest() for item in artifact_bytes) != (
+        expected_hashes
+    ):
+        raise ValueError("historical decision bytes differ from stage identities")
+    recomputed = _execute_frozen_adapter(
+        feature_bytes=artifact_bytes[0],
+        definition_bytes=artifact_bytes[1],
+        adapter_bytes=artifact_bytes[2],
+    )
+    if _weights(recomputed, tuple(sorted(recomputed))) != stage.target_weights:
+        raise ValueError("historical decision bytes do not reproduce stage weights")
+    try:
+        payload = json.loads(stage.decision_artifact_payload_json)
+    except json.JSONDecodeError as exc:
+        raise ValueError("historical DecisionArtifact payload is invalid") from exc
+    if (
+        json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        != stage.decision_artifact_payload_json
+        or hashlib.sha256(stage.decision_artifact_payload_json.encode()).hexdigest()
+        != stage.decision_artifact_sha256
+        or payload["feature_snapshot_sha256"] != stage.feature_snapshot_sha256
+        or payload["strategy_definition_sha256"]
+        != stage.strategy_definition_sha256
+        or payload["strategy_adapter_sha256"] != stage.strategy_adapter_sha256
+        or payload["dataset_identity_sha256"] != stage.dataset_identity_sha256
+        or payload["split_identity_sha256"] != stage.split_identity_sha256
+        or tuple((str(item[0]), float(item[1])) for item in payload["weights"])
+        != stage.target_weights
+    ):
+        raise ValueError("historical DecisionArtifact payload differs from stage")
 
 
 def capture_decision_artifact(
@@ -1981,6 +2047,19 @@ def run_controlled_stage(
     }
     values["interface_grade"] = "CONTROLLED_STAGE"
     values["decision_artifact_sha256"] = decision_artifact.artifact_sha256
+    values["feature_snapshot_sha256"] = decision_artifact.feature_snapshot_sha256
+    values["decision_feature_json"] = capture_file_bytes(
+        decision_artifact._feature_snapshot_path
+    ).decode()
+    values["decision_definition_json"] = capture_file_bytes(
+        decision_artifact._strategy_definition_path
+    ).decode()
+    values["decision_adapter_json"] = capture_file_bytes(
+        decision_artifact._strategy_adapter_path
+    ).decode()
+    values["decision_artifact_payload_json"] = _decision_artifact_payload(
+        decision_artifact
+    ).decode()
     values["dataset_identity_sha256"] = decision_artifact.dataset_identity_sha256
     values["split_identity_sha256"] = decision_artifact.split_identity_sha256
     values["universe_materialization_sha256"] = (

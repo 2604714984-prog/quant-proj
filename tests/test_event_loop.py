@@ -2849,6 +2849,7 @@ def test_family_contract_accepts_two_real_distinct_decision_artifacts(
         trial = capture_trial_config(
             trial_id=f"real-trial-{index}",
             definition_sha256=artifact.strategy_definition_sha256,
+            strategy_adapter_sha256=artifact.strategy_adapter_sha256,
             dataset_sha256=dataset.identity_sha256,
             split_sha256=dataset.split_manifest_sha256,
             stage_plan_sha256=stage_plan.plan_sha256,
@@ -3243,6 +3244,7 @@ def _run_candidate_rebalance(
     trial_config = capture_trial_config(
         trial_id=trial_id,
         definition_sha256=artifact.strategy_definition_sha256,
+        strategy_adapter_sha256=artifact.strategy_adapter_sha256,
         dataset_sha256=kwargs["dataset_manifest"].identity_sha256,
         split_sha256=kwargs["dataset_manifest"].split_manifest_sha256,
         stage_plan_sha256=evidence_stage_plan_sha256,
@@ -3794,7 +3796,7 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     assert same_weights_different_definition.artifact_sha256 != (
         result.decision_artifact_sha256
     )
-    with pytest.raises(ValueError, match="prefix is missing or changed"):
+    with pytest.raises(ValueError, match="historical stage receipts differ"):
         _run_candidate_rebalance(
             tmp_path,
             Portfolio.a_share(100_000, costs=TransactionCostModel()),

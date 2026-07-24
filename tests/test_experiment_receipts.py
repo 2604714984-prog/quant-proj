@@ -180,6 +180,7 @@ def _trial_config(plan, final_run_receipt, *, trial_id, definition_sha256):
     return capture_trial_config(
         trial_id=trial_id,
         definition_sha256=definition_sha256,
+        strategy_adapter_sha256="d" * 64,
         dataset_sha256="b" * 64,
         split_sha256=plan.manifest_sha256,
         stage_plan_sha256=final_run_receipt.stage_plan_sha256,
