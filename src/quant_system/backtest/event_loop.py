@@ -1798,6 +1798,8 @@ def apply_qualified_strategy_stage(
         holdout_event.stage_plan_sha256 != final_run_receipt.stage_plan_sha256
         or trial_config.stage_plan_sha256 != final_run_receipt.stage_plan_sha256
         or trial_run_receipt.trial_config_sha256 != trial_config.config_sha256
+        or holdout_result_receipt.trial_config_sha256
+        != trial_config.config_sha256
         or trial_run_receipt.final_run_receipt_sha256
         != final_run_receipt.receipt_sha256
         or holdout_result_receipt.trial_run_receipt_sha256

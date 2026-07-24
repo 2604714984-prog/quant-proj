@@ -64,6 +64,8 @@ class ExperimentEvent:
     stage_plan_sha256: str
     split_evaluation_plan_sha256: str
     candidate_run_config_sha256: str
+    family_contract_sha256: str
+    trial_config_sha256: str
     parameters_json: str
     multiplicity_family_id: str
     holdout_id: str
@@ -98,6 +100,8 @@ class ExperimentEvent:
             "stage_plan_sha256",
             "split_evaluation_plan_sha256",
             "candidate_run_config_sha256",
+            "family_contract_sha256",
+            "trial_config_sha256",
         ):
             _sha(getattr(self, name), name)
         _sha(self.prior_event_sha256, "prior_event_sha256")
@@ -195,6 +199,7 @@ class HoldoutResultReceipt:
     trial_id: str
     holdout_id: str
     trial_run_receipt_sha256: str
+    trial_config_sha256: str
     final_stage_hash: str
     final_run_receipt_sha256: str
     split_evaluation_sha256: str
@@ -217,6 +222,7 @@ class HoldoutResultReceipt:
         for name in (
             "final_stage_hash",
             "trial_run_receipt_sha256",
+            "trial_config_sha256",
             "final_run_receipt_sha256",
             "split_evaluation_sha256",
             "split_evaluation_plan_sha256",
@@ -236,6 +242,7 @@ class HoldoutResultReceipt:
                     "split_evaluation_sha256": self.split_evaluation_sha256,
                     "trial_id": self.trial_id,
                     "trial_run_receipt_sha256": self.trial_run_receipt_sha256,
+                    "trial_config_sha256": self.trial_config_sha256,
                 },
                 sort_keys=True,
                 separators=(",", ":"),
@@ -307,6 +314,92 @@ class FinalRunReceipt:
             raise ValueError("final run NAV must be finite")
         if hashlib.sha256(_final_run_payload(self)).hexdigest() != self.receipt_sha256:
             raise ValueError("final run receipt hash mismatch")
+
+
+@dataclass(frozen=True)
+class FamilyContract:
+    """Shared multiplicity scope; it intentionally excludes strategy parameters."""
+
+    multiplicity_family_id: str
+    holdout_id: str
+    dataset_sha256: str
+    split_sha256: str
+    stage_plan_sha256: str
+    split_evaluation_plan_sha256: str
+    cost_assumptions_sha256: str
+    alpha: float
+    family_size: int
+    contract_sha256: str
+
+    def verify(self) -> None:
+        _text(self.multiplicity_family_id, "multiplicity_family_id")
+        _text(self.holdout_id, "holdout_id")
+        for name in (
+            "dataset_sha256",
+            "split_sha256",
+            "stage_plan_sha256",
+            "split_evaluation_plan_sha256",
+            "cost_assumptions_sha256",
+        ):
+            _sha(getattr(self, name), name)
+        if not isinstance(self.alpha, (int, float)) or isinstance(self.alpha, bool):
+            raise ValueError("family alpha must be numeric")
+        if not 0 < float(self.alpha) < 1:
+            raise ValueError("family alpha must be in (0, 1)")
+        if type(self.family_size) is not int or self.family_size < 1:
+            raise ValueError("family size must be positive")
+        if hashlib.sha256(_family_contract_payload(self)).hexdigest() != (
+            self.contract_sha256
+        ):
+            raise ValueError("family contract hash mismatch")
+
+
+def _family_contract_payload(contract: FamilyContract) -> bytes:
+    return json.dumps(
+        {
+            name: value
+            for name, value in contract.__dict__.items()
+            if name != "contract_sha256"
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def capture_family_contract(
+    *,
+    multiplicity_family_id: str,
+    holdout_id: str,
+    dataset_sha256: str,
+    split_sha256: str,
+    stage_plan_sha256: str,
+    split_evaluation_plan_sha256: str,
+    cost_assumptions_sha256: str,
+    alpha: float,
+    family_size: int,
+) -> FamilyContract:
+    values = {
+        "multiplicity_family_id": multiplicity_family_id,
+        "holdout_id": holdout_id,
+        "dataset_sha256": dataset_sha256,
+        "split_sha256": split_sha256,
+        "stage_plan_sha256": stage_plan_sha256,
+        "split_evaluation_plan_sha256": split_evaluation_plan_sha256,
+        "cost_assumptions_sha256": cost_assumptions_sha256,
+        "alpha": alpha,
+        "family_size": family_size,
+    }
+    provisional = object.__new__(FamilyContract)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    contract = FamilyContract(
+        **values,
+        contract_sha256=hashlib.sha256(
+            _family_contract_payload(provisional)
+        ).hexdigest(),
+    )
+    contract.verify()
+    return contract
 
 
 @dataclass(frozen=True)
@@ -723,6 +816,7 @@ def capture_holdout_result(
                 "split_evaluation_sha256": split_evaluation.evaluation_sha256,
                 "trial_id": _text(trial_id, "trial_id"),
                 "trial_run_receipt_sha256": trial_run_receipt.receipt_sha256,
+                "trial_config_sha256": trial_run_receipt.trial_config_sha256,
             },
             sort_keys=True,
             separators=(",", ":"),
@@ -732,6 +826,7 @@ def capture_holdout_result(
         "trial_id": trial_id,
         "holdout_id": holdout_id,
         "trial_run_receipt_sha256": trial_run_receipt.receipt_sha256,
+        "trial_config_sha256": trial_run_receipt.trial_config_sha256,
         "final_stage_hash": final_stage_hash,
         "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
         "split_evaluation_sha256": split_evaluation.evaluation_sha256,
@@ -784,41 +879,50 @@ def _validate_chain(events: tuple[ExperimentEvent, ...]) -> None:
 def preregister_trial(
     events: tuple[ExperimentEvent, ...],
     *,
-    trial_id: str,
-    definition_sha256: str,
-    dataset_sha256: str,
-    split_sha256: str,
-    stage_plan_sha256: str,
+    family_contract: FamilyContract,
+    trial_config: TrialConfig,
     split_evaluation_plan: SplitEvaluationPlan,
-    candidate_run_config_sha256: str,
-    parameters: Mapping[str, object],
-    multiplicity_family_id: str,
-    holdout_id: str,
     preregistered_at: datetime,
-    alpha: float,
-    family_size: int,
 ) -> tuple[ExperimentEvent, ...]:
     _validate_chain(events)
     preregistered = _timestamp(preregistered_at, "preregistered_at")
+    if not isinstance(family_contract, FamilyContract):
+        raise TypeError("preregistration requires a FamilyContract")
+    family_contract.verify()
+    if not isinstance(trial_config, TrialConfig):
+        raise TypeError("preregistration requires a TrialConfig")
+    trial_config.verify()
     if not isinstance(split_evaluation_plan, SplitEvaluationPlan):
         raise TypeError("split_evaluation_plan must be a controlled plan")
     split_evaluation_plan.__post_init__()
     if (
         split_evaluation_plan.preregistered_at.astimezone(timezone.utc)
         != preregistered
-        or split_evaluation_plan.holdout_id != holdout_id
-        or split_evaluation_plan.manifest_sha256 != split_sha256
+        or split_evaluation_plan.holdout_id != family_contract.holdout_id
+        or split_evaluation_plan.manifest_sha256 != family_contract.split_sha256
+        or split_evaluation_plan.plan_sha256
+        != family_contract.split_evaluation_plan_sha256
+        or trial_config.dataset_sha256 != family_contract.dataset_sha256
+        or trial_config.split_sha256 != family_contract.split_sha256
+        or trial_config.stage_plan_sha256 != family_contract.stage_plan_sha256
+        or trial_config.split_evaluation_plan_sha256
+        != family_contract.split_evaluation_plan_sha256
+        or trial_config.cost_assumptions_sha256
+        != family_contract.cost_assumptions_sha256
     ):
         raise ValueError(
             "split evaluation plan must be frozen for this holdout before access"
         )
-    if any(event.trial_id == trial_id for event in events):
+    if any(event.trial_id == trial_config.trial_id for event in events):
         raise ValueError("trial_id is already present in the append-only chain")
-    holdout_events = tuple(event for event in events if event.holdout_id == holdout_id)
+    holdout_events = tuple(
+        event for event in events if event.holdout_id == family_contract.holdout_id
+    )
     if any(event.kind == "HOLDOUT_RESULT" for event in holdout_events):
         raise ValueError("holdout family cannot be extended after holdout access")
     if any(
-        event.multiplicity_family_id != multiplicity_family_id
+        event.multiplicity_family_id
+        != family_contract.multiplicity_family_id
         for event in holdout_events
     ):
         raise ValueError("one holdout_id must use one frozen multiplicity family")
@@ -826,12 +930,13 @@ def preregister_trial(
         event
         for event in events
         if event.kind == "PREREGISTERED"
-        and event.dataset_sha256 == dataset_sha256
-        and event.split_sha256 == split_sha256
+        and event.dataset_sha256 == family_contract.dataset_sha256
+        and event.split_sha256 == family_contract.split_sha256
     )
     if any(
-        event.holdout_id != holdout_id
-        or event.multiplicity_family_id != multiplicity_family_id
+        event.holdout_id != family_contract.holdout_id
+        or event.multiplicity_family_id
+        != family_contract.multiplicity_family_id
         for event in split_scope
     ):
         raise ValueError("one frozen dataset split must use one holdout family")
@@ -839,57 +944,45 @@ def preregister_trial(
         event
         for event in events
         if event.kind == "PREREGISTERED"
-        and event.multiplicity_family_id == multiplicity_family_id
+        and event.multiplicity_family_id
+        == family_contract.multiplicity_family_id
     )
-    if len(family) >= family_size:
+    if len(family) >= family_contract.family_size:
         raise ValueError("multiplicity family already contains its preregistered size")
     if family and any(
-        event.family_size != family_size
-        or event.alpha != alpha
-        or event.holdout_id != holdout_id
+        event.family_contract_sha256 != family_contract.contract_sha256
+        or event.family_size != family_contract.family_size
+        or event.alpha != family_contract.alpha
+        or event.holdout_id != family_contract.holdout_id
         or event.split_evaluation_plan_sha256 != split_evaluation_plan.plan_sha256
-        or event.candidate_run_config_sha256 != candidate_run_config_sha256
         for event in family
     ):
         raise ValueError("multiplicity family preregistration contract changed")
-    try:
-        parameters_json = json.dumps(
-            dict(parameters),
-            sort_keys=True,
-            separators=(",", ":"),
-            allow_nan=False,
-        )
-    except (TypeError, ValueError) as exc:
-        raise ValueError("parameters must be canonically serializable") from exc
     prior = events[-1].event_sha256 if events else "0" * 64
     return events + (
         _event(
             event_index=len(events),
             kind="PREREGISTERED",
-            trial_id=_text(trial_id, "trial_id"),
-            definition_sha256=_sha(definition_sha256, "definition_sha256"),
-            dataset_sha256=_sha(dataset_sha256, "dataset_sha256"),
-            split_sha256=_sha(split_sha256, "split_sha256"),
-            stage_plan_sha256=_sha(stage_plan_sha256, "stage_plan_sha256"),
+            trial_id=trial_config.trial_id,
+            definition_sha256=trial_config.definition_sha256,
+            dataset_sha256=trial_config.dataset_sha256,
+            split_sha256=trial_config.split_sha256,
+            stage_plan_sha256=trial_config.stage_plan_sha256,
             split_evaluation_plan_sha256=_sha(
                 split_evaluation_plan.plan_sha256,
                 "split_evaluation_plan_sha256",
             ),
-            candidate_run_config_sha256=_sha(
-                candidate_run_config_sha256,
-                "candidate_run_config_sha256",
-            ),
-            parameters_json=parameters_json,
-            multiplicity_family_id=_text(
-                multiplicity_family_id,
-                "multiplicity_family_id",
-            ),
-            holdout_id=_text(holdout_id, "holdout_id"),
+            candidate_run_config_sha256=trial_config.config_sha256,
+            family_contract_sha256=family_contract.contract_sha256,
+            trial_config_sha256=trial_config.config_sha256,
+            parameters_json=trial_config.parameters_json,
+            multiplicity_family_id=family_contract.multiplicity_family_id,
+            holdout_id=family_contract.holdout_id,
             preregistered_at=preregistered,
             external_anchor_sha256="0" * 64,
             external_anchor_capture_level="UNANCHORED",
-            alpha=alpha,
-            family_size=family_size,
+            alpha=family_contract.alpha,
+            family_size=family_contract.family_size,
             prior_event_sha256=prior,
             holdout_access_at=None,
             result_sha256=None,
@@ -912,6 +1005,7 @@ def _family_parameter_summary(events: tuple[ExperimentEvent, ...]) -> str:
                     "definition_sha256": event.definition_sha256,
                     "parameters_json": event.parameters_json,
                     "trial_id": event.trial_id,
+                    "trial_config_sha256": event.trial_config_sha256,
                 }
                 for event in sorted(events, key=lambda item: item.trial_id)
             ),
@@ -998,6 +1092,7 @@ def record_holdout_family_results(
         if (
             receipt.split_evaluation_plan_sha256
             != trial.split_evaluation_plan_sha256
+            or receipt.trial_config_sha256 != trial.trial_config_sha256
             or receipt.holdout_access_at <= trial.preregistered_at
         ):
             raise ValueError("holdout receipt violates the preregistered plan or time")
@@ -1013,6 +1108,8 @@ def record_holdout_family_results(
             stage_plan_sha256=trial.stage_plan_sha256,
             split_evaluation_plan_sha256=trial.split_evaluation_plan_sha256,
             candidate_run_config_sha256=trial.candidate_run_config_sha256,
+            family_contract_sha256=trial.family_contract_sha256,
+            trial_config_sha256=trial.trial_config_sha256,
             parameters_json=trial.parameters_json,
             multiplicity_family_id=trial.multiplicity_family_id,
             holdout_id=trial.holdout_id,

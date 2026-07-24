@@ -10,7 +10,9 @@ import quant_system.research.experiments as experiment_module
 from quant_system.research.experiments import (
     TrialRunReceipt,
     capture_family_anchor,
+    capture_family_contract,
     capture_holdout_result,
+    capture_trial_config,
     freeze_experiment_manifest,
     persist_experiment_ledger,
     preregister_trial,
@@ -138,21 +140,51 @@ def _preregister(
     definition_sha256: str = "a" * 64,
 ):
     plan, _, final_run_receipt = _evaluation(holdout_id=holdout_id)
+    family_contract = capture_family_contract(
+        multiplicity_family_id=family_id,
+        holdout_id=holdout_id,
+        dataset_sha256="b" * 64,
+        split_sha256=plan.manifest_sha256,
+        stage_plan_sha256=final_run_receipt.stage_plan_sha256,
+        split_evaluation_plan_sha256=plan.plan_sha256,
+        cost_assumptions_sha256="c" * 64,
+        alpha=0.05,
+        family_size=family_size,
+    )
+    trial_config = _trial_config(
+        plan,
+        final_run_receipt,
+        trial_id=trial_id,
+        definition_sha256=definition_sha256,
+    )
     return preregister_trial(
         events,
+        family_contract=family_contract,
+        trial_config=trial_config,
+        split_evaluation_plan=plan,
+        preregistered_at=PREREGISTERED_AT,
+    )
+
+
+def _trial_config(plan, final_run_receipt, *, trial_id, definition_sha256):
+    return capture_trial_config(
         trial_id=trial_id,
         definition_sha256=definition_sha256,
         dataset_sha256="b" * 64,
         split_sha256=plan.manifest_sha256,
         stage_plan_sha256=final_run_receipt.stage_plan_sha256,
-        split_evaluation_plan=plan,
-        candidate_run_config_sha256="8" * 64,
+        split_evaluation_plan_sha256=plan.plan_sha256,
+        ordered_decision_artifact_sha256s=tuple(
+            hashlib.sha256(f"{trial_id}|decision|{index}".encode()).hexdigest()
+            for index in range(final_run_receipt.stage_count)
+        ),
+        ordered_universe_materialization_sha256s=tuple(
+            hashlib.sha256(f"universe|{index}".encode()).hexdigest()
+            for index in range(final_run_receipt.stage_count)
+        ),
+        cost_assumptions_sha256="c" * 64,
+        max_positions=None,
         parameters={"holding_days": 5, "threshold": 0.2},
-        multiplicity_family_id=family_id,
-        holdout_id=holdout_id,
-        preregistered_at=PREREGISTERED_AT,
-        alpha=0.05,
-        family_size=family_size,
     )
 
 
@@ -161,12 +193,24 @@ def _receipt(
     *,
     holdout_id: str = "holdout-001",
     returns=(0.10, 0.11, 0.09, 0.12, 0.08),
+    definition_sha256: str = "a" * 64,
 ):
-    _, evaluation, final_run_receipt = _evaluation(
+    plan, evaluation, final_run_receipt = _evaluation(
         holdout_id=holdout_id,
         returns=returns,
     )
-    trial_run = _synthetic_trial_run(trial_id, final_run_receipt, evaluation)
+    trial_config = _trial_config(
+        plan,
+        final_run_receipt,
+        trial_id=trial_id,
+        definition_sha256=definition_sha256,
+    )
+    trial_run = _synthetic_trial_run(
+        trial_id,
+        final_run_receipt,
+        evaluation,
+        trial_config_sha256=trial_config.config_sha256,
+    )
     return capture_holdout_result(
         trial_id=trial_id,
         holdout_id=holdout_id,
@@ -177,10 +221,16 @@ def _receipt(
     )
 
 
-def _synthetic_trial_run(trial_id, final_run_receipt, evaluation):
+def _synthetic_trial_run(
+    trial_id,
+    final_run_receipt,
+    evaluation,
+    *,
+    trial_config_sha256="8" * 64,
+):
     values = {
         "trial_id": trial_id,
-        "trial_config_sha256": "8" * 64,
+        "trial_config_sha256": trial_config_sha256,
         "ordered_stage_receipt_sha256s": (
             final_run_receipt.ordered_stage_receipt_sha256s
         ),
@@ -374,6 +424,7 @@ def test_complete_family_is_recorded_atomically_with_computed_holm_values(tmp_pa
             "trial-b",
             holdout_id="holdout-002",
             returns=(0.08, 0.10, 0.07, 0.09, 0.08),
+            definition_sha256="e" * 64,
         ),
     )
     completed = record_holdout_family_results(

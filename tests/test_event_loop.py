@@ -70,6 +70,7 @@ from quant_system.markets.us import CorporateActionValuationError
 from quant_system.research.identity import build_dataset_manifest
 from quant_system.research.experiments import (
     capture_family_anchor,
+    capture_family_contract,
     capture_final_run_receipt,
     capture_holdout_result,
     capture_trial_config,
@@ -2765,6 +2766,99 @@ def _controlled_materialization(
     )
 
 
+def test_family_contract_accepts_two_real_distinct_decision_artifacts(
+    tmp_path: Path,
+) -> None:
+    days = (date(2026, 7, 13), date(2026, 7, 14))
+    calendar = _controlled_calendar(days)
+    execution = calendar.next_session(
+        days[0],
+        as_of=datetime(2026, 7, 20, tzinfo=UTC),
+    )
+    decision_at = execution.open_at - timedelta(microseconds=1)
+    row = _controlled_input(
+        "AAA",
+        execution,
+        observed_session=calendar.session_on(days[0], as_of=decision_at),
+    )
+    materialization = _controlled_materialization(
+        tmp_path,
+        calendar,
+        execution,
+        decision_at,
+        (row,),
+    )
+    dataset = _dataset_manifest(materialization, days[1])
+    artifacts = (
+        _captured_decision_artifact(
+            tmp_path,
+            decision_at,
+            name="-family-a",
+            minimum_score=0.5,
+            dataset_identity_sha256=dataset.identity_sha256,
+            split_identity_sha256=dataset.split_manifest_sha256,
+        ),
+        _captured_decision_artifact(
+            tmp_path,
+            decision_at,
+            name="-family-b",
+            minimum_score=0.6,
+            dataset_identity_sha256=dataset.identity_sha256,
+            split_identity_sha256=dataset.split_manifest_sha256,
+        ),
+    )
+    split_manifest = _candidate_split_manifest(days[1])
+    split_plan = build_split_evaluation_plan(
+        split_manifest,
+        holdout_id="real-two-trial-family",
+        selected_sample_ids=tuple(
+            sample.sample_id for sample in split_manifest.samples
+        ),
+        method="non_overlapping",
+        preregistered_at=decision_at - timedelta(days=1),
+    )
+    stage_plan = create_stage_plan((days[0],))
+    costs = _cost_assumptions()
+    family = capture_family_contract(
+        multiplicity_family_id="real-family",
+        holdout_id=split_plan.holdout_id,
+        dataset_sha256=dataset.identity_sha256,
+        split_sha256=dataset.split_manifest_sha256,
+        stage_plan_sha256=stage_plan.plan_sha256,
+        split_evaluation_plan_sha256=split_plan.plan_sha256,
+        cost_assumptions_sha256=costs.identity_sha256,
+        alpha=0.05,
+        family_size=2,
+    )
+    events = ()
+    for index, artifact in enumerate(artifacts):
+        trial = capture_trial_config(
+            trial_id=f"real-trial-{index}",
+            definition_sha256=artifact.strategy_definition_sha256,
+            dataset_sha256=dataset.identity_sha256,
+            split_sha256=dataset.split_manifest_sha256,
+            stage_plan_sha256=stage_plan.plan_sha256,
+            split_evaluation_plan_sha256=split_plan.plan_sha256,
+            ordered_decision_artifact_sha256s=(artifact.artifact_sha256,),
+            ordered_universe_materialization_sha256s=(
+                materialization.materialization_sha256,
+            ),
+            cost_assumptions_sha256=costs.identity_sha256,
+            max_positions=None,
+            parameters={"minimum_score": 0.5 + 0.1 * index},
+        )
+        events = preregister_trial(
+            events,
+            family_contract=family,
+            trial_config=trial,
+            split_evaluation_plan=split_plan,
+            preregistered_at=decision_at - timedelta(days=1),
+        )
+
+    assert len({event.trial_config_sha256 for event in events}) == 2
+    assert len({event.candidate_run_config_sha256 for event in events}) == 2
+
+
 def test_real_controlled_multistage_chain_produces_return_artifact(
     tmp_path: Path,
 ) -> None:
@@ -3149,19 +3243,20 @@ def _run_candidate_rebalance(
     )
     events = preregister_trial(
         (),
-        trial_id=trial_id,
-        definition_sha256=artifact.strategy_definition_sha256,
-        dataset_sha256=artifact.dataset_identity_sha256,
-        split_sha256=artifact.split_identity_sha256,
-        stage_plan_sha256=evidence_stage_plan_sha256,
+        family_contract=capture_family_contract(
+            multiplicity_family_id=f"family-{artifact.artifact_sha256[:12]}",
+            holdout_id=split_plan.holdout_id,
+            dataset_sha256=artifact.dataset_identity_sha256,
+            split_sha256=artifact.split_identity_sha256,
+            stage_plan_sha256=evidence_stage_plan_sha256,
+            split_evaluation_plan_sha256=split_plan.plan_sha256,
+            cost_assumptions_sha256=kwargs["cost_assumptions"].identity_sha256,
+            alpha=0.05,
+            family_size=1,
+        ),
+        trial_config=trial_config,
         split_evaluation_plan=split_plan,
-        candidate_run_config_sha256=trial_config.config_sha256,
-        parameters=json.loads(trial_config.parameters_json),
-        multiplicity_family_id=f"family-{artifact.artifact_sha256[:12]}",
-        holdout_id=split_plan.holdout_id,
         preregistered_at=decision_at - timedelta(days=1),
-        alpha=0.05,
-        family_size=1,
     )
     configured_root = tmp_path / "canonical-quant-data"
     previous_data_root = os.environ.get("QUANT_DATA_ROOT")
@@ -3183,6 +3278,7 @@ def _run_candidate_rebalance(
                         "definition_sha256": artifact.strategy_definition_sha256,
                         "parameters_json": trial_config.parameters_json,
                         "trial_id": trial_id,
+                        "trial_config_sha256": trial_config.config_sha256,
                     },
                 ),
                 sort_keys=True,
