@@ -1,0 +1,128 @@
+{
+  "research_id": "US_QQQ_TOP50_PIT_LOW_ASSET_GROWTH_V1",
+  "frozen_at": "2026-07-24",
+  "phase": "PREREGISTRATION",
+  "research_question": "Can a low-turnover low-asset-growth satellite improve an 80 percent QQQ core after costs?",
+  "null_hypothesis": "The frozen portfolio does not improve net return and risk-adjusted performance versus QQQ.",
+  "maximum_formal_runs": 1,
+  "inputs": {
+    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "holdings_table": "us_equity_research.qqq_holdings_pit_research",
+    "holdings_snapshot": "qqq_nport_pit_20260723_a10cf2fcdafa4dd8",
+    "mapping_table": "us_equity_research.qqq_security_mapping_research",
+    "mapping_snapshot": "qqq_identity_complete_20260723_767fbc6dbfa92cb9",
+    "fundamentals_table": "us_equity_research.us_sec_companyfacts_pit_research",
+    "fundamentals_snapshot": "US_SEC_COMPANYFACTS_PIT_V1_20260724_832d40ee1fc1",
+    "stock_returns_table": "us_equity_research.us_daily_total_return_research",
+    "stock_returns_snapshot": "US_QQQ_DISCLOSED_TOP50_EQUAL_WEIGHT_V1_YAHOO_SINA_CACHE_20260723",
+    "stock_quality_status": "RESEARCH_PRIMARY_YAHOO_NO_REQUIRED_CROSSCHECK",
+    "benchmark_table": "us_equity_research.us_benchmark_total_return_research",
+    "benchmark_snapshot": "QQQ_TTR_TIINGO_YAHOO_COMPLETION_20260723",
+    "benchmark_symbol": "QQQ",
+    "evaluation_end": "2026-07-22",
+    "synthetic_data_allowed": false
+  },
+  "point_in_time": {
+    "universe": "Top 50 equity positions in each disclosed QQQ N-PORT report, mapped by the frozen CUSIP snapshot.",
+    "formation_event": "One event per report; execute at the first QQQ close strictly after the SEC accepted_at calendar date.",
+    "fundamental_availability": "Use only annual Assets rows with available_at strictly before the execution date.",
+    "revision_rule": "For each taxonomy, concept, unit, and fiscal end, use the latest filed accession already available at that execution date.",
+    "pair_rule": "Within one taxonomy/concept/unit, choose the pair with the latest current fiscal end and a prior fiscal end 300 to 430 days earlier; require both values positive.",
+    "same_day_rule": "A filing dated on the execution date is unavailable until a later session.",
+    "missing_rule": "No imputation. A held name without a new price carries its last observable value as cash-equivalent until rebalance; no future backfill."
+  },
+  "feature": {
+    "name": "ANNUAL_ASSET_GROWTH",
+    "formula": "current annual Assets / previous annual Assets - 1",
+    "direction": "Lower is better.",
+    "tie_break": "Ascending symbol.",
+    "minimum_eligible_symbols_per_formation": 35,
+    "minimum_discovery_formations": 18
+  },
+  "portfolio": {
+    "core_weight": 0.8,
+    "satellite_weight": 0.2,
+    "satellite_select_count": 15,
+    "retention_rank": 25,
+    "satellite_weighting": "Equal weight.",
+    "rebalance": "At each frozen QQQ N-PORT formation event.",
+    "long_only": true,
+    "leverage": false,
+    "shorting": false,
+    "sector_neutralization": false,
+    "optimizer": false,
+    "timing_overlay": false
+  },
+  "costs": {
+    "qqq_one_way_bps": 2,
+    "stock_base_one_way_bps": 15,
+    "stock_stress_one_way_bps": 30,
+    "turnover": "Half the absolute target-versus-pretrade weight change, including cash; initial entry is charged but excluded from the annual satellite turnover gate.",
+    "terminal_liquidation": false
+  },
+  "splits": {
+    "discovery": "Execution dates through 2024-12-31.",
+    "holdout": "Execution dates from 2025-01-01 through 2026-07-22.",
+    "holdout_open_rule": "Open exactly once only if every discovery gate passes.",
+    "purge": "No holding interval or forward-return diagnostic may cross from discovery into holdout."
+  },
+  "diagnostics": {
+    "promotion_gate": false,
+    "items": [
+      "Tie-aware quarterly RankIC against next holding-period stock return.",
+      "ICIR.",
+      "Tercile monotonicity and low-minus-high spread.",
+      "Signal decay at one holding period.",
+      "Coverage and realized turnover."
+    ],
+    "bootstrap": {
+      "series": "Monthly strategy return minus monthly QQQ return.",
+      "method": "Circular moving-block bootstrap of the arithmetic mean.",
+      "block_length_months": 3,
+      "replications": 10000,
+      "seed": 20260724,
+      "promotion_gate": false
+    }
+  },
+  "discovery_gates": {
+    "base_net_cagr_excess_gt": 0.0,
+    "stress_net_cagr_excess_gt": 0.0,
+    "daily_sharpe_margin_gte": 0.03,
+    "maximum_drawdown_shortfall_lte": 0.02,
+    "satellite_annual_one_way_turnover_lte": 0.5,
+    "positive_chronological_subperiods_gte": 2,
+    "recent_chronological_subperiod_excess_gte": 0.0,
+    "all_gates_required": true
+  },
+  "holdout_gates": {
+    "cumulative_net_excess_gt": 0.0,
+    "daily_sharpe_margin_gte": 0.0,
+    "maximum_drawdown_shortfall_lte": 0.02,
+    "satellite_annual_one_way_turnover_lte": 0.5,
+    "all_gates_required": true
+  },
+  "stop_rules": {
+    "input_failure": "INPUT_BLOCKED; do not access strategy outcomes.",
+    "discovery_failure": "REJECTED; permanently close this identity without opening holdout.",
+    "holdout_failure": "REJECTED; permanently close this identity.",
+    "holdout_pass": "HISTORICAL_RESEARCH_PASS_EXTERNAL_REVIEW_REQUIRED; do not promote automatically.",
+    "forbidden_after_outcomes": [
+      "Parameter changes.",
+      "Alternative select or retention counts.",
+      "Alternative core/satellite weights.",
+      "New factors, regimes, timing, machine learning, or optimizer.",
+      "A second formal run under this identity."
+    ]
+  },
+  "boundaries": {
+    "research_only": true,
+    "strategy_candidate_available": false,
+    "recommendation": false,
+    "current_rankings_output": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "automatic_execution": false
+  }
+}
