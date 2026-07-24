@@ -498,6 +498,17 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
             "sample_id": sample_id,
         }
     ]
+    raw_field_roles = (
+        ("sample_id", "KEY_ONLY"),
+        ("entity_id", "KEY_ONLY"),
+        ("close", "FEATURE_INPUT"),
+        ("future_label", "LABEL_INPUT"),
+        ("observed_at", "FEATURE_INPUT"),
+        ("feature_available_at", "FEATURE_INPUT"),
+        ("label", "LABEL_INPUT"),
+        ("label_available_at", "LABEL_INPUT"),
+        ("label_end_at", "LABEL_INPUT"),
+    )
     feature_bytes = json.dumps(
         feature_rows, sort_keys=True, separators=(",", ":")
     ).encode()
@@ -562,6 +573,7 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
         raw_paths=(feature_path, label_path),
         raw_sources=(feature_source, label_source),
         raw_source_roles=("FEATURE_INPUT", "LABEL_INPUT"),
+        raw_field_roles=raw_field_roles,
         program_path=program,
         feature_program_path=feature_program,
         label_program_path=label_program,
@@ -694,6 +706,7 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
             raw_paths=(late_raw_path, label_path),
             raw_sources=(late_source, label_source),
             raw_source_roles=("FEATURE_INPUT", "LABEL_INPUT"),
+            raw_field_roles=raw_field_roles,
             program_path=program,
             feature_program_path=feature_program,
             label_program_path=label_program,
@@ -723,6 +736,7 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
             raw_paths=(feature_path, label_path),
             raw_sources=(feature_source, label_source),
             raw_source_roles=("FEATURE_INPUT", "LABEL_INPUT"),
+            raw_field_roles=raw_field_roles,
             program_path=program,
             feature_program_path=leaking_feature_program,
             label_program_path=label_program,
@@ -754,6 +768,7 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
                 raw_paths=(feature_path, label_path),
                 raw_sources=(feature_source, label_source),
                 raw_source_roles=("FEATURE_INPUT", "LABEL_INPUT"),
+                raw_field_roles=raw_field_roles,
                 program_path=program,
                 feature_program_path=malicious,
                 label_program_path=label_program,

@@ -40,12 +40,14 @@ _CAPTURED_SEMANTICS_TOKEN = object()
 _VERIFIED_SPLIT_TOKEN = object()
 _TRANSFORMATION_TOKEN = object()
 RawSourceRole = Literal["FEATURE_INPUT", "LABEL_INPUT", "KEY_ONLY"]
+RawFieldRole = Literal["FEATURE_INPUT", "LABEL_INPUT", "KEY_ONLY"]
 
 
 @dataclass(frozen=True)
 class TransformationReceipt:
     raw_sources: tuple[SourceIdentity, ...]
     raw_source_roles: tuple[RawSourceRole, ...]
+    raw_field_roles: tuple[tuple[str, RawFieldRole], ...]
     program_sha256: str
     feature_program_sha256: str
     label_program_sha256: str
@@ -118,6 +120,7 @@ class TransformationReceipt:
                     self._config_path,
                     self._raw_paths,
                     self.raw_source_roles,
+                    self.raw_field_roles,
                 )
             )
             replay.write_bytes(partition_bytes)
@@ -158,6 +161,7 @@ def _transformation_payload(receipt: TransformationReceipt) -> bytes:
                 source.capture_receipt_sha256 for source in receipt.raw_sources
             ),
             "raw_source_roles": receipt.raw_source_roles,
+            "raw_field_roles": receipt.raw_field_roles,
             "row_count": receipt.row_count,
             "row_index_sha256": receipt.row_index_sha256,
             "runtime_identity_sha256": receipt.runtime_identity_sha256,
@@ -188,6 +192,7 @@ def _pure_step_bytes(
     inputs: tuple[bytes, ...],
     *,
     allowed_input_roles: frozenset[str] | None = None,
+    raw_field_roles: dict[str, str] | None = None,
 ) -> bytes:
     try:
         spec = json.loads(spec_bytes)
@@ -279,8 +284,13 @@ def _pure_step_bytes(
             or type(spec["drop_missing_numeric"]) is not bool
         ):
             raise ValueError("CSV transformation mappings are invalid")
-        if allowed_input_roles is None or any(
+        if (
+            allowed_input_roles is None
+            or raw_field_roles is None
+            or any(
             role not in allowed_input_roles for role in field_roles.values()
+            )
+            or any(raw_field_roles.get(name) != role for name, role in field_roles.items())
         ):
             raise ValueError("CSV transformation field role is not allowed")
         if any(
@@ -333,9 +343,17 @@ def _pure_step_bytes(
         or type(spec["input_field_roles"]) is not dict
     ):
         raise ValueError("JSON transformation spec is invalid")
-    if allowed_input_roles is None or any(
-        role not in allowed_input_roles
-        for role in spec["input_field_roles"].values()
+    if (
+        allowed_input_roles is None
+        or raw_field_roles is None
+        or any(
+            role not in allowed_input_roles
+            for role in spec["input_field_roles"].values()
+        )
+        or any(
+            raw_field_roles.get(name) != role
+            for name, role in spec["input_field_roles"].items()
+        )
     ):
         raise ValueError("JSON transformation field role is not allowed")
     rows = []
@@ -372,6 +390,7 @@ def replay_pure_transformation_bytes(
     config_bytes: bytes,
     raw_bytes: tuple[bytes, ...],
     raw_source_roles: tuple[RawSourceRole, ...],
+    raw_field_roles: tuple[tuple[str, RawFieldRole], ...],
 ) -> bytes:
     """Recompute the controlled pure transform without filesystem capabilities."""
 
@@ -382,6 +401,7 @@ def replay_pure_transformation_bytes(
         config_bytes=config_bytes,
         raw_bytes=raw_bytes,
         raw_source_roles=raw_source_roles,
+        raw_field_roles=raw_field_roles,
     )[2]
 
 
@@ -393,6 +413,7 @@ def replay_pure_transformation_artifacts_bytes(
     config_bytes: bytes,
     raw_bytes: tuple[bytes, ...],
     raw_source_roles: tuple[RawSourceRole, ...],
+    raw_field_roles: tuple[tuple[str, RawFieldRole], ...],
 ) -> tuple[bytes, bytes, bytes]:
     try:
         config = json.loads(config_bytes)
@@ -410,6 +431,15 @@ def replay_pure_transformation_artifacts_bytes(
         )
     ):
         raise ValueError("raw source roles must isolate feature and label inputs")
+    role_contract = dict(raw_field_roles)
+    if (
+        len(role_contract) != len(raw_field_roles)
+        or any(
+            not name or role not in {"FEATURE_INPUT", "LABEL_INPUT", "KEY_ONLY"}
+            for name, role in raw_field_roles
+        )
+    ):
+        raise ValueError("raw field role contract is invalid")
     features = _pure_step_bytes(
         feature_program_bytes,
         tuple(
@@ -418,6 +448,7 @@ def replay_pure_transformation_artifacts_bytes(
             if role in {"FEATURE_INPUT", "KEY_ONLY"}
         ),
         allowed_input_roles=frozenset({"FEATURE_INPUT", "KEY_ONLY"}),
+        raw_field_roles=role_contract,
     )
     labels = _pure_step_bytes(
         label_program_bytes,
@@ -427,6 +458,7 @@ def replay_pure_transformation_artifacts_bytes(
             if role in {"LABEL_INPUT", "KEY_ONLY"}
         ),
         allowed_input_roles=frozenset({"LABEL_INPUT", "KEY_ONLY"}),
+        raw_field_roles=role_contract,
     )
     partition = _pure_step_bytes(program_bytes, (features, labels))
     return features, labels, partition
@@ -439,6 +471,7 @@ def _run_pure_transformation(
     config_path: Path,
     raw_paths: tuple[Path, ...],
     raw_source_roles: tuple[RawSourceRole, ...],
+    raw_field_roles: tuple[tuple[str, RawFieldRole], ...],
 ) -> bytes:
     return _run_pure_transformation_artifacts(
         program_path,
@@ -447,6 +480,7 @@ def _run_pure_transformation(
         config_path,
         raw_paths,
         raw_source_roles,
+        raw_field_roles,
     )[2]
 
 
@@ -457,6 +491,7 @@ def _run_pure_transformation_artifacts(
     config_path: Path,
     raw_paths: tuple[Path, ...],
     raw_source_roles: tuple[RawSourceRole, ...],
+    raw_field_roles: tuple[tuple[str, RawFieldRole], ...],
 ) -> tuple[bytes, bytes, bytes]:
     return replay_pure_transformation_artifacts_bytes(
         program_bytes=capture_file_bytes(program_path),
@@ -468,6 +503,7 @@ def _run_pure_transformation_artifacts(
             for path in raw_paths
         ),
         raw_source_roles=raw_source_roles,
+        raw_field_roles=raw_field_roles,
     )
 
 
@@ -640,6 +676,7 @@ def execute_transformation(
     raw_paths: Sequence[Path],
     raw_sources: Sequence[SourceIdentity],
     raw_source_roles: Sequence[RawSourceRole],
+    raw_field_roles: Sequence[tuple[str, RawFieldRole]],
     program_path: Path,
     feature_program_path: Path,
     label_program_path: Path,
@@ -655,6 +692,7 @@ def execute_transformation(
     frozen_raw_paths = tuple(raw_paths)
     frozen_sources = tuple(raw_sources)
     frozen_source_roles = tuple(raw_source_roles)
+    frozen_field_roles = tuple(raw_field_roles)
     frozen_schema = tuple(schema)
     frozen_metadata = tuple(field_metadata)
     metadata_by_name = {
@@ -679,6 +717,7 @@ def execute_transformation(
         or len(frozen_source_roles) != len(frozen_sources)
         or "FEATURE_INPUT" not in frozen_source_roles
         or "LABEL_INPUT" not in frozen_source_roles
+        or len(dict(frozen_field_roles)) != len(frozen_field_roles)
     ):
         raise ValueError("raw paths and source receipts must have one nonempty length")
     for path, source in zip(frozen_raw_paths, frozen_sources, strict=True):
@@ -705,6 +744,7 @@ def execute_transformation(
                 config_path,
                 frozen_raw_paths,
                 frozen_source_roles,
+                frozen_field_roles,
             )
         )
         generated.write_bytes(partition_bytes)
@@ -714,6 +754,7 @@ def execute_transformation(
     values = {
         "raw_sources": frozen_sources,
         "raw_source_roles": frozen_source_roles,
+        "raw_field_roles": frozen_field_roles,
         "program_sha256": program_sha,
         "feature_program_sha256": feature_program_sha,
         "label_program_sha256": label_program_sha,
