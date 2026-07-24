@@ -1,0 +1,234 @@
+{
+  "schema": "quant.external_audit_round6_independent.v1",
+  "audit_date": "2026-07-24",
+  "repository": "2604714984-prog/quant-proj",
+  "pull_request": 126,
+  "boundary": {
+    "base_sha": "31329dbfd7b9bb1c184a13ee7fe2e60bd0a6ba14",
+    "previous_audited_head": "81403aa223ad6d11a7339fd970b65512bdc0a5c8",
+    "audited_code_head": "938aada03f819d98cbf7c9ac627a8c77326ed312",
+    "tested_merge_ref": "7d076d51eb70cdbcfd41a1360fd4f14c3fb958df",
+    "review_type": "incremental_after_prior_full_audit"
+  },
+  "ci": {
+    "run_id": 30062113832,
+    "job_id": 89385663162,
+    "status": "completed",
+    "conclusion": "success",
+    "confirmed_steps": [
+      "wheel build",
+      "SHA256SUMS",
+      "artifact upload",
+      "wheel install",
+      "pip check",
+      "quant info outside checkout",
+      "ruff",
+      "pytest"
+    ],
+    "reported_test_count": 273,
+    "test_count_independently_extracted": false,
+    "artifact_id": 8584900000,
+    "artifact_zip_sha256": "625c596fccf40fbc9d42ec9fd0a47b95fd2567b3ce23e3af66e9fea1a966dcbb",
+    "wheel_sha256": "0f7b925efeb9a356b4e2017ca27f320bc51aba382c6cf7d60110fbb9b37eee72",
+    "wheel_sha256_independently_verified": true,
+    "wheel_compileall": "PASS",
+    "student_t_scipy_gold": {
+      "status": "PASS",
+      "reference": "SciPy 1.17.0",
+      "max_absolute_error": 1.78e-12
+    }
+  },
+  "verdict": {
+    "external_audit_verdict": "REQUEST_CHANGES_FOCUSED",
+    "repository_boundary_clean": true,
+    "runtime_architecture_lightweight": true,
+    "single_canonical_writer": true,
+    "fail_closed_default": true,
+    "real_controlled_multistage_path": true,
+    "portable_stage_receipts": true,
+    "experiment_ledger_recoverable": true,
+    "bundle_execution_replay": true,
+    "historical_cost_binding": false,
+    "historical_strategy_binding": false,
+    "feature_label_causal_isolation": false,
+    "dataset_split_row_binding": false,
+    "return_horizon_semantics": false,
+    "actual_exposure_binding": false,
+    "exploratory_research": "USABLE_WITH_CAUTION",
+    "fast_result_pipeline": "NOT_READY",
+    "validated_research_end_to_end": false,
+    "capital_grade_research_process": false,
+    "code_remediation_complete": false,
+    "only_external_evidence_remaining": false
+  },
+  "authorization": {
+    "strategy_candidate_available": false,
+    "recommendation_authorized": false,
+    "paper_trading_authorized": false,
+    "live_trading_authorized": false,
+    "automatic_execution_authorized": false
+  },
+  "accepted_fixes": [
+    "Real multi-stage controlled runs now produce portable stage, final-run, return and split-evaluation receipts.",
+    "Controlled stage receipts replay the event loop and bind trades, portfolio, NAV, receipt chain and engine identity.",
+    "FamilyContract and TrialConfig are separated and multiple real strategies can share one multiplicity family.",
+    "Experiment ledger persists complete canonical event payloads and supports cross-process load and append.",
+    "Transformation uses a controlled pure JSON DSL with separate feature, label and join artifacts.",
+    "Candidate bundle v4 replays execution and selected qualification artifacts.",
+    "Terminal local-date semantics and CI artifact publication are fixed.",
+    "Student-t numerical implementation passed independent SciPy comparison."
+  ],
+  "finding_counts": {
+    "HIGH": 6,
+    "MEDIUM": 1,
+    "MEDIUM_THROUGHPUT": 3,
+    "BLOCKED_EXTERNAL_EVIDENCE": 1
+  },
+  "findings": [
+    {
+      "id": "R6-001",
+      "severity": "HIGH",
+      "title": "Historical cost identity can diverge from actual execution costs",
+      "files": [
+        "src/quant_system/backtest/event_loop.py::run_controlled_stage",
+        "src/quant_system/backtest/event_loop.py::ControlledStageReceipt.verify",
+        "src/quant_system/research/experiments.py::TrialConfig",
+        "src/quant_system/research/experiments.py::evaluate_frozen_historical_run"
+      ],
+      "impact": "Cheap or zero-cost historical execution can be labelled with a different conservative cost-policy SHA and enter holdout statistics.",
+      "minimum_fix": "Pass complete ExecutionCostAssumptions into the controlled runner and derive portfolio costs, slippage, capacity and identity internally.",
+      "status": "OPEN"
+    },
+    {
+      "id": "R6-002",
+      "severity": "HIGH",
+      "title": "Trial strategy definition is not proven to match each historical DecisionArtifact",
+      "files": [
+        "src/quant_system/research/experiments.py::TrialConfig",
+        "src/quant_system/research/experiments.py::evaluate_frozen_historical_run",
+        "src/quant_system/backtest/event_loop.py::ControlledStageReceipt"
+      ],
+      "impact": "Historical returns from strategy B can support a TrialConfig and prospective candidate labelled as strategy A.",
+      "minimum_fix": "Bind shared strategy definition/adapter identities and replayable per-stage DecisionArtifact payloads to TrialConfig and every stage receipt.",
+      "status": "OPEN"
+    },
+    {
+      "id": "R6-003",
+      "severity": "HIGH",
+      "title": "Feature transformation can read label-only fields from shared raw bytes",
+      "files": [
+        "src/quant_system/research/identity.py::replay_pure_transformation_artifacts_bytes",
+        "src/quant_system/research/identity.py::_pure_step_bytes",
+        "src/quant_system/research/identity.py::_validate_partition"
+      ],
+      "impact": "A partition can be marked row-PIT-enforced while the feature directly contains a future label.",
+      "minimum_fix": "Add FEATURE_INPUT, LABEL_INPUT and KEY_ONLY source/field roles; derive availability from the actual source fields consumed by each feature.",
+      "status": "OPEN"
+    },
+    {
+      "id": "R6-004",
+      "severity": "HIGH",
+      "title": "Dataset partition rows are not reconciled with SplitManifest rows",
+      "files": [
+        "src/quant_system/research/identity.py::capture_dataset_manifest",
+        "src/quant_system/research/identity.py::DatasetManifest.verify_identity",
+        "src/quant_system/research/splits.py::SplitManifest"
+      ],
+      "impact": "Training/label partitions and purge/holdout definitions can refer to different samples, entities or dates.",
+      "minimum_fix": "Create a canonical row-index receipt and require exact equality of sample_id, entity_id, observed_at and label_end_at with SplitManifest.",
+      "status": "OPEN"
+    },
+    {
+      "id": "R6-005",
+      "severity": "HIGH",
+      "title": "Return horizons lack an explicit economic start and complete-period coverage",
+      "files": [
+        "src/quant_system/research/splits.py::ReturnObservation",
+        "src/quant_system/research/splits.py::capture_return_artifact",
+        "src/quant_system/research/splits.py::evaluate_split"
+      ],
+      "impact": "Endpoint-only or economically misaligned returns can be accepted for a declared label horizon.",
+      "minimum_fix": "Store period_start_session and period_end_session derived from consecutive portfolio states; verify a complete, gap-free period chain and separate feature observation time from return start.",
+      "status": "OPEN"
+    },
+    {
+      "id": "R6-006",
+      "severity": "HIGH",
+      "title": "Return contributors come from target weights rather than actual portfolio exposure",
+      "files": [
+        "src/quant_system/research/splits.py::capture_return_artifact",
+        "src/quant_system/backtest/event_loop.py::run_static_rebalance",
+        "src/quant_system/backtest/event_loop.py::_order"
+      ],
+      "impact": "Blocked or residual holdings can affect NAV while being absent from the contributor/exposure receipt used by statistical evaluation.",
+      "minimum_fix": "Derive exposure from actual positions, trades, blocked orders and marks; or use an explicit portfolio-date estimand without target-security contributors.",
+      "status": "OPEN"
+    },
+    {
+      "id": "R6-007",
+      "severity": "MEDIUM",
+      "title": "Transformation config is hashed but does not affect transformation output",
+      "minimum_fix": "Remove config or allow explicit typed config references and reject unused keys.",
+      "status": "OPEN_NEXT_PR"
+    },
+    {
+      "id": "R6-008",
+      "severity": "MEDIUM_THROUGHPUT",
+      "title": "FRED exploratory slice is not reproducible from a clean repository",
+      "minimum_fix": "Add a small research runner, committed spec, artifact reference and compact exploratory report in a later small PR.",
+      "status": "OPEN_NEXT_PR"
+    },
+    {
+      "id": "R6-009",
+      "severity": "MEDIUM_THROUGHPUT",
+      "title": "Build, serialize and load paths repeat expensive replay",
+      "minimum_fix": "Separate structural verification from explicit replay and cache ReplayReceipt by immutable identity.",
+      "status": "OPEN_NEXT_PR"
+    },
+    {
+      "id": "R6-010",
+      "severity": "MEDIUM_THROUGHPUT",
+      "title": "Bundle embeds all artifacts as Base64 and scales linearly with data size",
+      "minimum_fix": "Use a content-addressed artifact manifest and explicit offline pack operation.",
+      "status": "OPEN_NEXT_PR"
+    },
+    {
+      "id": "E6-001",
+      "severity": "BLOCKED_EXTERNAL_EVIDENCE",
+      "title": "Authoritative provider data, production calibration, independent anchor and A-share evidence-room receipt remain unavailable",
+      "status": "BLOCKED_EXTERNAL_EVIDENCE"
+    }
+  ],
+  "required_current_pr_fixes": [
+    "Bind actual execution costs to cost assumptions identity.",
+    "Bind TrialConfig strategy definition/adapter to every historical DecisionArtifact.",
+    "Isolate feature and label source-field roles.",
+    "Reconcile dataset row index exactly with SplitManifest.",
+    "Add explicit return period start/end and complete coverage.",
+    "Derive contributor/exposure evidence from actual holdings and trades."
+  ],
+  "next_small_pr_scope": [
+    "run_research(spec, mode=explore|verify)",
+    "quant research run CLI",
+    "structural verify versus explicit replay",
+    "content-addressed bundle manifest",
+    "one clean-clone reproducible real exploratory vertical slice",
+    "archive superseded audit documents"
+  ],
+  "audit_execution": {
+    "database_writes": 0,
+    "market_data_provider_requests": 0,
+    "independent_reproductions": true,
+    "github_writes_before_report_publication": 0
+  },
+  "unverified": [
+    "Exact 273-passed text from raw CI log tail",
+    "Submitter local worktree cleanliness",
+    "Submitter database-write and provider-request accounting",
+    "FRED 9-row raw snapshot, spec and temporary runner",
+    "Authoritative provider observations",
+    "Real calibrated costs and liquidity",
+    "Independent preregistration anchor",
+    "EA-001 external reviewer receipt"
+  ]
+}
