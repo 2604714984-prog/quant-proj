@@ -485,38 +485,18 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
         provider_id="fixture-provider",
         subject_id="AAA",
     ).source
-    program = tmp_path / "transform.py"
-    feature_program = tmp_path / "feature.py"
-    label_program = tmp_path / "label.py"
+    program = tmp_path / "transform-spec.json"
+    feature_program = tmp_path / "feature-spec.json"
+    label_program = tmp_path / "label-spec.json"
     feature_program.write_text(
-        "import argparse,json\n"
-        "p=argparse.ArgumentParser();p.add_argument('--config');"
-        "p.add_argument('--output');p.add_argument('raw',nargs='+');a=p.parse_args()\n"
-        "rows=[]\n"
-        "for path in a.raw: rows.extend(json.load(open(path,encoding='utf-8')))\n"
-        "with open(a.output,'w',encoding='utf-8') as out:\n"
-        "  for row in sorted(rows,key=lambda x:x['symbol']):\n"
-        "    out.write(json.dumps(row,sort_keys=True,separators=(',',':'))+'\\n')\n",
+        '{"operation":"json_array_to_canonical_jsonl",'
+        '"sort_keys":["symbol"],"version":1}',
         encoding="utf-8",
     )
-    passthrough_program = (
-        "import argparse\n"
-        "p=argparse.ArgumentParser();p.add_argument('--config');"
-        "p.add_argument('--output');p.add_argument('inputs',nargs='+');a=p.parse_args()\n"
-        "with open(a.output,'wb') as out:\n"
-        "  for path in a.inputs: out.write(open(path,'rb').read())\n"
-    )
+    passthrough_program = '{"operation":"identity_bytes","version":1}'
     label_program.write_text(passthrough_program, encoding="utf-8")
     program.write_text(
         passthrough_program,
-        encoding="utf-8",
-    )
-    malicious = tmp_path / "malicious-feature.py"
-    malicious.write_text(
-        "import argparse,os\n"
-        "p=argparse.ArgumentParser();p.add_argument('--config');"
-        "p.add_argument('--output');p.add_argument('raw',nargs='+');a=p.parse_args()\n"
-        "open(a.output,'w').write(os.environ['UNDECLARED_FUTURE_PATH'])\n",
         encoding="utf-8",
     )
     config = tmp_path / "transform.json"
@@ -553,24 +533,38 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
     ).hexdigest()
     assert receipt.field_contracts[1] == ("close", "DOUBLE", "USD_per_share", "NA")
     receipt.verify()
+    with pytest.raises(ValueError, match="runtime identity changed"):
+        replace(receipt, runtime_identity_sha256="f" * 64).verify()
     output.write_text('{"symbol":"TAMPERED"}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="output partition bytes changed"):
         receipt.verify()
 
-    with pytest.raises(ValueError, match="hermetic transformation step"):
-        execute_transformation(
-            raw_paths=(raw_path,),
-            raw_sources=(source,),
-            program_path=program,
-            feature_program_path=malicious,
-            label_program_path=label_program,
-            config_path=config,
-            output_path=tmp_path / "malicious-output.jsonl",
-            schema=receipt.schema,
-            field_metadata=tuple(
-                (name, unit, timezone_name)
-                for name, _, unit, timezone_name in receipt.field_contracts
-            ),
-            dataset_as_of=as_of,
-            executed_at=as_of,
+    for operation in (
+        "ctypes_libc_open",
+        "mmap_undeclared",
+        "proc_read",
+        "native_extension",
+        "undeclared_database",
+    ):
+        malicious = tmp_path / f"{operation}.json"
+        malicious.write_text(
+            json.dumps({"operation": operation, "version": 1}),
+            encoding="utf-8",
         )
+        with pytest.raises(ValueError, match="unsupported controlled pure"):
+            execute_transformation(
+                raw_paths=(raw_path,),
+                raw_sources=(source,),
+                program_path=program,
+                feature_program_path=malicious,
+                label_program_path=label_program,
+                config_path=config,
+                output_path=tmp_path / f"{operation}-output.jsonl",
+                schema=receipt.schema,
+                field_metadata=tuple(
+                    (name, unit, timezone_name)
+                    for name, _, unit, timezone_name in receipt.field_contracts
+                ),
+                dataset_as_of=as_of,
+                executed_at=as_of,
+            )

@@ -7,8 +7,6 @@ import json
 import math
 import os
 import re
-import shutil
-import subprocess
 import sys
 import tempfile
 from collections.abc import Sequence
@@ -53,6 +51,7 @@ class TransformationReceipt:
     output_partition_sha256: str
     dataset_as_of: datetime
     executed_at: datetime
+    runtime_identity_sha256: str
     receipt_sha256: str
     _program_path: Path = field(repr=False, compare=False)
     _feature_program_path: Path = field(repr=False, compare=False)
@@ -93,15 +92,18 @@ class TransformationReceipt:
             raise ValueError("transformation config bytes changed")
         if capture_file_digest(self._output_path)[0] != self.output_partition_sha256:
             raise ValueError("transformation output partition bytes changed")
+        if self.runtime_identity_sha256 != _pure_runtime_identity():
+            raise ValueError("transformation runtime identity changed")
         with tempfile.TemporaryDirectory(prefix="quant-transform-verify-") as directory:
             replay = Path(directory) / "partition.jsonl"
-            _run_transformation(
-                self._program_path,
-                self._feature_program_path,
-                self._label_program_path,
-                self._config_path,
-                self._raw_paths,
-                replay,
+            replay.write_bytes(
+                _run_pure_transformation(
+                    self._program_path,
+                    self._feature_program_path,
+                    self._label_program_path,
+                    self._config_path,
+                    self._raw_paths,
+                )
             )
             row_count = _validate_partition(
                 replay,
@@ -132,6 +134,7 @@ def _transformation_payload(receipt: TransformationReceipt) -> bytes:
                 source.capture_receipt_sha256 for source in receipt.raw_sources
             ),
             "row_count": receipt.row_count,
+            "runtime_identity_sha256": receipt.runtime_identity_sha256,
             "schema": receipt.schema,
             "field_contracts": receipt.field_contracts,
             "version": 1,
@@ -141,143 +144,76 @@ def _transformation_payload(receipt: TransformationReceipt) -> bytes:
     ).encode()
 
 
-_HERMETIC_RUNNER = r"""
-import json
-import os
-from pathlib import Path
-import runpy
-import sys
-
-program = Path(sys.argv[1]).resolve()
-declared_output = Path(sys.argv[2]).resolve()
-allowed_inputs = {Path(item).resolve() for item in json.loads(sys.argv[3])}
-allowed_inputs.add(program)
-stdlib_root = Path(sys.base_prefix).resolve()
-
-def audit(event, args):
-    if event.startswith("socket.") or event in {
-        "subprocess.Popen",
-        "os.system",
-        "pty.spawn",
-    }:
-        raise PermissionError("hermetic transformation denied external capability")
-    if event == "open" and args and isinstance(args[0], (str, os.PathLike)):
-        candidate = Path(args[0]).resolve()
-        mode = args[1] if len(args) > 1 else "r"
-        writing = (
-            isinstance(mode, str) and any(flag in mode for flag in "wax+")
-        ) or (
-            isinstance(mode, int)
-            and bool(mode & (os.O_WRONLY | os.O_RDWR | os.O_CREAT | os.O_TRUNC))
-        )
-        if writing:
-            if candidate != declared_output:
-                raise PermissionError("hermetic transformation denied undeclared write")
-        elif candidate not in allowed_inputs and not candidate.is_relative_to(stdlib_root):
-            raise PermissionError("hermetic transformation denied undeclared read")
-
-sys.addaudithook(audit)
-sys.argv = [str(program), *sys.argv[4:]]
-runpy.run_path(str(program), run_name="__main__")
-"""
+def _pure_runtime_identity() -> str:
+    payload = {
+        "engine_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
+        "implementation": sys.implementation.name,
+        "interpreter_cache_tag": sys.implementation.cache_tag,
+        "python_version": tuple(sys.version_info[:3]),
+        "version": 1,
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
 
 
-def _run_hermetic_step(
-    program_path: Path,
-    config_path: Path,
-    input_paths: tuple[Path, ...],
-    output_path: Path,
-    *,
-    cwd: Path,
-) -> None:
-    allowed_inputs = (program_path, config_path, *input_paths)
-    command = [
-        sys.executable,
-        "-I",
-        "-c",
-        _HERMETIC_RUNNER,
-        str(program_path),
-        str(output_path),
-        json.dumps(tuple(str(path) for path in allowed_inputs)),
-        "--config",
-        str(config_path),
-        "--output",
-        str(output_path),
-        *(str(path) for path in input_paths),
-    ]
-    completed = subprocess.run(  # noqa: S603
-        command,
-        check=False,
-        capture_output=True,
-        cwd=cwd,
-        env={
-            "LANG": "C.UTF-8",
-            "LC_ALL": "C.UTF-8",
-            "PYTHONDONTWRITEBYTECODE": "1",
-            "PYTHONHASHSEED": "0",
-            "TZ": "UTC",
-        },
-        timeout=120,
+def _pure_step(spec_path: Path, inputs: tuple[bytes, ...]) -> bytes:
+    try:
+        spec = json.loads(capture_file_bytes(spec_path))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("pure transformation spec must be valid JSON") from exc
+    if (
+        type(spec) is not dict
+        or spec.get("version") != 1
+        or spec.get("operation")
+        not in {"identity_bytes", "json_array_to_canonical_jsonl"}
+    ):
+        raise ValueError("unsupported controlled pure transformation operation")
+    if spec["operation"] == "identity_bytes":
+        if set(spec) != {"operation", "version"}:
+            raise ValueError("identity transformation spec has unexpected fields")
+        return b"".join(inputs)
+    if set(spec) != {"operation", "sort_keys", "version"} or not isinstance(
+        spec["sort_keys"], list
+    ):
+        raise ValueError("JSON transformation spec is invalid")
+    rows = []
+    for payload in inputs:
+        try:
+            decoded = json.loads(payload)
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise ValueError("pure transformation input must be JSON") from exc
+        if type(decoded) is not list or any(type(row) is not dict for row in decoded):
+            raise ValueError("JSON transformation input must be an array of objects")
+        rows.extend(decoded)
+    sort_keys = tuple(str(name) for name in spec["sort_keys"])
+    try:
+        rows.sort(key=lambda row: tuple(row[name] for name in sort_keys))
+    except KeyError as exc:
+        raise ValueError("pure transformation sort key is absent") from exc
+    return b"".join(
+        json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+        for row in rows
     )
-    if completed.returncode != 0 or not output_path.is_file():
-        raise ValueError("hermetic transformation step did not produce its declared output")
 
 
-def _run_transformation(
+def _run_pure_transformation(
     program_path: Path,
     feature_program_path: Path,
     label_program_path: Path,
     config_path: Path,
     raw_paths: tuple[Path, ...],
-    output_path: Path,
-) -> None:
-    output_path.parent.mkdir(parents=True, exist_ok=True)
-    with tempfile.TemporaryDirectory(prefix="quant-hermetic-") as directory:
-        workspace = Path(directory)
-        staged_programs = []
-        for index, original in enumerate(
-            (feature_program_path, label_program_path, program_path)
-        ):
-            staged = workspace / f"program-{index}.py"
-            shutil.copyfile(original, staged)
-            staged.chmod(0o444)
-            staged_programs.append(staged)
-        staged_config = workspace / "config.json"
-        shutil.copyfile(config_path, staged_config)
-        staged_config.chmod(0o444)
-        staged_raw: list[Path] = []
-        for index, original in enumerate(raw_paths):
-            staged = workspace / f"raw-{index}.bin"
-            shutil.copyfile(original, staged)
-            staged.chmod(0o444)
-            staged_raw.append(staged)
-        feature_output = workspace / "features.jsonl"
-        label_output = workspace / "labels.jsonl"
-        final_output = workspace / "partition.jsonl"
-        _run_hermetic_step(
-            staged_programs[0],
-            staged_config,
-            tuple(staged_raw),
-            feature_output,
-            cwd=workspace,
-        )
-        feature_output.chmod(0o444)
-        _run_hermetic_step(
-            staged_programs[1],
-            staged_config,
-            (feature_output,),
-            label_output,
-            cwd=workspace,
-        )
-        label_output.chmod(0o444)
-        _run_hermetic_step(
-            staged_programs[2],
-            staged_config,
-            (label_output,),
-            final_output,
-            cwd=workspace,
-        )
-        os.replace(final_output, output_path)
+) -> bytes:
+    try:
+        config = json.loads(capture_file_bytes(config_path))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("pure transformation config must be valid JSON") from exc
+    if type(config) is not dict:
+        raise ValueError("pure transformation config must be an object")
+    raw = tuple(capture_file_bytes(path, max_bytes=64 * 1024 * 1024) for path in raw_paths)
+    features = _pure_step(feature_program_path, raw)
+    labels = _pure_step(label_program_path, (features,))
+    return _pure_step(program_path, (labels,))
 
 
 def _validate_partition(
@@ -419,13 +355,14 @@ def execute_transformation(
         dir=output_path.parent,
     ) as directory:
         generated = Path(directory) / "partition.jsonl"
-        _run_transformation(
-            program_path,
-            feature_program_path,
-            label_program_path,
-            config_path,
-            frozen_raw_paths,
-            generated,
+        generated.write_bytes(
+            _run_pure_transformation(
+                program_path,
+                feature_program_path,
+                label_program_path,
+                config_path,
+                frozen_raw_paths,
+            )
         )
         row_count = _validate_partition(generated, field_contracts, as_of)
         output_sha = capture_file_digest(generated)[0]
@@ -442,6 +379,7 @@ def execute_transformation(
         "output_partition_sha256": output_sha,
         "dataset_as_of": as_of,
         "executed_at": executed,
+        "runtime_identity_sha256": _pure_runtime_identity(),
         "_program_path": program_path,
         "_feature_program_path": feature_program_path,
         "_label_program_path": label_program_path,
