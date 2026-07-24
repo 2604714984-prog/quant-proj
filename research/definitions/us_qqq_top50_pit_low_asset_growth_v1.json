@@ -6,7 +6,7 @@
   "null_hypothesis": "The frozen portfolio does not improve net return and risk-adjusted performance versus QQQ.",
   "maximum_formal_runs": 1,
   "inputs": {
-    "database": "/home/rongyu/workspace/quant-data/quant_research.duckdb",
+    "database": "${QUANT_DATA_ROOT}/quant_research.duckdb",
     "holdings_table": "us_equity_research.qqq_holdings_pit_research",
     "holdings_snapshot": "qqq_nport_pit_20260723_a10cf2fcdafa4dd8",
     "mapping_table": "us_equity_research.qqq_security_mapping_research",
