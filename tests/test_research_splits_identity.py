@@ -467,7 +467,10 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
     raw_rows = [
         {
             "close": 10.5,
-            "source_available_at": "2026-01-02T10:00:00+00:00",
+            "feature_available_at": "2026-01-02T10:00:00+00:00",
+            "label": 0.02,
+            "label_available_at": "2026-01-02T11:00:00+00:00",
+            "observed_at": "2026-01-02T10:30:00+00:00",
             "symbol": "AAA",
         }
     ]
@@ -490,13 +493,18 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
     label_program = tmp_path / "label-spec.json"
     feature_program.write_text(
         '{"operation":"json_array_to_canonical_jsonl",'
+        '"output_fields":["symbol","close","observed_at","feature_available_at"],'
         '"sort_keys":["symbol"],"version":1}',
         encoding="utf-8",
     )
-    passthrough_program = '{"operation":"identity_bytes","version":1}'
-    label_program.write_text(passthrough_program, encoding="utf-8")
+    label_program.write_text(
+        '{"operation":"json_array_to_canonical_jsonl",'
+        '"output_fields":["symbol","label","label_available_at"],'
+        '"sort_keys":["symbol"],"version":1}',
+        encoding="utf-8",
+    )
     program.write_text(
-        passthrough_program,
+        '{"keys":["symbol"],"operation":"join_jsonl","version":1}',
         encoding="utf-8",
     )
     config = tmp_path / "transform.json"
@@ -513,12 +521,18 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
         schema=(
             ("symbol", "VARCHAR"),
             ("close", "DOUBLE"),
-            ("source_available_at", "TIMESTAMP"),
+            ("observed_at", "TIMESTAMP"),
+            ("feature_available_at", "TIMESTAMP"),
+            ("label", "DOUBLE"),
+            ("label_available_at", "TIMESTAMP"),
         ),
         field_metadata=(
             ("symbol", "security_identifier", "NA"),
             ("close", "USD_per_share", "NA"),
-            ("source_available_at", "instant", "UTC"),
+            ("observed_at", "instant", "UTC"),
+            ("feature_available_at", "instant", "UTC"),
+            ("label", "return_fraction", "NA"),
+            ("label_available_at", "instant", "UTC"),
         ),
         dataset_as_of=as_of,
         executed_at=as_of,
@@ -532,12 +546,54 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
         label_program.read_bytes()
     ).hexdigest()
     assert receipt.field_contracts[1] == ("close", "DOUBLE", "USD_per_share", "NA")
+    assert receipt.row_pit_enforced is True
+    assert receipt.feature_artifact_sha256 != receipt.label_artifact_sha256
     receipt.verify()
     with pytest.raises(ValueError, match="runtime identity changed"):
         replace(receipt, runtime_identity_sha256="f" * 64).verify()
     output.write_text('{"symbol":"TAMPERED"}\n', encoding="utf-8")
     with pytest.raises(ValueError, match="output partition bytes changed"):
         receipt.verify()
+
+    late_raw_rows = [
+        {
+            **raw_rows[0],
+            "feature_available_at": "2026-01-02T10:31:00+00:00",
+        }
+    ]
+    late_raw_bytes = json.dumps(
+        late_raw_rows, sort_keys=True, separators=(",", ":")
+    ).encode()
+    late_raw_path = tmp_path / "late-raw.json"
+    late_raw_path.write_bytes(late_raw_bytes)
+    late_source = capture_source_bytes(
+        late_raw_bytes,
+        publication_evidence=b"fixture publication",
+        source_url="https://example.test/late-raw",
+        available_at=datetime(2026, 1, 2, 10, tzinfo=timezone.utc),
+        retrieved_at=datetime(2026, 1, 2, 10, 1, tzinfo=timezone.utc),
+        revision_id="late-raw-v1",
+        source_family_id="raw-family",
+        provider_id="fixture-provider",
+        subject_id="AAA",
+    ).source
+    with pytest.raises(ValueError, match="feature evidence is unavailable"):
+        execute_transformation(
+            raw_paths=(late_raw_path,),
+            raw_sources=(late_source,),
+            program_path=program,
+            feature_program_path=feature_program,
+            label_program_path=label_program,
+            config_path=config,
+            output_path=tmp_path / "late-output.jsonl",
+            schema=receipt.schema,
+            field_metadata=tuple(
+                (name, semantic, unit)
+                for name, _, semantic, unit in receipt.field_contracts
+            ),
+            dataset_as_of=as_of,
+            executed_at=as_of,
+        )
 
     for operation in (
         "ctypes_libc_open",

@@ -50,7 +50,7 @@ from quant_system.research.identity import (
     DatasetManifest,
     _transformation_payload,
     dataset_identity_sha256,
-    replay_pure_transformation_bytes,
+    replay_pure_transformation_artifacts_bytes,
 )
 from quant_system.research.experiments import (
     ExperimentEvent,
@@ -921,12 +921,14 @@ def _replay_bundle_qualification(bundle: CandidateRunBundle) -> None:
         receipt_payload = item["receipt_payload_json"]
         receipt_values = json.loads(receipt_payload)
         raw_roles = tuple(item["raw_roles"])
-        output = replay_pure_transformation_bytes(
+        feature_output, label_output, output = (
+            replay_pure_transformation_artifacts_bytes(
             program_bytes=artifacts[f"{prefix}.program"],
             feature_program_bytes=artifacts[f"{prefix}.feature_program"],
             label_program_bytes=artifacts[f"{prefix}.label_program"],
             config_bytes=artifacts[f"{prefix}.config"],
             raw_bytes=tuple(artifacts[role] for role in raw_roles),
+            )
         )
         component_hashes = {
             "program_sha256": hashlib.sha256(
@@ -941,6 +943,8 @@ def _replay_bundle_qualification(bundle: CandidateRunBundle) -> None:
             "config_sha256": hashlib.sha256(
                 artifacts[f"{prefix}.config"]
             ).hexdigest(),
+            "feature_artifact_sha256": hashlib.sha256(feature_output).hexdigest(),
+            "label_artifact_sha256": hashlib.sha256(label_output).hexdigest(),
             "output_partition_sha256": hashlib.sha256(output).hexdigest(),
         }
         if (

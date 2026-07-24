@@ -51,6 +51,9 @@ class TransformationReceipt:
     field_contracts: tuple[tuple[str, str, str, str], ...]
     row_count: int
     output_partition_sha256: str
+    feature_artifact_sha256: str
+    label_artifact_sha256: str
+    row_pit_enforced: bool
     dataset_as_of: datetime
     executed_at: datetime
     runtime_identity_sha256: str
@@ -98,8 +101,8 @@ class TransformationReceipt:
             raise ValueError("transformation runtime identity changed")
         with tempfile.TemporaryDirectory(prefix="quant-transform-verify-") as directory:
             replay = Path(directory) / "partition.jsonl"
-            replay.write_bytes(
-                _run_pure_transformation(
+            feature_bytes, label_bytes, partition_bytes = (
+                _run_pure_transformation_artifacts(
                     self._program_path,
                     self._feature_program_path,
                     self._label_program_path,
@@ -107,6 +110,7 @@ class TransformationReceipt:
                     self._raw_paths,
                 )
             )
+            replay.write_bytes(partition_bytes)
             row_count = _validate_partition(
                 replay,
                 self.field_contracts,
@@ -115,6 +119,10 @@ class TransformationReceipt:
             if (
                 row_count != self.row_count
                 or capture_file_digest(replay)[0] != self.output_partition_sha256
+                or hashlib.sha256(feature_bytes).hexdigest()
+                != self.feature_artifact_sha256
+                or hashlib.sha256(label_bytes).hexdigest()
+                != self.label_artifact_sha256
             ):
                 raise ValueError("transformation replay does not reproduce the partition")
         payload = _transformation_payload(self)
@@ -129,6 +137,9 @@ def _transformation_payload(receipt: TransformationReceipt) -> bytes:
             "dataset_as_of": receipt.dataset_as_of.isoformat(),
             "executed_at": receipt.executed_at.isoformat(),
             "output_partition_sha256": receipt.output_partition_sha256,
+            "feature_artifact_sha256": receipt.feature_artifact_sha256,
+            "label_artifact_sha256": receipt.label_artifact_sha256,
+            "row_pit_enforced": receipt.row_pit_enforced,
             "program_sha256": receipt.program_sha256,
             "feature_program_sha256": receipt.feature_program_sha256,
             "label_program_sha256": receipt.label_program_sha256,
@@ -172,6 +183,7 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
             "identity_bytes",
             "json_array_to_canonical_jsonl",
             "csv_to_canonical_jsonl",
+            "join_jsonl",
         }
     ):
         raise ValueError("unsupported controlled pure transformation operation")
@@ -179,12 +191,50 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
         if set(spec) != {"operation", "version"}:
             raise ValueError("identity transformation spec has unexpected fields")
         return b"".join(inputs)
+    if spec["operation"] == "join_jsonl":
+        if (
+            set(spec) != {"keys", "operation", "version"}
+            or type(spec["keys"]) is not list
+            or len(inputs) != 2
+        ):
+            raise ValueError("controlled join spec is invalid")
+        keys = tuple(str(key) for key in spec["keys"])
+
+        def indexed(payload: bytes) -> dict[tuple[object, ...], dict[str, object]]:
+            rows = {}
+            for line in payload.splitlines():
+                try:
+                    row = json.loads(line)
+                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                    raise ValueError("join input must be canonical JSONL") from exc
+                if type(row) is not dict:
+                    raise ValueError("join input rows must be objects")
+                key = tuple(row[name] for name in keys)
+                if key in rows:
+                    raise ValueError("join input keys must be unique")
+                rows[key] = row
+            return rows
+
+        left, right = (indexed(payload) for payload in inputs)
+        if set(left) != set(right):
+            raise ValueError("feature and label artifacts have different join keys")
+        joined = []
+        for key in sorted(left):
+            overlap = (set(left[key]) & set(right[key])) - set(keys)
+            if overlap:
+                raise ValueError("feature and label artifacts overlap outside join keys")
+            joined.append({**left[key], **right[key]})
+        return b"".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+            for row in joined
+        )
     if spec["operation"] == "csv_to_canonical_jsonl":
         if set(spec) != {
             "constant_fields",
             "drop_missing_numeric",
             "numeric_fields",
             "operation",
+            "output_fields",
             "rename",
             "sort_keys",
             "version",
@@ -202,6 +252,7 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
             or type(constants) is not dict
             or type(spec["sort_keys"]) is not list
             or type(spec["numeric_fields"]) is not list
+            or type(spec["output_fields"]) is not list
             or type(spec["drop_missing_numeric"]) is not bool
         ):
             raise ValueError("CSV transformation mappings are invalid")
@@ -217,8 +268,15 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
                     float(value) if name in numeric_fields else value
                 )
                 for name, value in source_row.items()
+                if str(rename.get(name, name)) in set(spec["output_fields"])
             }
-            row.update(constants)
+            row.update(
+                {
+                    name: value
+                    for name, value in constants.items()
+                    if name in set(spec["output_fields"])
+                }
+            )
             rows.append(row)
         sort_keys = tuple(str(rename.get(name, name)) for name in spec["sort_keys"])
         rows.sort(key=lambda row: tuple(row[name] for name in sort_keys))
@@ -226,8 +284,16 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
             json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n"
             for row in rows
         )
-    if set(spec) != {"operation", "sort_keys", "version"} or not isinstance(
-        spec["sort_keys"], list
+    if (
+        set(spec)
+        != {
+            "operation",
+            "output_fields",
+            "sort_keys",
+            "version",
+        }
+        or type(spec["sort_keys"]) is not list
+        or type(spec["output_fields"]) is not list
     ):
         raise ValueError("JSON transformation spec is invalid")
     rows = []
@@ -238,7 +304,11 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
             raise ValueError("pure transformation input must be JSON") from exc
         if type(decoded) is not list or any(type(row) is not dict for row in decoded):
             raise ValueError("JSON transformation input must be an array of objects")
-        rows.extend(decoded)
+        output_fields = tuple(str(name) for name in spec["output_fields"])
+        rows.extend(
+            {name: row[name] for name in output_fields}
+            for row in decoded
+        )
     sort_keys = tuple(str(name) for name in spec["sort_keys"])
     try:
         rows.sort(key=lambda row: tuple(row[name] for name in sort_keys))
@@ -260,6 +330,23 @@ def replay_pure_transformation_bytes(
 ) -> bytes:
     """Recompute the controlled pure transform without filesystem capabilities."""
 
+    return replay_pure_transformation_artifacts_bytes(
+        program_bytes=program_bytes,
+        feature_program_bytes=feature_program_bytes,
+        label_program_bytes=label_program_bytes,
+        config_bytes=config_bytes,
+        raw_bytes=raw_bytes,
+    )[2]
+
+
+def replay_pure_transformation_artifacts_bytes(
+    *,
+    program_bytes: bytes,
+    feature_program_bytes: bytes,
+    label_program_bytes: bytes,
+    config_bytes: bytes,
+    raw_bytes: tuple[bytes, ...],
+) -> tuple[bytes, bytes, bytes]:
     try:
         config = json.loads(config_bytes)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
@@ -267,8 +354,9 @@ def replay_pure_transformation_bytes(
     if type(config) is not dict:
         raise ValueError("pure transformation config must be an object")
     features = _pure_step_bytes(feature_program_bytes, raw_bytes)
-    labels = _pure_step_bytes(label_program_bytes, (features,))
-    return _pure_step_bytes(program_bytes, (labels,))
+    labels = _pure_step_bytes(label_program_bytes, raw_bytes)
+    partition = _pure_step_bytes(program_bytes, (features, labels))
+    return features, labels, partition
 
 
 def _run_pure_transformation(
@@ -278,7 +366,23 @@ def _run_pure_transformation(
     config_path: Path,
     raw_paths: tuple[Path, ...],
 ) -> bytes:
-    return replay_pure_transformation_bytes(
+    return _run_pure_transformation_artifacts(
+        program_path,
+        feature_program_path,
+        label_program_path,
+        config_path,
+        raw_paths,
+    )[2]
+
+
+def _run_pure_transformation_artifacts(
+    program_path: Path,
+    feature_program_path: Path,
+    label_program_path: Path,
+    config_path: Path,
+    raw_paths: tuple[Path, ...],
+) -> tuple[bytes, bytes, bytes]:
+    return replay_pure_transformation_artifacts_bytes(
         program_bytes=capture_file_bytes(program_path),
         feature_program_bytes=capture_file_bytes(feature_program_path),
         label_program_bytes=capture_file_bytes(label_program_path),
@@ -320,10 +424,47 @@ def _validate_partition(
                 )
                 if observed > dataset_as_of:
                     raise ValueError("transformation output contains post-as-of evidence")
+        feature_availability_fields = tuple(
+            name for name in expected if name.endswith("feature_available_at")
+        )
+        reference_name = (
+            "decision_at"
+            if "decision_at" in row
+            else "observed_at"
+            if "observed_at" in row
+            else None
+        )
+        if feature_availability_fields and reference_name is None:
+            raise ValueError(
+                "feature availability requires observed_at or decision_at per row"
+            )
+        if reference_name is not None:
+            reference = require_aware_utc(
+                datetime.fromisoformat(str(row[reference_name])),
+                reference_name,
+            )
+            for name in feature_availability_fields:
+                available = require_aware_utc(
+                    datetime.fromisoformat(str(row[name])),
+                    name,
+                )
+                if available > reference:
+                    raise ValueError(
+                        "feature evidence is unavailable at the row decision time"
+                    )
         rows += 1
     if rows < 1:
         raise ValueError("transformation output partition must not be empty")
     return rows
+
+
+def _row_pit_enforced(
+    field_contracts: tuple[tuple[str, str, str, str], ...],
+) -> bool:
+    names = {name for name, _, _, _ in field_contracts}
+    return any(name.endswith("feature_available_at") for name in names) and bool(
+        {"observed_at", "decision_at"} & names
+    )
 
 
 def _validate_field_value(
@@ -429,8 +570,8 @@ def execute_transformation(
         dir=output_path.parent,
     ) as directory:
         generated = Path(directory) / "partition.jsonl"
-        generated.write_bytes(
-            _run_pure_transformation(
+        feature_bytes, label_bytes, partition_bytes = (
+            _run_pure_transformation_artifacts(
                 program_path,
                 feature_program_path,
                 label_program_path,
@@ -438,6 +579,7 @@ def execute_transformation(
                 frozen_raw_paths,
             )
         )
+        generated.write_bytes(partition_bytes)
         row_count = _validate_partition(generated, field_contracts, as_of)
         output_sha = capture_file_digest(generated)[0]
         os.replace(generated, output_path)
@@ -451,6 +593,9 @@ def execute_transformation(
         "field_contracts": field_contracts,
         "row_count": row_count,
         "output_partition_sha256": output_sha,
+        "feature_artifact_sha256": hashlib.sha256(feature_bytes).hexdigest(),
+        "label_artifact_sha256": hashlib.sha256(label_bytes).hexdigest(),
+        "row_pit_enforced": _row_pit_enforced(field_contracts),
         "dataset_as_of": as_of,
         "executed_at": executed,
         "runtime_identity_sha256": _pure_runtime_identity(),
@@ -549,7 +694,8 @@ class DatasetManifest:
             self.dataset_as_of is not None
             and len(self.transformation_receipts) == len(self.partition_sha256s)
             and all(
-                receipt.is_authoritative for receipt in self.transformation_receipts
+                receipt.is_authoritative and receipt.row_pit_enforced
+                for receipt in self.transformation_receipts
             )
             and self.schema_sha256 is not None
         )
