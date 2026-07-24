@@ -53,6 +53,7 @@ class TransformationReceipt:
     schema: tuple[tuple[str, str], ...]
     field_contracts: tuple[tuple[str, str, str, str], ...]
     row_count: int
+    row_index_sha256: str
     output_partition_sha256: str
     feature_artifact_sha256: str
     label_artifact_sha256: str
@@ -127,6 +128,7 @@ class TransformationReceipt:
             )
             if (
                 row_count != self.row_count
+                or _row_index_sha256(replay) != self.row_index_sha256
                 or capture_file_digest(replay)[0] != self.output_partition_sha256
                 or hashlib.sha256(feature_bytes).hexdigest()
                 != self.feature_artifact_sha256
@@ -157,6 +159,7 @@ def _transformation_payload(receipt: TransformationReceipt) -> bytes:
             ),
             "raw_source_roles": receipt.raw_source_roles,
             "row_count": receipt.row_count,
+            "row_index_sha256": receipt.row_index_sha256,
             "runtime_identity_sha256": receipt.runtime_identity_sha256,
             "schema": receipt.schema,
             "field_contracts": receipt.field_contracts,
@@ -532,6 +535,49 @@ def _validate_partition(
     return rows
 
 
+def _partition_row_index(path: Path) -> tuple[tuple[str, str, str, str], ...]:
+    required = ("sample_id", "entity_id", "observed_at", "label_end_at")
+    rows = []
+    for line in path.read_text(encoding="utf-8").splitlines():
+        row = json.loads(line)
+        try:
+            item = tuple(str(row[name]) for name in required)
+        except (KeyError, TypeError) as exc:
+            raise ValueError(
+                "transformation partition requires canonical sample/entity/time index"
+            ) from exc
+        rows.append(item)
+    frozen = tuple(sorted(rows))
+    if not frozen or len(frozen) != len(set(frozen)):
+        raise ValueError("transformation partition row index must be nonempty and unique")
+    return frozen
+
+
+def _row_index_sha256(path: Path) -> str:
+    return hashlib.sha256(
+        json.dumps(
+            _partition_row_index(path),
+            separators=(",", ":"),
+        ).encode()
+    ).hexdigest()
+
+
+def _split_row_index(
+    split_manifest: SplitManifest,
+) -> tuple[tuple[str, str, str, str], ...]:
+    return tuple(
+        sorted(
+            (
+                sample.sample_id,
+                sample.entity_id,
+                sample.observed_at.isoformat(),
+                sample.label_end_at.isoformat(),
+            )
+            for sample in split_manifest.samples
+        )
+    )
+
+
 def _row_pit_enforced(
     field_contracts: tuple[tuple[str, str, str, str], ...],
 ) -> bool:
@@ -675,6 +721,7 @@ def execute_transformation(
         "schema": frozen_schema,
         "field_contracts": field_contracts,
         "row_count": row_count,
+        "row_index_sha256": _row_index_sha256(output_path),
         "output_partition_sha256": output_sha,
         "feature_artifact_sha256": hashlib.sha256(feature_bytes).hexdigest(),
         "label_artifact_sha256": hashlib.sha256(label_bytes).hexdigest(),
@@ -847,6 +894,18 @@ class DatasetManifest:
                 split = load_split_manifest(capture_file_bytes(self._split_manifest_path))
                 if split.manifest_sha256 != self.split_manifest_sha256:
                     raise ValueError("canonical split manifest no longer matches dataset")
+                if self.transformation_receipts:
+                    partition_index = tuple(
+                        sorted(
+                            item
+                            for path in self._partition_paths
+                            for item in _partition_row_index(path)
+                        )
+                    )
+                    if partition_index != _split_row_index(split):
+                        raise ValueError(
+                            "dataset partition row index differs from split manifest"
+                        )
         if self.has_pit_partitions:
             assert self.dataset_as_of is not None
             for digest, receipt in zip(
@@ -1126,9 +1185,10 @@ def capture_dataset_manifest(
         if (
             dataset_as_of is None
             or len(frozen_transformations) != len(frozen_partitions)
+            or split_manifest_receipt is None
         ):
             raise ValueError(
-                "transformation receipts must cover every partition and dataset_as_of"
+                "transformation receipts require complete partitions, as-of, and split"
             )
         as_of = require_aware_utc(dataset_as_of, "dataset_as_of")
         for digest, receipt in zip(
@@ -1151,6 +1211,15 @@ def capture_dataset_manifest(
                     "transformation receipt does not bind feature, label, partition, "
                     "schema, or as-of"
                 )
+        partition_index = tuple(
+            sorted(
+                item
+                for path in frozen_partitions
+                for item in _partition_row_index(path)
+            )
+        )
+        if partition_index != _split_row_index(split_manifest_receipt):
+            raise ValueError("dataset partition row index differs from split manifest")
         canonical_schema = json.dumps(tuple(schema), separators=(",", ":")).encode()
         pit_inputs = {
             "dataset_as_of": as_of,

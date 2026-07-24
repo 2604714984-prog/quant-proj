@@ -464,6 +464,15 @@ def test_captured_dataset_manifest_revalidates_all_semantic_bytes(tmp_path) -> N
 
 def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None:
     as_of = datetime(2026, 1, 2, 12, tzinfo=timezone.utc)
+    observed_at = datetime(2026, 1, 2, 10, 30, tzinfo=timezone.utc)
+    label_end_at = datetime(2026, 1, 2, 11, tzinfo=timezone.utc)
+    split_manifest = build_split_manifest(
+        entity_ids=("AAA",),
+        observed_at=(observed_at,),
+        label_end_at=(label_end_at,),
+        fold_ids=("holdout",),
+    )
+    sample_id = split_manifest.samples[0].sample_id
     feature_rows = [
         {
             "close": 10.5,
@@ -471,7 +480,7 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
             "feature_available_at": "2026-01-02T10:00:00+00:00",
             "future_label": 0.02,
             "observed_at": "2026-01-02T10:30:00+00:00",
-            "sample_id": "AAA|2026-01-02",
+            "sample_id": sample_id,
         }
     ]
     label_rows = [
@@ -480,7 +489,7 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
             "label": 0.02,
             "label_available_at": "2026-01-02T11:00:00+00:00",
             "label_end_at": "2026-01-02T11:00:00+00:00",
-            "sample_id": "AAA|2026-01-02",
+            "sample_id": sample_id,
         }
     ]
     feature_bytes = json.dumps(
@@ -587,6 +596,65 @@ def test_transformation_receipt_replays_raw_input_to_partition(tmp_path) -> None
     assert receipt.row_pit_enforced is True
     assert receipt.feature_artifact_sha256 != receipt.label_artifact_sha256
     receipt.verify()
+
+    split_path = tmp_path / "split.json"
+    split_path.write_bytes(serialize_split_manifest(split_manifest))
+    semantic_paths = {}
+    for name in ("calendar", "action", "cost"):
+        path = tmp_path / f"{name}.json"
+        path.write_text(f'{{"identity":"{name}"}}\n', encoding="utf-8")
+        semantic_paths[name] = path
+    manifest = capture_dataset_manifest(
+        dates=(observed_at,),
+        frequency="event",
+        schema=receipt.schema,
+        source_snapshot_sha256s=(
+            feature_source.content_sha256,
+            label_source.content_sha256,
+        ),
+        universe_snapshot_sha256="1" * 64,
+        feature_code_path=feature_program,
+        label_code_path=label_program,
+        split_manifest_path=split_path,
+        split_manifest_receipt=split_manifest,
+        calendar_policy_path=semantic_paths["calendar"],
+        action_policy_path=semantic_paths["action"],
+        cost_policy_path=semantic_paths["cost"],
+        partition_paths=(output,),
+        dataset_as_of=as_of,
+        transformation_receipts=(receipt,),
+    )
+    manifest.verify_identity()
+
+    mismatched_split = build_split_manifest(
+        entity_ids=("BBB",),
+        observed_at=(observed_at,),
+        label_end_at=(label_end_at,),
+        fold_ids=("holdout",),
+    )
+    mismatched_split_path = tmp_path / "mismatched-split.json"
+    mismatched_split_path.write_bytes(serialize_split_manifest(mismatched_split))
+    with pytest.raises(ValueError, match="row index differs"):
+        capture_dataset_manifest(
+            dates=(observed_at,),
+            frequency="event",
+            schema=receipt.schema,
+            source_snapshot_sha256s=(
+                feature_source.content_sha256,
+                label_source.content_sha256,
+            ),
+            universe_snapshot_sha256="1" * 64,
+            feature_code_path=feature_program,
+            label_code_path=label_program,
+            split_manifest_path=mismatched_split_path,
+            split_manifest_receipt=mismatched_split,
+            calendar_policy_path=semantic_paths["calendar"],
+            action_policy_path=semantic_paths["action"],
+            cost_policy_path=semantic_paths["cost"],
+            partition_paths=(output,),
+            dataset_as_of=as_of,
+            transformation_receipts=(receipt,),
+        )
     with pytest.raises(ValueError, match="runtime identity changed"):
         replace(receipt, runtime_identity_sha256="f" * 64).verify()
     output.write_text('{"sample_id":"TAMPERED"}\n', encoding="utf-8")
