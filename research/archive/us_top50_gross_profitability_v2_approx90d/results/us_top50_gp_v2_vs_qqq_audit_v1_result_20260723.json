@@ -1,0 +1,93 @@
+{
+  "artifacts": {
+    "audit_adapter_sha256": "340b09662d57be3cdd64ca550c459852767b6e01659a87792e3c9c63c5643106",
+    "audit_contract_sha256": "5bee7b095f04472c36662dc1008b4caa839da67827f59823085ddf60fe61bd0d",
+    "marker_sha256": "9c46ae5d37ad623c17c465f72f87fc50893e211e1f0ded3c745bb810afb328ed",
+    "price_database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "strategy_result_sha256": "a5d4950d7d62ae64249d9f430ee289baa432a5904b954f57b87e9bce671614db"
+  },
+  "boundary": {
+    "auto": false,
+    "broker": false,
+    "live": false,
+    "next_action": "permanent strategy closure",
+    "paper": false,
+    "recommendation": false,
+    "strategy_candidate_available": false,
+    "this_is_validation": false,
+    "timing_or_factor_repair_allowed": false
+  },
+  "current_status": "rejected",
+  "date": "2026-07-23",
+  "formal_run_count": 1,
+  "gates": {
+    "failed": [
+      "annual_one_way_turnover"
+    ],
+    "passed": {
+      "annual_one_way_turnover": false,
+      "base_cagr_excess_vs_qqq": true,
+      "daily_sharpe_margin_vs_qqq": true,
+      "drawdown_shortfall_vs_qqq": true,
+      "monthly_excess_bootstrap_lower": true,
+      "subperiod_gate": true
+    },
+    "passed_count": 5,
+    "total_count": 6,
+    "values": {
+      "annual_one_way_turnover": 0.5129460879853013,
+      "base_cagr_excess_vs_qqq": 0.11431291245058794,
+      "daily_sharpe_margin_vs_qqq": 0.4137831798824608,
+      "drawdown_shortfall_vs_qqq": -0.05138449646410237,
+      "monthly_excess_bootstrap_lower": 0.003309072901810359,
+      "positive_subperiods": 3,
+      "recent_subperiod_excess": 1.1464222241545938
+    }
+  },
+  "input": {
+    "benchmark_snapshot_id": "QQQ_TTR_TIINGO_YAHOO_COMPLETION_20260723",
+    "end": "2026-07-22",
+    "formation_count": 34,
+    "start": "2018-04-02",
+    "strategy_approximate_pit": true,
+    "strategy_survivorship_bias": true
+  },
+  "market": "US_EQUITIES",
+  "metrics": {
+    "monthly_excess_bootstrap": {
+      "lower_95": 0.003309072901810359,
+      "observed_mean": 0.007504124263389507,
+      "upper_95": 0.011803724617292781
+    },
+    "qqq_2bps_entry_and_exit": {
+      "cagr": 0.20754286375544329,
+      "daily_sharpe": 0.9117934826703046,
+      "max_drawdown": -0.35122525674812866,
+      "total_return": 3.7875216403276983,
+      "years": 8.303901437371664
+    },
+    "strategy_annual_one_way_turnover": 0.5129460879853013,
+    "strategy_base_15bps": {
+      "cagr": 0.32185577620603123,
+      "daily_sharpe": 1.3255766625527654,
+      "max_drawdown": -0.2998407602840263,
+      "total_return": 9.14613412614126,
+      "years": 8.303901437371664
+    },
+    "strategy_stress_30bps": {
+      "cagr": 0.32083793161375507,
+      "daily_sharpe": 1.3221911254479266,
+      "max_drawdown": -0.3002203937360449,
+      "total_return": 9.081440843454725,
+      "years": 8.303901437371664
+    },
+    "subperiod_excess_vs_qqq": {
+      "2018-2019": 0.2519833028323739,
+      "2020-2022": 0.326531671378093,
+      "2023-latest": 1.1464222241545938
+    }
+  },
+  "overall_result": "REJECTED_NOT_WORTH_COMPLEXITY_VS_QQQ",
+  "phase": "RETROSPECTIVE_BENCHMARK_KILL_TEST",
+  "research_id": "US_TOP50_GP_V2_VS_QQQ_AUDIT_V1"
+}

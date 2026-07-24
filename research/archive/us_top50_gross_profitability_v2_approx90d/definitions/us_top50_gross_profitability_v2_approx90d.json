@@ -1,0 +1,121 @@
+{
+  "research_identity": "US_TOP50_GROSS_PROFITABILITY_V2_APPROX90D",
+  "frozen_at": "2026-07-23",
+  "phase": "DATA_REMEDIATION_AND_SINGLE_DISCOVERY",
+  "lineage": {
+    "prior_identity": "US_TOP50_GROSS_PROFITABILITY_V1",
+    "prior_result": "PROFITABILITY_DATA_INPUT_BLOCKED",
+    "prior_strategy_runs": 0,
+    "prior_outcomes_accessed": false,
+    "remediation": [
+      "V1 remains blocked because historical Eastmoney NOTICE_DATE values are misaligned by as much as one year.",
+      "V2 uses an explicitly approximate 90-calendar-day post-period availability rule.",
+      "Resolve each exchange suffix from Eastmoney search instead of assuming WMT.N.",
+      "Use Eastmoney total-assets item 004005999 and require same-period, same-currency data."
+    ],
+    "new_strategy_identity": true
+  },
+  "universe": {
+    "identity_file_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "price_snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "qualified_stocks": 46,
+    "current_constituents_only": true,
+    "survivorship_bias": true
+  },
+  "price_input": {
+    "database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "table": "us_equity_research.us_daily_total_return_research",
+    "price_field": "adj_close",
+    "calendar_symbol": "SPY",
+    "evaluation_start": "2018-01-01",
+    "evaluation_end": "2026-07-22"
+  },
+  "fundamental_input": {
+    "canonical_snapshot_id": "US_TOP50_GROSS_PROFITABILITY_V2_APPROX90D_EASTMONEY_20260723",
+    "superseded_snapshot_ids": [
+      "US_TOP50_GROSS_PROFITABILITY_V1_EASTMONEY_20260723",
+      "US_TOP50_GROSS_PROFITABILITY_V1_EASTMONEY_R2_20260723"
+    ],
+    "source_repository": "simonlin1212/global-stock-data",
+    "source_repository_commit": "d52a8a0013363577bceb28ca876c88fe6c1a5aeb",
+    "provider": "Eastmoney",
+    "search_endpoint": "https://searchapi.eastmoney.com/api/suggest/get",
+    "data_endpoint": "https://datacenter-web.eastmoney.com/api/data/v1/get",
+    "gross_profit_report": "RPT_USF10_FN_GMAININDICATOR",
+    "gross_profit_rows": "DATE_TYPE=单季报 and REPORT_TYPE=YYYY/Q1..Q4",
+    "gross_profit_field": "GROSS_PROFIT",
+    "source_notice_field": "NOTICE_DATE (retained for audit but not used for historical availability)",
+    "assets_report": "RPT_USF10_FN_BALANCE",
+    "assets_item_code": "004005999",
+    "assets_field": "AMOUNT",
+    "join": "same SECUCODE and REPORT_DATE and CURRENCY_ABBR",
+    "availability": "first SPY trading session on or after fiscal_period_end plus 90 calendar days",
+    "availability_is_approximation": true,
+    "revision_rule": "retain distinct source NOTICE_DATE revisions; at each formation use the latest stored revision already available under the approximate rule",
+    "minimum_valid_rows_per_company": 16,
+    "minimum_companies": 30,
+    "minimum_formation_coverage_fraction": 0.70,
+    "minimum_qualified_formations": 30,
+    "no_imputation": true,
+    "excluded_business_types": [
+      "banks",
+      "insurers",
+      "issuers without comparable gross profit"
+    ],
+    "cross_source_confirmation_required": false
+  },
+  "factor": {
+    "name": "TTM_GROSS_PROFIT_TO_ASSETS",
+    "formula": "sum of latest four consecutive single-quarter gross profits divided by latest positive total assets",
+    "point_in_time": true,
+    "diagnostics": [
+      "tie-aware RankIC at 1, 3, and 6 months",
+      "tercile monotonicity at 3 months",
+      "top-tercile minus eligible-equal-weight return at 3 months",
+      "signal coverage and decay",
+      "realized portfolio turnover"
+    ],
+    "diagnostic_promotion_gate": false
+  },
+  "portfolio": {
+    "formation": "last SPY session of March, June, September, and December",
+    "selection": "Top15; retain existing names through rank20; ascending symbol tie-break",
+    "weighting": "equal weight",
+    "benchmark_primary": "same-date eligible stocks equal weight",
+    "benchmark_secondary": "SPY buy and hold over the same execution intervals",
+    "execution": "next SPY session close; new weights apply after that close",
+    "costs_bps_one_way": {
+      "base": 15,
+      "stress": 30
+    },
+    "subperiods": [
+      "2018-2019",
+      "2020-2022",
+      "2023-latest"
+    ]
+  },
+  "gates": {
+    "base_cagr_excess_vs_primary_strict_min": 0.01,
+    "base_sharpe_margin_vs_primary_min": 0.05,
+    "drawdown_shortfall_vs_primary_max": 0.05,
+    "stress_cagr_excess_vs_primary_strict_positive": true,
+    "annual_one_way_turnover_max": 2.0,
+    "positive_primary_excess_subperiods_min": 2
+  },
+  "multiplicity": {
+    "maximum_formal_runs": 1,
+    "parameter_variants": 0,
+    "repairs_after_outcomes": false
+  },
+  "boundaries": {
+    "research_only": true,
+    "approximate_pit_not_validation_grade": true,
+    "strategy_candidate_available": false,
+    "recommendation": false,
+    "current_holdings_output": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false
+  }
+}

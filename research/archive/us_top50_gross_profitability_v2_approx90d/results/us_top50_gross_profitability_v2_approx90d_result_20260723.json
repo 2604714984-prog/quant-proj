@@ -1,0 +1,105 @@
+{
+  "artifacts": {
+    "adapter_sha256": "5b09494288916ff52e521a9a0171444557ae826e0a76e42e008ddc8680f07942",
+    "contract_sha256": "ff73032def532e4ad256a1e78ce85357ccc0fcbcdd0e1552d9e92c6f25184b64",
+    "fundamental_rows_sha256": "9cd40b4d78417f815cda20934499978b1a2ad21b5232749fe1128e0c7e21a84f",
+    "marker_sha256": "94f9b8c1d6481665fc3b7be421df4be0e0743ed6f503b840125687e2dfc8fbcf",
+    "price_database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84"
+  },
+  "boundaries": {
+    "approximate_pit_not_validation_grade": true,
+    "auto": false,
+    "broker": false,
+    "current_holdings_output": false,
+    "live": false,
+    "next_if_fail": "permanent closure; no parameter repair",
+    "next_if_pass": "independent external review before any validation identity",
+    "paper": false,
+    "recommendation": false,
+    "strategy_candidate_available": false
+  },
+  "date": "2026-07-23",
+  "factor_diagnostics": {
+    "diagnostic_promotion_gate": false,
+    "rank_ic_mean": {
+      "1m": 0.03910893102163963,
+      "3m": 0.008640527189949525,
+      "6m": 0.006732115748081731
+    },
+    "rank_ic_observations": {
+      "1m": 33,
+      "3m": 33,
+      "6m": 32
+    },
+    "tercile_monotonicity_mean_3m": 0.015151515151515152,
+    "top_tercile_minus_tercile_mean_3m": 0.002036449728667216
+  },
+  "formal_run_count": 1,
+  "gates": {
+    "passed": {
+      "annual_one_way_turnover": true,
+      "base_cagr_excess_vs_primary": true,
+      "base_sharpe_margin_vs_primary": true,
+      "drawdown_shortfall_vs_primary": true,
+      "positive_primary_excess_subperiods": true,
+      "stress_cagr_excess_vs_primary": true
+    },
+    "values": {
+      "annual_one_way_turnover": 0.17662380481371576,
+      "base_cagr_excess_vs_primary": 0.019736696540466836,
+      "base_sharpe_margin_vs_primary": 0.0669618690218019,
+      "drawdown_shortfall_vs_primary": 0.011086123492877631,
+      "positive_primary_excess_subperiods": 2,
+      "stress_cagr_excess_vs_primary": 0.01941838419998465
+    }
+  },
+  "input": {
+    "approximate_pit_not_validation_grade": true,
+    "formation_coverage_fraction": 1.0,
+    "fundamental_snapshot_id": "US_TOP50_GROSS_PROFITABILITY_V2_APPROX90D_EASTMONEY_20260723",
+    "minimum_eligible": 36,
+    "price_snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "qualified_formations": 34,
+    "survivorship_bias": true
+  },
+  "overall_result": "DISCOVERY_PASS_REVIEW_REQUIRED",
+  "phase": "SINGLE_HISTORICAL_DISCOVERY",
+  "portfolio": {
+    "annual_one_way_turnover": 0.17662380481371576,
+    "base_15bps": {
+      "cagr": 0.3225555286690691,
+      "max_drawdown": -0.2698034841666843,
+      "sharpe": 1.3548484773840483,
+      "total_return": 9.190821297400253,
+      "years": 8.303901437371664
+    },
+    "eligible_equal_weight": {
+      "cagr": 0.3028188321286023,
+      "max_drawdown": -0.2587173606738067,
+      "sharpe": 1.2878866083622464,
+      "total_return": 7.9946784444093755,
+      "years": 8.303901437371664
+    },
+    "spy": {
+      "cagr": 0.15468967609060424,
+      "max_drawdown": -0.2378569007484258,
+      "sharpe": 0.8489097535171359,
+      "total_return": 2.301456293380688,
+      "years": 8.303901437371664
+    },
+    "stress_30bps": {
+      "cagr": 0.32223721632858693,
+      "max_drawdown": -0.2699586404337663,
+      "sharpe": 1.353903638031027,
+      "total_return": 9.170472008657043,
+      "years": 8.303901437371664
+    },
+    "subperiod_primary_excess": {
+      "2018-2019": 0.15918370099650692,
+      "2020-2022": 0.06098306128737607,
+      "2023-latest": -0.058624030635816116
+    }
+  },
+  "research_identity": "US_TOP50_GROSS_PROFITABILITY_V2_APPROX90D",
+  "strategy_outcomes_accessed": true
+}
