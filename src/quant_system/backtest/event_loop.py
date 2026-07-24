@@ -51,6 +51,8 @@ from quant_system.research.experiments import (
     ExperimentManifest,
     FinalRunReceipt,
     HoldoutResultReceipt,
+    TrialConfig,
+    TrialRunReceipt,
     require_adjusted_holdout_for_candidate,
 )
 from quant_system.research.splits import (
@@ -854,6 +856,7 @@ class ControlledStageResult(StaticRebalanceResult):
             "dataset_identity_sha256",
             "split_identity_sha256",
             "universe_materialization_sha256",
+            "cost_assumptions_sha256",
         ):
             _sha256(getattr(self, name), name)
         if hashlib.sha256(self.input_artifact_json.encode()).hexdigest() != (
@@ -873,6 +876,7 @@ class ControlledStageResult(StaticRebalanceResult):
             dataset_identity_sha256=self.dataset_identity_sha256,
             split_identity_sha256=self.split_identity_sha256,
             universe_materialization_sha256=self.universe_materialization_sha256,
+            cost_assumptions_sha256=self.cost_assumptions_sha256,
         )
         if (
             replayed.context != self.context
@@ -896,10 +900,14 @@ def _controlled_stage_hash(
     dataset_identity_sha256: str,
     split_identity_sha256: str,
     universe_materialization_sha256: str,
+    cost_assumptions_sha256: str,
 ) -> str:
     payload = {
         "dataset_identity_sha256": _sha256(
             dataset_identity_sha256, "dataset_identity_sha256"
+        ),
+        "cost_assumptions_sha256": _sha256(
+            cost_assumptions_sha256, "cost_assumptions_sha256"
         ),
         "decision_artifact_sha256": _sha256(
             decision_artifact_sha256, "decision_artifact_sha256"
@@ -942,6 +950,7 @@ class ControlledStageReceipt:
     dataset_identity_sha256: str
     split_identity_sha256: str
     universe_materialization_sha256: str
+    cost_assumptions_sha256: str
     initial_portfolio_json: str
     initial_portfolio_sha256: str
     final_portfolio_json: str
@@ -972,6 +981,7 @@ class ControlledStageReceipt:
             dataset_identity_sha256=self.dataset_identity_sha256,
             split_identity_sha256=self.split_identity_sha256,
             universe_materialization_sha256=self.universe_materialization_sha256,
+            cost_assumptions_sha256=self.cost_assumptions_sha256,
         )
         expected_costs = math.fsum(
             item.commission + item.sell_tax for item in replayed.receipts
@@ -1050,6 +1060,7 @@ def capture_controlled_stage_receipt(
         "dataset_identity_sha256": result.dataset_identity_sha256,
         "split_identity_sha256": result.split_identity_sha256,
         "universe_materialization_sha256": result.universe_materialization_sha256,
+        "cost_assumptions_sha256": result.cost_assumptions_sha256,
         "initial_portfolio_json": result.initial_portfolio_json,
         "initial_portfolio_sha256": result.initial_portfolio_sha256,
         "final_portfolio_json": result.final_portfolio_json,
@@ -1596,6 +1607,7 @@ def run_controlled_stage(
     universe_materialization: UniverseMaterialization,
     decision_artifact: DecisionArtifact,
     stage_context: StageContext,
+    cost_assumptions_sha256: str,
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
     capacity_policy: CapacityPolicy | None = None,
     max_positions: int | None = None,
@@ -1640,12 +1652,17 @@ def run_controlled_stage(
     values["universe_materialization_sha256"] = (
         universe_materialization.materialization_sha256
     )
+    values["cost_assumptions_sha256"] = _sha256(
+        cost_assumptions_sha256,
+        "cost_assumptions_sha256",
+    )
     values["stage_hash"] = _controlled_stage_hash(
         experimental.stage_hash,
         decision_artifact_sha256=decision_artifact.artifact_sha256,
         dataset_identity_sha256=decision_artifact.dataset_identity_sha256,
         split_identity_sha256=decision_artifact.split_identity_sha256,
         universe_materialization_sha256=universe_materialization.materialization_sha256,
+        cost_assumptions_sha256=cost_assumptions_sha256,
     )
     values["_token"] = _CONTROLLED_STAGE_TOKEN
     controlled = ControlledStageResult(**values)
@@ -1653,7 +1670,7 @@ def run_controlled_stage(
     return controlled
 
 
-def run_candidate_rebalance(
+def apply_qualified_strategy_stage(
     portfolio: Portfolio,
     calendar: AcceptedSessionCalendar,
     *,
@@ -1670,6 +1687,8 @@ def run_candidate_rebalance(
     experiment_anchor: ExperimentAnchorReceipt,
     holdout_event: ExperimentEvent,
     holdout_result_receipt: HoldoutResultReceipt,
+    trial_config: TrialConfig,
+    trial_run_receipt: TrialRunReceipt,
     final_run_receipt: FinalRunReceipt,
     split_evaluation: SplitEvaluation,
     cost_assumptions: ExecutionCostAssumptions,
@@ -1702,6 +1721,12 @@ def run_candidate_rebalance(
     if not isinstance(candidate_run_config, CandidateRunConfig):
         raise TypeError("candidate_run_config must be a captured CandidateRunConfig")
     candidate_run_config.__post_init__()
+    if not isinstance(trial_config, TrialConfig):
+        raise TypeError("historical qualification requires a TrialConfig")
+    trial_config.verify()
+    if not isinstance(trial_run_receipt, TrialRunReceipt):
+        raise TypeError("historical qualification requires a TrialRunReceipt")
+    trial_run_receipt.verify()
     if not isinstance(experiment_ledger, ExperimentLedgerReceipt):
         raise TypeError("experiment_ledger must be a persistent ledger receipt")
     experiment_ledger.verify_current_bytes()
@@ -1731,7 +1756,7 @@ def run_candidate_rebalance(
                 decision_at,
                 "decision_at",
             ).isoformat(),
-            "final_stage_index": final_run_receipt.stage_count - 1,
+            "final_stage_index": stage_context.stage_index,
             "max_positions": max_positions,
             "signal_session": signal_session.isoformat(),
         },
@@ -1748,9 +1773,8 @@ def run_candidate_rebalance(
         or candidate_run_config.split_evaluation_plan_sha256
         != split_evaluation.plan_sha256
         or candidate_run_config.stage_plan_sha256
-        != final_run_receipt.stage_plan_sha256
-        or candidate_run_config.final_stage_index
-        != final_run_receipt.stage_count - 1
+        != stage_context.plan_sha256
+        or candidate_run_config.final_stage_index != stage_context.stage_index
         or candidate_run_config.cost_assumptions_sha256
         != cost_assumptions.identity_sha256
         or candidate_run_config.signal_session != signal_session
@@ -1759,8 +1783,8 @@ def run_candidate_rebalance(
         or candidate_run_config.max_positions != max_positions
         or candidate_run_config.parameters_json != expected_parameters
         or holdout_event.candidate_run_config_sha256
-        != candidate_run_config.config_sha256
-        or holdout_event.parameters_json != candidate_run_config.parameters_json
+        != trial_config.config_sha256
+        or holdout_event.parameters_json != trial_config.parameters_json
     ):
         raise MarketDataError(
             "candidate run parameters or final-stage completion differ from preregistration"
@@ -1770,7 +1794,15 @@ def run_candidate_rebalance(
         or experiment_ledger.head_sha256 != experiment_manifest.head_sha256
     ):
         raise MarketDataError("persistent experiment ledger does not match manifest")
-    if holdout_event.stage_plan_sha256 != final_run_receipt.stage_plan_sha256:
+    if (
+        holdout_event.stage_plan_sha256 != final_run_receipt.stage_plan_sha256
+        or trial_config.stage_plan_sha256 != final_run_receipt.stage_plan_sha256
+        or trial_run_receipt.trial_config_sha256 != trial_config.config_sha256
+        or trial_run_receipt.final_run_receipt_sha256
+        != final_run_receipt.receipt_sha256
+        or holdout_result_receipt.trial_run_receipt_sha256
+        != trial_run_receipt.receipt_sha256
+    ):
         raise MarketDataError("holdout evidence does not bind the complete stage plan")
     if (
         final_run_receipt.final_stage_hash
@@ -1841,6 +1873,7 @@ def run_candidate_rebalance(
         "execution_calendar_revision": execution_calendar_revision,
         "universe_materialization": universe_materialization,
         "decision_artifact": decision_artifact,
+        "cost_assumptions_sha256": cost_assumptions.identity_sha256,
         "capacity_policy": cost_assumptions.capacity_policy,
         "max_positions": max_positions,
         "stage_context": stage_context,
@@ -1957,6 +1990,12 @@ def run_candidate_rebalance(
         ),
         strategy_candidate_available=False,
     )
+
+
+def run_candidate_rebalance(*args: object, **kwargs: object) -> ControlledStageResult:
+    """Compatibility name for the prospective-only qualified stage entrypoint."""
+
+    return apply_qualified_strategy_stage(*args, **kwargs)  # type: ignore[arg-type]
 
 
 def _require_cost_model(

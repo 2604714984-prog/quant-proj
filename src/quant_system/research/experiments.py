@@ -194,6 +194,7 @@ class ExperimentEvent:
 class HoldoutResultReceipt:
     trial_id: str
     holdout_id: str
+    trial_run_receipt_sha256: str
     final_stage_hash: str
     final_run_receipt_sha256: str
     split_evaluation_sha256: str
@@ -215,6 +216,7 @@ class HoldoutResultReceipt:
         _text(self.holdout_id, "holdout_id")
         for name in (
             "final_stage_hash",
+            "trial_run_receipt_sha256",
             "final_run_receipt_sha256",
             "split_evaluation_sha256",
             "split_evaluation_plan_sha256",
@@ -233,6 +235,7 @@ class HoldoutResultReceipt:
                     "returns_sha256": self.returns_sha256,
                     "split_evaluation_sha256": self.split_evaluation_sha256,
                     "trial_id": self.trial_id,
+                    "trial_run_receipt_sha256": self.trial_run_receipt_sha256,
                 },
                 sort_keys=True,
                 separators=(",", ":"),
@@ -250,6 +253,7 @@ class HoldoutResultReceipt:
 class FinalRunReceipt:
     stage_plan_sha256: str
     stage_count: int
+    ordered_stage_receipt_sha256s: tuple[str, ...]
     ordered_stage_hashes: tuple[str, ...]
     ordered_portfolio_transitions: tuple[tuple[str, str], ...]
     final_stage_hash: str
@@ -266,11 +270,15 @@ class FinalRunReceipt:
         if (
             type(self.stage_count) is not int
             or self.stage_count < 1
+            or len(self.ordered_stage_receipt_sha256s) != self.stage_count
             or len(self.ordered_stage_hashes) != self.stage_count
             or len(self.ordered_portfolio_transitions) != self.stage_count
         ):
             raise ValueError("final run receipt stage count is invalid")
-        for stage_hash in self.ordered_stage_hashes:
+        for stage_hash in (
+            *self.ordered_stage_receipt_sha256s,
+            *self.ordered_stage_hashes,
+        ):
             _sha(stage_hash, "ordered_stage_hash")
         for initial_sha, final_sha in self.ordered_portfolio_transitions:
             _sha(initial_sha, "initial_portfolio_sha256")
@@ -299,6 +307,240 @@ class FinalRunReceipt:
             raise ValueError("final run NAV must be finite")
         if hashlib.sha256(_final_run_payload(self)).hexdigest() != self.receipt_sha256:
             raise ValueError("final run receipt hash mismatch")
+
+
+@dataclass(frozen=True)
+class TrialConfig:
+    """Frozen historical trial contract, distinct from prospective execution."""
+
+    trial_id: str
+    definition_sha256: str
+    dataset_sha256: str
+    split_sha256: str
+    stage_plan_sha256: str
+    split_evaluation_plan_sha256: str
+    ordered_decision_artifact_sha256s: tuple[str, ...]
+    ordered_universe_materialization_sha256s: tuple[str, ...]
+    cost_assumptions_sha256: str
+    max_positions: int | None
+    parameters_json: str
+    config_sha256: str
+
+    def verify(self) -> None:
+        _text(self.trial_id, "trial_id")
+        for name in (
+            "definition_sha256",
+            "dataset_sha256",
+            "split_sha256",
+            "stage_plan_sha256",
+            "split_evaluation_plan_sha256",
+            "cost_assumptions_sha256",
+        ):
+            _sha(getattr(self, name), name)
+        if (
+            not self.ordered_decision_artifact_sha256s
+            or len(self.ordered_decision_artifact_sha256s)
+            != len(self.ordered_universe_materialization_sha256s)
+        ):
+            raise ValueError("trial config requires one decision and universe per stage")
+        for digest in (
+            *self.ordered_decision_artifact_sha256s,
+            *self.ordered_universe_materialization_sha256s,
+        ):
+            _sha(digest, "ordered trial identity")
+        if self.max_positions is not None and (
+            type(self.max_positions) is not int or self.max_positions < 1
+        ):
+            raise ValueError("trial max_positions must be positive or null")
+        try:
+            parameters = json.loads(self.parameters_json)
+        except json.JSONDecodeError as exc:
+            raise ValueError("trial parameters must be canonical JSON") from exc
+        if type(parameters) is not dict or json.dumps(
+            parameters,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ) != self.parameters_json:
+            raise ValueError("trial parameters must be a canonical object")
+        if hashlib.sha256(_trial_config_payload(self)).hexdigest() != self.config_sha256:
+            raise ValueError("trial config hash mismatch")
+
+
+def _trial_config_payload(config: TrialConfig) -> bytes:
+    return json.dumps(
+        {
+            name: value
+            for name, value in config.__dict__.items()
+            if name != "config_sha256"
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def capture_trial_config(
+    *,
+    trial_id: str,
+    definition_sha256: str,
+    dataset_sha256: str,
+    split_sha256: str,
+    stage_plan_sha256: str,
+    split_evaluation_plan_sha256: str,
+    ordered_decision_artifact_sha256s: tuple[str, ...],
+    ordered_universe_materialization_sha256s: tuple[str, ...],
+    cost_assumptions_sha256: str,
+    max_positions: int | None,
+    parameters: Mapping[str, object],
+) -> TrialConfig:
+    parameters_json = json.dumps(
+        dict(parameters),
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    )
+    values = {
+        "trial_id": trial_id,
+        "definition_sha256": definition_sha256,
+        "dataset_sha256": dataset_sha256,
+        "split_sha256": split_sha256,
+        "stage_plan_sha256": stage_plan_sha256,
+        "split_evaluation_plan_sha256": split_evaluation_plan_sha256,
+        "ordered_decision_artifact_sha256s": ordered_decision_artifact_sha256s,
+        "ordered_universe_materialization_sha256s": (
+            ordered_universe_materialization_sha256s
+        ),
+        "cost_assumptions_sha256": cost_assumptions_sha256,
+        "max_positions": max_positions,
+        "parameters_json": parameters_json,
+    }
+    provisional = object.__new__(TrialConfig)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    config = TrialConfig(
+        **values,
+        config_sha256=hashlib.sha256(_trial_config_payload(provisional)).hexdigest(),
+    )
+    config.verify()
+    return config
+
+
+@dataclass(frozen=True)
+class TrialRunReceipt:
+    trial_id: str
+    trial_config_sha256: str
+    ordered_stage_receipt_sha256s: tuple[str, ...]
+    final_run_receipt_sha256: str
+    return_artifact_sha256: str
+    split_evaluation_sha256: str
+    receipt_sha256: str
+
+    def verify(self) -> None:
+        _text(self.trial_id, "trial_id")
+        for digest in (
+            self.trial_config_sha256,
+            *self.ordered_stage_receipt_sha256s,
+            self.final_run_receipt_sha256,
+            self.return_artifact_sha256,
+            self.split_evaluation_sha256,
+        ):
+            _sha(digest, "trial run identity")
+        if not self.ordered_stage_receipt_sha256s:
+            raise ValueError("trial run requires stage receipts")
+        if hashlib.sha256(_trial_run_payload(self)).hexdigest() != self.receipt_sha256:
+            raise ValueError("trial run receipt hash mismatch")
+
+
+def _trial_run_payload(receipt: TrialRunReceipt) -> bytes:
+    return json.dumps(
+        {
+            name: value
+            for name, value in receipt.__dict__.items()
+            if name != "receipt_sha256"
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def evaluate_frozen_historical_run(
+    *,
+    trial_config: TrialConfig,
+    stage_plan: object,
+    stage_receipts: tuple[object, ...],
+    split_manifest: object,
+    split_evaluation_plan: SplitEvaluationPlan,
+) -> tuple[TrialRunReceipt, FinalRunReceipt, object, SplitEvaluation]:
+    """Evaluate one fully bound historical trial before prospective application."""
+
+    from quant_system.backtest.event_loop import ControlledStageReceipt, StagePlan
+    from quant_system.research.splits import (
+        SplitManifest,
+        capture_return_artifact,
+        evaluate_split,
+    )
+
+    if not isinstance(trial_config, TrialConfig):
+        raise TypeError("historical run requires a TrialConfig")
+    trial_config.verify()
+    if not isinstance(stage_plan, StagePlan):
+        raise TypeError("historical run requires a StagePlan")
+    if (
+        type(stage_receipts) is not tuple
+        or len(stage_receipts) != len(stage_plan.sessions)
+        or any(not isinstance(item, ControlledStageReceipt) for item in stage_receipts)
+    ):
+        raise ValueError("historical run requires every persisted stage receipt")
+    for receipt in stage_receipts:
+        receipt.verify()
+    if not isinstance(split_manifest, SplitManifest):
+        raise TypeError("historical run requires a SplitManifest")
+    if (
+        trial_config.stage_plan_sha256 != stage_plan.plan_sha256
+        or trial_config.split_sha256 != split_manifest.manifest_sha256
+        or trial_config.split_evaluation_plan_sha256
+        != split_evaluation_plan.plan_sha256
+        or trial_config.ordered_decision_artifact_sha256s
+        != tuple(item.decision_artifact_sha256 for item in stage_receipts)
+        or trial_config.ordered_universe_materialization_sha256s
+        != tuple(item.universe_materialization_sha256 for item in stage_receipts)
+        or any(
+            item.dataset_identity_sha256 != trial_config.dataset_sha256
+            or item.split_identity_sha256 != trial_config.split_sha256
+            or item.cost_assumptions_sha256
+            != trial_config.cost_assumptions_sha256
+            for item in stage_receipts
+        )
+    ):
+        raise ValueError("historical stage receipts differ from TrialConfig")
+    final_run = capture_final_run_receipt(stage_plan, stage_receipts)
+    return_artifact = capture_return_artifact(
+        stage_plan,
+        stage_receipts,
+        final_run,
+    )
+    evaluation = evaluate_split(
+        split_manifest,
+        plan=split_evaluation_plan,
+        return_artifact=return_artifact,
+    )
+    values = {
+        "trial_id": trial_config.trial_id,
+        "trial_config_sha256": trial_config.config_sha256,
+        "ordered_stage_receipt_sha256s": final_run.ordered_stage_receipt_sha256s,
+        "final_run_receipt_sha256": final_run.receipt_sha256,
+        "return_artifact_sha256": return_artifact.artifact_sha256,
+        "split_evaluation_sha256": evaluation.evaluation_sha256,
+    }
+    provisional = object.__new__(TrialRunReceipt)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    receipt = TrialRunReceipt(
+        **values,
+        receipt_sha256=hashlib.sha256(_trial_run_payload(provisional)).hexdigest(),
+    )
+    receipt.verify()
+    return receipt, final_run, return_artifact, evaluation
 
 
 def _final_run_payload(receipt: FinalRunReceipt) -> bytes:
@@ -344,6 +586,9 @@ def capture_final_run_receipt(stage_plan: object, results: tuple[object, ...]) -
     values = {
         "stage_plan_sha256": stage_plan.plan_sha256,
         "stage_count": len(results),
+        "ordered_stage_receipt_sha256s": tuple(
+            result.receipt_sha256 for result in results
+        ),
         "ordered_stage_hashes": tuple(result.stage_hash for result in results),
         "ordered_portfolio_transitions": tuple(
             (result.initial_portfolio_sha256, result.final_portfolio_sha256)
@@ -440,6 +685,7 @@ def capture_holdout_result(
     *,
     trial_id: str,
     holdout_id: str,
+    trial_run_receipt: TrialRunReceipt,
     final_run_receipt: FinalRunReceipt,
     split_evaluation: SplitEvaluation,
     holdout_access_at: datetime,
@@ -450,9 +696,17 @@ def capture_holdout_result(
     if not isinstance(final_run_receipt, FinalRunReceipt):
         raise TypeError("final_run_receipt must be a FinalRunReceipt")
     final_run_receipt.__post_init__()
+    if not isinstance(trial_run_receipt, TrialRunReceipt):
+        raise TypeError("holdout result requires a TrialRunReceipt")
+    trial_run_receipt.verify()
     if (
         split_evaluation.final_run_receipt_sha256
         != final_run_receipt.receipt_sha256
+        or trial_run_receipt.trial_id != trial_id
+        or trial_run_receipt.final_run_receipt_sha256
+        != final_run_receipt.receipt_sha256
+        or trial_run_receipt.split_evaluation_sha256
+        != split_evaluation.evaluation_sha256
     ):
         raise ValueError(
             "split evaluation returns must derive from this FinalRunReceipt"
@@ -468,6 +722,7 @@ def capture_holdout_result(
                 "returns_sha256": split_evaluation.returns_sha256,
                 "split_evaluation_sha256": split_evaluation.evaluation_sha256,
                 "trial_id": _text(trial_id, "trial_id"),
+                "trial_run_receipt_sha256": trial_run_receipt.receipt_sha256,
             },
             sort_keys=True,
             separators=(",", ":"),
@@ -476,6 +731,7 @@ def capture_holdout_result(
     values = {
         "trial_id": trial_id,
         "holdout_id": holdout_id,
+        "trial_run_receipt_sha256": trial_run_receipt.receipt_sha256,
         "final_stage_hash": final_stage_hash,
         "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
         "split_evaluation_sha256": split_evaluation.evaluation_sha256,

@@ -72,6 +72,8 @@ from quant_system.research.experiments import (
     capture_family_anchor,
     capture_final_run_receipt,
     capture_holdout_result,
+    capture_trial_config,
+    evaluate_frozen_historical_run,
     freeze_experiment_manifest,
     persist_experiment_ledger,
     preregister_trial,
@@ -2814,6 +2816,7 @@ def test_real_controlled_multistage_chain_produces_return_artifact(
             universe_materialization=materialization,
             decision_artifact=artifact,
             stage_context=stage_context,
+            cost_assumptions_sha256=_cost_assumptions().identity_sha256,
             capacity_policy=_cost_assumptions().capacity_policy,
         )
         results.append(result)
@@ -2961,13 +2964,18 @@ def _real_controlled_return_fixture(
     *,
     dataset_identity_sha256: str,
     split_identity_sha256: str,
+    cost_assumptions: ExecutionCostAssumptions,
 ):
     signal_dates = tuple(session - timedelta(days=1) for session in execution_dates)
     calendar_dates = tuple(sorted(set(signal_dates) | set(execution_dates)))
     calendar = _controlled_calendar(calendar_dates)
     stage_plan = create_stage_plan(signal_dates)
     stage_context = genesis_stage(stage_plan)
-    portfolio = Portfolio.a_share(100_000, costs=TransactionCostModel())
+    portfolio = Portfolio.a_share(
+        100_000,
+        costs=cost_assumptions.base.transaction_cost_model(),
+    )
+    portfolio.a_share_stamp_tax_schedule = False
     results = []
     for index, (signal_session, execution_date) in enumerate(
         zip(signal_dates, execution_dates, strict=True)
@@ -3011,7 +3019,9 @@ def _real_controlled_return_fixture(
             universe_materialization=materialization,
             decision_artifact=artifact,
             stage_context=stage_context,
-            capacity_policy=_cost_assumptions().capacity_policy,
+            cost_assumptions_sha256=cost_assumptions.identity_sha256,
+            capacity_policy=cost_assumptions.capacity_policy,
+            slippage_bps=cost_assumptions.base.slippage_bps,
         )
         results.append(result)
         portfolio = result.portfolio
@@ -3026,11 +3036,7 @@ def _real_controlled_return_fixture(
         )
         for result in frozen_results
     )
-    final_run_receipt = capture_final_run_receipt(stage_plan, stage_receipts)
-    return (
-        capture_return_artifact(stage_plan, stage_receipts, final_run_receipt),
-        final_run_receipt,
-    )
+    return stage_plan, stage_receipts
 
 
 def _run_candidate_rebalance(
@@ -3058,6 +3064,8 @@ def _run_candidate_rebalance(
             experiment_anchor=None,  # type: ignore[arg-type]
             holdout_event=None,  # type: ignore[arg-type]
             holdout_result_receipt=None,  # type: ignore[arg-type]
+            trial_config=None,  # type: ignore[arg-type]
+            trial_run_receipt=None,  # type: ignore[arg-type]
             final_run_receipt=None,  # type: ignore[arg-type]
             split_evaluation=None,  # type: ignore[arg-type]
             candidate_run_config=None,  # type: ignore[arg-type]
@@ -3085,29 +3093,55 @@ def _run_candidate_rebalance(
             }
         )
     )
-    return_artifact, final_run_receipt = _real_controlled_return_fixture(
+    historical_stage_plan, stage_receipts = _real_controlled_return_fixture(
         tmp_path,
         split_dates,
         dataset_identity_sha256=artifact.dataset_identity_sha256,
         split_identity_sha256=artifact.split_identity_sha256,
-    )
-    split_evaluation = evaluate_split(
-        split_manifest,
-        plan=split_plan,
-        return_artifact=return_artifact,
-    )
-    evidence_stage_plan_sha256 = kwargs.pop(
-        "evidence_stage_plan_sha256",
-        final_run_receipt.stage_plan_sha256,
+        cost_assumptions=kwargs["cost_assumptions"],
     )
     trial_id = f"trial-{artifact.artifact_sha256[:12]}"
+    evidence_stage_plan_sha256 = kwargs.pop(
+        "evidence_stage_plan_sha256",
+        historical_stage_plan.plan_sha256,
+    )
+    trial_config = capture_trial_config(
+        trial_id=trial_id,
+        definition_sha256=artifact.strategy_definition_sha256,
+        dataset_sha256=kwargs["dataset_manifest"].identity_sha256,
+        split_sha256=kwargs["dataset_manifest"].split_manifest_sha256,
+        stage_plan_sha256=evidence_stage_plan_sha256,
+        split_evaluation_plan_sha256=split_plan.plan_sha256,
+        ordered_decision_artifact_sha256s=tuple(
+            item.decision_artifact_sha256 for item in stage_receipts
+        ),
+        ordered_universe_materialization_sha256s=tuple(
+            item.universe_materialization_sha256 for item in stage_receipts
+        ),
+        cost_assumptions_sha256=kwargs["cost_assumptions"].identity_sha256,
+        max_positions=kwargs.get("max_positions"),
+        parameters={"historical_stages": len(stage_receipts)},
+    )
+    (
+        trial_run_receipt,
+        final_run_receipt,
+        return_artifact,
+        split_evaluation,
+    ) = evaluate_frozen_historical_run(
+        trial_config=trial_config,
+        stage_plan=historical_stage_plan,
+        stage_receipts=stage_receipts,
+        split_manifest=split_manifest,
+        split_evaluation_plan=split_plan,
+    )
+    prospective_stage_context = kwargs["stage_context"]
     candidate_run_config = capture_candidate_run_config(
         decision_artifact_sha256=artifact.artifact_sha256,
         dataset_identity_sha256=kwargs["dataset_manifest"].identity_sha256,
         split_identity_sha256=kwargs["dataset_manifest"].split_manifest_sha256,
         split_evaluation_plan_sha256=split_plan.plan_sha256,
-        stage_plan_sha256=evidence_stage_plan_sha256,
-        final_stage_index=final_run_receipt.stage_count - 1,
+        stage_plan_sha256=prospective_stage_context.plan_sha256,
+        final_stage_index=prospective_stage_context.stage_index,
         cost_assumptions_sha256=kwargs["cost_assumptions"].identity_sha256,
         signal_session=kwargs["signal_session"],
         decision_at=decision_at,
@@ -3121,8 +3155,8 @@ def _run_candidate_rebalance(
         split_sha256=artifact.split_identity_sha256,
         stage_plan_sha256=evidence_stage_plan_sha256,
         split_evaluation_plan=split_plan,
-        candidate_run_config_sha256=candidate_run_config.config_sha256,
-        parameters=json.loads(candidate_run_config.parameters_json),
+        candidate_run_config_sha256=trial_config.config_sha256,
+        parameters=json.loads(trial_config.parameters_json),
         multiplicity_family_id=f"family-{artifact.artifact_sha256[:12]}",
         holdout_id=split_plan.holdout_id,
         preregistered_at=decision_at - timedelta(days=1),
@@ -3147,7 +3181,7 @@ def _run_candidate_rebalance(
                 (
                     {
                         "definition_sha256": artifact.strategy_definition_sha256,
-                        "parameters_json": candidate_run_config.parameters_json,
+                        "parameters_json": trial_config.parameters_json,
                         "trial_id": trial_id,
                     },
                 ),
@@ -3195,6 +3229,7 @@ def _run_candidate_rebalance(
     holdout_receipt = capture_holdout_result(
         trial_id=trial_id,
         holdout_id=split_plan.holdout_id,
+        trial_run_receipt=trial_run_receipt,
         final_run_receipt=final_run_receipt,
         split_evaluation=split_evaluation,
         holdout_access_at=decision_at - timedelta(seconds=1),
@@ -3217,6 +3252,8 @@ def _run_candidate_rebalance(
             experiment_anchor=anchor,
             holdout_event=events[-1],
             holdout_result_receipt=holdout_receipt,
+            trial_config=trial_config,
+            trial_run_receipt=trial_run_receipt,
             final_run_receipt=final_run_receipt,
             candidate_run_config=candidate_run_config,
             split_evaluation=split_evaluation,

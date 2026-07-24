@@ -67,6 +67,12 @@ def controlled_return_fixture(
     final_values = {
         "stage_plan_sha256": stage_plan.plan_sha256,
         "stage_count": len(sessions),
+        "ordered_stage_receipt_sha256s": tuple(
+            hashlib.sha256(
+                f"synthetic-receipt|{index}".encode()
+            ).hexdigest()
+            for index in range(len(sessions))
+        ),
         "ordered_stage_hashes": tuple(stage_hashes),
         "ordered_portfolio_transitions": tuple(transitions),
         "final_stage_hash": stage_hashes[-1],

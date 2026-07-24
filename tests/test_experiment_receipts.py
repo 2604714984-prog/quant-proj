@@ -1,5 +1,6 @@
 from dataclasses import replace
 from datetime import date, datetime, timedelta, timezone
+import hashlib
 import json
 
 import pytest
@@ -7,6 +8,7 @@ import pytest
 from quant_system.data import capture_source_bytes, parse_provider_observation
 import quant_system.research.experiments as experiment_module
 from quant_system.research.experiments import (
+    TrialRunReceipt,
     capture_family_anchor,
     capture_holdout_result,
     freeze_experiment_manifest,
@@ -164,12 +166,36 @@ def _receipt(
         holdout_id=holdout_id,
         returns=returns,
     )
+    trial_run = _synthetic_trial_run(trial_id, final_run_receipt, evaluation)
     return capture_holdout_result(
         trial_id=trial_id,
         holdout_id=holdout_id,
+        trial_run_receipt=trial_run,
         final_run_receipt=final_run_receipt,
         split_evaluation=evaluation,
         holdout_access_at=datetime(2026, 7, 23, tzinfo=UTC),
+    )
+
+
+def _synthetic_trial_run(trial_id, final_run_receipt, evaluation):
+    values = {
+        "trial_id": trial_id,
+        "trial_config_sha256": "8" * 64,
+        "ordered_stage_receipt_sha256s": (
+            final_run_receipt.ordered_stage_receipt_sha256s
+        ),
+        "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
+        "return_artifact_sha256": evaluation.return_artifact_sha256,
+        "split_evaluation_sha256": evaluation.evaluation_sha256,
+    }
+    provisional = object.__new__(TrialRunReceipt)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    return TrialRunReceipt(
+        **values,
+        receipt_sha256=hashlib.sha256(
+            experiment_module._trial_run_payload(provisional)
+        ).hexdigest(),
     )
 
 
@@ -183,6 +209,11 @@ def test_holdout_receipt_rejects_returns_from_another_final_run() -> None:
         capture_holdout_result(
             trial_id="trial-001",
             holdout_id="holdout-001",
+            trial_run_receipt=_synthetic_trial_run(
+                "trial-001",
+                other_final_run,
+                evaluation,
+            ),
             final_run_receipt=other_final_run,
             split_evaluation=evaluation,
             holdout_access_at=datetime(2026, 7, 23, tzinfo=UTC),
