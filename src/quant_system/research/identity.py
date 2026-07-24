@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import csv
 import hashlib
+import io
 import json
 import math
 import os
@@ -166,13 +168,64 @@ def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
         type(spec) is not dict
         or spec.get("version") != 1
         or spec.get("operation")
-        not in {"identity_bytes", "json_array_to_canonical_jsonl"}
+        not in {
+            "identity_bytes",
+            "json_array_to_canonical_jsonl",
+            "csv_to_canonical_jsonl",
+        }
     ):
         raise ValueError("unsupported controlled pure transformation operation")
     if spec["operation"] == "identity_bytes":
         if set(spec) != {"operation", "version"}:
             raise ValueError("identity transformation spec has unexpected fields")
         return b"".join(inputs)
+    if spec["operation"] == "csv_to_canonical_jsonl":
+        if set(spec) != {
+            "constant_fields",
+            "drop_missing_numeric",
+            "numeric_fields",
+            "operation",
+            "rename",
+            "sort_keys",
+            "version",
+        } or len(inputs) != 1:
+            raise ValueError("CSV transformation spec is invalid")
+        try:
+            decoded_csv = inputs[0].decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ValueError("CSV transformation input must be UTF-8") from exc
+        rename = spec["rename"]
+        constants = spec["constant_fields"]
+        numeric_fields = set(spec["numeric_fields"])
+        if (
+            type(rename) is not dict
+            or type(constants) is not dict
+            or type(spec["sort_keys"]) is not list
+            or type(spec["numeric_fields"]) is not list
+            or type(spec["drop_missing_numeric"]) is not bool
+        ):
+            raise ValueError("CSV transformation mappings are invalid")
+        rows = []
+        for source_row in csv.DictReader(io.StringIO(decoded_csv)):
+            if spec["drop_missing_numeric"] and any(
+                source_row.get(name) in {"", ".", None}
+                for name in numeric_fields
+            ):
+                continue
+            row = {
+                str(rename.get(name, name)): (
+                    float(value) if name in numeric_fields else value
+                )
+                for name, value in source_row.items()
+            }
+            row.update(constants)
+            rows.append(row)
+        sort_keys = tuple(str(rename.get(name, name)) for name in spec["sort_keys"])
+        rows.sort(key=lambda row: tuple(row[name] for name in sort_keys))
+        return b"".join(
+            json.dumps(row, sort_keys=True, separators=(",", ":")).encode() + b"\n"
+            for row in rows
+        )
     if set(spec) != {"operation", "sort_keys", "version"} or not isinstance(
         spec["sort_keys"], list
     ):
