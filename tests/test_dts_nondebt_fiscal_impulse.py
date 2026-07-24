@@ -3,8 +3,10 @@ from datetime import date, datetime, time, timedelta
 import hashlib
 import json
 import math
+import os
 from pathlib import Path
 import statistics
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -12,6 +14,7 @@ import pytest
 from quant_system.backtest import Portfolio, TransactionCostModel
 from quant_system.markets.us import cash_settlement_lag_sessions
 from research.adapters import dts_nondebt_fiscal_impulse as adapter
+from research.runners import run_dts_secondary_once as secondary_runner
 from research.adapters.dts_nondebt_fiscal_impulse import (
     Distribution,
     InputContractError,
@@ -845,3 +848,490 @@ def test_run_does_not_mutate_caller_owned_synthetic_inputs() -> None:
     assert sessions == sessions_before
     assert distributions == distributions_before
     assert all(math.isfinite(item.spy_open) for item in sessions)
+
+
+def _secondary_hashes() -> secondary_runner.SecondaryHashes:
+    return secondary_runner.SecondaryHashes(
+        _hash("secondary-receipt"),
+        _hash("secondary-market"),
+        _hash("secondary-calendar"),
+        _hash("secondary-actions"),
+        _hash("secondary-lifecycle"),
+        _hash("secondary-sha256sums"),
+    )
+
+
+def _secondary_receipt(
+    hashes: secondary_runner.SecondaryHashes,
+) -> dict[str, object]:
+    output_hashes = {
+        "secondary_market.jsonl": hashes.market,
+        "calendar_identity.jsonl": hashes.calendar,
+        "corporate_actions.jsonl": hashes.actions,
+        "lifecycle_identity.jsonl": hashes.lifecycle,
+    }
+    return {
+        "schema_version": "dts-secondary-market-input-receipt-v1",
+        "research_id": secondary_runner.RESEARCH_ID,
+        "status": "SECONDARY_MARKET_INPUT_MATERIALIZED_RETROSPECTIVE_ONLY",
+        "classification": "RETROSPECTIVE_SECONDARY_REVISION_LIMITED",
+        "source_roles": dict(secondary_runner.SOURCE_ROLES),
+        "coverage": {
+            "first_session": "2023-07-31",
+            "last_session": "2026-06-01",
+            "calendar_session_count": 712,
+            "market_row_count": 712,
+            "distribution_row_count": 11,
+            "split_row_count": 0,
+            "lifecycle_row_count": 4,
+        },
+        "fiscal_binding": {
+            "fiscal_receipt_sha256": secondary_runner.EXPECTED["fiscal_receipt"],
+            "fiscal_states_sha256": secondary_runner.EXPECTED["fiscal_states"],
+            "secondary_row_count": 34,
+            "secondary_schedule_sha256": _hash("secondary-schedule"),
+            "terminal_month_start": "2026-06-01",
+            "validation_rows_used": 0,
+            "accepted_validation_result_sha256": secondary_runner.EXPECTED[
+                "validation_result"
+            ],
+        },
+        "boundaries": {
+            "secondary_fiscal_rows_used": 34,
+            "validation_market_values_opened": False,
+            "yahoo_price_fields_decoded_by_strict_json_parser": True,
+            "yahoo_price_fields_selected_used_output_or_fused": False,
+            "return_computed": False,
+            "nav_computed": False,
+            "strategy_computed": False,
+            "central_database_write_performed": False,
+            "strategy_candidate_available": False,
+        },
+        "database": {
+            "sha256_before": secondary_runner.EXPECTED["db"],
+            "sha256_after": secondary_runner.EXPECTED["db"],
+            "unchanged": True,
+            "write_performed": False,
+        },
+        "split_evidence": {
+            "classification": (
+                "ZERO_EVENTS_DUAL_SECONDARY_CORROBORATED_RETROSPECTIVE_ONLY"
+            ),
+            "accepted_split_rows": 0,
+            "splithistory_page": {
+                "page_sha256": _hash("splithistory-page"),
+                "fetch_receipt_sha256": _hash("splithistory-fetch"),
+                "url": "https://www.splithistory.com/spy/",
+                "http_status": 200,
+                "response_bytes": 49496,
+                "redirect_count": 0,
+                "retry_count": 0,
+                "accepted_event_rows": 0,
+                "source_role": "SECONDARY_RETROSPECTIVE_CORROBORATION_ONLY",
+            },
+            "yahoo_chart": {
+                "chart_sha256": _hash("yahoo-chart"),
+                "fetch_receipt_sha256": _hash("yahoo-fetch"),
+                "accepted_event_rows": 0,
+            },
+            "automatic_row_fusion": False,
+        },
+        "outputs": {
+            name: {
+                "path": str(secondary_runner.SECONDARY_MARKET / name),
+                "bytes": 100,
+                "sha256": digest,
+            }
+            for name, digest in output_hashes.items()
+        },
+    }
+
+
+def _secondary_rows() -> tuple[
+    list[dict[str, object]],
+    list[dict[str, object]],
+    list[dict[str, object]],
+    list[dict[str, object]],
+]:
+    session_dates = [
+        date(2023, 7, 31) + timedelta(days=index) for index in range(711)
+    ]
+    session_dates.append(date(2026, 6, 1))
+    market = [
+        {
+            "session_date": value.isoformat(),
+            "symbol": "SPY",
+            "price_basis": "UNADJUSTED_RAW_OPEN_CLOSE_ONLY",
+        }
+        for value in session_dates
+    ]
+    calendar = [{"session_date": value.isoformat()} for value in session_dates]
+    actions = [
+        {
+            "symbol": "SPY",
+            "action_type": "cash_distribution",
+            "ex_date": value,
+        }
+        for value in sorted(secondary_runner.EXPECTED_DISTRIBUTION_DATES)
+    ]
+    lifecycle = [
+        {
+            "symbol": "SPY",
+            "year": year,
+            "exchange_identity": "NYSE_ARCA",
+            "trust_identity": "SPDR_S&P_500_ETF_TRUST",
+            "ticker_present": True,
+            "primary_document_bytes_bound": True,
+        }
+        for year in (2023, 2024, 2025, 2026)
+    ]
+    return market, calendar, actions, lifecycle
+
+
+def _accepted_validation_claim() -> dict[str, object]:
+    expected = secondary_runner.EXPECTED
+    return {
+        "schema_version": "dts-validation-one-use-claim-v1",
+        "research_id": secondary_runner.RESEARCH_ID,
+        "attempt": 2,
+        "claimed_at_utc": "2026-07-24T10:34:22+00:00",
+        "runner_sha256": expected["validation_runner"],
+        "definition_sha256": expected["definition"],
+        "adapter_sha256": expected["adapter"],
+        "fiscal_receipt_sha256": expected["fiscal_receipt"],
+        "fiscal_states_sha256": expected["fiscal_states"],
+        "market_receipt_sha256": expected["validation_market_receipt"],
+        "market_rows_file_sha256": expected["validation_market_file"],
+        "recovery_of_claim_sha256": _hash("attempt-1-claim"),
+        "recovery_reason": "MISSING_DUCKDB_RUNTIME",
+        "secondary_opened": False,
+        "rerun": False,
+        "strategy_candidate_available": False,
+    }
+
+
+def test_secondary_cli_hashes_are_strict_and_lowercase() -> None:
+    digest = _hash("cli")
+    arguments = [
+        "--expected-runner-sha256",
+        digest,
+        "--secondary-receipt-sha256",
+        digest,
+        "--secondary-market-sha256",
+        digest,
+        "--secondary-calendar-sha256",
+        digest,
+        "--secondary-actions-sha256",
+        digest,
+        "--secondary-lifecycle-sha256",
+        digest,
+        "--secondary-sha256sums-sha256",
+        digest,
+    ]
+    parsed = secondary_runner.parse_args(arguments)
+    assert parsed.secondary_market_sha256 == digest
+    with pytest.raises(secondary_runner.ContractError, match="binding drift"):
+        secondary_runner.secondary_hashes(parsed)
+    arguments[-1] = digest.upper()
+    with pytest.raises(SystemExit):
+        secondary_runner.parse_args(arguments)
+
+
+def test_secondary_atomic_publish_handles_partial_write_and_never_replaces(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    destination = tmp_path / "result.json"
+    payload = b'{"complete":true}\n'
+    real_write = os.write
+
+    def partial_write(descriptor: int, value: bytes) -> int:
+        return real_write(descriptor, value[:3])
+
+    monkeypatch.setattr(secondary_runner.os, "write", partial_write)
+    secondary_runner.publish_atomic_no_replace(destination, payload)
+    assert destination.read_bytes() == payload
+    assert destination.stat().st_nlink == 1
+    with pytest.raises(secondary_runner.ContractError, match="already exists"):
+        secondary_runner.publish_atomic_no_replace(destination, b"forged\n")
+    assert destination.read_bytes() == payload
+
+    source = tmp_path / "source.json"
+    linked = tmp_path / "linked.json"
+    source.write_bytes(b"input\n")
+    os.link(source, linked)
+    with pytest.raises(secondary_runner.ContractError, match="hard-linked"):
+        secondary_runner.read_regular(linked, single_link=True)
+
+
+@pytest.mark.parametrize("role", ["validation-runner", "adapter"])
+def test_secondary_module_loader_executes_only_descriptor_captured_exact_bytes(
+    role: str,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    module_path = tmp_path / f"{role}.py"
+    forged_marker = tmp_path / f"{role}.forged-executed"
+    claim_path = tmp_path / f"{role}.claim.json"
+    result_path = tmp_path / f"{role}.result.json"
+    accepted = b"VALUE = 1\n"
+    forged = (
+        "from pathlib import Path\n"
+        f"Path({str(forged_marker)!r}).write_text('forged')\n"
+        "VALUE = 999\n"
+    ).encode()
+    module_path.write_bytes(accepted)
+    accepted_sha = hashlib.sha256(accepted).hexdigest()
+    real_exact_bytes = secondary_runner.exact_bytes
+    events: list[str] = []
+
+    def capture_then_replace(
+        path: Path,
+        expected: str,
+        *,
+        single_link: bool = False,
+    ) -> bytes:
+        payload = real_exact_bytes(path, expected, single_link=single_link)
+        path.write_bytes(forged)
+        events.append("path-replaced-after-capture")
+        return payload
+
+    monkeypatch.setattr(secondary_runner, "exact_bytes", capture_then_replace)
+    monkeypatch.setattr(secondary_runner, "CLAIM", claim_path)
+    monkeypatch.setattr(secondary_runner, "RESULT", result_path)
+    with pytest.raises(secondary_runner.ContractError, match="hash mismatch"):
+        secondary_runner.load_exact_module(
+            module_path,
+            accepted_sha,
+            f"_dts_test_{role.replace('-', '_')}",
+        )
+    assert events == ["path-replaced-after-capture"]
+    assert module_path.read_bytes() == forged
+    assert not forged_marker.exists()
+    assert not claim_path.exists()
+    assert not result_path.exists()
+    source = Path(secondary_runner.__file__).read_text(encoding="utf-8")
+    assert "validation_runner.load_module()" not in source
+
+
+def test_secondary_receipt_and_exact_phase_rows_fail_closed() -> None:
+    hashes = _secondary_hashes()
+    receipt = _secondary_receipt(hashes)
+    secondary_runner.require_secondary_receipt(receipt, hashes)
+    wrong_role = json.loads(json.dumps(receipt))
+    wrong_role["source_roles"]["tiingo_spy_prices"] = "ADJUSTED_CLOSE"
+    with pytest.raises(secondary_runner.ContractError, match="source-role"):
+        secondary_runner.require_secondary_receipt(wrong_role, hashes)
+
+    market, calendar, actions, lifecycle = _secondary_rows()
+    secondary_runner.validate_secondary_rows(
+        market,
+        calendar,
+        actions,
+        lifecycle,
+    )
+    with pytest.raises(secondary_runner.ContractError, match="row counts"):
+        secondary_runner.validate_secondary_rows(
+            market[:-1],
+            calendar,
+            actions,
+            lifecycle,
+        )
+    actions[0]["action_type"] = "split"
+    with pytest.raises(secondary_runner.ContractError, match="distributions"):
+        secondary_runner.validate_secondary_rows(
+            market,
+            calendar,
+            actions,
+            lifecycle,
+        )
+
+
+def test_secondary_sha256sums_is_exact_and_duplicate_safe() -> None:
+    hashes = _secondary_hashes()
+    values = {
+        "calendar_identity.jsonl": hashes.calendar,
+        "corporate_actions.jsonl": hashes.actions,
+        "lifecycle_identity.jsonl": hashes.lifecycle,
+        "receipt.json": hashes.receipt,
+        "secondary_market.jsonl": hashes.market,
+    }
+    payload = "".join(f"{digest}  {name}\n" for name, digest in values.items()).encode()
+    assert secondary_runner.parse_sha256sums(payload) == values
+    with pytest.raises(secondary_runner.ContractError, match="duplicate"):
+        secondary_runner.parse_sha256sums(payload + payload.splitlines(keepends=True)[0])
+
+
+def test_forged_validation_claim_and_gates_are_rejected_before_claim(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    claim = _accepted_validation_claim()
+    secondary_runner.validate_validation_claim(claim)
+    forged_claim = dict(claim)
+    forged_claim["runner_sha256"] = _hash("forged-runner")
+    with pytest.raises(secondary_runner.ContractError, match="claim semantic"):
+        secondary_runner.validate_validation_claim(forged_claim)
+
+    states, sessions, terminal, _ = _bundle("validation")
+    identity = SegmentInputIdentity(
+        "validation",
+        secondary_runner.EXPECTED["fiscal_receipt"],
+        adapter.fiscal_states_sha256(states),
+        secondary_runner.EXPECTED["validation_market_receipt"],
+        adapter.market_rows_sha256(sessions),
+        adapter.calendar_sha256(sessions),
+        secondary_runner.EXPECTED["definition"],
+        secondary_runner.EXPECTED["adapter"],
+    )
+    decision = run_validation(
+        states,
+        sessions,
+        terminal_month=terminal,
+        input_identity=identity,
+    )
+    monkeypatch.setitem(
+        secondary_runner.EXPECTED,
+        "validation_state_rows",
+        identity.fiscal_states_sha256,
+    )
+    monkeypatch.setitem(
+        secondary_runner.EXPECTED,
+        "validation_market_rows",
+        identity.market_rows_sha256,
+    )
+    monkeypatch.setitem(
+        secondary_runner.EXPECTED,
+        "validation_calendar_rows",
+        identity.calendar_sha256,
+    )
+    aggregate = secondary_runner.decision_aggregate(decision)
+    result = {
+        "schema_version": "dts-validation-result-v1",
+        "research_id": secondary_runner.RESEARCH_ID,
+        "attempt": 2,
+        "status": "VALIDATION_PASS_SECONDARY_ELIGIBLE",
+        "classification": "RETROSPECTIVE_SECONDARY_REVISION_LIMITED",
+        "code": {
+            "runner_sha256": secondary_runner.EXPECTED["validation_runner"],
+            "definition_sha256": secondary_runner.EXPECTED["definition"],
+            "adapter_sha256": secondary_runner.EXPECTED["adapter"],
+            "duckdb_version": "1.5.4",
+        },
+        "inputs": {
+            "fiscal_receipt_sha256": secondary_runner.EXPECTED["fiscal_receipt"],
+            "fiscal_states_file_sha256": secondary_runner.EXPECTED["fiscal_states"],
+            "fiscal_state_rows_sha256": identity.fiscal_states_sha256,
+            "market_receipt_sha256": secondary_runner.EXPECTED[
+                "validation_market_receipt"
+            ],
+            "market_rows_file_sha256": secondary_runner.EXPECTED[
+                "validation_market_file"
+            ],
+            "market_rows_sha256": identity.market_rows_sha256,
+            "calendar_rows_sha256": identity.calendar_sha256,
+        },
+        "central_database": {
+            "sha256_before": secondary_runner.EXPECTED["db"],
+            "sha256_after": secondary_runner.EXPECTED["db"],
+            "unchanged": True,
+            "write_performed": False,
+        },
+        "boundaries": {
+            "secondary_market_input_opened": False,
+            "secondary_result_opened": False,
+            "rerun": False,
+            "strategy_candidate_available": False,
+            "shadow": False,
+            "paper": False,
+            "broker": False,
+            "live": False,
+        },
+        **aggregate,
+    }
+    secondary_runner.validate_accepted_validation(adapter, claim, result, decision)
+    forged_result = json.loads(json.dumps(result))
+    forged_result["gates"]["terminal_wealth_above_fifty_fifty"] = False
+    with pytest.raises(secondary_runner.ContractError, match="does not reproduce"):
+        secondary_runner.validate_accepted_validation(
+            adapter,
+            claim,
+            forged_result,
+            decision,
+        )
+
+
+def test_secondary_files_are_unread_until_validation_proof_and_atomic_claim(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    events: list[str] = []
+    runner_bytes = b"secondary-runner"
+    digest = hashlib.sha256(runner_bytes).hexdigest()
+    args = SimpleNamespace(
+        expected_runner_sha256=digest,
+        secondary_receipt_sha256=secondary_runner.EXPECTED_SECONDARY["receipt"],
+        secondary_market_sha256=secondary_runner.EXPECTED_SECONDARY["market"],
+        secondary_calendar_sha256=secondary_runner.EXPECTED_SECONDARY["calendar"],
+        secondary_actions_sha256=secondary_runner.EXPECTED_SECONDARY["actions"],
+        secondary_lifecycle_sha256=secondary_runner.EXPECTED_SECONDARY["lifecycle"],
+        secondary_sha256sums_sha256=secondary_runner.EXPECTED_SECONDARY[
+            "sha256sums"
+        ],
+    )
+
+    monkeypatch.setattr(secondary_runner, "read_regular", lambda *args, **kwargs: runner_bytes)
+    monkeypatch.setattr(secondary_runner, "exact_bytes", lambda *args, **kwargs: b"")
+    monkeypatch.setattr(secondary_runner.os.path, "lexists", lambda _: False)
+
+    context = SimpleNamespace()
+
+    def proof() -> SimpleNamespace:
+        events.append("validation-proof")
+        return context
+
+    def reverify() -> None:
+        events.append("validation-reverified")
+
+    def claim(*_: object) -> None:
+        events.append("claimed")
+
+    def secondary(*_: object) -> dict[str, object]:
+        events.append("secondary-read")
+        return {"status": "HOLDOUT_FAIL_CLOSED"}
+
+    monkeypatch.setattr(secondary_runner, "reconstruct_accepted_validation", proof)
+    monkeypatch.setattr(secondary_runner, "reverify_validation_artifacts", reverify)
+    monkeypatch.setattr(secondary_runner, "atomic_claim", claim)
+    monkeypatch.setattr(secondary_runner, "execute_claimed_secondary", secondary)
+    assert secondary_runner.run(args)["status"] == "HOLDOUT_FAIL_CLOSED"
+    assert events == [
+        "validation-proof",
+        "validation-reverified",
+        "claimed",
+        "secondary-read",
+    ]
+
+    events.clear()
+
+    def failed_proof() -> SimpleNamespace:
+        events.append("validation-proof")
+        raise secondary_runner.ContractError("forged validation result")
+
+    monkeypatch.setattr(
+        secondary_runner,
+        "reconstruct_accepted_validation",
+        failed_proof,
+    )
+    with pytest.raises(secondary_runner.ContractError, match="forged"):
+        secondary_runner.run(args)
+    assert events == ["validation-proof"]
+
+
+def test_secondary_result_status_is_mechanical() -> None:
+    assert (
+        secondary_runner.result_status(SimpleNamespace(all_gates_pass=False))
+        == "HOLDOUT_FAIL_CLOSED"
+    )
+    assert (
+        secondary_runner.result_status(SimpleNamespace(all_gates_pass=True))
+        == "RETROSPECTIVE_SECONDARY_PASS_PENDING_USER_REVIEW"
+    )
