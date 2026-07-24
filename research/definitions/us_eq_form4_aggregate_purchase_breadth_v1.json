@@ -1,0 +1,125 @@
+{
+  "schema_version": "us-equity-form4-breadth-prereg-v1",
+  "research_id": "US_EQ_FORM4_AGGREGATE_PURCHASE_BREADTH_V1",
+  "status": "PREREGISTERED_INPUT_QUALIFIED_CODE_READY",
+  "evidence_class": "EXPLORATORY_RETROSPECTIVE_SECONDARY_ONLY",
+  "mechanism": {
+    "economic_hypothesis": "Broad open-market purchases by officers and directors contain aggregate private-information content; unusually strong purchase breadth favors SPY exposure.",
+    "independent_from_closed_lineages": true,
+    "parameter_grid": false,
+    "variant_count": 1,
+    "outcomes_used_for_selection": false
+  },
+  "signal": {
+    "source": "SEC official Insider Transactions Data Sets",
+    "source_coverage": "2006Q1 through 2026Q2",
+    "submission_filter": "DOCUMENT_TYPE exactly 4; nonempty issuer symbol and valid issuer CIK",
+    "owner_filter": "at least one reporting owner relationship containing Officer or Director",
+    "transaction_filter": "NONDERIV_TRANS only; P maps to A; S maps to D; equity swaps excluded",
+    "issuer_identity": "ISSUERCIK",
+    "monthly_dedup_key": [
+      "FILING_MONTH",
+      "ISSUERCIK",
+      "DIRECTION"
+    ],
+    "formula": "B_m=(distinct_purchase_issuers-distinct_sale_issuers)/(distinct_purchase_issuers+distinct_sale_issuers)",
+    "risk_on_rule": "B_m is strictly greater than the median of the prior 12 completed calendar months",
+    "tie_and_risk_off_rule": "cash",
+    "missing_or_zero_denominator_rule": "fail_closed",
+    "availability": "FILING_DATE calendar month, usable only at the next accepted XNYS open after month end",
+    "accepted_limitation": "quarterly flattened extracts are retrospective as-filed evidence and do not provide intraday acceptance timestamps"
+  },
+  "portfolio": {
+    "risk_on": "100 percent SPY subject to whole shares and cash",
+    "risk_off": "100 percent zero-return cash",
+    "initial_capital_usd": 40000.0,
+    "one_way_commission_rate": 0.001,
+    "minimum_commission": 0.0,
+    "sell_tax_rate": 0.0,
+    "slippage_bps": 0.0,
+    "leverage": false,
+    "shorting": false,
+    "maximum_positions": 1
+  },
+  "timing": {
+    "decision": "08:30 America/New_York on the first accepted XNYS session after signal month end",
+    "execution": "same accepted session retrospective raw open",
+    "decision_price": "preceding accepted session retrospective raw close",
+    "holding": "until next monthly accepted execution open",
+    "drawdown_observations": "monthly execution-open and terminal-open NAV only"
+  },
+  "segments": {
+    "validation": {
+      "signal_month_start": "2018-01",
+      "signal_month_end": "2021-10",
+      "execution_month_start": "2018-02",
+      "execution_month_end": "2021-11",
+      "terminal_month": "2021-12",
+      "complete_intervals": 46,
+      "risk_on_months": 21,
+      "cash_months": 25
+    },
+    "boundary_gap": "2021-11 signal and 2021-12 execution are unused; no state or portfolio carries across segments",
+    "secondary": {
+      "signal_month_start": "2021-12",
+      "signal_month_end": "2026-04",
+      "execution_month_start": "2022-01",
+      "execution_month_end": "2026-05",
+      "terminal_month": "2026-06",
+      "complete_intervals": 53,
+      "risk_on_months": 28,
+      "cash_months": 25,
+      "sealed_until_validation_pass": true
+    }
+  },
+  "comparators": {
+    "spy_buyhold": "buy SPY once at the segment first execution open, never rebalance, retain distributions as zero-return cash, measure at terminal open",
+    "monthly_50_50": "rebalance monthly to 50 percent SPY and 50 percent zero-return cash using identical opens, whole shares and cost contract"
+  },
+  "corporate_actions": {
+    "source": "State Street official SPY distribution history",
+    "rule": "apply each event exactly once on ex-date to freeze session-open share entitlement; settle pending cash on official pay date",
+    "reinvestment": false
+  },
+  "gates_per_segment": [
+    "exact frozen interval count",
+    "at least 12 SPY and at least 12 cash months",
+    "strategy terminal wealth strictly above monthly 50/50 comparator",
+    "strategy arithmetic mean monthly return strictly above monthly 50/50 comparator",
+    "strategy monthly maximum drawdown no worse than SPY buy-and-hold"
+  ],
+  "decision_rule": {
+    "validation_fail": "EXPLORATORY_VALIDATION_FAIL_CLOSED",
+    "secondary_fail": "EXPLORATORY_SECONDARY_FAIL_CLOSED",
+    "both_pass": "EXPLORATORY_SCREENING_PASS_PENDING_USER_REVIEW",
+    "rerun": false,
+    "parameter_repair": false,
+    "source_blending": false,
+    "statistical_confirmation_claim": false
+  },
+  "source_identities": {
+    "form4_receipt_sha256": "da984d79180ccbc5825bcdb7570bad619a372cd678463aee29bc2a7fcd1f622e",
+    "form4_manifest_sha256": "59614ae23f159ec8b7fae98ea694dc5355ee7ee98c68c5415e54bef22379bda7",
+    "form4_monthly_csv_sha256": "1cdb2038614501592a8753ea57e139f8b4a5edc0f9325df558c193f811c1ec73",
+    "form4_monthly_parquet_sha256": "5a830183e66e4e31641d8dfad5b49b0c1441ccd08388e0d1e6fe36703c898a7d",
+    "spy_raw_tiingo_gzip_sha256": "bf6c7a7095d6c926f51513c7e1baa8cc4895b4bffd61b07273818ea2f6d72208",
+    "xnys_calendar_sha256": "08b1722c675012d89e0b4f92ed51f51160adbd1d54961c093c52101c067fc553",
+    "spy_distributions_sha256": "caf871c657e8c1ff258e8733c8ef49409da1c66c911b5a48f2148cdf9cc3f12a",
+    "spy_lifecycle_chain_sha256": "2916eb2a31e90aa0372978f0d70bd9c34994c60068150cd1a5ebf3f0a1276027",
+    "inclusion_rule_sha256": "7e5f43b7d0dc6e5a18f19317e21d94bba456ffd87b1b91c87a7a7f1c70512af3",
+    "shared_core_commit": "3ec32b30f66ab496740ca7e879983a73d68857d6",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "adapter_sha256": "b916f934f074745e49499dab76efe3afcd0c086a55fa1701c80bf7f44ff3694f"
+  },
+  "boundaries": {
+    "database_write": false,
+    "external_review_requested": false,
+    "prospective_forward_access": false,
+    "strategy_candidate_available": false,
+    "rerun": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
