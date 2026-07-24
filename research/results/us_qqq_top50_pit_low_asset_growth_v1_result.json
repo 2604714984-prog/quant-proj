@@ -1,0 +1,153 @@
+{
+    "base": {
+        "annualized_volatility": 0.24221725717644027,
+        "cagr": 0.20139163422788275,
+        "daily_sharpe": 0.880623304826319,
+        "maximum_drawdown": -0.3221078754511214,
+        "total_return": 1.541742655534673,
+        "years": 5.084188911704312
+    },
+    "base_cagr_excess": -0.00586205983185617,
+    "bootstrap": {
+        "block_length": 3,
+        "lower_95": -0.002421788535444974,
+        "mean_monthly_excess": -0.0006565555090206066,
+        "months": 60,
+        "replications": 10000,
+        "seed": 20260724,
+        "upper_95": 0.0011870724414776656
+    },
+    "boundaries": {
+        "auto": false,
+        "broker": false,
+        "live": false,
+        "paper": false,
+        "recommendation": false,
+        "shadow": false
+    },
+    "boundary_result": "Discovery rejected; holdout remains sealed and this research identity is permanently closed.",
+    "current_status": "rejected",
+    "daily_sharpe_margin": 0.011477525800577926,
+    "decisive_failed_gates": [
+        "base_net_cagr_excess_gt_0",
+        "stress_net_cagr_excess_gt_0",
+        "daily_sharpe_margin_gte_0_03",
+        "satellite_annual_turnover_lte_0_50",
+        "positive_subperiods_gte_2",
+        "recent_subperiod_nonnegative"
+    ],
+    "diagnostics": {
+        "formation_pairs": 20,
+        "icir": -0.11743389589223546,
+        "mean_low_minus_high_return": -0.00806751007637533,
+        "mean_rank_ic": -0.02867071841703848,
+        "tercile_monotonic_fraction": 0.05
+    },
+    "drawdown_shortfall": 0.0,
+    "evaluation": {
+        "end": "2024-12-31",
+        "start": "2019-12-02"
+    },
+    "formation_count": 21,
+    "gate_pass_count": 1,
+    "gate_total": 7,
+    "gates": {
+        "base_net_cagr_excess_gt_0": false,
+        "daily_sharpe_margin_gte_0_03": false,
+        "drawdown_shortfall_lte_0_02": true,
+        "positive_subperiods_gte_2": false,
+        "recent_subperiod_nonnegative": false,
+        "satellite_annual_turnover_lte_0_50": false,
+        "stress_net_cagr_excess_gt_0": false
+    },
+    "holdout_opened": false,
+    "input_identity": {
+        "created_at": "2026-07-24 09:58:14.298261+00:00",
+        "definition_sha256": "f3931ed44e318eef04b979fcfb9272a3e0808db71f8b2fab96881f1bce61b0a9",
+        "discovery_formation_count": 21,
+        "formation_count": 27,
+        "formation_input_sha256": "c0dc7d311eecd3c386d6ffee996535da7d47eef22d805463d42ab94bd8bae0c6",
+        "holdout_formation_count": 6,
+        "input_counts": {
+            "benchmark": 2088,
+            "fundamentals": 1610,
+            "holdings": 1350,
+            "stocks": 167440
+        },
+        "input_hashes": {
+            "benchmark": "9ddad332ceb2f305b3962ee3653c6946185521587eda1991508060564ff56dc3",
+            "fundamentals": "129339f7201f07b782771d32dcb3ef959564c70a8e03e8b266149500f7f325f6",
+            "holdings": "736af0854cf41a71c327f948d0ecb7410de92a7ff69fbc4eb6804da7a05b2397",
+            "stocks": "bf2b715e7484053e404c45a5569dabedba0a92cd9aea7b2a25892689e9e31723"
+        },
+        "maximum_eligible": 50,
+        "minimum_eligible": 47,
+        "phase": "INPUT_QUALIFICATION",
+        "qualification_checks": {
+            "definition": true,
+            "formations": true,
+            "inputs": true,
+            "script": true
+        },
+        "receipt_sha256": "d40e62564e6dfe6eb501c60bdae8bd4a68e329be07fa5489309aaf3486625c99",
+        "research_id": "US_QQQ_TOP50_PIT_LOW_ASSET_GROWTH_V1",
+        "script_sha256": "e1b978d080b826c5059e1c165914f2c3aba111a44b5a406725b2fba241736c51",
+        "status": "INPUT_QUALIFIED",
+        "strategy_candidate_available": false,
+        "strategy_outcomes_accessed": false
+    },
+    "phase": "DISCOVERY",
+    "qqq": {
+        "annualized_volatility": 0.25456938866610657,
+        "cagr": 0.20725369405973892,
+        "daily_sharpe": 0.8691457790257411,
+        "maximum_drawdown": -0.35122525674812877,
+        "total_return": 1.6054290140819591,
+        "years": 5.084188911704312
+    },
+    "research_id": "US_QQQ_TOP50_PIT_LOW_ASSET_GROWTH_V1",
+    "repository": {
+        "branch": "research/us-qqq-top50-pit-low-asset-growth-v1",
+        "execution_head": "5351ec01af924e6bcd05d00d8a626fdfb2ba8f08",
+        "execution_tree": "86d52a27a6bd880ad8ee99a93d9dd29331b7646c",
+        "result_path": "research/results/us_qqq_top50_pit_low_asset_growth_v1_result.json",
+        "worktree_before_run": "clean"
+    },
+    "satellite_annual_one_way_turnover": 0.5013202903476903,
+    "status": "REJECTED",
+    "strategy_candidate_available": false,
+    "stress": {
+        "annualized_volatility": 0.2422064747641489,
+        "cagr": 0.20094440181960427,
+        "daily_sharpe": 0.8791109184752075,
+        "maximum_drawdown": -0.3223003487313967,
+        "total_return": 1.536935681541177,
+        "years": 5.084188911704312
+    },
+    "stress_cagr_excess": -0.006309292240134656,
+    "subperiods": [
+        {
+            "end": "2021-08-11",
+            "excess_return": -0.06463920690628822,
+            "number": 1,
+            "start": "2019-12-02"
+        },
+        {
+            "end": "2023-04-21",
+            "excess_return": 0.03215808535048348,
+            "number": 2,
+            "start": "2021-08-12"
+        },
+        {
+            "end": "2024-12-31",
+            "excess_return": -0.03999958840828777,
+            "number": 3,
+            "start": "2023-04-24"
+        }
+    ],
+    "unresolved_evidence_gaps": [
+        "The disclosed QQQ history begins in 2019, limiting regime coverage.",
+        "The frozen stock-return snapshot is Yahoo primary research data without a required independent cross-check.",
+        "SEC company-facts availability is date-level, so same-day filings were conservatively delayed to a later session."
+    ]
+}
