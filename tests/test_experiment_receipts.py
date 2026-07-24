@@ -247,6 +247,7 @@ def _synthetic_trial_run(
         "final_run_receipt_sha256": final_run_receipt.receipt_sha256,
         "return_artifact_sha256": evaluation.return_artifact_sha256,
         "split_evaluation_sha256": evaluation.evaluation_sha256,
+        "replay_payload_json": "{}",
     }
     provisional = object.__new__(TrialRunReceipt)
     for name, value in values.items():

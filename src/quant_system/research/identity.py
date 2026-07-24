@@ -157,9 +157,9 @@ def _pure_runtime_identity() -> str:
     ).hexdigest()
 
 
-def _pure_step(spec_path: Path, inputs: tuple[bytes, ...]) -> bytes:
+def _pure_step_bytes(spec_bytes: bytes, inputs: tuple[bytes, ...]) -> bytes:
     try:
-        spec = json.loads(capture_file_bytes(spec_path))
+        spec = json.loads(spec_bytes)
     except (UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("pure transformation spec must be valid JSON") from exc
     if (
@@ -197,6 +197,27 @@ def _pure_step(spec_path: Path, inputs: tuple[bytes, ...]) -> bytes:
     )
 
 
+def replay_pure_transformation_bytes(
+    *,
+    program_bytes: bytes,
+    feature_program_bytes: bytes,
+    label_program_bytes: bytes,
+    config_bytes: bytes,
+    raw_bytes: tuple[bytes, ...],
+) -> bytes:
+    """Recompute the controlled pure transform without filesystem capabilities."""
+
+    try:
+        config = json.loads(config_bytes)
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("pure transformation config must be valid JSON") from exc
+    if type(config) is not dict:
+        raise ValueError("pure transformation config must be an object")
+    features = _pure_step_bytes(feature_program_bytes, raw_bytes)
+    labels = _pure_step_bytes(label_program_bytes, (features,))
+    return _pure_step_bytes(program_bytes, (labels,))
+
+
 def _run_pure_transformation(
     program_path: Path,
     feature_program_path: Path,
@@ -204,16 +225,16 @@ def _run_pure_transformation(
     config_path: Path,
     raw_paths: tuple[Path, ...],
 ) -> bytes:
-    try:
-        config = json.loads(capture_file_bytes(config_path))
-    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-        raise ValueError("pure transformation config must be valid JSON") from exc
-    if type(config) is not dict:
-        raise ValueError("pure transformation config must be an object")
-    raw = tuple(capture_file_bytes(path, max_bytes=64 * 1024 * 1024) for path in raw_paths)
-    features = _pure_step(feature_program_path, raw)
-    labels = _pure_step(label_program_path, (features,))
-    return _pure_step(program_path, (labels,))
+    return replay_pure_transformation_bytes(
+        program_bytes=capture_file_bytes(program_path),
+        feature_program_bytes=capture_file_bytes(feature_program_path),
+        label_program_bytes=capture_file_bytes(label_program_path),
+        config_bytes=capture_file_bytes(config_path),
+        raw_bytes=tuple(
+            capture_file_bytes(path, max_bytes=64 * 1024 * 1024)
+            for path in raw_paths
+        ),
+    )
 
 
 def _validate_partition(

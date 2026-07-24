@@ -1,4 +1,5 @@
 from copy import deepcopy
+import base64
 from dataclasses import replace
 from datetime import date, datetime, time, timedelta, timezone
 from decimal import Decimal
@@ -79,6 +80,7 @@ from quant_system.research.experiments import (
     persist_experiment_ledger,
     preregister_trial,
     record_holdout_result,
+    replay_trial_run,
 )
 from quant_system.research.splits import (
     build_split_evaluation_plan,
@@ -3228,6 +3230,12 @@ def _run_candidate_rebalance(
         split_manifest=split_manifest,
         split_evaluation_plan=split_plan,
     )
+    replayed_final, replayed_returns, replayed_evaluation = replay_trial_run(
+        trial_run_receipt
+    )
+    assert replayed_final.receipt_sha256 == final_run_receipt.receipt_sha256
+    assert replayed_returns.artifact_sha256 == return_artifact.artifact_sha256
+    assert replayed_evaluation.evaluation_sha256 == split_evaluation.evaluation_sha256
     prospective_stage_context = kwargs["stage_context"]
     candidate_run_config = capture_candidate_run_config(
         decision_artifact_sha256=artifact.artifact_sha256,
@@ -3694,6 +3702,41 @@ def test_candidate_interface_uses_frozen_artifact_without_callback(tmp_path: Pat
     )
     with pytest.raises(ValueError, match="execution, portfolio, or NAV replay differs"):
         forged.verify()
+    artifact_payloads = list(result.run_bundle.artifact_payloads)
+    feature_index = next(
+        index
+        for index, payload_item in enumerate(artifact_payloads)
+        if json.loads(payload_item)["role"] == "decision.feature_snapshot"
+    )
+    feature_envelope = json.loads(artifact_payloads[feature_index])
+    feature = json.loads(base64.b64decode(feature_envelope["content_base64"]))
+    feature["scores"] = {"BBB": 1.0}
+    feature_bytes = json.dumps(
+        feature,
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+    feature_envelope["content_base64"] = base64.b64encode(feature_bytes).decode()
+    feature_envelope["sha256"] = hashlib.sha256(feature_bytes).hexdigest()
+    artifact_payloads[feature_index] = json.dumps(
+        feature_envelope,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    forged_qualification = replace(
+        result.run_bundle,
+        artifact_payloads=tuple(artifact_payloads),
+    )
+    forged_qualification = replace(
+        forged_qualification,
+        bundle_sha256=hashlib.sha256(
+            event_loop_module._candidate_run_bundle_payload(
+                forged_qualification
+            )
+        ).hexdigest(),
+    )
+    with pytest.raises(ValueError, match="decision artifact role mapping|decision weights"):
+        forged_qualification.verify()
 
     same_weights_different_definition = _captured_decision_artifact(
         tmp_path,

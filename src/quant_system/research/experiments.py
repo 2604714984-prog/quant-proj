@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Mapping
 from contextlib import contextmanager
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 import hashlib
 import json
 import math
@@ -529,6 +529,7 @@ class TrialRunReceipt:
     final_run_receipt_sha256: str
     return_artifact_sha256: str
     split_evaluation_sha256: str
+    replay_payload_json: str
     receipt_sha256: str
 
     def verify(self) -> None:
@@ -543,6 +544,16 @@ class TrialRunReceipt:
             _sha(digest, "trial run identity")
         if not self.ordered_stage_receipt_sha256s:
             raise ValueError("trial run requires stage receipts")
+        try:
+            replay_payload = json.loads(self.replay_payload_json)
+        except json.JSONDecodeError as exc:
+            raise ValueError("trial run replay payload must be canonical JSON") from exc
+        if (
+            type(replay_payload) is not dict
+            or json.dumps(replay_payload, sort_keys=True, separators=(",", ":"))
+            != self.replay_payload_json
+        ):
+            raise ValueError("trial run replay payload is not canonical")
         if hashlib.sha256(_trial_run_payload(self)).hexdigest() != self.receipt_sha256:
             raise ValueError("trial run receipt hash mismatch")
 
@@ -569,11 +580,16 @@ def evaluate_frozen_historical_run(
 ) -> tuple[TrialRunReceipt, FinalRunReceipt, object, SplitEvaluation]:
     """Evaluate one fully bound historical trial before prospective application."""
 
-    from quant_system.backtest.event_loop import ControlledStageReceipt, StagePlan
+    from quant_system.backtest.event_loop import (
+        ControlledStageReceipt,
+        StagePlan,
+        serialize_controlled_stage_receipt,
+    )
     from quant_system.research.splits import (
         SplitManifest,
         capture_return_artifact,
         evaluate_split,
+        serialize_split_manifest,
     )
 
     if not isinstance(trial_config, TrialConfig):
@@ -627,6 +643,42 @@ def evaluate_frozen_historical_run(
         "final_run_receipt_sha256": final_run.receipt_sha256,
         "return_artifact_sha256": return_artifact.artifact_sha256,
         "split_evaluation_sha256": evaluation.evaluation_sha256,
+        "replay_payload_json": json.dumps(
+            {
+                "split_evaluation_plan": {
+                    "block_length": split_evaluation_plan.block_length,
+                    "bootstrap_replicates": (
+                        split_evaluation_plan.bootstrap_replicates
+                    ),
+                    "evaluation_unit": split_evaluation_plan.evaluation_unit,
+                    "hac_bandwidth": split_evaluation_plan.hac_bandwidth,
+                    "holdout_id": split_evaluation_plan.holdout_id,
+                    "method": split_evaluation_plan.method,
+                    "preregistered_at": (
+                        split_evaluation_plan.preregistered_at.isoformat()
+                    ),
+                    "selected_sample_ids": (
+                        split_evaluation_plan.selected_sample_ids
+                    ),
+                },
+                "split_manifest_json": serialize_split_manifest(
+                    split_manifest
+                ).decode(),
+                "stage_plan_sessions": tuple(
+                    session.isoformat() for session in stage_plan.sessions
+                ),
+                "stage_receipt_jsons": tuple(
+                    serialize_controlled_stage_receipt(item).decode()
+                    for item in stage_receipts
+                ),
+                "trial_config": {
+                    **trial_config.__dict__,
+                },
+                "version": 1,
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+        ),
     }
     provisional = object.__new__(TrialRunReceipt)
     for name, value in values.items():
@@ -637,6 +689,74 @@ def evaluate_frozen_historical_run(
     )
     receipt.verify()
     return receipt, final_run, return_artifact, evaluation
+
+
+def replay_trial_run(
+    receipt: TrialRunReceipt,
+) -> tuple[FinalRunReceipt, object, SplitEvaluation]:
+    """Rebuild historical execution, returns, and statistics in a fresh process."""
+
+    from quant_system.backtest.event_loop import (
+        create_stage_plan,
+        load_controlled_stage_receipt,
+    )
+    from quant_system.research.splits import (
+        build_split_evaluation_plan,
+        load_split_manifest,
+    )
+
+    if not isinstance(receipt, TrialRunReceipt):
+        raise TypeError("trial replay requires a TrialRunReceipt")
+    receipt.verify()
+    payload = json.loads(receipt.replay_payload_json)
+    if payload.get("version") != 1:
+        raise ValueError("trial run replay version is invalid")
+    config_values = dict(payload["trial_config"])
+    config_values["ordered_decision_artifact_sha256s"] = tuple(
+        config_values["ordered_decision_artifact_sha256s"]
+    )
+    config_values["ordered_universe_materialization_sha256s"] = tuple(
+        config_values["ordered_universe_materialization_sha256s"]
+    )
+    trial_config = TrialConfig(**config_values)
+    trial_config.verify()
+    stage_plan = create_stage_plan(
+        tuple(date.fromisoformat(item) for item in payload["stage_plan_sessions"])
+    )
+    stage_receipts = tuple(
+        load_controlled_stage_receipt(item.encode())
+        for item in payload["stage_receipt_jsons"]
+    )
+    split_manifest = load_split_manifest(payload["split_manifest_json"].encode())
+    plan_values = payload["split_evaluation_plan"]
+    plan = build_split_evaluation_plan(
+        split_manifest,
+        holdout_id=plan_values["holdout_id"],
+        selected_sample_ids=tuple(plan_values["selected_sample_ids"]),
+        method=plan_values["method"],
+        preregistered_at=datetime.fromisoformat(plan_values["preregistered_at"]),
+        evaluation_unit=plan_values["evaluation_unit"],
+        hac_bandwidth=plan_values["hac_bandwidth"],
+        block_length=plan_values["block_length"],
+        bootstrap_replicates=plan_values["bootstrap_replicates"] or 1000,
+    )
+    replayed, final_run, return_artifact, evaluation = (
+        evaluate_frozen_historical_run(
+            trial_config=trial_config,
+            stage_plan=stage_plan,
+            stage_receipts=stage_receipts,
+            split_manifest=split_manifest,
+            split_evaluation_plan=plan,
+        )
+    )
+    if (
+        replayed.receipt_sha256 != receipt.receipt_sha256
+        or final_run.receipt_sha256 != receipt.final_run_receipt_sha256
+        or return_artifact.artifact_sha256 != receipt.return_artifact_sha256
+        or evaluation.evaluation_sha256 != receipt.split_evaluation_sha256
+    ):
+        raise ValueError("trial run qualification replay differs")
+    return final_run, return_artifact, evaluation
 
 
 def _final_run_payload(receipt: FinalRunReceipt) -> bytes:

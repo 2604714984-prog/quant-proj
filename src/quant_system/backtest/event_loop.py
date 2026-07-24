@@ -43,7 +43,12 @@ from quant_system.markets.us import (
     cash_settlement_lag_sessions,
     decide_fill as us_fill, resolve_mark,
 )
-from quant_system.research.identity import DatasetManifest
+from quant_system.research.identity import (
+    DatasetManifest,
+    _transformation_payload,
+    dataset_identity_sha256,
+    replay_pure_transformation_bytes,
+)
 from quant_system.research.experiments import (
     ExperimentEvent,
     ExperimentAnchorReceipt,
@@ -53,10 +58,12 @@ from quant_system.research.experiments import (
     HoldoutResultReceipt,
     TrialConfig,
     TrialRunReceipt,
+    replay_trial_run,
     require_adjusted_holdout_for_candidate,
 )
 from quant_system.research.splits import (
     SplitEvaluation,
+    load_split_manifest,
     require_split_evaluation_for_candidate,
 )
 from .blocked_orders import (
@@ -352,6 +359,7 @@ class CandidateRunBundle:
     universe_materialization_sha256: str
     source_receipt_sha256s: tuple[str, ...]
     artifact_payloads: tuple[str, ...]
+    qualification_replay_json: str
     stage_plan_sha256: str
     stage_index: int
     stage_session: date
@@ -406,9 +414,9 @@ class CandidateRunBundle:
             _sha256(digest, "source_receipt_sha256")
         if (
             not self.artifact_payloads
-            or self.artifact_payloads != tuple(sorted(set(self.artifact_payloads)))
+            or len(self.artifact_payloads) != len(set(self.artifact_payloads))
         ):
-            raise ValueError("run bundle artifacts must be sorted and unique")
+            raise ValueError("run bundle artifacts must be unique")
         for payload in self.artifact_payloads:
             try:
                 artifact = json.loads(payload)
@@ -425,13 +433,18 @@ class CandidateRunBundle:
                 raise ValueError("run bundle immutable artifact is invalid") from exc
             if (
                 type(artifact) is not dict
-                or set(artifact) != {"content_base64", "sha256"}
+                or set(artifact) != {"content_base64", "role", "sha256"}
                 or json.dumps(artifact, sort_keys=True, separators=(",", ":"))
                 != payload
                 or hashlib.sha256(content).hexdigest()
                 != _sha256(artifact["sha256"], "artifact_sha256")
+                or not isinstance(artifact["role"], str)
+                or not artifact["role"]
             ):
                 raise ValueError("run bundle immutable artifact hash mismatch")
+        roles = tuple(json.loads(item)["role"] for item in self.artifact_payloads)
+        if roles != tuple(sorted(set(roles))):
+            raise ValueError("run bundle artifact roles must be sorted and unique")
         for case, artifact_json, underlying_identity in (
             (
                 "base",
@@ -504,6 +517,7 @@ class CandidateRunBundle:
             raise ValueError("run bundle envelope hash mismatch")
         _replay_bundle_case(self, "base")
         _replay_bundle_case(self, "adverse")
+        _replay_bundle_qualification(self)
 
 
 def _bundle_hashes(
@@ -552,7 +566,7 @@ def serialize_candidate_run_bundle(bundle: CandidateRunBundle) -> bytes:
         {
             **json.loads(_candidate_run_bundle_payload(bundle)),
             "bundle_sha256": bundle.bundle_sha256,
-            "version": 3,
+            "version": 4,
         },
         sort_keys=True,
         separators=(",", ":"),
@@ -564,7 +578,7 @@ def load_candidate_run_bundle(payload: bytes) -> CandidateRunBundle:
         values = json.loads(payload)
     except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         raise ValueError("candidate run bundle must be valid UTF-8 JSON") from exc
-    if type(values) is not dict or values.pop("version", None) != 3:
+    if type(values) is not dict or values.pop("version", None) != 4:
         raise ValueError("candidate run bundle version is invalid")
     tuple_fields = (
         "source_receipt_sha256s",
@@ -736,6 +750,194 @@ def replay_candidate_run_bundle(
         _replay_bundle_case(bundle, "base"),
         _replay_bundle_case(bundle, "adverse"),
     )
+
+
+def _replay_bundle_qualification(bundle: CandidateRunBundle) -> None:
+    try:
+        envelope = json.loads(bundle.qualification_replay_json)
+    except json.JSONDecodeError as exc:
+        raise ValueError("run bundle qualification replay is invalid") from exc
+    if (
+        type(envelope) is not dict
+        or set(envelope) != {"payload", "version"}
+        or envelope["version"] != 1
+        or json.dumps(envelope, sort_keys=True, separators=(",", ":"))
+        != bundle.qualification_replay_json
+    ):
+        raise ValueError("run bundle qualification replay schema is invalid")
+    qualification = _replay_decode(envelope["payload"])
+    if type(qualification) is not dict:
+        raise ValueError("run bundle qualification payload is invalid")
+    required = {
+        "dataset_identity_fields",
+        "decision_artifact_payload_json",
+        "experiment_anchor",
+        "experiment_events",
+        "experiment_manifest",
+        "holdout_event",
+        "holdout_result_receipt",
+        "trial_run_receipt",
+        "transformation_replays",
+    }
+    if set(qualification) != required:
+        raise ValueError("run bundle qualification payload is incomplete")
+    artifacts = {
+        json.loads(item)["role"]: base64.b64decode(
+            json.loads(item)["content_base64"],
+            validate=True,
+        )
+        for item in bundle.artifact_payloads
+    }
+    decision_roles = (
+        "decision.feature_snapshot",
+        "decision.strategy_definition",
+        "decision.strategy_adapter",
+    )
+    if any(role not in artifacts for role in decision_roles):
+        raise ValueError("run bundle decision artifacts are incomplete")
+    weights = _weights(
+        _execute_frozen_adapter(
+            feature_bytes=artifacts[decision_roles[0]],
+            definition_bytes=artifacts[decision_roles[1]],
+            adapter_bytes=artifacts[decision_roles[2]],
+        ),
+        tuple(
+            sorted(
+                _execute_frozen_adapter(
+                    feature_bytes=artifacts[decision_roles[0]],
+                    definition_bytes=artifacts[decision_roles[1]],
+                    adapter_bytes=artifacts[decision_roles[2]],
+                )
+            )
+        ),
+    )
+    decision_payload = json.loads(qualification["decision_artifact_payload_json"])
+    if (
+        hashlib.sha256(artifacts[decision_roles[0]]).hexdigest()
+        != decision_payload["feature_snapshot_sha256"]
+        or hashlib.sha256(artifacts[decision_roles[1]]).hexdigest()
+        != decision_payload["strategy_definition_sha256"]
+        or hashlib.sha256(artifacts[decision_roles[2]]).hexdigest()
+        != decision_payload["strategy_adapter_sha256"]
+    ):
+        raise ValueError("run bundle decision artifact role mapping changed")
+    decision_payload["weights"] = weights
+    if (
+        json.dumps(decision_payload, sort_keys=True, separators=(",", ":"))
+        != qualification["decision_artifact_payload_json"]
+        or hashlib.sha256(
+            qualification["decision_artifact_payload_json"].encode()
+        ).hexdigest()
+        != bundle.decision_artifact_sha256
+    ):
+        raise ValueError("run bundle decision weights do not replay from artifacts")
+    identity_fields = qualification["dataset_identity_fields"]
+    if type(identity_fields) is not dict:
+        raise ValueError("run bundle dataset identity fields are invalid")
+    if dataset_identity_sha256(**identity_fields) != bundle.dataset_identity_sha256:
+        raise ValueError("run bundle dataset identity does not replay")
+    semantic_bindings = {
+        "dataset.semantic.feature_code_sha256": identity_fields[
+            "feature_code_sha256"
+        ],
+        "dataset.semantic.label_code_sha256": identity_fields[
+            "label_code_sha256"
+        ],
+        "dataset.semantic.calendar_policy_sha256": identity_fields[
+            "calendar_policy_sha256"
+        ],
+        "dataset.semantic.action_policy_sha256": identity_fields[
+            "action_policy_sha256"
+        ],
+        "dataset.semantic.cost_policy_sha256": identity_fields[
+            "cost_policy_sha256"
+        ],
+    }
+    for role, expected in semantic_bindings.items():
+        if role in artifacts and hashlib.sha256(artifacts[role]).hexdigest() != expected:
+            raise ValueError("run bundle dataset semantic artifact changed")
+    for index, expected in enumerate(identity_fields["partition_sha256s"]):
+        role = f"dataset.partition.{index}"
+        if role in artifacts and hashlib.sha256(artifacts[role]).hexdigest() != expected:
+            raise ValueError("run bundle dataset partition artifact changed")
+    if "dataset.split_manifest" in artifacts and (
+        load_split_manifest(
+            artifacts["dataset.split_manifest"]
+        ).manifest_sha256
+        != bundle.split_identity_sha256
+    ):
+        raise ValueError("run bundle split manifest does not replay")
+    replayed_transform_receipts = []
+    for item in qualification["transformation_replays"]:
+        index = item["index"]
+        prefix = f"dataset.transformation.{index}"
+        receipt_payload = item["receipt_payload_json"]
+        receipt_values = json.loads(receipt_payload)
+        raw_roles = tuple(item["raw_roles"])
+        output = replay_pure_transformation_bytes(
+            program_bytes=artifacts[f"{prefix}.program"],
+            feature_program_bytes=artifacts[f"{prefix}.feature_program"],
+            label_program_bytes=artifacts[f"{prefix}.label_program"],
+            config_bytes=artifacts[f"{prefix}.config"],
+            raw_bytes=tuple(artifacts[role] for role in raw_roles),
+        )
+        component_hashes = {
+            "program_sha256": hashlib.sha256(
+                artifacts[f"{prefix}.program"]
+            ).hexdigest(),
+            "feature_program_sha256": hashlib.sha256(
+                artifacts[f"{prefix}.feature_program"]
+            ).hexdigest(),
+            "label_program_sha256": hashlib.sha256(
+                artifacts[f"{prefix}.label_program"]
+            ).hexdigest(),
+            "config_sha256": hashlib.sha256(
+                artifacts[f"{prefix}.config"]
+            ).hexdigest(),
+            "output_partition_sha256": hashlib.sha256(output).hexdigest(),
+        }
+        if (
+            any(receipt_values[name] != digest for name, digest in component_hashes.items())
+            or output != artifacts[f"{prefix}.output"]
+            or hashlib.sha256(receipt_payload.encode()).hexdigest()
+            != item["receipt_sha256"]
+        ):
+            raise ValueError("run bundle dataset transformation does not replay")
+        replayed_transform_receipts.append(item["receipt_sha256"])
+    if tuple(replayed_transform_receipts) != tuple(
+        identity_fields["transformation_receipt_sha256s"]
+    ):
+        raise ValueError("run bundle transformation receipt family changed")
+    trial_run = qualification["trial_run_receipt"]
+    events = qualification["experiment_events"]
+    manifest = qualification["experiment_manifest"]
+    holdout_event = qualification["holdout_event"]
+    holdout_receipt = qualification["holdout_result_receipt"]
+    anchor = qualification["experiment_anchor"]
+    if (
+        not isinstance(trial_run, TrialRunReceipt)
+        or type(events) is not tuple
+        or not isinstance(manifest, ExperimentManifest)
+        or not isinstance(holdout_event, ExperimentEvent)
+        or not isinstance(holdout_receipt, HoldoutResultReceipt)
+        or not isinstance(anchor, ExperimentAnchorReceipt)
+    ):
+        raise ValueError("run bundle qualification receipts are invalid")
+    _, _, evaluation = replay_trial_run(trial_run)
+    require_adjusted_holdout_for_candidate(
+        holdout_event,
+        receipt=holdout_receipt,
+        manifest=manifest,
+        events=events,
+        anchor=anchor,
+    )
+    if (
+        trial_run.trial_config_sha256
+        != holdout_receipt.trial_config_sha256
+        or evaluation.evaluation_sha256 != bundle.split_evaluation_sha256
+        or manifest.head_sha256 != bundle.experiment_manifest_sha256
+    ):
+        raise ValueError("run bundle qualification gate differs from replay")
 
 
 def _portfolio_nav_from_artifact(payload: str) -> float:
@@ -1959,6 +2161,11 @@ def apply_qualified_strategy_stage(
         dataset_manifest=dataset_manifest,
         split_evaluation=split_evaluation,
         experiment_manifest=experiment_manifest,
+        experiment_events=experiment_events,
+        experiment_anchor=experiment_anchor,
+        holdout_event=holdout_event,
+        holdout_result_receipt=holdout_result_receipt,
+        trial_run_receipt=trial_run_receipt,
         candidate_run_config=candidate_run_config,
         cost_assumptions=cost_assumptions,
         universe_materialization=universe_materialization,
@@ -3047,6 +3254,10 @@ def _replay_types() -> dict[str, type]:
             CapacityObservation,
             CapacityPolicy,
             CorporateActionIdentity,
+            ExperimentAnchorReceipt,
+            ExperimentEvent,
+            ExperimentManifest,
+            HoldoutResultReceipt,
             ExecutionInput,
             PendingCash,
             Position,
@@ -3054,6 +3265,7 @@ def _replay_types() -> dict[str, type]:
             StatusEvidence,
             TerminalAction,
             TransactionCostModel,
+            TrialRunReceipt,
             TypedObservationReceipt,
             UniverseSnapshotIdentity,
         )
@@ -3122,6 +3334,18 @@ def _replay_decode(value: object) -> object:
             from quant_system.markets import a_share as a_share_module
 
             kwargs["_token"] = a_share_module._ADJUSTMENT_TOKEN
+        elif cls in {
+            ExperimentEvent,
+            ExperimentAnchorReceipt,
+            HoldoutResultReceipt,
+        }:
+            from quant_system.research import experiments as experiment_module
+
+            kwargs["_token"] = {
+                ExperimentEvent: experiment_module._EVENT_TOKEN,
+                ExperimentAnchorReceipt: experiment_module._ANCHOR_TOKEN,
+                HoldoutResultReceipt: experiment_module._HOLDOUT_RESULT_TOKEN,
+            }[cls]
         try:
             return cls(**kwargs)
         except (TypeError, ValueError) as exc:
@@ -3252,39 +3476,129 @@ def _bundle_artifact_payloads(
     dataset_manifest: DatasetManifest,
 ) -> tuple[str, ...]:
     paths = {
-        decision_artifact._feature_snapshot_path,
-        decision_artifact._strategy_definition_path,
-        decision_artifact._strategy_adapter_path,
-        *(path for _, path in dataset_manifest._semantic_paths),
-        *dataset_manifest._partition_paths,
-        *dataset_manifest._partition_parser_paths,
+        "decision.feature_snapshot": decision_artifact._feature_snapshot_path,
+        "decision.strategy_definition": decision_artifact._strategy_definition_path,
+        "decision.strategy_adapter": decision_artifact._strategy_adapter_path,
+        **{
+            f"dataset.semantic.{name}": path
+            for name, path in dataset_manifest._semantic_paths
+        },
+        **{
+            f"dataset.partition.{index}": path
+            for index, path in enumerate(dataset_manifest._partition_paths)
+        },
+        **{
+            f"dataset.partition_parser.{index}": path
+            for index, path in enumerate(dataset_manifest._partition_parser_paths)
+        },
     }
     if dataset_manifest._split_manifest_path is not None:
-        paths.add(dataset_manifest._split_manifest_path)
-    for receipt in dataset_manifest.transformation_receipts:
+        paths["dataset.split_manifest"] = dataset_manifest._split_manifest_path
+    for index, receipt in enumerate(dataset_manifest.transformation_receipts):
+        prefix = f"dataset.transformation.{index}"
         paths.update(
             {
-                receipt._program_path,
-                receipt._feature_program_path,
-                receipt._label_program_path,
-                receipt._config_path,
-                receipt._output_path,
-                *receipt._raw_paths,
+                f"{prefix}.program": receipt._program_path,
+                f"{prefix}.feature_program": receipt._feature_program_path,
+                f"{prefix}.label_program": receipt._label_program_path,
+                f"{prefix}.config": receipt._config_path,
+                f"{prefix}.output": receipt._output_path,
+                **{
+                    f"{prefix}.raw.{raw_index}": path
+                    for raw_index, path in enumerate(receipt._raw_paths)
+                },
             }
         )
-    payload_by_sha: dict[str, str] = {}
-    for path in paths:
+    payloads = []
+    for role, path in sorted(paths.items()):
         content = capture_file_bytes(path, max_bytes=64 * 1024 * 1024)
         digest = hashlib.sha256(content).hexdigest()
-        payload_by_sha[digest] = json.dumps(
+        payloads.append(
+            json.dumps(
             {
                 "content_base64": base64.b64encode(content).decode("ascii"),
+                "role": role,
                 "sha256": digest,
             },
             sort_keys=True,
             separators=(",", ":"),
+            )
         )
-    return tuple(sorted(payload_by_sha.values()))
+    return tuple(payloads)
+
+
+def _dataset_identity_fields(manifest: DatasetManifest) -> dict[str, object]:
+    return {
+        "dates": manifest.dates,
+        "frequency": manifest.frequency,
+        "schema": manifest.schema,
+        "source_snapshot_sha256s": manifest.source_snapshot_sha256s,
+        "universe_snapshot_sha256": manifest.universe_snapshot_sha256,
+        "feature_code_sha256": manifest.feature_code_sha256,
+        "label_code_sha256": manifest.label_code_sha256,
+        "split_manifest_sha256": manifest.split_manifest_sha256,
+        "calendar_policy_sha256": manifest.calendar_policy_sha256,
+        "action_policy_sha256": manifest.action_policy_sha256,
+        "cost_policy_sha256": manifest.cost_policy_sha256,
+        "partition_sha256s": manifest.partition_sha256s,
+        "dataset_as_of": manifest.dataset_as_of,
+        "partition_source_receipt_sha256s": tuple(
+            source.capture_receipt_sha256 or ""
+            for source in manifest.partition_sources
+        ),
+        "partition_available_ats": tuple(
+            source.available_at for source in manifest.partition_sources
+        ),
+        "partition_parser_sha256s": manifest.partition_parser_sha256s,
+        "schema_sha256": manifest.schema_sha256,
+        "transformation_receipt_sha256s": tuple(
+            receipt.receipt_sha256 for receipt in manifest.transformation_receipts
+        ),
+    }
+
+
+def _qualification_replay_json(
+    *,
+    decision_artifact: DecisionArtifact,
+    dataset_manifest: DatasetManifest,
+    experiment_events: tuple[ExperimentEvent, ...],
+    experiment_manifest: ExperimentManifest,
+    experiment_anchor: ExperimentAnchorReceipt,
+    holdout_event: ExperimentEvent,
+    holdout_result_receipt: HoldoutResultReceipt,
+    trial_run_receipt: TrialRunReceipt,
+) -> str:
+    payload = {
+        "dataset_identity_fields": _dataset_identity_fields(dataset_manifest),
+        "decision_artifact_payload_json": _decision_artifact_payload(
+            decision_artifact
+        ).decode(),
+        "experiment_anchor": experiment_anchor,
+        "experiment_events": experiment_events,
+        "experiment_manifest": experiment_manifest,
+        "holdout_event": holdout_event,
+        "holdout_result_receipt": holdout_result_receipt,
+        "trial_run_receipt": trial_run_receipt,
+        "transformation_replays": tuple(
+            {
+                "index": index,
+                "raw_roles": tuple(
+                    f"dataset.transformation.{index}.raw.{raw_index}"
+                    for raw_index in range(len(receipt._raw_paths))
+                ),
+                "receipt_payload_json": _transformation_payload(receipt).decode(),
+                "receipt_sha256": receipt.receipt_sha256,
+            }
+            for index, receipt in enumerate(
+                dataset_manifest.transformation_receipts
+            )
+        ),
+    }
+    return json.dumps(
+        {"payload": _replay_encode(payload), "version": 1},
+        sort_keys=True,
+        separators=(",", ":"),
+    )
 
 
 def _build_candidate_run_bundle(
@@ -3295,6 +3609,11 @@ def _build_candidate_run_bundle(
     dataset_manifest: DatasetManifest,
     split_evaluation: SplitEvaluation,
     experiment_manifest: ExperimentManifest,
+    experiment_events: tuple[ExperimentEvent, ...],
+    experiment_anchor: ExperimentAnchorReceipt,
+    holdout_event: ExperimentEvent,
+    holdout_result_receipt: HoldoutResultReceipt,
+    trial_run_receipt: TrialRunReceipt,
     candidate_run_config: CandidateRunConfig,
     cost_assumptions: ExecutionCostAssumptions,
     universe_materialization: UniverseMaterialization,
@@ -3321,6 +3640,16 @@ def _build_candidate_run_bundle(
         "artifact_payloads": _bundle_artifact_payloads(
             decision_artifact,
             dataset_manifest,
+        ),
+        "qualification_replay_json": _qualification_replay_json(
+            decision_artifact=decision_artifact,
+            dataset_manifest=dataset_manifest,
+            experiment_events=experiment_events,
+            experiment_manifest=experiment_manifest,
+            experiment_anchor=experiment_anchor,
+            holdout_event=holdout_event,
+            holdout_result_receipt=holdout_result_receipt,
+            trial_run_receipt=trial_run_receipt,
         ),
         "stage_plan_sha256": stage_context.plan_sha256,
         "stage_index": stage_context.stage_index,
