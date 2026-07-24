@@ -584,15 +584,20 @@ def load_candidate_run_bundle(payload: bytes) -> CandidateRunBundle:
     return bundle
 
 
-def _replay_bundle_case(
-    bundle: CandidateRunBundle,
-    case: Literal["base", "adverse"],
+def _execute_replay_artifact(
+    artifact_json: str,
+    *,
+    stage_plan_sha256: str,
+    stage_index: int,
+    stage_session: date,
+    prior_stage_hash: str,
 ) -> StaticRebalanceResult:
-    artifact_json = getattr(bundle, f"{case}_replay_artifact_json")
+    """Re-execute a canonical stage artifact without trusting stored outputs."""
+
     try:
         artifact = json.loads(artifact_json)
     except (TypeError, json.JSONDecodeError) as exc:
-        raise ValueError(f"run bundle {case} replay artifact is invalid") from exc
+        raise ValueError("stage replay artifact is invalid") from exc
     required = {
         "calendar_identity",
         "calendar_sessions",
@@ -619,7 +624,7 @@ def _replay_bundle_case(
         or json.dumps(artifact, sort_keys=True, separators=(",", ":"))
         != artifact_json
     ):
-        raise ValueError(f"run bundle {case} replay artifact schema is invalid")
+        raise ValueError("stage replay artifact schema is invalid")
     decoded = {
         name: _replay_decode(value)
         for name, value in artifact.items()
@@ -659,13 +664,13 @@ def _replay_bundle_case(
     ):
         raise ValueError("run bundle replay inputs are invalid")
     stage_context = StageContext(
-        bundle.stage_plan_sha256,
-        bundle.stage_index,
-        bundle.stage_session,
-        bundle.prior_stage_hash,
+        stage_plan_sha256,
+        stage_index,
+        stage_session,
+        prior_stage_hash,
         _STAGE_CONTEXT_TOKEN,
     )
-    result = run_static_rebalance(
+    return run_static_rebalance(
         decoded["portfolio"],
         calendar,
         signal_session=decoded["signal_session"],
@@ -681,6 +686,20 @@ def _replay_bundle_case(
         capacity_policy=decoded["capacity_policy"],
         max_positions=decoded["max_positions"],
         slippage_bps=decoded["slippage_bps"],
+    )
+
+
+def _replay_bundle_case(
+    bundle: CandidateRunBundle,
+    case: Literal["base", "adverse"],
+) -> StaticRebalanceResult:
+    artifact_json = getattr(bundle, f"{case}_replay_artifact_json")
+    result = _execute_replay_artifact(
+        artifact_json,
+        stage_plan_sha256=bundle.stage_plan_sha256,
+        stage_index=bundle.stage_index,
+        stage_session=bundle.stage_session,
+        prior_stage_hash=bundle.prior_stage_hash,
     )
     receipt_payloads = tuple(
         json.dumps(asdict(receipt), sort_keys=True, separators=(",", ":"))
@@ -761,6 +780,7 @@ class StaticRebalanceResult:
     decision_artifact_sha256: str | None = None
     dataset_identity_sha256: str | None = None
     split_identity_sha256: str | None = None
+    universe_materialization_sha256: str | None = None
     experiment_manifest_sha256: str | None = None
     split_evaluation_sha256: str | None = None
     candidate_run_config_sha256: str | None = None
@@ -829,6 +849,260 @@ class ControlledStageResult(StaticRebalanceResult):
         )
         if self.final_portfolio_json != _portfolio_state_json(self.portfolio):
             raise ValueError("controlled stage final portfolio object changed")
+        for name in (
+            "decision_artifact_sha256",
+            "dataset_identity_sha256",
+            "split_identity_sha256",
+            "universe_materialization_sha256",
+        ):
+            _sha256(getattr(self, name), name)
+        if hashlib.sha256(self.input_artifact_json.encode()).hexdigest() != (
+            self.input_identity_hash
+        ):
+            raise ValueError("controlled stage input identity is not canonical")
+        replayed = _execute_replay_artifact(
+            self.replay_artifact_json,
+            stage_plan_sha256=self.stage_plan_sha256,
+            stage_index=self.stage_index,
+            stage_session=self.stage_session,
+            prior_stage_hash=self.prior_stage_hash,
+        )
+        expected_stage_hash = _controlled_stage_hash(
+            replayed.stage_hash,
+            decision_artifact_sha256=self.decision_artifact_sha256,
+            dataset_identity_sha256=self.dataset_identity_sha256,
+            split_identity_sha256=self.split_identity_sha256,
+            universe_materialization_sha256=self.universe_materialization_sha256,
+        )
+        if (
+            replayed.context != self.context
+            or replayed.target_weights != self.target_weights
+            or replayed.receipts != self.receipts
+            or replayed.input_identity_hash != self.input_identity_hash
+            or replayed.input_artifact_json != self.input_artifact_json
+            or replayed.receipt_hashes != self.receipt_hashes
+            or expected_stage_hash != self.stage_hash
+            or replayed.initial_portfolio_json != self.initial_portfolio_json
+            or replayed.final_portfolio_json != self.final_portfolio_json
+            or abs(replayed.final_nav - self.final_nav) > 1e-12
+        ):
+            raise ValueError("controlled stage does not match deterministic replay")
+
+
+def _controlled_stage_hash(
+    execution_stage_hash: str,
+    *,
+    decision_artifact_sha256: str,
+    dataset_identity_sha256: str,
+    split_identity_sha256: str,
+    universe_materialization_sha256: str,
+) -> str:
+    payload = {
+        "dataset_identity_sha256": _sha256(
+            dataset_identity_sha256, "dataset_identity_sha256"
+        ),
+        "decision_artifact_sha256": _sha256(
+            decision_artifact_sha256, "decision_artifact_sha256"
+        ),
+        "execution_stage_hash": _sha256(
+            execution_stage_hash, "execution_stage_hash"
+        ),
+        "split_identity_sha256": _sha256(
+            split_identity_sha256, "split_identity_sha256"
+        ),
+        "universe_materialization_sha256": _sha256(
+            universe_materialization_sha256,
+            "universe_materialization_sha256",
+        ),
+        "version": 1,
+    }
+    return hashlib.sha256(
+        json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+@dataclass(frozen=True)
+class ControlledStageReceipt:
+    """Portable stage receipt whose execution and economics are fully replayed."""
+
+    replay_artifact_json: str
+    input_artifact_json: str
+    input_identity_hash: str
+    receipt_payloads: tuple[str, ...]
+    receipt_hashes: tuple[str, ...]
+    execution_stage_hash: str
+    stage_hash: str
+    stage_plan_sha256: str
+    stage_index: int
+    stage_session: date
+    prior_stage_hash: str
+    signal_session: date
+    execution_session: date
+    decision_artifact_sha256: str
+    dataset_identity_sha256: str
+    split_identity_sha256: str
+    universe_materialization_sha256: str
+    initial_portfolio_json: str
+    initial_portfolio_sha256: str
+    final_portfolio_json: str
+    final_portfolio_sha256: str
+    final_nav: float
+    transaction_costs: float
+    receipt_sha256: str
+
+    def verify(self) -> None:
+        if self.signal_session != self.stage_session:
+            raise ValueError("controlled receipt stage must be its signal session")
+        if self.execution_session <= self.signal_session:
+            raise ValueError("controlled receipt execution must follow its signal")
+        replayed = _execute_replay_artifact(
+            self.replay_artifact_json,
+            stage_plan_sha256=self.stage_plan_sha256,
+            stage_index=self.stage_index,
+            stage_session=self.stage_session,
+            prior_stage_hash=self.prior_stage_hash,
+        )
+        expected_payloads = tuple(
+            json.dumps(asdict(item), sort_keys=True, separators=(",", ":"))
+            for item in replayed.receipts
+        )
+        expected_stage_hash = _controlled_stage_hash(
+            replayed.stage_hash,
+            decision_artifact_sha256=self.decision_artifact_sha256,
+            dataset_identity_sha256=self.dataset_identity_sha256,
+            split_identity_sha256=self.split_identity_sha256,
+            universe_materialization_sha256=self.universe_materialization_sha256,
+        )
+        expected_costs = math.fsum(
+            item.commission + item.sell_tax for item in replayed.receipts
+        )
+        if (
+            replayed.context.signal_session.session_date != self.signal_session
+            or replayed.context.execution_session.session_date
+            != self.execution_session
+            or replayed.input_artifact_json != self.input_artifact_json
+            or replayed.input_identity_hash != self.input_identity_hash
+            or expected_payloads != self.receipt_payloads
+            or replayed.receipt_hashes != self.receipt_hashes
+            or replayed.stage_hash != self.execution_stage_hash
+            or expected_stage_hash != self.stage_hash
+            or replayed.initial_portfolio_json != self.initial_portfolio_json
+            or replayed.initial_portfolio_sha256 != self.initial_portfolio_sha256
+            or replayed.final_portfolio_json != self.final_portfolio_json
+            or replayed.final_portfolio_sha256 != self.final_portfolio_sha256
+            or abs(replayed.final_nav - self.final_nav) > 1e-12
+            or abs(expected_costs - self.transaction_costs) > 1e-12
+        ):
+            raise ValueError("controlled stage receipt differs from replay")
+        if hashlib.sha256(_controlled_receipt_payload(self)).hexdigest() != (
+            self.receipt_sha256
+        ):
+            raise ValueError("controlled stage receipt hash mismatch")
+
+
+def _controlled_receipt_payload(receipt: ControlledStageReceipt) -> bytes:
+    return json.dumps(
+        {
+            name: (
+                value.isoformat()
+                if isinstance(value, date)
+                else value
+            )
+            for name, value in receipt.__dict__.items()
+            if name != "receipt_sha256"
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    ).encode()
+
+
+def capture_controlled_stage_receipt(
+    result: ControlledStageResult,
+) -> ControlledStageReceipt:
+    if not isinstance(result, ControlledStageResult):
+        raise TypeError("controlled receipt requires a ControlledStageResult")
+    result.verify_controlled_result()
+    replayed = _execute_replay_artifact(
+        result.replay_artifact_json,
+        stage_plan_sha256=result.stage_plan_sha256,
+        stage_index=result.stage_index,
+        stage_session=result.stage_session,
+        prior_stage_hash=result.prior_stage_hash,
+    )
+    values = {
+        "replay_artifact_json": result.replay_artifact_json,
+        "input_artifact_json": result.input_artifact_json,
+        "input_identity_hash": result.input_identity_hash,
+        "receipt_payloads": tuple(
+            json.dumps(asdict(item), sort_keys=True, separators=(",", ":"))
+            for item in result.receipts
+        ),
+        "receipt_hashes": result.receipt_hashes,
+        "execution_stage_hash": replayed.stage_hash,
+        "stage_hash": result.stage_hash,
+        "stage_plan_sha256": result.stage_plan_sha256,
+        "stage_index": result.stage_index,
+        "stage_session": result.stage_session,
+        "prior_stage_hash": result.prior_stage_hash,
+        "signal_session": result.context.signal_session.session_date,
+        "execution_session": result.context.execution_session.session_date,
+        "decision_artifact_sha256": result.decision_artifact_sha256,
+        "dataset_identity_sha256": result.dataset_identity_sha256,
+        "split_identity_sha256": result.split_identity_sha256,
+        "universe_materialization_sha256": result.universe_materialization_sha256,
+        "initial_portfolio_json": result.initial_portfolio_json,
+        "initial_portfolio_sha256": result.initial_portfolio_sha256,
+        "final_portfolio_json": result.final_portfolio_json,
+        "final_portfolio_sha256": result.final_portfolio_sha256,
+        "final_nav": result.final_nav,
+        "transaction_costs": math.fsum(
+            item.commission + item.sell_tax for item in result.receipts
+        ),
+    }
+    provisional = object.__new__(ControlledStageReceipt)
+    for name, value in values.items():
+        object.__setattr__(provisional, name, value)
+    receipt = ControlledStageReceipt(
+        **values,
+        receipt_sha256=hashlib.sha256(
+            _controlled_receipt_payload(provisional)
+        ).hexdigest(),
+    )
+    receipt.verify()
+    return receipt
+
+
+def serialize_controlled_stage_receipt(receipt: ControlledStageReceipt) -> bytes:
+    if not isinstance(receipt, ControlledStageReceipt):
+        raise TypeError("receipt must be a ControlledStageReceipt")
+    receipt.verify()
+    values = json.loads(_controlled_receipt_payload(receipt))
+    values["receipt_sha256"] = receipt.receipt_sha256
+    values["version"] = 1
+    return json.dumps(values, sort_keys=True, separators=(",", ":")).encode()
+
+
+def load_controlled_stage_receipt(payload: bytes) -> ControlledStageReceipt:
+    try:
+        values = json.loads(payload)
+    except (TypeError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError("controlled stage receipt must be valid JSON") from exc
+    if type(values) is not dict or values.pop("version", None) != 1:
+        raise ValueError("controlled stage receipt version is invalid")
+    for name in ("receipt_payloads", "receipt_hashes"):
+        if type(values.get(name)) is not list:
+            raise ValueError(f"controlled stage receipt {name} must be an array")
+        values[name] = tuple(values[name])
+    try:
+        for name in ("stage_session", "signal_session", "execution_session"):
+            values[name] = date.fromisoformat(values[name])
+        receipt = ControlledStageReceipt(**values)
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError("controlled stage receipt fields are invalid") from exc
+    if serialize_controlled_stage_receipt(receipt) != payload:
+        raise ValueError("controlled stage receipt JSON is not canonical")
+    receipt.verify()
+    return receipt
 
 
 def create_stage_plan(sessions: tuple[date, ...]) -> StagePlan:
@@ -1360,6 +1634,19 @@ def run_controlled_stage(
         for item in fields(StaticRebalanceResult)
     }
     values["interface_grade"] = "CONTROLLED_STAGE"
+    values["decision_artifact_sha256"] = decision_artifact.artifact_sha256
+    values["dataset_identity_sha256"] = decision_artifact.dataset_identity_sha256
+    values["split_identity_sha256"] = decision_artifact.split_identity_sha256
+    values["universe_materialization_sha256"] = (
+        universe_materialization.materialization_sha256
+    )
+    values["stage_hash"] = _controlled_stage_hash(
+        experimental.stage_hash,
+        decision_artifact_sha256=decision_artifact.artifact_sha256,
+        dataset_identity_sha256=decision_artifact.dataset_identity_sha256,
+        split_identity_sha256=decision_artifact.split_identity_sha256,
+        universe_materialization_sha256=universe_materialization.materialization_sha256,
+    )
     values["_token"] = _CONTROLLED_STAGE_TOKEN
     controlled = ControlledStageResult(**values)
     controlled.verify_controlled_result()

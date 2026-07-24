@@ -189,7 +189,7 @@ def capture_return_artifact(
     """Derive immutable daily net returns from a complete controlled result chain."""
 
     from quant_system.backtest.event_loop import (
-        ControlledStageResult,
+        ControlledStageReceipt,
         StagePlan,
         _portfolio_nav_from_artifact,
     )
@@ -203,7 +203,7 @@ def capture_return_artifact(
     if (
         type(results) is not tuple
         or len(results) != len(stage_plan.sessions)
-        or any(not isinstance(result, ControlledStageResult) for result in results)
+        or any(not isinstance(result, ControlledStageReceipt) for result in results)
     ):
         raise ValueError("return artifact requires every controlled stage result")
     if not isinstance(final_run_receipt, FinalRunReceipt):
@@ -214,9 +214,9 @@ def capture_return_artifact(
         raise ValueError("return artifact results do not match FinalRunReceipt")
     observations: list[ReturnObservation] = []
     for result in results:
-        result.verify_controlled_result()
-        signal_session = result.context.signal_session.session_date
-        execution_session = result.context.execution_session.session_date
+        result.verify()
+        signal_session = result.signal_session
+        execution_session = result.execution_session
         if signal_session != result.stage_session:
             raise ValueError("return artifact stage must bind its signal session")
         if execution_session <= signal_session:
@@ -243,10 +243,7 @@ def capture_return_artifact(
                 initial_portfolio_sha256=result.initial_portfolio_sha256,
                 final_portfolio_sha256=result.final_portfolio_sha256,
                 execution_receipt_sha256s=result.receipt_hashes,
-                transaction_costs=math.fsum(
-                    receipt.commission + receipt.sell_tax
-                    for receipt in result.receipts
-                ),
+                transaction_costs=result.transaction_costs,
             )
         )
     frozen = tuple(observations)
