@@ -24,8 +24,7 @@ from zoneinfo import ZoneInfo
 RESEARCH_ID = "US_EQ_DTS_NONDEBT_FISCAL_IMPULSE_YOY_4W_SPY_CASH_V1"
 WORKTREE = Path("/home/rongyu/workspace/.wt-us-dts-fiscal-impulse-20260724")
 DEFINITION = (
-    WORKTREE
-    / "research/definitions/us_eq_dts_nondebt_fiscal_impulse_yoy_4w_spy_cash_v1.json"
+    WORKTREE / "research/definitions/us_eq_dts_nondebt_fiscal_impulse_yoy_4w_spy_cash_v1.json"
 )
 ADAPTER = WORKTREE / "research/adapters/dts_nondebt_fiscal_impulse.py"
 FISCAL = Path(
@@ -39,8 +38,10 @@ MARKET = Path(
     "validation_market_input_20260724"
 )
 DB = Path("/home/rongyu/workspace/quant-data/quant_research.duckdb")
-CLAIM = MARKET.parent / "validation_run_20260724.claim.json"
-RESULT = MARKET.parent / "validation_result_20260724.json"
+PRIOR_CLAIM = MARKET.parent / "validation_run_20260724.claim.json"
+PRIOR_RESULT = MARKET.parent / "validation_result_20260724.json"
+CLAIM = MARKET.parent / "validation_run_20260724_attempt2.claim.json"
+RESULT = MARKET.parent / "validation_result_20260724_attempt2.json"
 NY = ZoneInfo("America/New_York")
 
 EXPECTED = {
@@ -54,6 +55,7 @@ EXPECTED = {
     "calendar_rows": "4f9b7cfe58f7cec14ef0daa6f1f641a435c8f1bec919f847aa7d50e02995186f",
     "actions": "470c7e09496307bb5414b7116defa308789ebfdd83c51a6703afd7854303970a",
     "lifecycle": "a804d76ea3614bface8aebead8886379c6a6b1fb42ed30228c86b21306f656ec",
+    "prior_claim": "5a31c190fc15a723291fb49a9cdec6838bd808a6f227a9cbe4febd42c1b117bd",
     "db": "7a0e6a40fe5a1f2fbb7e9d0cecfb7178efb988befe854124e923206c5897b213",
 }
 
@@ -240,6 +242,9 @@ def atomic_claim(runner_sha256: str) -> None:
         {
             "schema_version": "dts-validation-one-use-claim-v1",
             "research_id": RESEARCH_ID,
+            "attempt": 2,
+            "recovery_of_claim_sha256": EXPECTED["prior_claim"],
+            "recovery_reason": ("ATTEMPT_1_BLOCKED_BEFORE_ADAPTER_IMPORT_MISSING_DUCKDB_RUNTIME"),
             "claimed_at_utc": datetime.now(timezone.utc).isoformat(),
             "runner_sha256": runner_sha256,
             "definition_sha256": EXPECTED["definition"],
@@ -254,6 +259,12 @@ def atomic_claim(runner_sha256: str) -> None:
         }
     )
     publish_atomic_no_replace(CLAIM, payload)
+
+
+def verify_prior_attempt() -> None:
+    exact_bytes(PRIOR_CLAIM, EXPECTED["prior_claim"])
+    if PRIOR_RESULT.exists() or PRIOR_RESULT.is_symlink():
+        raise ContractError("attempt 1 unexpectedly produced a result")
 
 
 def load_module():
@@ -294,9 +305,7 @@ def source_report_dates(inventory: dict[str, object]) -> tuple[date, ...]:
     return ordered
 
 
-def monthly_states(
-    module, fiscal_rows: list[dict[str, object]], reports: tuple[date, ...]
-):
+def monthly_states(module, fiscal_rows: list[dict[str, object]], reports: tuple[date, ...]):
     report_index = {value: index for index, value in enumerate(reports)}
     states = []
     for row in fiscal_rows:
@@ -367,6 +376,15 @@ def main() -> int:
         raise ContractError("runner hash mismatch")
     exact_bytes(DEFINITION, EXPECTED["definition"])
     exact_bytes(ADAPTER, EXPECTED["adapter"])
+    verify_prior_attempt()
+    try:
+        import duckdb
+    except ImportError as exc:
+        raise ContractError("the frozen runtime requires duckdb") from exc
+    if duckdb.__version__ != "1.5.4":
+        raise ContractError("duckdb runtime version drift")
+    module = load_module()
+    verify_prior_attempt()
     atomic_claim(runner_sha)
 
     db_before = hash_large(DB)
@@ -391,15 +409,11 @@ def main() -> int:
         "fiscal receipt",
     )
     fiscal_states_root = require_object(
-        strict_json(
-            exact_bytes(FISCAL / "monthly_states.json", EXPECTED["fiscal_states"])
-        ),
+        strict_json(exact_bytes(FISCAL / "monthly_states.json", EXPECTED["fiscal_states"])),
         "fiscal states",
     )
     inventory = require_object(
-        strict_json(
-            exact_bytes(FISCAL / "raw_inventory.json", EXPECTED["fiscal_inventory"])
-        ),
+        strict_json(exact_bytes(FISCAL / "raw_inventory.json", EXPECTED["fiscal_inventory"])),
         "fiscal inventory",
     )
     if (
@@ -421,15 +435,12 @@ def main() -> int:
     calendar_rows = strict_jsonl(
         exact_bytes(MARKET / "calendar_identity.jsonl", EXPECTED["calendar_rows"])
     )
-    action_rows = strict_jsonl(
-        exact_bytes(MARKET / "corporate_actions.jsonl", EXPECTED["actions"])
-    )
+    action_rows = strict_jsonl(exact_bytes(MARKET / "corporate_actions.jsonl", EXPECTED["actions"]))
     lifecycle_rows = strict_jsonl(
         exact_bytes(MARKET / "lifecycle_identity.jsonl", EXPECTED["lifecycle"])
     )
     if (
-        market_receipt.get("status")
-        != "VALIDATION_MARKET_INPUT_MATERIALIZED_RETROSPECTIVE_ONLY"
+        market_receipt.get("status") != "VALIDATION_MARKET_INPUT_MATERIALIZED_RETROSPECTIVE_ONLY"
         or market_receipt.get("classification") != "RETROSPECTIVE_ONLY"
         or require_object(market_receipt.get("boundaries"), "market boundaries").get(
             "secondary_fiscal_rows_used"
@@ -444,7 +455,6 @@ def main() -> int:
     if market_dates != calendar_dates:
         raise ContractError("market/calendar dates differ")
 
-    module = load_module()
     reports = source_report_dates(inventory)
     states = monthly_states(module, fiscal_rows, reports)
     sessions = market_sessions(module, market_rows)
@@ -483,6 +493,9 @@ def main() -> int:
     result = {
         "schema_version": "dts-validation-result-v1",
         "research_id": RESEARCH_ID,
+        "attempt": 2,
+        "recovery_of_claim_sha256": EXPECTED["prior_claim"],
+        "attempt_1_result_opened": False,
         "status": (
             "VALIDATION_PASS_SECONDARY_ELIGIBLE"
             if decision.all_gates_pass
@@ -493,6 +506,8 @@ def main() -> int:
             "runner_sha256": runner_sha,
             "definition_sha256": EXPECTED["definition"],
             "adapter_sha256": EXPECTED["adapter"],
+            "python_executable": sys.executable,
+            "duckdb_version": duckdb.__version__,
         },
         "inputs": {
             "fiscal_receipt_sha256": EXPECTED["fiscal_receipt"],
