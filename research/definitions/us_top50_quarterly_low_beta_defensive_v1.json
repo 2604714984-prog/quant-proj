@@ -1,0 +1,118 @@
+{
+  "research_id": "US_TOP50_QUARTERLY_LOW_BETA_DEFENSIVE_V1",
+  "date": "2026-07-23",
+  "market": "US_EQUITIES",
+  "phase": "DISCOVERY_PREREGISTRATION",
+  "status": "preregistered-not-executed",
+  "family_number": null,
+  "family_number_status": "NOT_ASSIGNED",
+  "lineage": {
+    "research_identity": "new-independent-low-beta-defensive",
+    "adaptive_follow_up_to": null,
+    "prior_top50_momentum_results_are_inputs": false,
+    "mechanism": "stocks with lower trailing market beta may provide a more defensive large-cap equity portfolio without relying on momentum, fundamentals, optimization, leverage, or shorting"
+  },
+  "research_question": "Can a fixed quarterly portfolio of the lowest-beta stocks in the frozen current Top-50-derived universe improve risk-adjusted performance and drawdown versus SPY while retaining broadly comparable CAGR and low turnover?",
+  "null_hypothesis": "The strategy fails at least one frozen discovery gate against SPY or the same-date eligible-stock equal-weight benchmark.",
+  "input": {
+    "snapshot_id": "US_CURRENT_TOP50_DATA_MATERIALIZATION_V0_9_GSD_20260723",
+    "database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "qualified_identity_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "qualified_stock_count": 46,
+    "price_table": "us_equity_research.us_daily_total_return_research",
+    "price_field": "adj_close",
+    "primary_benchmark_symbol": "SPY",
+    "read_only": true
+  },
+  "universe": {
+    "scope": "the same 46 current Top-50-derived qualified US stocks frozen by the input identity",
+    "historical_point_in_time_membership": false,
+    "survivorship_bias": true,
+    "minimum_eligible_stocks_per_formation": 30,
+    "secondary_benchmark": "equal weight all beta-eligible qualified stocks at each formation",
+    "missing_or_conflicting_identity_action": "INPUT_BLOCKED_WITHOUT_OUTCOME_COMPUTATION"
+  },
+  "signal": {
+    "formation_months": [3, 6, 9, 12],
+    "formation_session": "last SPY trading session of each formation month",
+    "beta_model": "OLS slope of stock daily total return on intercept and SPY daily total return",
+    "beta_estimation_window": "252 daily returns ending on the formation close inclusive",
+    "minimum_paired_observations": 220,
+    "ranking": "ascending beta with ascending symbol tie-break",
+    "invalid_beta_action": "INELIGIBLE"
+  },
+  "portfolio": {
+    "selected_count": 15,
+    "retention_buffer_rank": 20,
+    "weighting": "equal weight among the 15 selected stocks",
+    "entry": "next SPY trading session close after formation",
+    "holding_period": "until the next calendar-quarterly execution close",
+    "cash_return": 0.0,
+    "long_only": true,
+    "leverage": false,
+    "optimizer": false,
+    "current_holdings_output": false
+  },
+  "costs": {
+    "turnover_definition": "0.5 times the sum of absolute target-weight changes; initial entry excluded from annual turnover but charged costs",
+    "base_one_way_bps": 15,
+    "stress_one_way_bps": 30
+  },
+  "evaluation": {
+    "evaluation_start": "2018-01-01",
+    "subperiods": [
+      ["2018-2019", "2018-01-01", "2019-12-31"],
+      ["2020-2022", "2020-01-01", "2022-12-31"],
+      ["2023-latest", "2023-01-01", "9999-12-31"]
+    ],
+    "minimum_complete_formations": 30,
+    "discovery_inference": "deterministic_gate_screen_without_p_values_or_alpha_spend",
+    "validation_alpha": "NOT_ALLOCATED_UNTIL_A_SEPARATE_PIT_VALIDATION_PREREGISTRATION"
+  },
+  "strict_gates": {
+    "strategy_base_sharpe_exceeds_spy_by_at_least": 0.05,
+    "strategy_base_sharpe_at_least_eligible_equal_weight": true,
+    "strategy_base_max_drawdown_improves_on_spy_by_at_least": 0.03,
+    "strategy_base_cagr_shortfall_to_spy_maximum": 0.02,
+    "strategy_stress_cagr_shortfall_to_spy_stress_maximum": 0.02,
+    "annual_turnover_maximum": 1.0,
+    "subperiod_sharpe_at_least_spy_minimum": 2,
+    "eligible_stocks_minimum": 30,
+    "complete_formations_minimum": 30,
+    "all_gates_required": true
+  },
+  "run_control": {
+    "maximum_formal_runs": 1,
+    "outcome_access_before_contract_and_code_hash_freeze": false,
+    "parameter_variants": 1,
+    "rerun": false,
+    "post_outcome_repair": false,
+    "forbidden_changes": [
+      "change the 252-session beta window or 220-observation minimum",
+      "change formation months",
+      "change selected count or retention buffer",
+      "change weighting, costs, benchmarks, or gates",
+      "try alternative low-volatility, beta, quality, momentum, or market-state variants",
+      "add leverage, shorting, an optimizer, or new Python dependencies"
+    ],
+    "failure_action": "PERMANENTLY_CLOSE_IDENTITY_WITHOUT_OPENING_PIT_VALIDATION",
+    "pass_action": "RECORD_DISCOVERY_PASS_BUT_KEEP_STRATEGY_CANDIDATE_FALSE_AND_PREREGISTER_PIT_VALIDATION"
+  },
+  "conditional_pit_validation": {
+    "start_only_after_discovery_pass": true,
+    "maximum_free_source_routes_to_inspect": 3,
+    "required_upgrade": "historical point-in-time Top-50 membership or an explicitly frozen reproducible PIT market-cap reconstruction",
+    "current_constituent_backfill_forbidden": true,
+    "survivor_and_delisting_coverage_required": true,
+    "separate_contract_and_alpha_allocation_required": true,
+    "failure_to_qualify_action": "stop_retrospective_development_and_use_only_a_prospective_fixed_cohort"
+  },
+  "boundaries": {
+    "strategy_candidate_available": false,
+    "recommendation": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false
+  }
+}

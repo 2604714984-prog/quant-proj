@@ -1,0 +1,72 @@
+{
+  "research_id": "US_TOP50_QUARTERLY_LOW_BETA_DEFENSIVE_V1",
+  "result": "DISCOVERY_FAIL",
+  "status": "rejected-permanently-closed",
+  "formal_run_count": 1,
+  "strategy_candidate_available": false,
+  "survivorship_bias": true,
+  "evaluation": ["2018-04-02", "2026-07-22"],
+  "formation_count": 34,
+  "eligible_range": [44, 46],
+  "strategy_base": {
+    "cagr": 0.16024524299559295,
+    "max_drawdown": -0.27611082868832537,
+    "sharpe": 1.0658305238104493,
+    "volatility": 0.15024549424188535
+  },
+  "spy_base": {
+    "cagr": 0.1546896760906049,
+    "max_drawdown": -0.337172561834272,
+    "sharpe": 0.8496720164902759,
+    "volatility": 0.1910016993573825
+  },
+  "eligible_equal_weight_base": {
+    "cagr": 0.2866484288110991,
+    "max_drawdown": -0.3169122806582262,
+    "sharpe": 1.3018510843153068,
+    "volatility": 0.21115284393074185
+  },
+  "strategy_stress": {
+    "cagr": 0.15935193549361837,
+    "max_drawdown": -0.2761108286883247,
+    "sharpe": 1.0594146671825262,
+    "volatility": 0.15025662036782061
+  },
+  "annual_turnover": 0.2566261017183691,
+  "subperiod_sharpe_at_least_spy": {
+    "2018-2019": true,
+    "2020-2022": true,
+    "2023-latest": true
+  },
+  "gates": {
+    "annual_turnover": true,
+    "base_cagr_vs_spy": true,
+    "base_drawdown_vs_spy": true,
+    "base_sharpe_vs_eligible_equal_weight": false,
+    "base_sharpe_vs_spy": true,
+    "complete_formations": true,
+    "eligible_stocks": true,
+    "stress_cagr_vs_spy": true,
+    "subperiod_sharpe": true
+  },
+  "gate_pass_count": 8,
+  "gate_total_count": 9,
+  "failed_gates": ["base_sharpe_vs_eligible_equal_weight"],
+  "pit_validation_status": "NOT_STARTED_DISCOVERY_FAIL",
+  "closure": "No alternative beta windows, selected counts, buffers, costs, filters, or low-volatility variants may be tried under this identity.",
+  "input_identity": {
+    "database_sha256": "6b29e56e8ccc79e2632e322c7671e7158408279c8411587f2c559eac9ec98d84",
+    "qualified_identity_sha256": "39f10fd2e4eadc3bef920e9b8a87ae6b07e14048f2c6f57227371a380dfe31cb",
+    "contract_sha256": "9990eb19f9e958f8d6e2b7bacaf9cff695c7302036278f3470efd9c728adfd76",
+    "adapter_sha256": "0365f94d8461ac3885ea9f3b05caa16048f6b6648ad40e6cf01d76b62f51ff74",
+    "preoutcome_receipt_sha256": "32d2de733cbc79fd050d30c3f5fb8d818778ef31ba2e1f919693465083a62265",
+    "raw_result_sha256": "c6631600675bef78df0bcfc892c73e93a5208946f4bb912a08e194ce01a2d5a5"
+  },
+  "boundaries": {
+    "recommendation": false,
+    "paper": false,
+    "broker": false,
+    "live": false,
+    "auto": false
+  }
+}
