@@ -2915,6 +2915,7 @@ def test_real_controlled_multistage_chain_produces_return_artifact(
             decision_at,
             name=f"-stage-{index}",
         )
+        cost_assumptions = _cost_assumptions()
         result = run_controlled_stage(
             portfolio,
             calendar,
@@ -2924,9 +2925,31 @@ def test_real_controlled_multistage_chain_produces_return_artifact(
             universe_materialization=materialization,
             decision_artifact=artifact,
             stage_context=stage_context,
-            cost_assumptions_sha256=_cost_assumptions().identity_sha256,
-            capacity_policy=_cost_assumptions().capacity_policy,
+            cost_assumptions=cost_assumptions,
+            cost_case="base",
         )
+        assert result.cost_assumptions_sha256 == cost_assumptions.identity_sha256
+        assert result.cost_assumptions_json == cost_assumptions.canonical_payload_json
+        assert result.cost_case == "base"
+        assert result.portfolio.costs == cost_assumptions.base.transaction_cost_model()
+        if index == 0:
+            adverse = run_controlled_stage(
+                portfolio,
+                calendar,
+                signal_session=signal_session,
+                decision_at=decision_at,
+                execution_inputs=(row,),
+                universe_materialization=materialization,
+                decision_artifact=artifact,
+                stage_context=stage_context,
+                cost_assumptions=cost_assumptions,
+                cost_case="adverse",
+            )
+            assert adverse.cost_case == "adverse"
+            assert adverse.portfolio.costs == (
+                cost_assumptions.adverse.transaction_cost_model()
+            )
+            assert adverse.stage_hash != result.stage_hash
         results.append(result)
         portfolio = result.portfolio
         if index + 1 < len(stage_plan.sessions):
@@ -3132,9 +3155,8 @@ def _real_controlled_return_fixture(
             universe_materialization=materialization,
             decision_artifact=artifact,
             stage_context=stage_context,
-            cost_assumptions_sha256=cost_assumptions.identity_sha256,
-            capacity_policy=cost_assumptions.capacity_policy,
-            slippage_bps=cost_assumptions.base.slippage_bps,
+            cost_assumptions=cost_assumptions,
+            cost_case="base",
         )
         results.append(result)
         portfolio = result.portfolio

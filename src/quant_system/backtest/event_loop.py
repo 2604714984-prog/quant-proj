@@ -752,6 +752,26 @@ def _execute_replay_artifact(
     )
 
 
+def _verify_replayed_cost_binding(
+    replay_artifact_json: str,
+    replayed: StaticRebalanceResult,
+    assumptions_json: str,
+    cost_case: str,
+) -> None:
+    assumptions = ExecutionCostAssumptions.from_canonical_payload_json(
+        assumptions_json
+    )
+    stress_case = getattr(assumptions, cost_case)
+    artifact = json.loads(replay_artifact_json)
+    if (
+        replayed.portfolio.costs != stress_case.transaction_cost_model()
+        or _replay_decode(artifact["capacity_policy"])
+        != assumptions.capacity_policy
+        or float(artifact["slippage_bps"]) != stress_case.slippage_bps
+    ):
+        raise ValueError("controlled stage execution costs differ from assumptions")
+
+
 def _replay_bundle_case(
     bundle: CandidateRunBundle,
     case: Literal["base", "adverse"],
@@ -1046,6 +1066,8 @@ class StaticRebalanceResult:
         compare=False,
     )
     cost_assumptions_sha256: str | None = None
+    cost_assumptions_json: str | None = None
+    cost_case: str | None = None
     engine_artifact_sha256: str | None = None
     adverse_input_identity_hash: str | None = None
     adverse_stage_hash: str | None = None
@@ -1114,6 +1136,13 @@ class ControlledStageResult(StaticRebalanceResult):
             "engine_artifact_sha256",
         ):
             _sha256(getattr(self, name), name)
+        if self.cost_case not in {"base", "adverse"}:
+            raise ValueError("controlled stage cost case is invalid")
+        if not isinstance(self.cost_assumptions_json, str) or (
+            hashlib.sha256(self.cost_assumptions_json.encode()).hexdigest()
+            != self.cost_assumptions_sha256
+        ):
+            raise ValueError("controlled stage cost payload differs from its identity")
         if self.engine_artifact_sha256 != core_engine_artifact()[0]:
             raise ValueError("controlled stage engine artifact changed")
         if hashlib.sha256(self.input_artifact_json.encode()).hexdigest() != (
@@ -1126,6 +1155,12 @@ class ControlledStageResult(StaticRebalanceResult):
             stage_index=self.stage_index,
             stage_session=self.stage_session,
             prior_stage_hash=self.prior_stage_hash,
+        )
+        _verify_replayed_cost_binding(
+            self.replay_artifact_json,
+            replayed,
+            self.cost_assumptions_json,
+            self.cost_case,
         )
         expected_stage_hash = _controlled_stage_hash(
             replayed.stage_hash,
@@ -1215,6 +1250,8 @@ class ControlledStageReceipt:
     split_identity_sha256: str
     universe_materialization_sha256: str
     cost_assumptions_sha256: str
+    cost_assumptions_json: str
+    cost_case: str
     engine_artifact_sha256: str
     initial_portfolio_json: str
     initial_portfolio_sha256: str
@@ -1227,6 +1264,11 @@ class ControlledStageReceipt:
     def verify(self) -> None:
         if self.engine_artifact_sha256 != core_engine_artifact()[0]:
             raise ValueError("controlled receipt engine artifact changed")
+        if self.cost_case not in {"base", "adverse"} or (
+            hashlib.sha256(self.cost_assumptions_json.encode()).hexdigest()
+            != self.cost_assumptions_sha256
+        ):
+            raise ValueError("controlled receipt cost payload differs from its identity")
         if self.signal_session != self.stage_session:
             raise ValueError("controlled receipt stage must be its signal session")
         if self.execution_session <= self.signal_session:
@@ -1237,6 +1279,12 @@ class ControlledStageReceipt:
             stage_index=self.stage_index,
             stage_session=self.stage_session,
             prior_stage_hash=self.prior_stage_hash,
+        )
+        _verify_replayed_cost_binding(
+            self.replay_artifact_json,
+            replayed,
+            self.cost_assumptions_json,
+            self.cost_case,
         )
         expected_payloads = tuple(
             json.dumps(asdict(item), sort_keys=True, separators=(",", ":"))
@@ -1330,6 +1378,8 @@ def capture_controlled_stage_receipt(
         "split_identity_sha256": result.split_identity_sha256,
         "universe_materialization_sha256": result.universe_materialization_sha256,
         "cost_assumptions_sha256": result.cost_assumptions_sha256,
+        "cost_assumptions_json": result.cost_assumptions_json,
+        "cost_case": result.cost_case,
         "engine_artifact_sha256": result.engine_artifact_sha256,
         "initial_portfolio_json": result.initial_portfolio_json,
         "initial_portfolio_sha256": result.initial_portfolio_sha256,
@@ -1884,11 +1934,10 @@ def run_controlled_stage(
     universe_materialization: UniverseMaterialization,
     decision_artifact: DecisionArtifact,
     stage_context: StageContext,
-    cost_assumptions_sha256: str,
+    cost_assumptions: ExecutionCostAssumptions,
+    cost_case: Literal["base", "adverse"],
     execution_calendar_revision: AcceptedSessionCalendar | None = None,
-    capacity_policy: CapacityPolicy | None = None,
     max_positions: int | None = None,
-    slippage_bps: float = 0.0,
 ) -> ControlledStageResult:
     """Execute one stage from frozen artifacts without accepting caller strategy code."""
 
@@ -1901,8 +1950,16 @@ def run_controlled_stage(
         raise MarketDataError("decision artifact decision_at mismatch")
     decision_artifact.verify_current_bytes()
     universe_materialization.verify_current_bytes()
+    if not isinstance(cost_assumptions, ExecutionCostAssumptions):
+        raise TypeError("cost_assumptions must be ExecutionCostAssumptions")
+    if cost_case not in {"base", "adverse"}:
+        raise ValueError("cost_case must be base or adverse")
+    stress_case = getattr(cost_assumptions, cost_case)
+    execution_portfolio = deepcopy(portfolio)
+    execution_portfolio.costs = stress_case.transaction_cost_model()
+    execution_portfolio.a_share_stamp_tax_schedule = False
     experimental = run_static_rebalance(
-        portfolio,
+        execution_portfolio,
         calendar,
         signal_session=signal_session,
         decision_at=cutoff,
@@ -1914,9 +1971,9 @@ def run_controlled_stage(
         strategy_definition_sha256=decision_artifact.strategy_definition_sha256,
         strategy_adapter_sha256=decision_artifact.strategy_adapter_sha256,
         stage_context=stage_context,
-        capacity_policy=capacity_policy,
+        capacity_policy=cost_assumptions.capacity_policy,
         max_positions=max_positions,
-        slippage_bps=slippage_bps,
+        slippage_bps=stress_case.slippage_bps,
     )
     values = {
         item.name: getattr(experimental, item.name)
@@ -1929,10 +1986,9 @@ def run_controlled_stage(
     values["universe_materialization_sha256"] = (
         universe_materialization.materialization_sha256
     )
-    values["cost_assumptions_sha256"] = _sha256(
-        cost_assumptions_sha256,
-        "cost_assumptions_sha256",
-    )
+    values["cost_assumptions_sha256"] = cost_assumptions.identity_sha256
+    values["cost_assumptions_json"] = cost_assumptions.canonical_payload_json
+    values["cost_case"] = cost_case
     values["engine_artifact_sha256"] = core_engine_artifact()[0]
     values["stage_hash"] = _controlled_stage_hash(
         experimental.stage_hash,
@@ -1940,7 +1996,7 @@ def run_controlled_stage(
         dataset_identity_sha256=decision_artifact.dataset_identity_sha256,
         split_identity_sha256=decision_artifact.split_identity_sha256,
         universe_materialization_sha256=universe_materialization.materialization_sha256,
-        cost_assumptions_sha256=cost_assumptions_sha256,
+        cost_assumptions_sha256=cost_assumptions.identity_sha256,
         engine_artifact_sha256=core_engine_artifact()[0],
     )
     values["_token"] = _CONTROLLED_STAGE_TOKEN
@@ -2156,27 +2212,20 @@ def apply_qualified_strategy_stage(
         "execution_calendar_revision": execution_calendar_revision,
         "universe_materialization": universe_materialization,
         "decision_artifact": decision_artifact,
-        "cost_assumptions_sha256": cost_assumptions.identity_sha256,
-        "capacity_policy": cost_assumptions.capacity_policy,
+        "cost_assumptions": cost_assumptions,
         "max_positions": max_positions,
         "stage_context": stage_context,
     }
-    base_portfolio = deepcopy(portfolio)
-    base_portfolio.costs = cost_assumptions.base.transaction_cost_model()
-    base_portfolio.a_share_stamp_tax_schedule = False
     result = run_controlled_stage(
-        base_portfolio,
+        portfolio,
         calendar,
-        slippage_bps=cost_assumptions.base.slippage_bps,
+        cost_case="base",
         **common,
     )
-    adverse_portfolio = deepcopy(base_portfolio)
-    adverse_portfolio.costs = cost_assumptions.adverse.transaction_cost_model()
-    adverse_portfolio.a_share_stamp_tax_schedule = False
     adverse = run_controlled_stage(
-        adverse_portfolio,
+        portfolio,
         calendar,
-        slippage_bps=cost_assumptions.adverse.slippage_bps,
+        cost_case="adverse",
         **common,
     )
     assumption_sha = cost_assumptions.identity_sha256

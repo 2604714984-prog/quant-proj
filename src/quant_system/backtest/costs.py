@@ -143,7 +143,7 @@ class ExecutionCostAssumptions:
             raise ValueError("adverse cost case cannot be cheaper than base")
 
     @property
-    def identity_sha256(self) -> str:
+    def canonical_payload_json(self) -> str:
         payload = {
             "adverse": self.adverse.__dict__,
             "base": self.base.__dict__,
@@ -152,5 +152,39 @@ class ExecutionCostAssumptions:
             "gross_only": self.gross_only,
             "version": self.version,
         }
-        encoded = json.dumps(payload, sort_keys=True, separators=(",", ":")).encode()
-        return hashlib.sha256(encoded).hexdigest()
+        return json.dumps(payload, sort_keys=True, separators=(",", ":"))
+
+    @property
+    def identity_sha256(self) -> str:
+        return hashlib.sha256(self.canonical_payload_json.encode()).hexdigest()
+
+    @classmethod
+    def from_canonical_payload_json(cls, payload_json: str) -> "ExecutionCostAssumptions":
+        try:
+            payload = json.loads(payload_json)
+            if (
+                type(payload) is not dict
+                or set(payload)
+                != {
+                    "adverse",
+                    "base",
+                    "capacity_policy",
+                    "currency",
+                    "gross_only",
+                    "version",
+                }
+            ):
+                raise ValueError
+            assumptions = cls(
+                version=payload["version"],
+                currency=payload["currency"],
+                capacity_policy=CapacityPolicy(**payload["capacity_policy"]),
+                base=CostStressCase(**payload["base"]),
+                adverse=CostStressCase(**payload["adverse"]),
+                gross_only=payload["gross_only"],
+            )
+        except (KeyError, TypeError, ValueError, json.JSONDecodeError) as exc:
+            raise ValueError("cost assumptions payload is invalid") from exc
+        if assumptions.canonical_payload_json != payload_json:
+            raise ValueError("cost assumptions payload is not canonical")
+        return assumptions
