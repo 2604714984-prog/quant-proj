@@ -1,0 +1,110 @@
+{
+  "schema_version": "research-definition-v1",
+  "cycle_id": "ISSUE119_US_EQUITY_OUTCOME_FREE_CYCLE_20260724_004",
+  "post_reset_frozen_mechanism_ordinal": 6,
+  "research_id": "US_EQ_SEC_FORMD_PRIVATE_CAPITAL_FORMATION_YOY_SPY_CASH_V1",
+  "status": "preregistered-outcome-blind-input-qualification",
+  "target": "SPY_OR_ZERO_RETURN_CASH",
+  "economic_question": "Does year-over-year growth in broad non-fund Regulation D capital-formation activity identify a risk-bearing state in which holding SPY improves the return/drawdown tradeoff versus a frozen monthly 50/50 SPY-cash benchmark?",
+  "source": {
+    "owner": "U.S. Securities and Exchange Commission",
+    "statistics_page": "https://www.sec.gov/data-research/statistics-data-visualizations/regulation-d-offerings",
+    "workbook_url": "https://www.sec.gov/files/sec-stats-regulationd-offerings-20260630.xlsx",
+    "data_sets_page": "https://www.sec.gov/data-research/sec-markets-data/form-d-data-sets",
+    "field_documentation": "https://www.sec.gov/files/Form_D.pdf",
+    "strategy_input": "quarterly SEC non-fund initial-offering count",
+    "quarterly_zip_role": "schema-and-method-crosscheck-only",
+    "evidence_classification": "RETROSPECTIVE_SECONDARY_REVISION_LIMITED"
+  },
+  "signal": {
+    "state_month": "each calendar month m in quarter Q",
+    "latest_count": "N(Q-2)",
+    "year_earlier_count": "N(Q-6)",
+    "spy": "N(Q-2) > N(Q-6)",
+    "cash": "N(Q-2) <= N(Q-6)",
+    "tie": "cash",
+    "measured_population": "initial non-fund Form D offerings; amendments and pooled investment funds excluded"
+  },
+  "portfolio": {
+    "decision_at": "20:05 America/New_York on final accepted XNYS session before state month",
+    "execution": "first accepted XNYS open of state month",
+    "holding": "until next monthly execution open; unchanged state keeps existing exposure",
+    "initial_capital_usd": 40000,
+    "whole_shares": true,
+    "one_way_cost_bps_on_exposure_change": 10,
+    "cash_accrual": 0.0,
+    "leverage": false,
+    "shorting": false
+  },
+  "measurement": {
+    "decision_sizing_price": "immediately preceding accepted XNYS raw close",
+    "interval_boundary": "pretrade NAV marked at the immediately preceding accepted XNYS raw close",
+    "interval_return": "successive pretrade boundary NAV ratio minus one",
+    "terminal_boundary": "pretrade NAV at the session before the frozen terminal month execution",
+    "maximum_drawdown_path": "initial capital followed by each accepted session opening NAV before the terminal boundary",
+    "cash_distributions": "ex-date entitlement and pay-date settlement through the shared US Portfolio",
+    "unchanged_strategy_state": "no rebalance",
+    "fifty_fifty": "rebalance monthly",
+    "spy_buy_and_hold": "buy once at first validation or secondary execution and do not rebalance"
+  },
+  "splits": {
+    "validation_state_months": "2021-02 through 2023-05",
+    "validation_terminal_month": "2023-06",
+    "validation_intervals": 28,
+    "unused_boundary_gap": "2023-06 and 2023-07 state months",
+    "secondary_state_months": "2023-08 through 2026-05",
+    "secondary_terminal_month": "2026-06",
+    "secondary_intervals": 34,
+    "secondary_open_rule": "only after all validation gates pass"
+  },
+  "support": {
+    "minimum_spy_months_per_split": 4,
+    "minimum_cash_months_per_split": 4,
+    "minimum_spy_to_cash_transitions_per_split": 1,
+    "minimum_cash_to_spy_transitions_per_split": 1
+  },
+  "benchmarks": [
+    "SPY_BUY_AND_HOLD_TOTAL_RETURN",
+    "MONTHLY_REBALANCED_50_PERCENT_SPY_50_PERCENT_ZERO_RETURN_CASH"
+  ],
+  "gates": [
+    "exact_interval_and_state_support_contract_passes",
+    "strategy_terminal_net_wealth_strictly_exceeds_monthly_50_50",
+    "paired_arithmetic_mean_net_active_return_vs_monthly_50_50_strictly_positive",
+    "strategy_maximum_drawdown_no_worse_than_SPY_buy_and_hold"
+  ],
+  "multiplicity": {
+    "historical_inference": "DESCRIPTIVE_ONLY_NO_CONFIRMATORY_P_VALUE",
+    "confirmatory_alpha_assigned": false,
+    "family_reset": false,
+    "alpha_recycling": false,
+    "one_shot": true,
+    "rerun_or_post_outcome_change": false,
+    "maximum_success_label": "EXPLORATORY_SCREENING_PASS_PENDING_USER_REVIEW"
+  },
+  "forbidden_changes": [
+    "offering amounts",
+    "alternate lags or lookback windows",
+    "percentage or z-score thresholds",
+    "reverse direction",
+    "monthly Form D reconstruction",
+    "industry filters",
+    "QQQ substitution",
+    "price or volatility overlay",
+    "parameter grid",
+    "post-outcome source change"
+  ],
+  "method_limits": [
+    "the current official workbook may revise historical statistics and no vintage archive is claimed",
+    "Form D is filer-reported and does not cover all exempt offerings",
+    "date-level aggregate statistics do not support a strict historical available_at claim"
+  ],
+  "sealed": {
+    "strategy_candidate_available": false,
+    "rerun": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
