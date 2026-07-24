@@ -1,0 +1,149 @@
+{
+  "schema_version": "us-equity-nport-flow-differential-prereg-v1",
+  "research_id": "US_EQ_NPORT_FUND_SHARE_FLOW_DIFFERENTIAL_V1",
+  "status": "PREREGISTERED_INPUT_QUALIFIED_CODE_ONLY",
+  "evidence_class": "EXPLORATORY_RETROSPECTIVE_SECONDARY_ONLY",
+  "mechanism": {
+    "economic_hypothesis": "The relative external creation and redemption imbalance reported by SPY and QQQ is a quarterly revealed-demand signal; hold the fund with the strictly stronger external-flow imbalance.",
+    "variant_count": 1,
+    "parameter_grid": false,
+    "outcomes_used_for_selection": false
+  },
+  "signal": {
+    "official_source": "SEC Form N-PORT original filings",
+    "external_net": "sum of monthly sales minus monthly redemptions; reinvestment excluded",
+    "external_gross": "sum of monthly sales plus monthly redemptions",
+    "imbalance": "external_net divided by external_gross",
+    "selection": "QQQ only when QQQ imbalance is strictly greater than SPY imbalance; otherwise SPY",
+    "zero_denominator": "SPY fail-closed fallback, absent from accepted 27-pair source package",
+    "decision_cutoff": "08:30 America/New_York",
+    "decision_session": "first accepted XNYS session whose 08:30 cutoff is strictly later than pair_initial_available_at",
+    "amendments": "latest accession accepted by the frozen cutoff; later amendments cannot rewrite a decision",
+    "forbidden": [
+      "reverse direction",
+      "threshold or smoothing grid",
+      "alternate normalization",
+      "alternate lag or holding period",
+      "cash state",
+      "source blending",
+      "result-dependent repair",
+      "rerun"
+    ]
+  },
+  "portfolio": {
+    "initial_capital_usd": 40000.0,
+    "strategy": "100 percent SPY or 100 percent QQQ subject to whole shares and settled cash",
+    "quarterly_comparator": "50 percent SPY and 50 percent QQQ using the same cash-account settlement contract",
+    "buyhold_comparator": "buy SPY once at the first decision open and hold",
+    "decision_price": "preceding accepted session raw close available before 08:30",
+    "execution_and_marks": "raw accepted-session open",
+    "one_way_commission_rate": 0.001,
+    "minimum_commission": 0.0,
+    "sell_tax_rate": 0.0,
+    "slippage_bps": 0.0,
+    "cash_accrual": 0.0,
+    "leverage": false,
+    "shorting": false,
+    "maximum_positions": 2
+  },
+  "cash_settlement": {
+    "unsettled_proceeds_use": false,
+    "phase_a": "sell only frozen excess shares at the pair-decision raw open",
+    "phase_b": "on the final accepted settlement session, buy only frozen deficits; do not sell or recompute targets",
+    "settlement_transition": "T+2 before 2024-05-28 and T+1 on and after 2024-05-28",
+    "phase_b_buy_order": [
+      "QQQ",
+      "SPY"
+    ],
+    "affordability": "rising prices cap Phase B at affordable whole shares",
+    "same_state": "may invest settled distribution cash toward the frozen count and does not change signal"
+  },
+  "corporate_actions": {
+    "cash_distribution": "freeze entitlement from session-open shares on official ex-date and settle on official pay date",
+    "split": "a split between Phase A and Phase B fails closed",
+    "reinvestment": false
+  },
+  "segments": {
+    "validation": {
+      "signal_reports": "2020Q1 through 2022Q4",
+      "terminal_report": "2023Q1",
+      "complete_intervals": 12,
+      "accepted_state_support": {
+        "QQQ": 9,
+        "SPY": 3
+      }
+    },
+    "secondary": {
+      "signal_reports": "2023Q1 through 2025Q4",
+      "terminal_report": "2026Q1",
+      "complete_intervals": 12,
+      "accepted_state_support": {
+        "QQQ": 9,
+        "SPY": 3
+      },
+      "sealed_until_validation_pass": true
+    }
+  },
+  "measurement": {
+    "interval_return": "one pair-decision pre-trade NAV to the next pair-decision pre-trade NAV",
+    "pretrade_nav_price": "preceding accepted-session raw close",
+    "maximum_drawdown": "daily accepted-session opening NAV after corporate actions and scheduled trades, with initial USD 40000 point included",
+    "terminal_pair": "pre-trade mark only; terminal state is not traded and no next-interval cost enters"
+  },
+  "gates_per_segment": [
+    "exactly 12 intervals",
+    "at least 3 SPY intervals",
+    "at least 3 QQQ intervals",
+    "strategy terminal wealth strictly above quarterly 50/50 comparator",
+    "strategy arithmetic mean interval return strictly above quarterly 50/50 comparator",
+    "strategy maximum drawdown no worse than SPY buy-and-hold"
+  ],
+  "source_identities": {
+    "sec_materializer_sha256": "ee05df82264990224de1f0043bf0745722e1f8d2e3a031f0a01a8d4d186a64a4",
+    "sec_source_receipt_sha256": "eaba6c4c4571d0ab66189a4ec5094abbaea6a37bbf24c016b04f266c93fcff74",
+    "sec_normalized_rows_sha256": "43fe1493bd07014483e65c955b9dc482ea4ccd05c09cd4e03209732302568207",
+    "sec_paired_signals_sha256": "789bdbbead8d1a9d6062bf4eb5c94ea03fee24c43dfd5afdc38bd4383350c76f",
+    "sec_raw_inventory_sha256": "713dcc690606a297463d8b5da0b0b97ea42c3af185b0c8736cccfc2971260b67",
+    "central_database_sha256": "7a0e6a40fe5a1f2fbb7e9d0cecfb7178efb988befe854124e923206c5897b213",
+    "shared_core_commit": "3ec32b30f66ab496740ca7e879983a73d68857d6",
+    "shared_core_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "market_input_identity_status": "INDEPENDENT_READ_ONLY_ACCEPTANCE_VALID",
+    "market_materializer_sha256": "84f3cecb73a5d5915812ee79956b1bc05120899c41035c07bda5fc5370fd580c",
+    "market_packet_sha256": "ea9cd1f97d65b5d71280ef7eda7d88de0ed9deca0c18bd6bf70d0ead05666b6b",
+    "market_receipt_sha256": "cd800d64f7aa743cc107806c816b0e0defec3b79bf33b78fd50325233540bc90",
+    "xnys_reference_calendar_sha256": "08b1722c675012d89e0b4f92ed51f51160adbd1d54961c093c52101c067fc553",
+    "spy_retained_rows_sha256": "bc19099bf5d2d893882a340751388f59d161308ccc3e9c66734ce40356ccd789",
+    "qqq_retained_rows_sha256": "0b0ab83093df097e8081fa50df4c339f409a6080025c5f62a7109ee0dc600e71",
+    "official_action_rows_sha256": "93ba4e9f42446c24d0bb069928ab338abb7802cf199c0e16453238ef0b9beafd",
+    "retained_session_count": 756,
+    "retained_session_start": "2020-06-01",
+    "retained_session_end": "2023-05-31",
+    "strict_pit_action_announcement_available_at": false,
+    "secondary_market_rows_retained_or_opened": 0
+  },
+  "decision_rule": {
+    "validation_fail": "EXPLORATORY_VALIDATION_FAIL_CLOSED",
+    "secondary_fail": "EXPLORATORY_SECONDARY_FAIL_CLOSED",
+    "both_pass": "RETROSPECTIVE_SECONDARY_PASS_PENDING_REVIEW",
+    "rerun": false,
+    "parameter_repair": false,
+    "source_blending": false,
+    "statistical_confirmation_claim": false
+  },
+  "boundaries": {
+    "database_write": false,
+    "market_outcome_opened": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "rerun": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  },
+  "accepted_limitations": [
+    "Distribution announcement timestamps are incomplete; action amounts are retrospective ex-date entitlement and pay-date cash inputs only, never signals or target-sizing inputs.",
+    "XNYS is the reference execution clock; QQQ remains Nasdaq-listed and requires an exact raw bar on every retained reference session.",
+    "All historical results through 2026-06-30 are exploratory and nonconfirmatory."
+  ]
+}
