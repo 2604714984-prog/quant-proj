@@ -1,0 +1,106 @@
+{
+  "schema_version": "compact-terminal-research-result-v1",
+  "research_id": "US_EQ_NPORT_FUND_SHARE_FLOW_DIFFERENTIAL_V1",
+  "canonical_status": "EXPLORATORY_VALIDATION_FAIL_CLOSED",
+  "evidence_class": "EXPLORATORY_RETROSPECTIVE_SECONDARY_ONLY",
+  "result_summary": {
+    "validation_intervals": 12,
+    "state_support": {
+      "SPY": 3,
+      "QQQ": 9
+    },
+    "gates_passed": 5,
+    "gates_total": 6,
+    "all_gates_pass": false,
+    "sole_failed_gate": "maximum_drawdown_no_worse_than_spy",
+    "strategy": {
+      "terminal_wealth_usd": 60747.86266700001,
+      "arithmetic_mean_interval_return": 0.03955302682988093,
+      "maximum_drawdown": -0.32565479759082905
+    },
+    "quarterly_fifty_fifty": {
+      "terminal_wealth_usd": 59167.61860600001,
+      "arithmetic_mean_interval_return": 0.0363624274755856,
+      "maximum_drawdown": -0.31161639710335387
+    },
+    "spy_buyhold": {
+      "terminal_wealth_usd": 57050.02117000001,
+      "arithmetic_mean_interval_return": 0.0317106120315871,
+      "maximum_drawdown": -0.2560418453708214
+    }
+  },
+  "gates": [
+    {
+      "name": "exact_interval_count",
+      "passed": true
+    },
+    {
+      "name": "minimum_spy_state_support",
+      "passed": true
+    },
+    {
+      "name": "minimum_qqq_state_support",
+      "passed": true
+    },
+    {
+      "name": "terminal_wealth_above_fifty_fifty",
+      "passed": true
+    },
+    {
+      "name": "mean_return_above_fifty_fifty",
+      "passed": true
+    },
+    {
+      "name": "maximum_drawdown_no_worse_than_spy",
+      "passed": false
+    }
+  ],
+  "identities": {
+    "code_commit": "79e1c2662ebecf1b1ca937ee2f333d887a4c0050",
+    "code_tree": "5c8d545c59dfb2cc453dfd64aa2fab7562eafc34",
+    "definition_sha256": "d89b23ba03d17ce5ba7b902c478a13a7ee6a1ce046eed5a275901f20ae73c4b9",
+    "adapter_sha256": "0a1e4ffe589ba174aa961d50db37e0218ff809c4b62c8cc2d10b953f72218c75",
+    "tests_sha256": "0abd33f5a2f53f07c2e7e754cc7a2c1c0e3db35d93022e2847d6421a2e41ddfe",
+    "runner_sha256": "762bd07c0254550ec29c5e155c687cf85b4074842b16a9b00af1f484c8869ee7",
+    "source_receipt_sha256": "eaba6c4c4571d0ab66189a4ec5094abbaea6a37bbf24c016b04f266c93fcff74",
+    "market_packet_sha256": "ea9cd1f97d65b5d71280ef7eda7d88de0ed9deca0c18bd6bf70d0ead05666b6b",
+    "market_receipt_sha256": "cd800d64f7aa743cc107806c816b0e0defec3b79bf33b78fd50325233540bc90",
+    "one_use_claim_sha256": "a12da6d6e679f4ae92cab8f7dc1d06f611c3133ea09e5c7af8c3f0a8a072659f",
+    "validation_result_sha256": "f24f7cdc2ae5ad938a5d723e23ea2058d71e03aa42afb1eb298f533a986ab908",
+    "validation_receipt_sha256": "fd0bfdc9ecc8e5fe1cfcfcd4b9208d4f2ce76aa669e789f446180778adc07478",
+    "central_database_sha256_before": "7a0e6a40fe5a1f2fbb7e9d0cecfb7178efb988befe854124e923206c5897b213",
+    "central_database_sha256_after": "7a0e6a40fe5a1f2fbb7e9d0cecfb7178efb988befe854124e923206c5897b213"
+  },
+  "independent_acceptance": {
+    "verdict": "VALID",
+    "independent_reconstruction": true,
+    "claim_before_result": true,
+    "database_unchanged": true,
+    "secondary_opened": false
+  },
+  "terminal_decision": {
+    "secondary_authorized": false,
+    "rerun_allowed": false,
+    "parameter_repair_allowed": false,
+    "source_blending_allowed": false,
+    "lineage_permanently_closed": true
+  },
+  "accepted_limitations": [
+    "Historical company-action announcement timestamps are incomplete.",
+    "Distribution amounts are used only for retrospective ex-date entitlement and official pay-date cash reconstruction, never for the signal or target sizing.",
+    "Passing the two return gates does not rescue failure of the prespecified drawdown gate.",
+    "The branch-only adapter is disposable research code and is not a shared-core extension."
+  ],
+  "boundaries": {
+    "database_opened": false,
+    "database_write": false,
+    "secondary_opened": false,
+    "external_review_requested": false,
+    "strategy_candidate_available": false,
+    "rerun": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
