@@ -1,0 +1,86 @@
+{
+  "schema_version": "compact-terminal-research-result-v1",
+  "research_id": "US_EQ_GDPNOW_LIVE_REVISION_IMPULSE_V1",
+  "market": "US",
+  "phase": "validation",
+  "status": "EXPLORATORY_VALIDATION_FAIL_CLOSED",
+  "evidence_class": "EXPLORATORY_RETROSPECTIVE_SECONDARY_ONLY",
+  "repository": {
+    "branch": "research/us-gdpnow-live-revision-impulse-v1",
+    "base_commit": "3ec32b30f66ab496740ca7e879983a73d68857d6",
+    "base_tree": "06a78207779775abd165768b10b9b343749752d4",
+    "code_commit": "2c74eb5f1310e46dae4303e097aaf99d001ee6f6",
+    "code_tree": "fd129576788fe0d7f7bc5cb0d6b78a09d482366d"
+  },
+  "frozen_inputs": {
+    "definition_sha256": "5472c072a15c65eaf0773badf95c9d672288fde6c3271dc09f7ed8d34bbd9435",
+    "adapter_sha256": "2f27a658bfffea0dd17172983ba6035241710d73275fb3ab4c48341d39626497",
+    "focused_tests_sha256": "347adaacc8a8fc1b8d80e7f7a3eb170fc1b2901931e33d4076b43a5297ee678c",
+    "gdpnow_source_receipt_sha256": "836e4ff77fc6cd9ca2e856267a524cc5f914802ba63cbb73a012512d0de2d244",
+    "gdpnow_validation_signals_sha256": "2fcf0bb8bcca6876d8d2e5e1b1ac1773275d17a6fb90b024d3d4c27fa4b5035b",
+    "spy_raw_tiingo_gzip_sha256": "bf6c7a7095d6c926f51513c7e1baa8cc4895b4bffd61b07273818ea2f6d72208",
+    "xnys_calendar_sha256": "08b1722c675012d89e0b4f92ed51f51160adbd1d54961c093c52101c067fc553",
+    "spy_distributions_sha256": "caf871c657e8c1ff258e8733c8ef49409da1c66c911b5a48f2148cdf9cc3f12a",
+    "spy_lifecycle_chain_sha256": "2916eb2a31e90aa0372978f0d70bd9c34994c60068150cd1a5ebf3f0a1276027",
+    "runner_sha256": "95bf2f7c5ff723f8cc4d35a8598e47a70511df103fbd9ed5375b6b5a111e3057",
+    "one_use_claim_sha256": "50a3846932d781cb102df6d09244bc37e7f72f2dc54db88705a6bf0458f02b6b",
+    "input_receipt_sha256": "3111d9ce7bc181cc19e032bf5c9abfabc91fd93bae88cabf0a110ff80d30bd4e",
+    "full_validation_result_sha256": "1064efafaf0d9bd3277bcde5045d0201ad93efb4694143f393c4b37736602f2e",
+    "central_db_before_after_sha256": "7a0e6a40fe5a1f2fbb7e9d0cecfb7178efb988befe854124e923206c5897b213"
+  },
+  "validation": {
+    "signal_months": "2018-01 through 2021-10",
+    "execution_intervals": 46,
+    "risk_on_months": 13,
+    "cash_months": 33,
+    "passed_gates": 4,
+    "total_gates": 6,
+    "gates": {
+      "exact_month_count": true,
+      "minimum_12_risk_on_months": true,
+      "minimum_12_cash_months": true,
+      "terminal_wealth_above_monthly_50_50": false,
+      "mean_monthly_return_above_monthly_50_50": false,
+      "maximum_drawdown_no_worse_than_spy_buyhold": true
+    },
+    "strategy": {
+      "terminal_wealth_usd": 40667.13576700003,
+      "arithmetic_mean_monthly_return": 0.0006229025361159608,
+      "maximum_monthly_open_drawdown": -0.12626958852473513
+    },
+    "monthly_50_50": {
+      "terminal_wealth_usd": 53697.380979999994,
+      "arithmetic_mean_monthly_return": 0.006804190124753584,
+      "maximum_monthly_open_drawdown": -0.11807845701534403
+    },
+    "spy_buyhold": {
+      "terminal_wealth_usd": 68310.04880799999,
+      "arithmetic_mean_monthly_return": 0.013144442268750578,
+      "maximum_monthly_open_drawdown": -0.22030720310723484
+    }
+  },
+  "adjudication": {
+    "secondary_opened": false,
+    "secondary_access_permitted": false,
+    "rerun_permitted": false,
+    "parameter_repair_permitted": false,
+    "source_blending_permitted": false,
+    "conclusion": "The positive same-quarter GDPNow revision rule reduced drawdown versus SPY buy-and-hold but failed both frozen return gates against the monthly 50/50 comparator."
+  },
+  "accepted_limitations": [
+    "GDPNow archive dates are date-only; historical intraday publication time is unavailable",
+    "the result is exploratory retrospective evidence only",
+    "no secondary-period market value was decoded because validation failed"
+  ],
+  "boundaries": {
+    "database_write": false,
+    "network_access_during_execution": false,
+    "prospective_forward_access": false,
+    "strategy_candidate_available": false,
+    "rerun": false,
+    "shadow": false,
+    "paper": false,
+    "broker": false,
+    "live": false
+  }
+}
